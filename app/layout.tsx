@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AuthProvider from "@/components/layout/AuthProvider";
 
 export const metadata: Metadata = {
   title: "S.I.H. - Sistema Informático Hospitalario",
@@ -13,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="dark">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

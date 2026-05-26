@@ -18,7 +18,7 @@ interface CirugiaDetalle {
   instrumentador?: string;
   anestesista?: string;
   tipoAnestesia?: string;
-  paciente: { nombre: string; apellido: string; dni?: string };
+  internacion?: { paciente: { nombre: string; apellido: string; dni?: string } | null } | null;
   diagnostico?: string;
   hallazgos?: string;
   incidentes?: string;
@@ -65,8 +65,12 @@ function LibroQuirofano({ cirugia }: LibroQuirofanoProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Section title="Paciente">
-          {cirugia.paciente.apellido}, {cirugia.paciente.nombre}
-          {cirugia.paciente.dni && <span className="text-gray-500 ml-2">DNI: {cirugia.paciente.dni}</span>}
+          {cirugia.internacion?.paciente ? (
+            <>{cirugia.internacion.paciente.apellido}, {cirugia.internacion.paciente.nombre}
+            {cirugia.internacion.paciente.dni && <span className="text-gray-500 ml-2">DNI: {cirugia.internacion.paciente.dni}</span>}</>
+          ) : (
+            <span className="text-gray-500">—</span>
+          )}
         </Section>
 
         <Section title="Procedimiento">{cirugia.procedimiento}</Section>

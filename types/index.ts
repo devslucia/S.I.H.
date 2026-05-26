@@ -95,7 +95,9 @@ export interface CirugiaData {
   estado: string;
   procedimiento?: string;
   cirujano?: { nombre: string } | null;
-  paciente: { nombre: string; apellido: string };
+  internacion?: {
+    paciente: { nombre: string; apellido: string; dni?: string } | null;
+  } | null;
 }
 
 export interface StockItemData {

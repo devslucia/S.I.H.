@@ -74,7 +74,11 @@ function AgendaQuirofano({ cirugias }: AgendaQuirofanoProps) {
                   </span>
                 </div>
                 <p className="text-sm font-medium text-gray-200">
-                  {cirugia.paciente.apellido}, {cirugia.paciente.nombre}
+                  {cirugia.internacion?.paciente ? (
+                    <>{cirugia.internacion.paciente.apellido}, {cirugia.internacion.paciente.nombre}</>
+                  ) : (
+                    "—"
+                  )}
                 </p>
                 {cirugia.procedimiento && (
                   <p className="text-xs text-gray-400 mt-1 line-clamp-2">

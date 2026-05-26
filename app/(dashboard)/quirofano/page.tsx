@@ -13,7 +13,9 @@ interface Cirugia {
   estado: string;
   procedimiento?: string;
   cirujano?: { nombre: string } | null;
-  paciente: { nombre: string; apellido: string };
+  internacion?: {
+    paciente: { nombre: string; apellido: string } | null;
+  } | null;
 }
 
 const estadoColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -84,7 +86,7 @@ export default function QuirofanoPage() {
                       </span>
                     </div>
                     <p className="text-white font-medium text-sm mb-1">
-                      {cirugia.paciente.apellido}, {cirugia.paciente.nombre}
+                      {cirugia.internacion?.paciente ? `${cirugia.internacion.paciente.apellido}, ${cirugia.internacion.paciente.nombre}` : "—"}
                     </p>
                     <p className="text-muted text-xs mb-1">{cirugia.procedimiento || "—"}</p>
                     {cirugia.cirujano && (

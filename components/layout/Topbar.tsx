@@ -6,12 +6,13 @@ import { Wifi, LogOut } from "lucide-react";
 
 const moduleNames: Record<string, string> = {
   "/": "Dashboard",
-  "/admision": "Identificación de Pacientes",
-  "/camas": "Gestión de Camas",
-  "/historia-clinica": "Atención Médica",
+  "/admision": "Admisión",
+  "/camas": "Camas",
+  "/historia-clinica": "Historias Clínicas",
+  "/enfermeria": "Enfermería",
   "/quirofano": "Quirófano",
   "/farmacia": "Farmacia",
-  "/facturacion": "Auditoría y Facturación",
+  "/facturacion": "Facturación",
 };
 
 export default function Topbar() {

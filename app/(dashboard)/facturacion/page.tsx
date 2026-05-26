@@ -17,10 +17,12 @@ interface Cargo {
 
 interface Liquidacion {
   internacionId: string;
-  paciente: { apellido: string; nombre: string; dni: string };
-  numeroInternacion: number;
-  fechaIngreso: string;
-  obraSocial?: { nombre: string; sigla: string } | null;
+  internacion: {
+    paciente: { apellido: string; nombre: string; dni: string } | null;
+    obraSocial?: { nombre: string; sigla: string } | null;
+    numero: number;
+    fechaIngreso: string;
+  };
   cargos: Cargo[];
   totalCargos: number;
 }
@@ -78,12 +80,12 @@ export default function FacturacionPage() {
                     {isExpanded ? <ChevronDown size={16} className="text-muted" /> : <ChevronRight size={16} className="text-muted" />}
                     <div>
                       <p className="text-white font-medium">
-                        {liq.paciente.apellido}, {liq.paciente.nombre}
+                        {liq.internacion?.paciente ? `${liq.internacion.paciente.apellido}, ${liq.internacion.paciente.nombre}` : "—"}
                       </p>
                       <p className="text-muted text-xs">
-                        Internación #{liq.numeroInternacion} | DNI: {liq.paciente.dni} | {formatDateTime(liq.fechaIngreso)}
+                        Internación #{liq.internacion?.numero || "?"} | DNI: {liq.internacion?.paciente?.dni || "—"} | {formatDateTime(liq.internacion?.fechaIngreso || "")}
                       </p>
-                      {liq.obraSocial && <p className="text-muted text-xs">OS: {liq.obraSocial.nombre}</p>}
+                      {liq.internacion?.obraSocial && <p className="text-muted text-xs">OS: {liq.internacion.obraSocial.nombre}</p>}
                     </div>
                   </div>
                   <div className="text-right">
