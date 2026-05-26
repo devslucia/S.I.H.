@@ -115,26 +115,31 @@ async function main() {
   console.log("✓ Sectores y camas creados");
 
   // ── Stock Items ──
-  const items = await Promise.all([
-    prisma.stockItem.create({ data: { nombre: "Amoxicilina 500mg", principioActivo: "Amoxicilina", presentacion: "Cápsulas", unidad: "unidades", stockActual: 12, stockMinimo: 50, stockMaximo: 200 } }),
-    prisma.stockItem.create({ data: { nombre: "Sol. Fisiológica 1L", presentacion: "Bolsa x 1L", unidad: "unidades", stockActual: 32, stockMinimo: 50, stockMaximo: 150 } }),
-    prisma.stockItem.create({ data: { nombre: "Paracetamol 1g", principioActivo: "Paracetamol", presentacion: "Comprimidos", unidad: "unidades", stockActual: 240, stockMinimo: 50, stockMaximo: 300 } }),
-    prisma.stockItem.create({ data: { nombre: "Omeprazol 40mg", principioActivo: "Omeprazol", presentacion: "Comprimidos", unidad: "unidades", stockActual: 180, stockMinimo: 30, stockMaximo: 200 } }),
-    prisma.stockItem.create({ data: { nombre: "Ketorolac 2% Iny.", principioActivo: "Ketorolac", presentacion: "Ampolla 2ml", unidad: "ampollas", stockActual: 48, stockMinimo: 20, stockMaximo: 100 } }),
-    prisma.stockItem.create({ data: { nombre: "Bupivacaína 0.5%", principioActivo: "Bupivacaína", presentacion: "Ampolla 10ml", unidad: "ampollas", stockActual: 24, stockMinimo: 10, stockMaximo: 50 } }),
-    prisma.stockItem.create({ data: { nombre: "Adrenalina 1mg", principioActivo: "Adrenalina", presentacion: "Ampolla 1ml", unidad: "ampollas", stockActual: 36, stockMinimo: 15, stockMaximo: 60 } }),
-    prisma.stockItem.create({ data: { nombre: "Cefazolina 1g", principioActivo: "Cefazolina", presentacion: "Frasco", unidad: "unidades", stockActual: 60, stockMinimo: 25, stockMaximo: 100 } }),
-    prisma.stockItem.create({ data: { nombre: "Diclofenac 75mg", principioActivo: "Diclofenac", presentacion: "Ampolla", unidad: "ampollas", stockActual: 90, stockMinimo: 30, stockMaximo: 120 } }),
-    prisma.stockItem.create({ data: { nombre: "Povidona Yodada (Redox)", presentacion: "Frasco 500ml", unidad: "unidades", stockActual: 8, stockMinimo: 10, stockMaximo: 30 } }),
-    prisma.stockItem.create({ data: { nombre: "Abbocath Nº20", presentacion: "Catéter", unidad: "unidades", stockActual: 45, stockMinimo: 20, stockMaximo: 100 } }),
-    prisma.stockItem.create({ data: { nombre: "Equipo de perfusión", presentacion: "Equipo", unidad: "unidades", stockActual: 30, stockMinimo: 15, stockMaximo: 60 } }),
-    prisma.stockItem.create({ data: { nombre: "Tubo endotraqueal 7.5", presentacion: "Tubo", unidad: "unidades", stockActual: 12, stockMinimo: 5, stockMaximo: 20 } }),
-    prisma.stockItem.create({ data: { nombre: "Plancha bisturí", presentacion: "Plancha", unidad: "unidades", stockActual: 6, stockMinimo: 5, stockMaximo: 15 } }),
-    prisma.stockItem.create({ data: { nombre: "Electrobisturí desc.", presentacion: "Electrodo", unidad: "unidades", stockActual: 4, stockMinimo: 3, stockMaximo: 10 } }),
-  ]);
+const stockData = [
+    { nombre: "Amoxicilina 500mg", principioActivo: "Amoxicilina", presentacion: "Cápsulas", unidad: "unidades", stockActual: 12, stockMinimo: 50, stockMaximo: 200 },
+    { nombre: "Sol. Fisiológica 1L", presentacion: "Bolsa x 1L", unidad: "unidades", stockActual: 32, stockMinimo: 50, stockMaximo: 150 },
+    { nombre: "Paracetamol 1g", principioActivo: "Paracetamol", presentacion: "Comprimidos", unidad: "unidades", stockActual: 240, stockMinimo: 50, stockMaximo: 300 },
+    { nombre: "Omeprazol 40mg", principioActivo: "Omeprazol", presentacion: "Comprimidos", unidad: "unidades", stockActual: 180, stockMinimo: 30, stockMaximo: 200 },
+    { nombre: "Ketorolac 2% Iny.", principioActivo: "Ketorolac", presentacion: "Ampolla 2ml", unidad: "ampollas", stockActual: 48, stockMinimo: 20, stockMaximo: 100 },
+    { nombre: "Bupivacaína 0.5%", principioActivo: "Bupivacaína", presentacion: "Ampolla 10ml", unidad: "ampollas", stockActual: 24, stockMinimo: 10, stockMaximo: 50 },
+    { nombre: "Adrenalina 1mg", principioActivo: "Adrenalina", presentacion: "Ampolla 1ml", unidad: "ampollas", stockActual: 36, stockMinimo: 15, stockMaximo: 60 },
+    { nombre: "Cefazolina 1g", principioActivo: "Cefazolina", presentacion: "Frasco", unidad: "unidades", stockActual: 60, stockMinimo: 25, stockMaximo: 100 },
+    { nombre: "Diclofenac 75mg", principioActivo: "Diclofenac", presentacion: "Ampolla", unidad: "ampollas", stockActual: 90, stockMinimo: 30, stockMaximo: 120 },
+    { nombre: "Povidona Yodada (Redox)", presentacion: "Frasco 500ml", unidad: "unidades", stockActual: 8, stockMinimo: 10, stockMaximo: 30 },
+    { nombre: "Abbocath Nº20", presentacion: "Catéter", unidad: "unidades", stockActual: 45, stockMinimo: 20, stockMaximo: 100 },
+    { nombre: "Equipo de perfusión", presentacion: "Equipo", unidad: "unidades", stockActual: 30, stockMinimo: 15, stockMaximo: 60 },
+    { nombre: "Tubo endotraqueal 7.5", presentacion: "Tubo", unidad: "unidades", stockActual: 12, stockMinimo: 5, stockMaximo: 20 },
+    { nombre: "Plancha bisturí", presentacion: "Plancha", unidad: "unidades", stockActual: 6, stockMinimo: 5, stockMaximo: 15 },
+    { nombre: "Electrobisturí desc.", presentacion: "Electrodo", unidad: "unidades", stockActual: 4, stockMinimo: 3, stockMaximo: 10 },
+  ]
 
-  console.log("✓ Stock items creados");
+  const items = []
+  for (const data of stockData) {
+    const item = await prisma.stockItem.create({ data })
+    items.push(item)
+  }
 
+  console.log("✓ Stock items creados")
   // ── Pacientes ──
   const maria = await prisma.paciente.create({
     data: {

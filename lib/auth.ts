@@ -11,22 +11,44 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
-        const usuario = await prisma.usuario.findUnique({
+        console.log('=== AUTHORIZE CALLED ===');
+        console.log('Email recibido:', credentials?.email);
+
+        if (!credentials?.email || !credentials?.password) {
+          console.log('ERROR: credentials vacías');
+          return null;
+        }
+
+        const user = await prisma.usuario.findUnique({
           where: { email: credentials.email as string },
         });
-        if (!usuario || !usuario.activo) return null;
-        const valid = await bcrypt.compare(
+
+        console.log('Usuario encontrado:', user ? user.email : 'NO ENCONTRADO');
+        console.log('Password en DB:', user?.password?.substring(0, 10) + '...');
+
+        if (!user || !user.password) {
+          console.log('ERROR: usuario no encontrado');
+          return null;
+        }
+
+        const passwordMatch = await bcrypt.compare(
           credentials.password as string,
-          usuario.password
+          user.password
         );
-        if (!valid) return null;
+
+        console.log('Password match:', passwordMatch);
+
+        if (!passwordMatch) {
+          console.log('ERROR: password incorrecta');
+          return null;
+        }
+
         return {
-          id: usuario.id,
-          name: usuario.nombre,
-          email: usuario.email,
-          rol: usuario.rol,
-          matricula: usuario.matricula,
+          id: user.id,
+          email: user.email,
+          name: user.nombre,
+          rol: user.rol,
+          matricula: user.matricula ?? null,
         };
       },
     }),
