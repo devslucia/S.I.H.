@@ -1,5 +1,5 @@
-import { auth } from "@/lib/auth";
-import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { NextRequest, NextResponse } from "next/server";
 
 const roleAccess: Record<string, string[]> = {
   "/api/pacientes": ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "FARMACIA"],
@@ -12,22 +12,24 @@ const roleAccess: Record<string, string[]> = {
   "/api/pdf": ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "FARMACIA"],
 };
 
-export default auth((req) => {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const publicPaths = ["/login", "/api/auth"];
   const isPublic = publicPaths.some((p) => pathname.startsWith(p));
 
-  if (!req.auth && !isPublic) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  if (!token && !isPublic) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  if (req.auth) {
+  if (token) {
     if (pathname.startsWith("/login")) {
       return NextResponse.redirect(new URL("/", req.url));
     }
     if (pathname.startsWith("/api/")) {
-      const rol = (req.auth.user as any)?.rol;
+      const rol = token.rol as string;
       const sorted = Object.keys(roleAccess).sort((a, b) => b.length - a.length);
       for (const prefix of sorted) {
         if (pathname.startsWith(prefix)) {
@@ -41,7 +43,7 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
