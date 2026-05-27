@@ -1,42 +1,30 @@
 import { auth } from "@/lib/auth-middleware";
 import { NextResponse } from "next/server";
 
-const roleAccess: Record<string, string[]> = {
-  "/api/pacientes": ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "FARMACIA"],
-  "/api/internaciones": ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "FARMACIA"],
-  "/api/camas": ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "FARMACIA"],
-  "/api/historia-clinica": ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"],
-  "/api/quirofano": ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR"],
-  "/api/farmacia": ["ADMIN", "FARMACIA"],
-  "/api/facturacion": ["ADMIN", "FACTURACION"],
-  "/api/pdf": ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "FARMACIA"],
-};
-
 export default auth((req) => {
-  const { pathname } = req.nextUrl;
   const isLoggedIn = !!req.auth;
-  const isAuthPage = pathname.startsWith("/login");
-  const isApiAuth = pathname.startsWith("/api/auth");
+  const pathname = req.nextUrl.pathname;
 
-  if (isApiAuth) return NextResponse.next();
-  if (isAuthPage && isLoggedIn) {
-    return NextResponse.redirect(new URL("/", req.url));
-  }
-  if (!isLoggedIn && !isAuthPage) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
+  if (pathname.startsWith("/api/auth")) return NextResponse.next();
+  if (pathname.startsWith("/_next")) return NextResponse.next();
+  if (pathname === "/favicon.ico") return NextResponse.next();
 
-  if (isLoggedIn && pathname.startsWith("/api/") && !isApiAuth) {
-    const rol = (req.auth?.user as any)?.rol;
-    const sorted = Object.keys(roleAccess).sort((a, b) => b.length - a.length);
-    for (const prefix of sorted) {
-      if (pathname.startsWith(prefix)) {
-        if (!roleAccess[prefix].includes(rol)) {
-          return NextResponse.json({ error: "Acceso denegado para este rol" }, { status: 403 });
-        }
-        break;
-      }
+  if (pathname.startsWith("/api/")) {
+    if (!isLoggedIn) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith("/login")) {
+    if (isLoggedIn) {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+    return NextResponse.next();
+  }
+
+  if (!isLoggedIn) {
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   return NextResponse.next();

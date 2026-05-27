@@ -49,8 +49,7 @@ export default function AdmisionPage() {
     try {
       const query = q ? `?q=${encodeURIComponent(q)}` : "";
       const res = await fetch(`/api/pacientes${query}`);
-      const data = await res.json();
-      setPacientes(data);
+      if (res.ok) { const d = await res.json(); setPacientes(Array.isArray(d) ? d : []); }
     } catch (err) {
       console.error("Error fetching pacientes", err);
     } finally {

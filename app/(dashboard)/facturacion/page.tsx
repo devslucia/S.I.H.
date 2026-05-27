@@ -36,7 +36,7 @@ export default function FacturacionPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/facturacion/liquidaciones");
-      if (res.ok) setLiquidaciones(await res.json());
+      if (res.ok) { const d = await res.json(); setLiquidaciones(Array.isArray(d) ? d : []); }
     } catch (err) {
       console.error(err);
     } finally {

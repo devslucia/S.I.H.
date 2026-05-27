@@ -31,7 +31,7 @@ export default function FarmaciaPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/farmacia/stock");
-      if (res.ok) setStock(await res.json());
+      if (res.ok) { const d = await res.json(); setStock(Array.isArray(d) ? d : []); }
     } catch (err) {
       console.error(err);
     } finally {

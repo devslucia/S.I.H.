@@ -159,7 +159,7 @@ export default function EnfermeriaPage() {
       const res = await fetch("/api/internaciones?estado=ACTIVA");
       if (res.ok) {
         const data = await res.json();
-        setInternaciones(data);
+        setInternaciones(Array.isArray(data) ? data : []);
 
         const map: Record<string, Prescripcion[]> = {};
         for (const i of data) {

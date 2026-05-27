@@ -35,7 +35,7 @@ export default function CamasPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/camas");
-      if (res.ok) setCamas(await res.json());
+      if (res.ok) { const d = await res.json(); setCamas(Array.isArray(d) ? d : []); }
     } catch (err) {
       console.error(err);
     } finally {

@@ -27,7 +27,7 @@ export default function HistoriaClinicaListPage() {
     const fetchData = async () => {
       try {
         const res = await fetch("/api/internaciones?estado=ACTIVA");
-        if (res.ok) setInternaciones(await res.json());
+        if (res.ok) { const d = await res.json(); setInternaciones(Array.isArray(d) ? d : []); }
       } catch (err) {
         console.error(err);
       } finally {
