@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Save, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatDateTime } from "@/lib/utils";
 
 interface Anamnesis {
@@ -137,17 +138,23 @@ export default function AnamnesisPage() {
         <div key={section} className="card p-5">
           <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">{section}</h3>
           <div className="space-y-4">
-            {fields.filter((f) => f.section === section).map((field) => (
-              <div key={field.key}>
-                <label className="block text-sm text-gray-400 mb-1">{field.label}</label>
-                <textarea
-                  value={data[field.key] || ""}
-                  onChange={(e) => handleChange(field.key, e.target.value)}
-                  className="input-field min-h-[80px] resize-y"
-                  rows={3}
-                />
-              </div>
-            ))}
+              {fields.filter((f) => f.section === section).map((field) => (
+                <div key={field.key}>
+                  {["motivoConsulta", "enfermedadActual", "otros"].includes(field.key) ? (
+                    <VoiceTextarea label={field.label} value={data[field.key] || ""} onChange={(v) => handleChange(field.key, v)} rows={3} />
+                  ) : (
+                    <>
+                      <label className="block text-sm text-gray-400 mb-1">{field.label}</label>
+                      <textarea
+                        value={data[field.key] || ""}
+                        onChange={(e) => handleChange(field.key, e.target.value)}
+                        className="input-field min-h-[80px] resize-y"
+                        rows={3}
+                      />
+                    </>
+                  )}
+                </div>
+              ))}
           </div>
         </div>
       ))}

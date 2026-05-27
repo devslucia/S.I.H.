@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import type { CirugiaData } from "@/types";
@@ -11,23 +12,24 @@ interface AgendaQuirofanoProps {
 
 const ESTADO_COLORS: Record<string, string> = {
   PROGRAMADA: "border-l-blue-500",
-  CONFIRMADA: "border-l-amber-500",
   EN_CURSO: "border-l-green-500",
-  FINALIZADA: "border-l-gray-500",
+  COMPLETADA: "border-l-gray-500",
+  REPROGRAMADA: "border-l-amber-500",
   CANCELADA: "border-l-red-500",
 };
 
 const ESTADO_BADGE: Record<string, BadgeVariant> = {
   PROGRAMADA: "info",
-  CONFIRMADA: "warning",
   EN_CURSO: "success",
-  FINALIZADA: "default",
+  COMPLETADA: "default",
+  REPROGRAMADA: "warning",
   CANCELADA: "error",
 };
 
 type BadgeVariant = "success" | "warning" | "error" | "info" | "default";
 
 function AgendaQuirofano({ cirugias }: AgendaQuirofanoProps) {
+  const router = useRouter();
   const grouped = cirugias.reduce<Record<number, CirugiaData[]>>((acc, c) => {
     const q = c.quirofanoNumero;
     if (!acc[q]) acc[q] = [];
@@ -58,8 +60,9 @@ function AgendaQuirofano({ cirugias }: AgendaQuirofanoProps) {
             {grouped[qNum].map((cirugia) => (
               <div
                 key={cirugia.id}
+                onClick={() => router.push(`/quirofano/${cirugia.id}/libro`)}
                 className={cn(
-                  "rounded-lg border border-[#1e2535] bg-[#161b27] p-4 border-l-4",
+                  "rounded-lg border border-[#1e2535] bg-[#161b27] p-4 border-l-4 cursor-pointer hover:bg-[#1c2438] transition-colors",
                   ESTADO_COLORS[cirugia.estado] || "border-l-gray-500"
                 )}
               >

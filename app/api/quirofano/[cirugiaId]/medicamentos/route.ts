@@ -1,20 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { descontarStock } from "@/lib/utils/stock";
 import { NextRequest, NextResponse } from "next/server";
-
-export async function GET(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-
-  const medicamentos = await prisma.medicamentoCirugia.findMany({
-    where: { cirugiaId: params.cirugiaId },
-    include: { stockItem: true },
-    orderBy: { fechaAplicacion: "desc" },
-  });
-
-  return NextResponse.json(medicamentos);
-}
 
 export async function POST(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
   const session = await auth();
@@ -22,41 +8,63 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
 
   const body = await req.json();
 
-  const cirugia = await prisma.cirugia.findUnique({
-    where: { id: params.cirugiaId },
-    include: { internacion: { select: { id: true } } },
-  });
-
-  if (!cirugia) {
-    return NextResponse.json({ error: "Cirugía no encontrada" }, { status: 404 });
-  }
-
   const result = await prisma.$transaction(async (tx) => {
-    if (body.stockItemId && body.cantidad) {
-      await descontarStock(
-        tx as any,
-        body.stockItemId,
-        Number(body.cantidad),
-        `Medicamento quirófano: ${body.nombre}`,
-        cirugia.internacion.id,
-        params.cirugiaId
-      );
+    const stockItem = await tx.stockItem.findUnique({ where: { id: body.stockItemId } });
+    if (!stockItem) throw new Error("Stock item no encontrado");
+
+    const cantidad = Number(body.cantidad);
+    if (stockItem.stockActual.lessThan(cantidad)) {
+      throw new Error(`Stock insuficiente: ${stockItem.nombre} (disp: ${stockItem.stockActual})`);
     }
 
-    return tx.medicamentoCirugia.create({
+    await tx.stockItem.update({
+      where: { id: body.stockItemId },
+      data: { stockActual: { decrement: cantidad } },
+    });
+
+    await tx.movimientoStock.create({
+      data: {
+        stockItemId: body.stockItemId,
+        tipo: "EGRESO",
+        cantidad,
+        motivo: `Uso quirófano: ${stockItem.nombre}`,
+        cirugiaId: params.cirugiaId,
+        usuarioId: session.user.id,
+      },
+    });
+
+    const medicamento = await tx.medicamentoCirugia.create({
       data: {
         cirugiaId: params.cirugiaId,
-        stockItemId: body.stockItemId || null,
-        nombre: body.nombre,
-        presentacion: body.presentacion,
-        cantidad: Number(body.cantidad),
+        stockItemId: body.stockItemId,
+        nombre: stockItem.nombre,
+        presentacion: stockItem.presentacion,
+        cantidad,
         via: body.via,
         fechaAplicacion: body.fechaAplicacion ? new Date(body.fechaAplicacion) : undefined,
         horaAplicacion: body.horaAplicacion,
         observacion: body.observacion,
       },
-      include: { stockItem: true },
     });
+
+    const cirugia = await tx.cirugia.findUnique({
+      where: { id: params.cirugiaId },
+      select: { internacionId: true },
+    });
+    if (cirugia) {
+      await tx.cargoFacturacion.create({
+        data: {
+          internacionId: cirugia.internacionId,
+          concepto: stockItem.nombre,
+          cantidad,
+          precioUnitario: 0,
+          total: 0,
+          origen: "DESCARTABLE",
+        },
+      });
+    }
+
+    return medicamento;
   });
 
   return NextResponse.json(result, { status: 201 });

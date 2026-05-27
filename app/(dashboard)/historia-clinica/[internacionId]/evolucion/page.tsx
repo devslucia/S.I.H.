@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, CheckCircle, Clock, User, Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatDateTime } from "@/lib/utils";
 
 interface Evolucion {
@@ -76,12 +77,11 @@ export default function EvolucionPage() {
 
       {showEditor && (
         <div className="card p-4 space-y-3">
-          <textarea
+          <VoiceTextarea
             value={nuevoContenido}
-            onChange={(e) => setNuevoContenido(e.target.value)}
-            className="input-field min-h-[120px] resize-y"
+            onChange={(v) => setNuevoContenido(v)}
+            rows={10}
             placeholder="Escriba la nota de evolución..."
-            rows={4}
           />
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => { setShowEditor(false); setNuevoContenido(""); }}>

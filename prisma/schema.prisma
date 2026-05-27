@@ -485,6 +485,40 @@ model Cirugia {
   arcoC                 Boolean             @default(false)
   arm                   Boolean             @default(false)
   ecografo              Boolean             @default(false)
+  scoreASA              Int?
+  observaciones         String?
+  muestrasPatologicasObs String?
+  muestrasBacteriologicasObs String?
+
+  // Parto/Cesárea
+  horaNacimiento        String?
+  sexoRN                String?
+  pesoRN                Int?
+  apgar1                Int?
+  apgar5                Int?
+  tipoParto             String?
+  complicacionesParto   String?
+
+  // Balance intraoperatorio (JSON arrays)
+  balanceIngresos       Json?
+  balanceEgresos        Json?
+
+  // Signos vitales intraoperatorios (JSON array)
+  signosVitalesIntraop  Json?
+
+  observacionesAnestesia String?
+  posicionOperatoria     String?
+  sondaNasogastrica      Boolean             @default(false)
+  sondaVesical           Boolean             @default(false)
+  diuresisIntraop        Int?
+  sangrePerdida          String?
+
+  // Evolución post operatoria inmediata
+  evolucionPostInt       String?
+
+  // Indicaciones postoperatorias (JSON array)
+  indicacionesPostoperatorias Json?
+
   implantes             Implante[]
   medicamentos          MedicamentoCirugia[]
   practicas             PracticaCirugia[]

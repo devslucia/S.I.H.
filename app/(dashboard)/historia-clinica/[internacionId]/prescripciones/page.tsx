@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { AlertaBloqueada } from "@/components/ui/AlertaBloqueada";
 import { formatDateTime } from "@/lib/utils";
 
@@ -183,10 +184,7 @@ export default function PrescripcionesPage() {
             <Input label="Estudio" name="estudio" value={form.estudio} onChange={handleChange} />
             <Input label="Práctica" name="practica" value={form.practica} onChange={handleChange} />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-400">Descripción</label>
-            <textarea name="descripcion" value={form.descripcion} onChange={handleChange} className="input-field min-h-[60px] resize-y" rows={2} />
-          </div>
+          <VoiceTextarea label="Descripción" value={form.descripcion} onChange={(v) => setForm((prev) => ({ ...prev, descripcion: v }))} rows={2} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Prescribir"}</Button>

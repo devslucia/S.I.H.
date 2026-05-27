@@ -34,5 +34,20 @@ export async function GET(req: NextRequest) {
     orderBy: { fechaProgramada: "desc" },
   });
 
-  return NextResponse.json(cirugias);
+  const allUserIds = cirugias.flatMap(c => [c.cirujanoId, c.ayudante1Id, c.ayudante2Id, c.anestesiologoId, c.instrumentadorId]).filter(Boolean) as string[];
+  const users = allUserIds.length > 0
+    ? await prisma.usuario.findMany({ where: { id: { in: allUserIds } }, select: { id: true, nombre: true } })
+    : [];
+  const userMap = Object.fromEntries(users.map(u => [u.id, { id: u.id, nombre: u.nombre }]));
+
+  const enriched = cirugias.map(c => ({
+    ...c,
+    cirujano: c.cirujanoId ? userMap[c.cirujanoId] || null : null,
+    ayudante1: c.ayudante1Id ? userMap[c.ayudante1Id] || null : null,
+    ayudante2: c.ayudante2Id ? userMap[c.ayudante2Id] || null : null,
+    anestesiologo: c.anestesiologoId ? userMap[c.anestesiologoId] || null : null,
+    instrumentador: c.instrumentadorId ? userMap[c.instrumentadorId] || null : null,
+  }));
+
+  return NextResponse.json(enriched);
 }

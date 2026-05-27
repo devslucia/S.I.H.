@@ -6,6 +6,7 @@ import { ArrowLeft, Save, CheckCircle, AlertCircle, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
+import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatDateTime } from "@/lib/utils";
 
 interface Epicrisis {
@@ -148,24 +149,9 @@ export default function EpicrisisPage() {
             </select>
           </div>
         </div>
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">Resumen Clínico</label>
-          <textarea value={data.resumenClinico || ""}
-            onChange={(e) => handleChange("resumenClinico", e.target.value)}
-            className="input-field min-h-[100px] resize-y" rows={4} />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">Estudios Realizados</label>
-          <textarea value={data.estudiosRealizados || ""}
-            onChange={(e) => handleChange("estudiosRealizados", e.target.value)}
-            className="input-field min-h-[80px] resize-y" rows={3} />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">Tratamientos Realizados</label>
-          <textarea value={data.tratamientosRealizados || ""}
-            onChange={(e) => handleChange("tratamientosRealizados", e.target.value)}
-            className="input-field min-h-[80px] resize-y" rows={3} />
-        </div>
+        <VoiceTextarea label="Resumen Clínico" value={data.resumenClinico || ""} onChange={(v) => handleChange("resumenClinico", v)} rows={6} />
+        <VoiceTextarea label="Estudios Realizados" value={data.estudiosRealizados || ""} onChange={(v) => handleChange("estudiosRealizados", v)} rows={3} />
+        <VoiceTextarea label="Tratamientos Realizados" value={data.tratamientosRealizados || ""} onChange={(v) => handleChange("tratamientosRealizados", v)} rows={3} />
         <div>
           <label className="block text-sm text-gray-400 mb-1">Indicaciones de Alta</label>
           <textarea value={data.indicacionesAlta || ""}
@@ -181,12 +167,7 @@ export default function EpicrisisPage() {
           <Input label="Próximo Control - Médico" name="proximoControlMedico" value={data.proximoControlMedico || ""}
             onChange={(e) => handleChange("proximoControlMedico", e.target.value)} />
         </div>
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">Pendiente</label>
-          <textarea value={data.pendiente || ""}
-            onChange={(e) => handleChange("pendiente", e.target.value)}
-            className="input-field min-h-[60px] resize-y" rows={2} />
-        </div>
+        <VoiceTextarea label="Pendiente" value={data.pendiente || ""} onChange={(v) => handleChange("pendiente", v)} rows={2} />
       </div>
     </div>
   );
