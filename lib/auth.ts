@@ -1,9 +1,11 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { prisma } from "./prisma";
+import { prisma } from "@/lib/prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     Credentials({
       credentials: {
@@ -11,61 +13,50 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        console.log('=== AUTHORIZE CALLED ===');
-        console.log('Email recibido:', credentials?.email);
+        if (!credentials?.email || !credentials?.password) return null;
 
-        if (!credentials?.email || !credentials?.password) {
-          console.log('ERROR: credentials vacías');
+        try {
+          const user = await prisma.usuario.findUnique({
+            where: { email: credentials.email as string },
+          });
+
+          if (!user || !user.password) return null;
+
+          const passwordMatch = await bcrypt.compare(
+            credentials.password as string,
+            user.password
+          );
+
+          if (!passwordMatch) return null;
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.nombre,
+            rol: user.rol,
+            matricula: user.matricula ?? null,
+          };
+        } catch (error) {
+          console.error("Auth error:", error);
           return null;
         }
-
-        const user = await prisma.usuario.findUnique({
-          where: { email: credentials.email as string },
-        });
-
-        console.log('Usuario encontrado:', user ? user.email : 'NO ENCONTRADO');
-        console.log('Password en DB:', user?.password?.substring(0, 10) + '...');
-
-        if (!user || !user.password) {
-          console.log('ERROR: usuario no encontrado');
-          return null;
-        }
-
-        const passwordMatch = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        );
-
-        console.log('Password match:', passwordMatch);
-
-        if (!passwordMatch) {
-          console.log('ERROR: password incorrecta');
-          return null;
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.nombre,
-          rol: user.rol,
-          matricula: user.matricula ?? null,
-        };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        token.id = user.id;
         token.rol = (user as any).rol;
         token.matricula = (user as any).matricula;
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.sub;
-        (session.user as any).rol = token.rol;
-        (session.user as any).matricula = token.matricula;
+      if (token) {
+        session.user.id = token.id as string;
+        (session.user as any).rol = token.rol as string;
+        (session.user as any).matricula = token.matricula as string;
       }
       return session;
     },
@@ -73,5 +64,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/login",
   },
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+  },
 });

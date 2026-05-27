@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import * as jose from "jose";
+import { auth } from "@/lib/auth";
+import { NextResponse } from "next/server";
 
 const roleAccess: Record<string, string[]> = {
   "/api/pacientes": ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "FARMACIA"],
@@ -12,61 +12,35 @@ const roleAccess: Record<string, string[]> = {
   "/api/pdf": ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "FARMACIA"],
 };
 
-function getTokenFromCookies(req: NextRequest): string | null {
-  const cookieName = process.env.NODE_ENV === "production"
-    ? "__Secure-next-auth.session-token"
-    : "next-auth.session-token";
-  return req.cookies.get(cookieName)?.value || null;
-}
-
-async function decodeToken(token: string): Promise<{ rol?: string } | null> {
-  try {
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || "");
-    const { payload } = await jose.jwtVerify(token, secret);
-    return payload as any;
-  } catch {
-    return null;
-  }
-}
-
-export async function middleware(req: NextRequest) {
+export default auth((req) => {
   const { pathname } = req.nextUrl;
+  const isLoggedIn = !!req.auth;
+  const isAuthPage = pathname.startsWith("/login");
+  const isApiAuth = pathname.startsWith("/api/auth");
 
-  const publicPaths = ["/login", "/api/auth"];
-  const isPublic = publicPaths.some((p) => pathname.startsWith(p));
-
-  let tokenData: { rol?: string } | null = null;
-  try {
-    const raw = getTokenFromCookies(req);
-    if (raw) tokenData = await decodeToken(raw);
-  } catch {
-    tokenData = null;
+  if (isApiAuth) return NextResponse.next();
+  if (isAuthPage && isLoggedIn) {
+    return NextResponse.redirect(new URL("/", req.url));
   }
-
-  if (!tokenData && !isPublic) {
+  if (!isLoggedIn && !isAuthPage) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  if (tokenData) {
-    if (pathname.startsWith("/login")) {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
-    if (pathname.startsWith("/api/")) {
-      const rol = tokenData.rol as string;
-      const sorted = Object.keys(roleAccess).sort((a, b) => b.length - a.length);
-      for (const prefix of sorted) {
-        if (pathname.startsWith(prefix)) {
-          if (!roleAccess[prefix].includes(rol)) {
-            return NextResponse.json({ error: "Acceso denegado para este rol" }, { status: 403 });
-          }
-          break;
+  if (isLoggedIn && pathname.startsWith("/api/") && !isApiAuth) {
+    const rol = (req.auth?.user as any)?.rol;
+    const sorted = Object.keys(roleAccess).sort((a, b) => b.length - a.length);
+    for (const prefix of sorted) {
+      if (pathname.startsWith(prefix)) {
+        if (!roleAccess[prefix].includes(rol)) {
+          return NextResponse.json({ error: "Acceso denegado para este rol" }, { status: 403 });
         }
+        break;
       }
     }
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
