@@ -26,7 +26,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="w-64 bg-surface border-r border-border flex flex-col flex-shrink-0">
+    <div className="w-64 bg-surface border-r border-border flex flex-col flex-shrink-0 no-print">
       <div className="p-4 border-b border-border">
         <Link href="/" className="flex items-center gap-2">
           <Activity className="w-6 h-6 text-teal" />

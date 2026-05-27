@@ -27,7 +27,7 @@ export default function Topbar() {
   });
 
   return (
-    <header className="h-14 bg-surface border-b border-border flex items-center justify-between px-6">
+    <header className="h-14 bg-surface border-b border-border flex items-center justify-between px-6 no-print">
       <h1 className="text-lg font-medium text-white">{title}</h1>
       <div className="flex items-center gap-4 text-sm">
         <div className="flex items-center gap-2 text-muted">
