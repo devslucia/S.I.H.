@@ -407,33 +407,103 @@ model ValoracionPreanestesia {
 }
 
 model ProtocoloAnestesia {
-  id                 String   @id @default(uuid())
-  hcId               String   @unique
-  hc                 HistoriaClinica @relation(fields: [hcId], references: [id])
-  cirugiaId          String? @unique
-  cirugia            Cirugia? @relation(fields: [cirugiaId], references: [id])
-  anestesiologoId    String?
-  fechaInicio        DateTime?
-  fechaFin           DateTime?
-  estadoPsicoPreop   String?
-  premedicacion      Json?
-  scoreASA           Int?
-  chequeos           Json?
-  anestesiaConductiva Json?
-  anestesiaGeneral   Json?
-  drogas             Json[]
-  signosVitales      Json[]
-  oxigeno            Json?
-  posicionOperatoria String?
-  sonda              String?
-  sangredPerdida     String?
-  diuresisIntraop    Decimal?
-  cirugiaRealizada   String?
-  arcoC              Boolean?
-  arm                Boolean?
-  ecografo           Boolean?
-  firmadaAt          DateTime?
-  createdAt          DateTime @default(now())
+  id                    String   @id @default(uuid())
+  hcId                  String   @unique
+  hc                    HistoriaClinica @relation(fields: [hcId], references: [id])
+
+  // Bloque 1 - Equipo
+  anestesiologo         String?
+  matriculaAnestesiologo String?
+  cirujano              String?
+  matriculaCirujano     String?
+  ayudantes             String?
+  fechaCirugia          DateTime?
+
+  // Bloque 2 - Evaluación preanestésica
+  alergiaDetalle        String?
+  clasificacionASA      String?
+  esEmergencia          Boolean  @default(false)
+  ayunoSolidos          Int?
+  ayunoLiquidos         Int?
+  estadoPsiquico        String?
+  mallampati            String?
+  distTiromentoniana    Float?
+  aperturaBucal         Float?
+  checklistEquipoAnes   Boolean  @default(false)
+  checklistReanimacion  Boolean  @default(false)
+  checklistMonitores    Boolean  @default(false)
+  checklistPosicion     Boolean  @default(false)
+
+  // Bloque 3 - Técnica
+  tecnicaAnestesia      String[]
+  // Conductiva
+  tipoConductiva        String?
+  posicionPuncion       String?
+  sitioPuncion          String?
+  agujaDetalle          String?
+  cateter               Boolean?
+  farmacoConductiva     String?
+  // General
+  viaInduccion          String?
+  manejoViaAerea        String?
+  nroTubo               String?
+  conManguito           Boolean?
+  dificultadViaAerea    Boolean?
+  detalleViaAerea       String?
+  modalidadVentilatoria String?
+  fio2                  Float?
+
+  // Bloque 4 - Registro
+  drogas                DrogaAnestesia[]
+  signosVitales         Json?
+
+  // Bloque 4 - Datos físicos
+  peso                  Float?
+  talla                 Float?
+
+  // Bloque 5 - Balance
+  liquidosIngresados    Json?
+  diuresis              Int?
+  perdidaSanguinea      String?
+  perdidaSanguineaML    Int?
+  otrosEgresos          String?
+  posicionOperatoria    String?
+  sondaNasogastrica     Boolean  @default(false)
+  sondaVesical          Boolean  @default(false)
+  tipoCirugia           String?
+  observaciones         String?
+
+  // Bloque 6 - Recuperación
+  estadoEgreso          String[]
+  destinoPaciente       String?
+  aldreteActividad      Int?
+  aldreteRespiracion    Int?
+  aldreteCirculacion    Int?
+  aldreteConciencia     Int?
+  aldreteSpo2           Int?
+
+  // Firma
+  nombreFirmante        String?
+  matriculaFirmante     String?
+  firmadoEn             DateTime?
+  firmadoPor            String?
+  firmado               Boolean  @default(false)
+
+  creadoEn              DateTime @default(now())
+  actualizadoEn         DateTime @updatedAt
+}
+
+model DrogaAnestesia {
+  id                  String   @id @default(uuid())
+  protocoloId         String
+  protocolo           ProtocoloAnestesia @relation(fields: [protocoloId], references: [id], onDelete: Cascade)
+  categoria           String
+  nombre              String
+  dosis               Float?
+  unidad              String?
+  via                 String?
+  horaAdministracion  DateTime?
+  observaciones       String?
 }
 
 model Epicrisis {
@@ -524,7 +594,6 @@ model Cirugia {
   medicamentos          MedicamentoCirugia[]
   practicas             PracticaCirugia[]
   reprogramaciones      Reprogramacion[]
-  protocolo             ProtocoloAnestesia?
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 }
