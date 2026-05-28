@@ -21,7 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
           controlesEnfermeria: { include: { usuario: { select: { nombre: true } } }, orderBy: { fecha: "asc" } },
           hojaEnfermeria: { include: { stockItem: true }, orderBy: { fecha: "asc" } },
           valoracionPreanestesia: true,
-          protocoloAnestesia: true,
+          protocoloAnestesia: { include: { drogas: true } },
           epicrisis: true,
         },
       },

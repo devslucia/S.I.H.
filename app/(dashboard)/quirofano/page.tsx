@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Activity, Clock, User, Calendar } from "lucide-react";
-import { formatDateTime } from "@/lib/utils";
+import { Activity, Clock, User, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { formatDateTime, formatDate } from "@/lib/utils";
 
 interface Cirugia {
   id: string;
@@ -26,15 +26,32 @@ const estadoColors: Record<string, { bg: string; text: string; label: string }> 
   CANCELADA: { bg: "bg-red-500/10 border-red-500/30", text: "text-red-400", label: "Cancelada" },
 };
 
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function shiftDate(dateStr: string, days: number) {
+  const d = new Date(dateStr + "T12:00:00");
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatFechaLarga(dateStr: string) {
+  const d = new Date(dateStr + "T12:00:00");
+  return d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+
 export default function QuirofanoPage() {
   const router = useRouter();
   const [cirugias, setCirugias] = useState<Cirugia[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(getTodayStr());
 
-  const fetchCirugias = async () => {
+  const fetchCirugias = async (fecha: string) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/quirofano/cirugias");
+      const res = await fetch(`/api/quirofano/cirugias?fecha=${fecha}`);
       if (res.ok) { const d = await res.json(); setCirugias(Array.isArray(d) ? d : []); }
     } catch (err) {
       console.error(err);
@@ -43,7 +60,7 @@ export default function QuirofanoPage() {
     }
   };
 
-  useEffect(() => { fetchCirugias(); }, []);
+  useEffect(() => { fetchCirugias(fechaSeleccionada); }, [fechaSeleccionada]);
 
   const grouped = cirugias.reduce<Record<number, Cirugia[]>>((acc, c) => {
     if (!acc[c.quirofanoNumero]) acc[c.quirofanoNumero] = [];
@@ -51,17 +68,58 @@ export default function QuirofanoPage() {
     return acc;
   }, {});
 
-  if (loading) return <p className="text-muted text-sm">Cargando agenda quirúrgica...</p>;
+  const esHoy = fechaSeleccionada === getTodayStr();
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Activity className="w-6 h-6 text-teal" />
-        <h2 className="text-xl font-medium text-white">Agenda Quirúrgica</h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Activity className="w-6 h-6 text-teal" />
+          <h2 className="text-xl font-medium text-white">Agenda Quirúrgica</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setFechaSeleccionada(shiftDate(fechaSeleccionada, -1))}
+            className="p-1.5 rounded-lg bg-black/30 border border-border hover:bg-border/30 transition-colors"
+          >
+            <ChevronLeft size={16} className="text-muted" />
+          </button>
+          <input
+            type="date"
+            value={fechaSeleccionada}
+            onChange={(e) => setFechaSeleccionada(e.target.value)}
+            className="input-field text-sm text-center w-40"
+          />
+          <button
+            onClick={() => setFechaSeleccionada(shiftDate(fechaSeleccionada, 1))}
+            className="p-1.5 rounded-lg bg-black/30 border border-border hover:bg-border/30 transition-colors"
+          >
+            <ChevronRight size={16} className="text-muted" />
+          </button>
+          {!esHoy && (
+            <button
+              onClick={() => setFechaSeleccionada(getTodayStr())}
+              className="text-xs btn-secondary ml-2"
+            >
+              Hoy
+            </button>
+          )}
+        </div>
       </div>
 
-      {Object.keys(grouped).length === 0 ? (
-        <p className="text-muted text-sm">No hay cirugías programadas.</p>
+      <p className="text-xs text-muted -mt-4">
+        {formatFechaLarga(fechaSeleccionada)}{esHoy ? " (hoy)" : ""}
+      </p>
+
+      {loading ? (
+        <p className="text-muted text-sm">Cargando agenda quirúrgica...</p>
+      ) : Object.keys(grouped).length === 0 ? (
+        <div className="card p-8 text-center">
+          <Activity className="w-10 h-10 text-muted/40 mx-auto mb-3" />
+          <p className="text-muted text-sm">
+            No hay cirugías programadas para el {formatFechaLarga(fechaSeleccionada)}.
+          </p>
+        </div>
       ) : (
         Object.entries(grouped).sort(([a], [b]) => Number(a) - Number(b)).map(([qf, cirugiasQF]) => (
           <div key={qf}>

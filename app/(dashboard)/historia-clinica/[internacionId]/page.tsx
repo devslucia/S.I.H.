@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, FileText, Activity, Pill, Syringe,
-  Stethoscope, Thermometer, ClipboardList, BookOpen, Printer, AlertCircle, Loader2
+  Stethoscope, Thermometer, ClipboardList, BookOpen, Printer, AlertCircle, Loader2, CalendarPlus
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 
 interface PacienteInfo {
   id: string; nombre: string; apellido: string; dni: string;
@@ -26,6 +27,12 @@ interface InternacionCompleta {
   diagnosticoCIE?: string;
   medicoSolicitante?: string;
   tipoIngreso?: string;
+}
+
+interface Usuario {
+  id: string;
+  nombre: string;
+  rol: string;
 }
 
 const tabs = [
@@ -368,6 +375,19 @@ export default function HistoriaClinicaPage() {
   const [internacion, setInternacion] = useState<InternacionCompleta | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCirugiaModal, setShowCirugiaModal] = useState(false);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [cirugiaForm, setCirugiaForm] = useState({
+    fechaProgramada: new Date().toISOString().split("T")[0],
+    horaProgramada: "08:00",
+    quirofanoNumero: 1,
+    tipo: "PROGRAMADA" as const,
+    cirujanoId: "",
+    anestesiologoId: "",
+    procedimiento: "",
+    diagnosticoPreop: "",
+  });
+  const [savingCirugia, setSavingCirugia] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -401,6 +421,36 @@ export default function HistoriaClinicaPage() {
     if (params.internacionId) fetchData();
     return () => { cancelled = true; };
   }, [params.internacionId]);
+
+  useEffect(() => {
+    fetch("/api/usuarios")
+      .then((r) => r.json())
+      .then((d) => setUsuarios(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, []);
+
+  const handleCrearCirugia = async () => {
+    setSavingCirugia(true);
+    try {
+      const res = await fetch("/api/quirofano/cirugias/crear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...cirugiaForm,
+          internacionId: params.internacionId,
+          quirofanoNumero: Number(cirugiaForm.quirofanoNumero),
+        }),
+      });
+      if (res.ok) {
+        setShowCirugiaModal(false);
+        router.push("/quirofano");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingCirugia(false);
+    }
+  };
 
   const imprimirCarpeta = async () => {
     try {
@@ -473,12 +523,21 @@ export default function HistoriaClinicaPage() {
         >
           <ArrowLeft size={16} /> Volver
         </button>
-        <Button
-          onClick={imprimirCarpeta}
-          size="sm"
-        >
-          <Printer size={14} /> Imprimir Carpeta
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setShowCirugiaModal(true)}
+            variant="secondary"
+            size="sm"
+          >
+            <CalendarPlus size={14} /> Programar Cirugía
+          </Button>
+          <Button
+            onClick={imprimirCarpeta}
+            size="sm"
+          >
+            <Printer size={14} /> Imprimir Carpeta
+          </Button>
+        </div>
       </div>
 
       <div className="bg-[#161b27] border border-[#1e2535] rounded-xl p-4">
@@ -516,6 +575,106 @@ export default function HistoriaClinicaPage() {
           );
         })}
       </div>
+
+      <Modal open={showCirugiaModal} onClose={() => setShowCirugiaModal(false)} title="Programar Cirugía" size="lg">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-muted mb-1">Fecha</label>
+              <input
+                type="date"
+                value={cirugiaForm.fechaProgramada}
+                onChange={(e) => setCirugiaForm({ ...cirugiaForm, fechaProgramada: e.target.value })}
+                className="input-field text-sm w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted mb-1">Hora</label>
+              <input
+                type="time"
+                value={cirugiaForm.horaProgramada}
+                onChange={(e) => setCirugiaForm({ ...cirugiaForm, horaProgramada: e.target.value })}
+                className="input-field text-sm w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted mb-1">Quirófano N°</label>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={cirugiaForm.quirofanoNumero}
+                onChange={(e) => setCirugiaForm({ ...cirugiaForm, quirofanoNumero: Number(e.target.value) })}
+                className="input-field text-sm w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted mb-1">Tipo</label>
+              <select
+                value={cirugiaForm.tipo}
+                onChange={(e) => setCirugiaForm({ ...cirugiaForm, tipo: e.target.value as any })}
+                className="input-field text-sm w-full"
+              >
+                <option value="PROGRAMADA">Programada</option>
+                <option value="URGENCIA">Urgencia</option>
+                <option value="EMERGENCIA">Emergencia</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-muted mb-1">Cirujano</label>
+              <select
+                value={cirugiaForm.cirujanoId}
+                onChange={(e) => setCirugiaForm({ ...cirugiaForm, cirujanoId: e.target.value })}
+                className="input-field text-sm w-full"
+              >
+                <option value="">Seleccionar...</option>
+                {usuarios.filter((u) => u.rol === "MEDICO").map((u) => (
+                  <option key={u.id} value={u.id}>{u.nombre}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-muted mb-1">Anestesiólogo</label>
+              <select
+                value={cirugiaForm.anestesiologoId}
+                onChange={(e) => setCirugiaForm({ ...cirugiaForm, anestesiologoId: e.target.value })}
+                className="input-field text-sm w-full"
+              >
+                <option value="">Seleccionar...</option>
+                {usuarios.filter((u) => u.rol === "ANESTESIOLOGO").map((u) => (
+                  <option key={u.id} value={u.id}>{u.nombre}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-muted mb-1">Procedimiento</label>
+            <input
+              type="text"
+              value={cirugiaForm.procedimiento}
+              onChange={(e) => setCirugiaForm({ ...cirugiaForm, procedimiento: e.target.value })}
+              className="input-field text-sm w-full"
+              placeholder="Descripción del procedimiento"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted mb-1">Diagnóstico Preoperatorio</label>
+            <input
+              type="text"
+              value={cirugiaForm.diagnosticoPreop}
+              onChange={(e) => setCirugiaForm({ ...cirugiaForm, diagnosticoPreop: e.target.value })}
+              className="input-field text-sm w-full"
+              placeholder="Diagnóstico preoperatorio"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setShowCirugiaModal(false)}>Cancelar</Button>
+            <Button onClick={handleCrearCirugia} disabled={savingCirugia}>
+              {savingCirugia ? "Creando..." : "Programar"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

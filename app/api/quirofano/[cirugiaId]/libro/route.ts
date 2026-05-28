@@ -47,55 +47,75 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
 
   const body = await req.json();
 
-  const cirugia = await prisma.cirugia.update({
-    where: { id: params.cirugiaId },
-    data: {
-      quirofanoNumero: body.quirofanoNumero,
-      fechaProgramada: body.fechaProgramada ? new Date(body.fechaProgramada) : undefined,
-      horaProgramada: body.horaProgramada,
-      tipo: body.tipo,
-      estado: body.estado,
-      cirujanoId: body.cirujanoId,
-      ayudante1Id: body.ayudante1Id,
-      ayudante2Id: body.ayudante2Id,
-      anestesiologoId: body.anestesiologoId,
-      instrumentadorId: body.instrumentadorId,
-      circulante: body.circulante,
-      diagnosticoPreop: body.diagnosticoPreop,
-      diagnosticoPostop: body.diagnosticoPostop,
-      procedimiento: body.procedimiento,
-      intervencionesAgregadas: body.intervencionesAgregadas,
-      hallazgos: body.hallazgos,
-      horaInicio: body.horaInicio,
-      horaFin: body.horaFin,
-      scoreASA: body.scoreASA,
-      muestrasPatologicas: body.muestrasPatologicas,
-      muestrasBacteriologicas: body.muestrasBacteriologicas,
-      muestrasPatologicasObs: body.muestrasPatologicasObs,
-      muestrasBacteriologicasObs: body.muestrasBacteriologicasObs,
-      arcoC: body.arcoC,
-      arm: body.arm,
-      ecografo: body.ecografo,
-      observaciones: body.observaciones,
-      horaNacimiento: body.horaNacimiento,
-      sexoRN: body.sexoRN,
-      pesoRN: body.pesoRN,
-      apgar1: body.apgar1,
-      apgar5: body.apgar5,
-      tipoParto: body.tipoParto,
-      complicacionesParto: body.complicacionesParto,
-      balanceIngresos: body.balanceIngresos,
-      balanceEgresos: body.balanceEgresos,
-      signosVitalesIntraop: body.signosVitalesIntraop,
-      observacionesAnestesia: body.observacionesAnestesia,
-      posicionOperatoria: body.posicionOperatoria,
-      sondaNasogastrica: body.sondaNasogastrica,
-      sondaVesical: body.sondaVesical,
-      diuresisIntraop: body.diuresisIntraop,
-      sangrePerdida: body.sangrePerdida,
-      evolucionPostInt: body.evolucionPostInt,
-      indicacionesPostoperatorias: body.indicacionesPostoperatorias,
-    },
+  const cirugia = await prisma.$transaction(async (tx) => {
+    const updated = await tx.cirugia.update({
+      where: { id: params.cirugiaId },
+      data: {
+        quirofanoNumero: body.quirofanoNumero,
+        fechaProgramada: body.fechaProgramada ? new Date(body.fechaProgramada) : undefined,
+        horaProgramada: body.horaProgramada,
+        tipo: body.tipo,
+        estado: body.estado,
+        cirujanoId: body.cirujanoId,
+        ayudante1Id: body.ayudante1Id,
+        ayudante2Id: body.ayudante2Id,
+        anestesiologoId: body.anestesiologoId,
+        instrumentadorId: body.instrumentadorId,
+        circulante: body.circulante,
+        diagnosticoPreop: body.diagnosticoPreop,
+        diagnosticoPostop: body.diagnosticoPostop,
+        procedimiento: body.procedimiento,
+        intervencionesAgregadas: body.intervencionesAgregadas,
+        hallazgos: body.hallazgos,
+        horaInicio: body.horaInicio,
+        horaFin: body.horaFin,
+        scoreASA: body.scoreASA,
+        muestrasPatologicas: body.muestrasPatologicas,
+        muestrasBacteriologicas: body.muestrasBacteriologicas,
+        muestrasPatologicasObs: body.muestrasPatologicasObs,
+        muestrasBacteriologicasObs: body.muestrasBacteriologicasObs,
+        arcoC: body.arcoC,
+        arm: body.arm,
+        ecografo: body.ecografo,
+        observaciones: body.observaciones,
+        horaNacimiento: body.horaNacimiento,
+        sexoRN: body.sexoRN,
+        pesoRN: body.pesoRN,
+        apgar1: body.apgar1,
+        apgar5: body.apgar5,
+        tipoParto: body.tipoParto,
+        complicacionesParto: body.complicacionesParto,
+        balanceIngresos: body.balanceIngresos,
+        balanceEgresos: body.balanceEgresos,
+        signosVitalesIntraop: body.signosVitalesIntraop,
+        observacionesAnestesia: body.observacionesAnestesia,
+        posicionOperatoria: body.posicionOperatoria,
+        sondaNasogastrica: body.sondaNasogastrica,
+        sondaVesical: body.sondaVesical,
+        diuresisIntraop: body.diuresisIntraop,
+        sangrePerdida: body.sangrePerdida,
+        evolucionPostInt: body.evolucionPostInt,
+        indicacionesPostoperatorias: body.indicacionesPostoperatorias,
+      },
+    });
+
+    if (body.estado && updated.internacionId) {
+      const estadoMap: Record<string, string> = {
+        EN_CURSO: "EN_QUIROFANO",
+        COMPLETADA: "POSTQUIRURGICO",
+        CANCELADA: "ACTIVA",
+        REPROGRAMADA: "ACTIVA",
+      };
+      const nuevoEstadoInternacion = estadoMap[body.estado];
+      if (nuevoEstadoInternacion) {
+        await tx.internacion.update({
+          where: { id: updated.internacionId },
+          data: { estado: nuevoEstadoInternacion as any },
+        });
+      }
+    }
+
+    return updated;
   });
 
   const userIds = [cirugia.cirujanoId, cirugia.ayudante1Id, cirugia.ayudante2Id, cirugia.anestesiologoId, cirugia.instrumentadorId].filter(Boolean) as string[];

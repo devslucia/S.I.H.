@@ -22,6 +22,7 @@ import { GraficoSignosVitales } from "./anestesia/GraficoSignosVitales";
 
 interface ProtocoloAnestesiaProps {
   internacionId: string;
+  cirugiaId?: string;
 }
 
 const SECCIONES = [
@@ -42,7 +43,7 @@ const POSICIONES = ["Supino", "Prono", "Lateral derecho", "Lateral izquierdo", "
 const DESTINOS = ["URPA", "Internación general", "UTI", "Ambulatorio"];
 const EGRESO_CHECKBOXES = ["Consciente", "Ventilando espontáneamente", "Intubado", "Vigil", "Excitable"];
 
-function ProtocoloAnestesiaComponent({ internacionId }: ProtocoloAnestesiaProps) {
+function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnestesiaProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [protocoloId, setProtocoloId] = useState<string | null>(null);
@@ -205,6 +206,7 @@ function ProtocoloAnestesiaComponent({ internacionId }: ProtocoloAnestesiaProps)
           ...debouncedValues,
           signosVitales,
           drogas: debouncedValues.drogas || [],
+          cirugiaId: cirugiaId || undefined,
         };
         const res = await fetch(`/api/historia-clinica/${internacionId}/protocolo-anestesia`, {
           method: "PUT",
@@ -228,7 +230,7 @@ function ProtocoloAnestesiaComponent({ internacionId }: ProtocoloAnestesiaProps)
       }
     };
     save();
-  }, [debouncedValues, loading, firmado, protocoloId, internacionId, signosVitales]);
+  }, [debouncedValues, loading, firmado, protocoloId, internacionId, signosVitales, cirugiaId]);
 
   // Toggle sección
   const toggleSeccion = (key: string) => {

@@ -11,7 +11,13 @@ export async function GET(req: NextRequest) {
   const estado = searchParams.get("estado");
 
   const where: any = {};
-  if (estado) where.estado = estado;
+  if (estado) {
+    if (estado.includes(",")) {
+      where.estado = { in: estado.split(",") };
+    } else {
+      where.estado = estado;
+    }
+  }
 
   const internaciones = await prisma.internacion.findMany({
     where,

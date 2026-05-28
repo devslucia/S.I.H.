@@ -55,13 +55,13 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
   }
 
   const body = await req.json();
-  const { drogas, ...campos } = body;
+  const { drogas, cirugiaId, ...campos } = body;
 
   const protocolo = await prisma.$transaction(async (tx) => {
     const result = await tx.protocoloAnestesia.upsert({
       where: { hcId: hc.id },
-      update: campos,
-      create: { hcId: hc.id, ...campos },
+      update: { ...campos, cirugiaId: cirugiaId || undefined },
+      create: { hcId: hc.id, cirugiaId: cirugiaId || null, ...campos },
     });
 
     if (Array.isArray(drogas)) {

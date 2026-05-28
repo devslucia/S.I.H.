@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Syringe, HeartPulse, CheckCircle, AlertTriangle } from "lucide-react";
+import { Syringe, HeartPulse, CheckCircle, AlertTriangle, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDateTime } from "@/lib/utils";
 
@@ -30,7 +30,18 @@ interface Internacion {
   numero: number;
   paciente: Paciente;
   cama?: { numero: string; sector: { nombre: string } } | null;
+  estado: string;
   hcId?: string;
+}
+
+interface ProtocoloResumen {
+  aldreteActividad: number | null;
+  aldreteRespiracion: number | null;
+  aldreteCirculacion: number | null;
+  aldreteConciencia: number | null;
+  aldreteSpo2: number | null;
+  destinoPaciente: string | null;
+  firmado: boolean;
 }
 
 interface ControlData {
@@ -43,6 +54,11 @@ interface ControlData {
   SatO2: string;
   observacion: string;
 }
+
+const estadoQuirurgicoBadge: Record<string, { variant: "warning" | "info" | "success"; label: string }> = {
+  EN_QUIROFANO: { variant: "warning", label: "En quirófano" },
+  POSTQUIRURGICO: { variant: "info", label: "Post-Qx" },
+};
 
 function ControlForm({ internacionId, onSaved }: { internacionId: string; onSaved: () => void }) {
   const [form, setForm] = useState<ControlData>({
@@ -148,27 +164,68 @@ function AplicarPrescripcion({ internacionId, prescripcionId, onApplied }: { int
   );
 }
 
+function AldretePostQx({ protocolo }: { protocolo: ProtocoloResumen }) {
+  const total = (protocolo.aldreteActividad ?? 0) + (protocolo.aldreteRespiracion ?? 0) +
+    (protocolo.aldreteCirculacion ?? 0) + (protocolo.aldreteConciencia ?? 0) + (protocolo.aldreteSpo2 ?? 0);
+  const color = total >= 9 ? "text-green-400" : total >= 7 ? "text-amber" : "text-red";
+
+  return (
+    <div className="mt-2 p-3 bg-black/20 rounded-lg border border-border text-xs">
+      <div className="flex items-center gap-2 mb-2">
+        <Activity size={14} className="text-teal" />
+        <span className="text-white font-medium">Aldrete postquirúrgico</span>
+        <span className={`font-bold ${color}`}>{total}/10</span>
+        {protocolo.aldreteSpo2 != null && (
+          <span className="text-muted ml-auto">SpO₂: <strong className="text-white">{protocolo.aldreteSpo2}%</strong></span>
+        )}
+      </div>
+      <div className="grid grid-cols-5 gap-2 text-muted">
+        <div>Act: {protocolo.aldreteActividad}</div>
+        <div>Resp: {protocolo.aldreteRespiracion}</div>
+        <div>Circ: {protocolo.aldreteCirculacion}</div>
+        <div>Conc: {protocolo.aldreteConciencia}</div>
+        <div>SpO₂: {protocolo.aldreteSpo2}</div>
+      </div>
+      {protocolo.destinoPaciente && (
+        <p className="mt-1 text-muted">Destino: <strong className="text-white">{protocolo.destinoPaciente}</strong></p>
+      )}
+    </div>
+  );
+}
+
 export default function EnfermeriaPage() {
   const [internaciones, setInternaciones] = useState<Internacion[]>([]);
   const [prescripcionesMap, setPrescripcionesMap] = useState<Record<string, Prescripcion[]>>({});
+  const [protocolosMap, setProtocolosMap] = useState<Record<string, ProtocoloResumen>>({});
   const [loading, setLoading] = useState(true);
   const [selectedInternacion, setSelectedInternacion] = useState<string | null>(null);
 
   const fetchInternaciones = async () => {
     try {
-      const res = await fetch("/api/internaciones?estado=ACTIVA");
+      const res = await fetch("/api/internaciones?estado=ACTIVA,EN_QUIROFANO,POSTQUIRURGICO");
       if (res.ok) {
         const data = await res.json();
         setInternaciones(Array.isArray(data) ? data : []);
 
         const map: Record<string, Prescripcion[]> = {};
+        const protMap: Record<string, ProtocoloResumen> = {};
         for (const i of data) {
           try {
             const r = await fetch(`/api/historia-clinica/${i.id}/prescripciones`);
             if (r.ok) map[i.id] = await r.json();
           } catch {}
+          if (i.estado === "POSTQUIRURGICO") {
+            try {
+              const r = await fetch(`/api/historia-clinica/${i.id}/protocolo-anestesia`);
+              if (r.ok) {
+                const d = await r.json();
+                if (d.protocolo) protMap[i.id] = d.protocolo;
+              }
+            } catch {}
+          }
         }
         setPrescripcionesMap(map);
+        setProtocolosMap(protMap);
       }
     } catch (err) {
       console.error(err);
@@ -194,6 +251,8 @@ export default function EnfermeriaPage() {
         internaciones.map((i) => {
           const p = i.paciente;
           const prescs = prescripcionesMap[i.id]?.filter((pr) => pr.estado !== "COMPLETADA") || [];
+          const badgeCfg = estadoQuirurgicoBadge[i.estado];
+          const protocolo = protocolosMap[i.id];
           return (
             <div key={i.id} className="card overflow-hidden">
               <div className="p-4 flex items-center justify-between bg-black/20 border-b border-border">
@@ -209,6 +268,9 @@ export default function EnfermeriaPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {badgeCfg && (
+                    <Badge variant={badgeCfg.variant}>{badgeCfg.label}</Badge>
+                  )}
                   <Badge variant={prescs.length > 1 ? "warning" : "info"}>
                     {prescs.length} indicación(es)
                   </Badge>
@@ -220,6 +282,12 @@ export default function EnfermeriaPage() {
                   </button>
                 </div>
               </div>
+
+              {i.estado === "POSTQUIRURGICO" && protocolo && (
+                <div className="px-4 pt-3">
+                  <AldretePostQx protocolo={protocolo} />
+                </div>
+              )}
 
               {prescs.length > 0 && (
                 <div className="overflow-x-auto">

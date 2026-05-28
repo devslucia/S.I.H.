@@ -51,6 +51,8 @@ enum TipoIngreso {
 
 enum EstadoInternacion {
   ACTIVA
+  EN_QUIROFANO
+  POSTQUIRURGICO
   ALTA_MEDICA
   FACTURADA
   FALLECIDO
@@ -410,6 +412,8 @@ model ProtocoloAnestesia {
   id                    String   @id @default(uuid())
   hcId                  String   @unique
   hc                    HistoriaClinica @relation(fields: [hcId], references: [id])
+  cirugiaId             String?
+  cirugia               Cirugia? @relation(fields: [cirugiaId], references: [id])
 
   // Bloque 1 - Equipo
   anestesiologo         String?
@@ -594,6 +598,7 @@ model Cirugia {
   medicamentos          MedicamentoCirugia[]
   practicas             PracticaCirugia[]
   reprogramaciones      Reprogramacion[]
+  protocolosAnestesia   ProtocoloAnestesia[]
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 }

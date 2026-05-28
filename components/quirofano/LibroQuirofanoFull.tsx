@@ -5,17 +5,18 @@ import { useParams } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatDateTime } from "@/lib/utils";
+import { ProtocoloAnestesiaComponent } from "@/components/historia-clinica/ProtocoloAnestesia";
 import {
   X, Save, Printer, CheckCircle, Plus, Trash2,
   Search, Syringe, Microscope, Activity, User, Hash, Clock,
-  Baby, Stethoscope, Heart, BarChart3, Calendar, AlertTriangle
+  Baby, Stethoscope, Heart, BarChart3, Calendar, AlertTriangle, Thermometer
 } from "lucide-react";
 
 type CirugiaData = any;
 type UsuarioData = { id: string; nombre: string; email: string; rol: string; matricula?: string; especialidad?: string };
 type StockItemData = { id: string; nombre: string; presentacion?: string; stockActual: number; principioActivo?: string };
 
-const TABS = ["Cirugía", "Prácticas/Med", "Parto/Cesárea", "Parte Quirúrgico", "Ingresos/Egresos", "Reprogramaciones"];
+const TABS = ["Cirugía", "Prácticas/Med", "Parto/Cesárea", "Parte Quirúrgico", "Ingresos/Egresos", "Reprogramaciones", "Protocolo Anestesia"];
 const SUB_TABS_PARTE = ["Parte Quirúrgico", "Evolución Post Int.", "Indicaciones Postop."];
 const POSICIONES = ["Decúbito dorsal", "Decúbito ventral", "Decúbito lateral", "Trendelenburg", "Anti-Trendelenburg", "Litotomía"];
 const MOTIVOS_REPROG = ["Falta de insumos", "Emergencia", "Paciente no apto", "Cirujano no disponible", "Falta de cama UTI", "Otro"];
@@ -822,6 +823,13 @@ export default function LibroQuirofanoFull() {
                 </table>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* TAB 7: Protocolo de Anestesia */}
+        {activeTab === 6 && data?.internacion?.id && (
+          <div className="max-w-5xl">
+            <ProtocoloAnestesiaComponent internacionId={data.internacion.id} cirugiaId={cirugiaId} />
           </div>
         )}
       </div>
