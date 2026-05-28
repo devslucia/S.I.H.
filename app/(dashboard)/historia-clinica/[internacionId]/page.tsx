@@ -39,6 +39,329 @@ const tabs = [
   { id: "epicrisis", label: "Epicrisis", icon: BookOpen },
 ];
 
+function generarHTMLCarpeta(data: any): string {
+  const paciente = data.paciente
+  const hc = data.histClinica
+
+  const membrete = `
+    <div style="display:flex;align-items:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:16px">
+      <span style="font-size:24px;margin-right:12px">✚</span>
+      <div>
+        <div style="font-size:16pt;font-weight:bold">SANATORIO SIMES</div>
+        <div style="font-size:9pt">Córdoba N° 2344 — Posadas, Misiones | Tel: 03765-430280 / 430283</div>
+      </div>
+    </div>
+  `
+
+  const headerPaciente = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:9pt;border-bottom:1px solid #000;margin-bottom:12px;padding-bottom:8px">
+      <div><strong>HISTORIA CLÍNICA N°:</strong> ${data.numero}</div>
+      <div><strong>N° Control:</strong> ${data.numero}</div>
+      <div><strong>Apellido y Nombres:</strong> ${paciente.apellido}, ${paciente.nombre}</div>
+      <div><strong>D.N.I.:</strong> ${paciente.dni}</div>
+      <div><strong>Fecha Nac.:</strong> ${new Date(paciente.fechaNac).toLocaleDateString('es-AR')}</div>
+      <div><strong>Obra Social:</strong> ${data.obraSocial?.nombre ?? 'Particular'}</div>
+      <div><strong>Médico:</strong> ${data.medicoSolicitante ?? '—'}</div>
+      <div><strong>Ingreso:</strong> ${new Date(data.fechaIngreso).toLocaleDateString('es-AR')}</div>
+    </div>
+  `
+
+  const pageBreak = `<div style="page-break-after:always"></div>`
+
+  let html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8">
+<title>Carpeta Completa — ${paciente.apellido}, ${paciente.nombre}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 11pt; color: #000; background: #fff; margin: 0; padding: 0; }
+  @page { margin: 1.5cm 2cm; size: A4 portrait; }
+  @media print { body { -webkit-print-color-adjust: exact; } }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #000; padding: 4px 6px; font-size: 9pt; }
+  th { background: #f0f0f0; font-weight: bold; }
+  h2 { text-align: center; font-size: 14pt; margin: 12px 0; text-transform: uppercase; }
+  .section { margin-bottom: 12px; font-size: 9pt; }
+  .field { margin-bottom: 6px; }
+  .field strong { display: inline-block; min-width: 180px; }
+</style>
+</head>
+<body>
+`
+
+  // HOJA 1 — Informe de Hospitalización
+  html += `
+    <div>
+      ${membrete}
+      ${headerPaciente}
+      <h2>INFORME DE HOSPITALIZACIÓN</h2>
+      <div class="section">
+        <div class="field"><strong>Apellido y Nombre:</strong> ${paciente.apellido}, ${paciente.nombre}</div>
+        <div class="field"><strong>DNI:</strong> ${paciente.dni}</div>
+        <div class="field"><strong>Sexo:</strong> ${paciente.sexo}</div>
+        <div class="field"><strong>Fecha de Nacimiento:</strong> ${new Date(paciente.fechaNac).toLocaleDateString('es-AR')}</div>
+        <div class="field"><strong>Domicilio:</strong> ${paciente.domicilio ?? '—'}</div>
+        <div class="field"><strong>Localidad:</strong> ${paciente.localidad ?? '—'}</div>
+        <div class="field"><strong>Teléfono:</strong> ${paciente.telefono ?? '—'}</div>
+        ${paciente.alergias?.length > 0 ? `<div class="field" style="color:red"><strong>⚠ ALERGIAS:</strong> ${paciente.alergias.map((a: any) => a.sustancia).join(', ')}</div>` : ''}
+      </div>
+      <div class="section">
+        <div class="field"><strong>N° de Internación:</strong> ${data.numero}</div>
+        <div class="field"><strong>Fecha de Ingreso:</strong> ${new Date(data.fechaIngreso).toLocaleString('es-AR')}</div>
+        <div class="field"><strong>Tipo de Ingreso:</strong> ${data.tipoIngreso}</div>
+        <div class="field"><strong>Motivo:</strong> ${data.motivoIngreso ?? '—'}</div>
+        <div class="field"><strong>Diagnóstico CIE:</strong> ${data.diagnosticoCIE ?? '—'}</div>
+        <div class="field"><strong>Médico Solicitante:</strong> ${data.medicoSolicitante ?? '—'}</div>
+        <div class="field"><strong>Cama:</strong> ${data.cama ? data.cama.numero + ' - ' + (data.cama.sector?.nombre ?? '') : '—'}</div>
+        <div class="field"><strong>Obra Social:</strong> ${data.obraSocial?.nombre ?? 'Particular'}</div>
+        <div class="field"><strong>Estado:</strong> ${data.estado}</div>
+      </div>
+    </div>
+    ${pageBreak}
+  `
+
+  // HOJA 2 — Anamnesis
+  if (hc?.anamnesis) {
+    const a = hc.anamnesis
+    html += `
+      <div>
+        ${membrete}
+        ${headerPaciente}
+        <h2>ANAMNESIS</h2>
+        <table>
+          <tbody>
+            ${[
+              ['Motivo de Consulta', a.motivoConsulta],
+              ['Enfermedad Actual', a.enfermedadActual],
+              ['Antec. Patológicos', a.antecPatologicos],
+              ['Antec. Familiares', a.antecFamiliares],
+              ['Hábitos Tóxicos', a.habitosToxicos],
+              ['Factores de Riesgo CV', a.factoresRiesgoCV],
+              ['Otros', a.otros],
+            ].map(([label, val]) => `
+              <tr>
+                <td style="font-weight:bold;width:35%;vertical-align:top">${label}</td>
+                <td style="vertical-align:top;min-height:40px;white-space:pre-wrap">${val || '—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <br>
+        <strong>EXAMEN FÍSICO</strong>
+        <table style="margin-top:8px">
+          <tbody>
+            ${[
+              ['Estado General', a.estadoGeneral],
+              ['Signos Vitales Ingreso', a.signosVitalesIngreso ? JSON.stringify(a.signosVitalesIngreso) : null],
+              ['Piel y Faneras', a.pielFaneras],
+              ['Cabeza y Cuello', a.cabezaCuello],
+              ['Tórax', a.torax],
+              ['Ap. Respiratorio', a.apRespiratorio],
+              ['Ap. Cardiovascular', a.apCardiovascular],
+              ['Abdomen', a.abdomen],
+              ['Sistema Nervioso', a.sNervioso],
+              ['Extremidades', a.extremidades],
+            ].map(([label, val]) => `
+              <tr>
+                <td style="font-weight:bold;width:35%;vertical-align:top">${label}</td>
+                <td style="vertical-align:top;white-space:pre-wrap">${val || '—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;font-size:9pt;white-space:pre-wrap">
+          <div><strong>Diag. Presuntivo:</strong><br>${a.diagPresuntivo || '—'}</div>
+          <div><strong>Diag. Diferencial:</strong><br>${a.diagDiferencial || '—'}</div>
+          <div><strong>Plan de Evaluación:</strong><br>${a.planEvaluacion || '—'}</div>
+          <div><strong>Plan Terapéutico:</strong><br>${a.planTerapeutico || '—'}</div>
+        </div>
+      </div>
+      ${pageBreak}
+    `
+  }
+
+  // HOJA 3 — Evoluciones
+  if (hc?.evoluciones?.length > 0) {
+    html += `
+      <div>
+        ${membrete}
+        ${headerPaciente}
+        <h2>EVOLUCIÓN MÉDICA</h2>
+        <p style="font-size:8pt;text-align:center;font-style:italic;margin-bottom:12px">INGRESE FECHA Y HORA, FIRMA Y SELLO EN CADA NOTA DE EVALUACIÓN</p>
+        <div style="border:1px solid #000;min-height:600px;padding:12px">
+          ${hc.evoluciones.map((ev: any, i: number) => `
+            <div style="${i < hc.evoluciones.length - 1 ? 'border-bottom:1px dashed #ccc;' : ''}padding-bottom:16px;margin-bottom:16px">
+              <div style="font-weight:bold;font-size:9pt;margin-bottom:4px">
+                ${new Date(ev.fecha).toLocaleDateString('es-AR')} — ${new Date(ev.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                ${ev.usuario ? ' — ' + ev.usuario.nombre : ''}
+              </div>
+              <div style="font-size:10pt;line-height:1.8;white-space:pre-wrap">${ev.contenido || '—'}</div>
+              <div style="margin-top:12px;font-size:8pt">Firma y Sello: _______________________________</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      ${pageBreak}
+    `
+  }
+
+  // HOJA 4 — Prescripciones
+  if (hc?.prescripciones?.length > 0) {
+    html += `
+      <div>
+        ${membrete}
+        ${headerPaciente}
+        <h2>PRESCRIPCIONES Y ÓRDENES MÉDICAS</h2>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:20%">FECHA Y HORA<br>FIRMA DEL MÉDICO</th>
+              <th>INDICACIONES MÉDICAS</th>
+              <th style="width:15%">FIRMA DE LA<br>ENFERMERA</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${hc.prescripciones.map((p: any, i: number) => `
+              <tr>
+                <td style="vertical-align:top;font-size:8pt">${new Date(p.fecha).toLocaleDateString('es-AR')}</td>
+                <td style="vertical-align:top">
+                  ${i + 1}) ${p.droga || p.descripcion || p.tipo}
+                  ${p.dosis ? ' — ' + p.dosis : ''}
+                  ${p.frecuencia ? ' — ' + p.frecuencia : ''}
+                  ${p.via ? ' — Vía ' + p.via : ''}
+                  ${p.duracion ? ' — ' + p.duracion : ''}
+                  <span style="font-size:8pt;color:#666"> [${p.estado}]</span>
+                </td>
+                <td></td>
+              </tr>
+            `).join('')}
+            ${Array.from({ length: Math.max(0, 8 - hc.prescripciones.length) }).map(() => `<tr><td style="height:28px"></td><td></td><td></td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${pageBreak}
+    `
+  }
+
+  // HOJA 5 — Hoja de Enfermería (Controles)
+  if (hc?.controlesEnfermeria?.length > 0) {
+    html += `
+      <div>
+        ${membrete}
+        ${headerPaciente}
+        <h2>HOJA DE ENFERMERÍA</h2>
+        <table>
+          <thead>
+            <tr><th>FECHA</th><th>HORA</th><th>T/A</th><th>P</th><th>R</th><th>T°</th><th>SatO2</th><th>INGRESOS</th><th>EGRESOS</th><th>OBSERVACIONES</th><th>FIRMA</th></tr>
+          </thead>
+          <tbody>
+            ${hc.controlesEnfermeria.map((ctrl: any) => {
+              const d = ctrl.datos || {}
+              return `<tr>
+                <td>${new Date(ctrl.fecha).toLocaleDateString('es-AR')}</td>
+                <td>${ctrl.hora}</td>
+                <td>${d.TA ?? (d.ta_s ? d.ta_s + '/' + d.ta_d : '')}</td>
+                <td>${d.FC ?? d.fc ?? ''}</td>
+                <td>${d.FR ?? d.fr ?? ''}</td>
+                <td>${d.Temp ?? d.temp ?? ''}</td>
+                <td>${d.SatO2 ?? d.sato2 ?? ''}</td>
+                <td></td><td></td>
+                <td style="font-size:8pt">${ctrl.observacion ?? ''}</td>
+                <td></td>
+              </tr>`
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${pageBreak}
+    `
+  }
+
+  // HOJA 6 — Protocolo Quirúrgico
+  if (data.cirugias?.length > 0) {
+    for (const cir of data.cirugias) {
+      html += `
+        <div>
+          ${membrete}
+          ${headerPaciente}
+          <h2>PROTOCOLO QUIRÚRGICO</h2>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9pt;margin-bottom:12px">
+            <div><strong>Cirujano:</strong> ${cir.cirujanoId ?? '—'}</div>
+            <div><strong>Anestesiólogo:</strong> ${cir.anestesiologoId ?? '—'}</div>
+            <div><strong>Instrumentador:</strong> ${cir.instrumentadorId ?? '—'}</div>
+            <div><strong>Circulante:</strong> ${cir.circulante ?? '—'}</div>
+          </div>
+          <table style="margin-bottom:12px">
+            <tr><th>Fecha</th><th>Inicio</th><th>Fin</th><th>Tipo</th></tr>
+            <tr>
+              <td>${new Date(cir.fechaProgramada).toLocaleDateString('es-AR')}</td>
+              <td>${cir.horaInicio ?? '—'}</td>
+              <td>${cir.horaFin ?? '—'}</td>
+              <td>${cir.tipo}</td>
+            </tr>
+          </table>
+          <div style="font-size:9pt;margin-bottom:6px"><strong>Diagnóstico Preoperatorio:</strong> ${cir.diagnosticoPreop ?? '—'}</div>
+          <div style="font-size:9pt;margin-bottom:6px"><strong>Diagnóstico Postoperatorio:</strong> ${cir.diagnosticoPostop ?? '—'}</div>
+          <div style="font-size:9pt;margin-bottom:6px"><strong>Procedimiento:</strong> ${cir.procedimiento ?? '—'}</div>
+          <div style="font-size:9pt;margin-top:12px"><strong>Hallazgos:</strong>
+            <div style="border:1px solid #000;min-height:180px;padding:8px;margin-top:4px;white-space:pre-wrap;line-height:1.8;font-size:10pt">${cir.hallazgos ?? ''}</div>
+          </div>
+          <div style="margin-top:24px;display:flex;justify-content:flex-end">
+            <div style="text-align:center;width:200px;border-top:1px solid #000;padding-top:4px;font-size:9pt">Firma del Cirujano</div>
+          </div>
+        </div>
+        ${pageBreak}
+      `
+    }
+  }
+
+  // HOJA 7 — Epicrisis (última, sin pageBreak)
+  if (hc?.epicrisis) {
+    const ep = hc.epicrisis
+    html += `
+      <div>
+        ${membrete}
+        ${headerPaciente}
+        <h2>EPICRISIS / INFORME DE ALTA</h2>
+        <div style="font-size:9pt;display:flex;flex-direction:column;gap:10px">
+          <div><strong>Diagnóstico de Ingreso:</strong><div style="border-bottom:1px solid #000;padding:4px;min-height:24px">${ep.diagIngreso ?? '—'}</div></div>
+          <div><strong>Diagnóstico de Egreso:</strong><div style="border-bottom:1px solid #000;padding:4px;min-height:24px">${ep.diagEgreso ?? '—'}</div></div>
+          <div><strong>Resumen Clínico:</strong><div style="border:1px solid #000;min-height:80px;padding:6px;white-space:pre-wrap;line-height:1.6">${ep.resumenClinico ?? ''}</div></div>
+          <div><strong>Estudios Realizados:</strong><div style="border-bottom:1px solid #000;padding:4px;min-height:40px">${ep.estudiosRealizados ?? ''}</div></div>
+          <div><strong>Tratamientos Realizados:</strong><div style="border-bottom:1px solid #000;padding:4px;min-height:40px">${ep.tratamientosRealizados ?? ''}</div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div><strong>Próximo control:</strong><div style="border-bottom:1px solid #000;padding:4px">${ep.proximoControlFecha ? new Date(ep.proximoControlFecha).toLocaleDateString('es-AR') : '—'}</div></div>
+            <div><strong>Lugar:</strong><div style="border-bottom:1px solid #000;padding:4px">${ep.proximoControlLugar ?? '—'}</div></div>
+            <div><strong>Médico:</strong><div style="border-bottom:1px solid #000;padding:4px">${ep.proximoControlMedico ?? '—'}</div></div>
+          </div>
+          <div><strong>Pendiente:</strong><div style="border-bottom:1px solid #000;padding:4px;min-height:24px">${ep.pendiente ?? ''}</div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div><strong>Condición al egreso:</strong> ${ep.condicionEgreso ?? '—'}</div>
+            <div><strong>Destino:</strong> ${ep.destino ?? '—'}</div>
+          </div>
+          ${ep.medicacionAlta?.length > 0 ? `
+            <div><strong>Medicación al Alta:</strong>
+              <table style="margin-top:4px">
+                <thead><tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Duración</th></tr></thead>
+                <tbody>${ep.medicacionAlta.map((m: any) => `<tr><td>${m.droga}</td><td>${m.dosis}</td><td>${m.frecuencia}</td><td>${m.duracion}</td></tr>`).join('')}</tbody>
+              </table>
+            </div>
+          ` : ''}
+          <div><strong>Indicaciones al Alta:</strong><div style="border:1px solid #000;min-height:60px;padding:6px;white-space:pre-wrap">${ep.indicacionesAlta ?? ''}</div></div>
+        </div>
+        <div style="margin-top:32px;display:flex;justify-content:space-between">
+          <div style="text-align:center;width:180px;border-top:1px solid #000;padding-top:4px;font-size:9pt">Firma</div>
+          <div style="text-align:center;width:180px;border-top:1px solid #000;padding-top:4px;font-size:9pt">Sello</div>
+          <div style="text-align:center;width:180px;border-top:1px solid #000;padding-top:4px;font-size:9pt">Fecha</div>
+        </div>
+      </div>
+    `
+  }
+
+  html += `</body></html>`
+  return html
+}
+
 export default function HistoriaClinicaPage() {
   const params = useParams();
   const router = useRouter();
@@ -78,6 +401,22 @@ export default function HistoriaClinicaPage() {
     if (params.internacionId) fetchData();
     return () => { cancelled = true; };
   }, [params.internacionId]);
+
+  const imprimirCarpeta = async () => {
+    try {
+      const res = await fetch(`/api/internaciones/${params.internacionId}/carpeta-completa`);
+      if (!res.ok) { console.error('Error fetching carpeta:', res.status); return; }
+      const data = await res.json();
+      const html = generarHTMLCarpeta(data);
+      const ventana = window.open('', '_blank', 'width=800,height=600');
+      if (!ventana) { alert('Permitir ventanas emergentes para imprimir'); return; }
+      ventana.document.write(html);
+      ventana.document.close();
+      ventana.onload = () => { ventana.print(); };
+    } catch (err) {
+      console.error('Error al imprimir:', err);
+    }
+  };
 
   if (loading) {
     return (
@@ -135,7 +474,7 @@ export default function HistoriaClinicaPage() {
           <ArrowLeft size={16} /> Volver
         </button>
         <Button
-          onClick={() => router.push(`/historia-clinica/${params.internacionId}/imprimir`)}
+          onClick={imprimirCarpeta}
           size="sm"
         >
           <Printer size={14} /> Imprimir Carpeta
