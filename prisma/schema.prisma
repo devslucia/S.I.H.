@@ -383,6 +383,7 @@ model HojaEnfermeria {
   via            String?
   marcasHorarias Json
   stockItemId    String?
+  stockItem      StockItem?             @relation(fields: [stockItemId], references: [id])
   cargos         CargoFacturacion[]
   createdAt      DateTime            @default(now())
 }
@@ -595,6 +596,7 @@ model StockItem {
   movimientos      MovimientoStock[]
   aplicaciones     AplicacionMedicamento[]
   medicamentosCirugia MedicamentoCirugia[]
+  hojasEnfermeria  HojaEnfermeria[]
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
 }

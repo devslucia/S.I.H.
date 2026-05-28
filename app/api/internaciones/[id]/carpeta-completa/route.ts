@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
           evoluciones: { include: { usuario: { select: { nombre: true, rol: true } } }, orderBy: { fecha: "asc" } },
           prescripciones: { include: { usuario: { select: { nombre: true } } }, orderBy: { fecha: "asc" } },
           controlesEnfermeria: { include: { usuario: { select: { nombre: true } } }, orderBy: { fecha: "asc" } },
-          hojaEnfermeria: { orderBy: { fecha: "asc" } },
+          hojaEnfermeria: { include: { stockItem: true }, orderBy: { fecha: "asc" } },
           valoracionPreanestesia: true,
           protocoloAnestesia: true,
           epicrisis: true,

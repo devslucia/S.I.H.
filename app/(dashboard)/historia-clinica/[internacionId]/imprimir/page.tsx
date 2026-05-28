@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Printer, ArrowLeft, Loader2 } from "lucide-react";
+import { Printer, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Membrete } from "@/components/print/Membrete";
 import { formatDate, formatDateTime } from "@/lib/utils";
@@ -122,31 +122,84 @@ export default function ImprimirCarpetaPage() {
   const router = useRouter();
   const [data, setData] = useState<CarpetaCompleta | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
         const res = await fetch(`/api/internaciones/${params.internacionId}/carpeta-completa`);
-        if (res.ok) setData(await res.json());
+        console.log('[IMPRIMIR] Status:', res.status);
+
+        if (!res.ok) {
+          const text = await res.text();
+          console.error('[IMPRIMIR] Error:', text);
+          if (!cancelled) setError(`Error ${res.status}: ${res.statusText}`);
+          return;
+        }
+
+        const json = await res.json();
+        console.log('[IMPRIMIR] Data keys:', Object.keys(json));
+        console.log('[IMPRIMIR] histClinica:', !!json.histClinica);
+        console.log('[IMPRIMIR] cirugias:', Array.isArray(json.cirugias) ? `${json.cirugias.length} items` : typeof json.cirugias);
+        if (json.histClinica) {
+          console.log('[IMPRIMIR] HC keys:', Object.keys(json.histClinica));
+          console.log('[IMPRIMIR] anamnesis:', !!json.histClinica.anamnesis);
+          console.log('[IMPRIMIR] evoluciones:', Array.isArray(json.histClinica.evoluciones) ? json.histClinica.evoluciones.length : 0);
+          console.log('[IMPRIMIR] prescripciones:', Array.isArray(json.histClinica.prescripciones) ? json.histClinica.prescripciones.length : 0);
+          console.log('[IMPRIMIR] hojaEnfermeria:', Array.isArray(json.histClinica.hojaEnfermeria) ? json.histClinica.hojaEnfermeria.length : 0);
+          console.log('[IMPRIMIR] controlesEnfermeria:', Array.isArray(json.histClinica.controlesEnfermeria) ? json.histClinica.controlesEnfermeria.length : 0);
+          console.log('[IMPRIMIR] valoracionPreanestesia:', !!json.histClinica.valoracionPreanestesia);
+          console.log('[IMPRIMIR] protocoloAnestesia:', !!json.histClinica.protocoloAnestesia);
+          console.log('[IMPRIMIR] epicrisis:', !!json.histClinica.epicrisis);
+        }
+
+        if (!cancelled) setData(json);
       } catch (err) {
-        console.error(err);
+        console.error('[IMPRIMIR] Fetch error:', err);
+        if (!cancelled) setError(String(err));
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-    fetchData();
+
+    if (params.internacionId) fetchData();
+    return () => { cancelled = true; };
   }, [params.internacionId]);
 
   const handlePrint = () => window.print();
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[50vh]">
-      <Loader2 className="w-6 h-6 text-teal animate-spin" />
-      <span className="ml-2 text-muted">Cargando carpeta completa...</span>
+      <Loader2 className="w-6 h-6 text-[#00d4a1] animate-spin" />
+      <span className="ml-2 text-[#94a3b8]">Cargando carpeta completa...</span>
     </div>
   );
 
-  if (!data) return <p className="text-muted text-sm">No se encontraron datos.</p>;
+  if (error) return (
+    <div className="max-w-xl mx-auto mt-12 p-6">
+      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-5 flex items-start gap-3">
+        <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+        <div>
+          <p className="text-red-400 font-medium mb-1">Error al cargar la carpeta completa</p>
+          <p className="text-red-300/70 text-sm">{error}</p>
+          <button onClick={() => window.location.reload()} className="mt-3 text-sm text-red-400 underline hover:text-red-300">
+            Reintentar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!data) return (
+    <div className="flex items-center justify-center min-h-[50vh]">
+      <p className="text-[#6b7280] text-sm">No se encontraron datos de la internación.</p>
+    </div>
+  );
 
   const p = data.paciente;
   const hc = data.histClinica;
@@ -418,7 +471,7 @@ export default function ImprimirCarpetaPage() {
         )}
 
         {/* HOJA 8 — Protocolo Quirúrgico */}
-        {data.cirugias.length > 0 && (
+        {(data.cirugias?.length ?? 0) > 0 && (
           <FormPage>
             <Membrete />
             <HeaderPaciente paciente={p} internacion={data} />
