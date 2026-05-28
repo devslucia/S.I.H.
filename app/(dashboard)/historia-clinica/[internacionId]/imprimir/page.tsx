@@ -49,22 +49,32 @@ interface CarpetaCompleta {
       firmadaAt: string | null;
     } | null;
     protocoloAnestesia: {
-      anestesiologo: string | null; cirujano: string | null; ayudantes: string | null;
-      fechaCirugia: string | null;
+      anestesiologo: string | null; matriculaAnestesiologo: string | null;
+      cirujano: string | null; matriculaCirujano: string | null;
+      ayudantes: string | null; fechaCirugia: string | null;
+      alergiaDetalle: string | null;
       clasificacionASA: string | null; esEmergencia: boolean;
+      ayunoSolidos: number | null; ayunoLiquidos: number | null;
       estadoPsiquico: string | null; mallampati: string | null;
+      distTiromentoniana: number | null; aperturaBucal: number | null;
       tecnicaAnestesia: string[];
+      viaInduccion: string | null; manejoViaAerea: string | null;
+      nroTubo: string | null; dificultadViaAerea: boolean | null;
+      modalidadVentilatoria: string | null; fio2: number | null;
       peso: number | null; talla: number | null;
       signosVitales: any; drogas: any[];
       liquidosIngresados: any; diuresis: number | null;
       perdidaSanguinea: string | null; perdidaSanguineaML: number | null;
+      otrosEgresos: string | null;
       posicionOperatoria: string | null;
+      sondaNasogastrica: boolean; sondaVesical: boolean;
+      tipoCirugia: string | null; observaciones: string | null;
       estadoEgreso: string[]; destinoPaciente: string | null;
       aldreteActividad: number | null; aldreteRespiracion: number | null;
       aldreteCirculacion: number | null; aldreteConciencia: number | null;
       aldreteSpo2: number | null;
       firmado: boolean; firmadoEn: string | null;
-      nombreFirmante: string | null;
+      nombreFirmante: string | null; matriculaFirmante: string | null;
     } | null;
     epicrisis: {
       diagIngreso: string | null; diagEgreso: string | null;
@@ -448,56 +458,136 @@ export default function ImprimirCarpetaPage() {
           </FormPage>
         )}
 
-        {/* HOJA 7 — Protocolo de Anestesia */}
-        {hc?.protocoloAnestesia && (
-          <FormPage>
-            <Membrete />
-            <HeaderPaciente paciente={p} internacion={data} />
-            <FormTitle>PROTOCOLO DE ANESTESIA</FormTitle>
-            <Field label="Anestesiólogo" value={hc.protocoloAnestesia.anestesiologo} />
-            <Field label="Cirujano" value={hc.protocoloAnestesia.cirujano} />
-            <Field label="Ayudantes" value={hc.protocoloAnestesia.ayudantes} />
-            <Field label="Fecha de Cirugía" value={hc.protocoloAnestesia.fechaCirugia ? formatDateTime(hc.protocoloAnestesia.fechaCirugia) : null} />
-            <Field label="Clasificación ASA" value={hc.protocoloAnestesia.clasificacionASA} />
-            <Field label="Emergencia" value={hc.protocoloAnestesia.esEmergencia ? 'Sí' : 'No'} />
-            <Field label="Estado Psíquico Preop" value={hc.protocoloAnestesia.estadoPsiquico} />
-            <Field label="Mallampati" value={hc.protocoloAnestesia.mallampati} />
-            <Field label="Técnica Anestésica" value={hc.protocoloAnestesia.tecnicaAnestesia?.join(', ') || null} />
-            <Field label="Peso" value={hc.protocoloAnestesia.peso ? `${hc.protocoloAnestesia.peso} kg` : null} />
-            <Field label="Talla" value={hc.protocoloAnestesia.talla ? `${hc.protocoloAnestesia.talla} cm` : null} />
-            <Field label="Posición Operatoria" value={hc.protocoloAnestesia.posicionOperatoria} />
-            <Field label="Pérdida Sanguínea" value={hc.protocoloAnestesia.perdidaSanguinea} />
-            <Field label="Pérdida Sanguínea (ml)" value={hc.protocoloAnestesia.perdidaSanguineaML?.toString() || null} />
-            <Field label="Diuresis" value={hc.protocoloAnestesia.diuresis?.toString() || null} />
-            {hc.protocoloAnestesia.drogas && hc.protocoloAnestesia.drogas.length > 0 && (
-              <div style={{ marginTop: '4px' }}>
-                <strong style={{ fontSize: '9pt' }}>Drogas administradas:</strong>
-                <ul style={{ margin: '2px 0 0 16px', fontSize: '8pt' }}>
-                  {hc.protocoloAnestesia.drogas.map((d: any, i: number) => (
-                    <li key={i}>{d.nombre} — {d.dosis} {d.unidad} ({d.via}){d.horaAdministracion ? ` @${formatDateTime(d.horaAdministracion)}` : ''}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {(hc.protocoloAnestesia.aldreteActividad != null || hc.protocoloAnestesia.aldreteSpo2 != null) && (
-              <div style={{ marginTop: '4px' }}>
-                <strong style={{ fontSize: '9pt' }}>Escala de Aldrete:</strong>
-                <p style={{ fontSize: '8pt', margin: '2px 0' }}>
-                  Actividad: {hc.protocoloAnestesia.aldreteActividad} | Respiración: {hc.protocoloAnestesia.aldreteRespiracion} | Circulación: {hc.protocoloAnestesia.aldreteCirculacion} | Conciencia: {hc.protocoloAnestesia.aldreteConciencia} | SpO₂: {hc.protocoloAnestesia.aldreteSpo2}
+        {/* HOJA 7 — Protocolo de Anestesia (siempre visible) */}
+        <FormPage>
+          <Membrete />
+          <HeaderPaciente paciente={p} internacion={data} />
+          <FormTitle>PROTOCOLO DE ANESTESIA</FormTitle>
+          {hc?.protocoloAnestesia ? (
+            <>
+              <Field label="Anestesiólogo" value={`${hc.protocoloAnestesia.anestesiologo || '—'}${hc.protocoloAnestesia.matriculaAnestesiologo ? ` (Mat. ${hc.protocoloAnestesia.matriculaAnestesiologo})` : ''}`} />
+              <Field label="Cirujano" value={`${hc.protocoloAnestesia.cirujano || '—'}${hc.protocoloAnestesia.matriculaCirujano ? ` (Mat. ${hc.protocoloAnestesia.matriculaCirujano})` : ''}`} />
+              <Field label="Ayudantes" value={hc.protocoloAnestesia.ayudantes} />
+              <Field label="Fecha de Cirugía" value={hc.protocoloAnestesia.fechaCirugia ? formatDateTime(hc.protocoloAnestesia.fechaCirugia) : null} />
+
+              <p style={{ fontSize: '10pt', fontWeight: 'bold', marginTop: '8px', marginBottom: '4px' }}>Evaluación Preanestésica</p>
+              <Field label="Alergias" value={hc.protocoloAnestesia.alergiaDetalle || 'No especificadas'} />
+              <Field label="ASA" value={`${hc.protocoloAnestesia.clasificacionASA || '—'}${hc.protocoloAnestesia.esEmergencia ? ' (E) Emergencia' : ''}`} />
+              <Field label="Ayuno sólidos" value={hc.protocoloAnestesia.ayunoSolidos != null ? `${hc.protocoloAnestesia.ayunoSolidos}h` : null} />
+              <Field label="Ayuno líquidos" value={hc.protocoloAnestesia.ayunoLiquidos != null ? `${hc.protocoloAnestesia.ayunoLiquidos}h` : null} />
+              <Field label="Estado psíquico" value={hc.protocoloAnestesia.estadoPsiquico} />
+              <Field label="Mallampati" value={hc.protocoloAnestesia.mallampati} />
+              <Field label="Dist. tiromentoniana" value={hc.protocoloAnestesia.distTiromentoniana != null ? `${hc.protocoloAnestesia.distTiromentoniana} cm` : null} />
+              <Field label="Apertura bucal" value={hc.protocoloAnestesia.aperturaBucal != null ? `${hc.protocoloAnestesia.aperturaBucal} cm` : null} />
+              <Field label="Peso" value={hc.protocoloAnestesia.peso ? `${hc.protocoloAnestesia.peso} kg` : null} />
+              <Field label="Talla" value={hc.protocoloAnestesia.talla ? `${hc.protocoloAnestesia.talla} cm` : null} />
+
+              <p style={{ fontSize: '10pt', fontWeight: 'bold', marginTop: '8px', marginBottom: '4px' }}>Técnica Anestésica</p>
+              <Field label="Técnica" value={hc.protocoloAnestesia.tecnicaAnestesia?.join(' + ') || null} />
+              <Field label="Vía inducción" value={hc.protocoloAnestesia.viaInduccion} />
+              <Field label="Vía aérea" value={hc.protocoloAnestesia.manejoViaAerea} />
+              <Field label="N° tubo" value={hc.protocoloAnestesia.nroTubo} />
+              <Field label="Dificultad vía aérea" value={hc.protocoloAnestesia.dificultadViaAerea ? 'Sí' : 'No'} />
+              <Field label="Modalidad ventilatoria" value={hc.protocoloAnestesia.modalidadVentilatoria} />
+              <Field label="FiO₂" value={hc.protocoloAnestesia.fio2 != null ? `${hc.protocoloAnestesia.fio2}%` : null} />
+
+              {hc.protocoloAnestesia.drogas && hc.protocoloAnestesia.drogas.length > 0 && (
+                <div style={{ marginTop: '4px' }}>
+                  <strong style={{ fontSize: '9pt' }}>Medicación administrada:</strong>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt', marginTop: '4px' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ border: '1px solid #000', padding: '3px' }}>Categoría</th>
+                        <th style={{ border: '1px solid #000', padding: '3px' }}>Droga</th>
+                        <th style={{ border: '1px solid #000', padding: '3px' }}>Dosis</th>
+                        <th style={{ border: '1px solid #000', padding: '3px' }}>Vía</th>
+                        <th style={{ border: '1px solid #000', padding: '3px' }}>Hora</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hc.protocoloAnestesia.drogas.map((d: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ border: '1px solid #000', padding: '3px' }}>{d.categoria}</td>
+                          <td style={{ border: '1px solid #000', padding: '3px' }}>{d.nombre}</td>
+                          <td style={{ border: '1px solid #000', padding: '3px' }}>{d.dosis} {d.unidad}</td>
+                          <td style={{ border: '1px solid #000', padding: '3px' }}>{d.via}</td>
+                          <td style={{ border: '1px solid #000', padding: '3px' }}>{d.horaAdministracion ? formatDateTime(d.horaAdministracion) : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {hc.protocoloAnestesia.signosVitales?.registros && hc.protocoloAnestesia.signosVitales.registros.length > 0 && (
+                <div style={{ marginTop: '4px' }}>
+                  <strong style={{ fontSize: '9pt' }}>Signos vitales intraoperatorios:</strong>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt', marginTop: '4px' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ border: '1px solid #000', padding: '3px' }}>Hora</th>
+                        <th style={{ border: '1px solid #000', padding: '3px' }}>PA</th>
+                        <th style={{ border: '1px solid #000', padding: '3px' }}>FC</th>
+                        <th style={{ border: '1px solid #000', padding: '3px' }}>FR</th>
+                        <th style={{ border: '1px solid #000', padding: '3px' }}>T°</th>
+                        <th style={{ border: '1px solid #000', padding: '3px' }}>SpO₂</th>
+                        <th style={{ border: '1px solid #000', padding: '3px' }}>EtCO₂</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hc.protocoloAnestesia.signosVitales.registros.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ border: '1px solid #000', padding: '3px' }}>{r.tiempo}</td>
+                          <td style={{ border: '1px solid #000', padding: '3px' }}>{r.PA}</td>
+                          <td style={{ border: '1px solid #000', padding: '3px' }}>{r.FC}</td>
+                          <td style={{ border: '1px solid #000', padding: '3px' }}>{r.FR}</td>
+                          <td style={{ border: '1px solid #000', padding: '3px' }}>{r.T}</td>
+                          <td style={{ border: '1px solid #000', padding: '3px' }}>{r.SpO2}</td>
+                          <td style={{ border: '1px solid #000', padding: '3px' }}>{r.EtCO2}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <p style={{ fontSize: '10pt', fontWeight: 'bold', marginTop: '8px', marginBottom: '4px' }}>Balance de Líquidos</p>
+              <Field label="Posición operatoria" value={hc.protocoloAnestesia.posicionOperatoria} />
+              <Field label="Diuresis" value={hc.protocoloAnestesia.diuresis != null ? `${hc.protocoloAnestesia.diuresis} ml` : null} />
+              <Field label="Pérdida sanguínea" value={`${hc.protocoloAnestesia.perdidaSanguinea || '—'}${hc.protocoloAnestesia.perdidaSanguineaML ? ` (${hc.protocoloAnestesia.perdidaSanguineaML} ml)` : ''}`} />
+              <Field label="Otros egresos" value={hc.protocoloAnestesia.otrosEgresos} />
+              <Field label="Sondas" value={`${hc.protocoloAnestesia.sondaNasogastrica ? 'NG ' : ''}${hc.protocoloAnestesia.sondaVesical ? 'Vesical' : ''}`} />
+              <Field label="Tipo cirugía" value={hc.protocoloAnestesia.tipoCirugia} />
+
+              <p style={{ fontSize: '10pt', fontWeight: 'bold', marginTop: '8px', marginBottom: '4px' }}>Recuperación</p>
+              {hc.protocoloAnestesia.estadoEgreso && hc.protocoloAnestesia.estadoEgreso.length > 0 && (
+                <p style={{ fontSize: '9pt', margin: '2px 0' }}><strong>Estado de egreso:</strong> {hc.protocoloAnestesia.estadoEgreso.join(', ')}</p>
+              )}
+              <Field label="Destino" value={hc.protocoloAnestesia.destinoPaciente} />
+              {(hc.protocoloAnestesia.aldreteActividad != null || hc.protocoloAnestesia.aldreteSpo2 != null) && (
+                <div style={{ marginTop: '4px' }}>
+                  <strong style={{ fontSize: '9pt' }}>Escala de Aldrete:</strong>
+                  <p style={{ fontSize: '8pt', margin: '2px 0' }}>
+                    Actividad: {hc.protocoloAnestesia.aldreteActividad} | Respiración: {hc.protocoloAnestesia.aldreteRespiracion} | Circulación: {hc.protocoloAnestesia.aldreteCirculacion} | Conciencia: {hc.protocoloAnestesia.aldreteConciencia} | SpO₂: {hc.protocoloAnestesia.aldreteSpo2}
+                    {' '}<strong>= {(hc.protocoloAnestesia.aldreteActividad ?? 0) + (hc.protocoloAnestesia.aldreteRespiracion ?? 0) + (hc.protocoloAnestesia.aldreteCirculacion ?? 0) + (hc.protocoloAnestesia.aldreteConciencia ?? 0) + (hc.protocoloAnestesia.aldreteSpo2 ?? 0)}/10</strong>
+                  </p>
+                </div>
+              )}
+              {hc.protocoloAnestesia.observaciones && (
+                <Field label="Observaciones" value={hc.protocoloAnestesia.observaciones} />
+              )}
+              {hc.protocoloAnestesia.firmado && (
+                <p style={{ color: '#2e7d32', fontSize: '8pt', marginTop: '8px' }}>
+                  ✍ Firmado por {hc.protocoloAnestesia.nombreFirmante}{hc.protocoloAnestesia.matriculaFirmante ? ` (Mat. ${hc.protocoloAnestesia.matriculaFirmante})` : ''} — {hc.protocoloAnestesia.firmadoEn ? formatDateTime(hc.protocoloAnestesia.firmadoEn) : ''}
                 </p>
-              </div>
-            )}
-            <Field label="Destino" value={hc.protocoloAnestesia.destinoPaciente} />
-            {hc.protocoloAnestesia.estadoEgreso && hc.protocoloAnestesia.estadoEgreso.length > 0 && (
-              <p style={{ fontSize: '9pt' }}><strong>Estado de egreso:</strong> {hc.protocoloAnestesia.estadoEgreso.join(', ')}</p>
-            )}
-            {hc.protocoloAnestesia.firmado && (
-              <p style={{ color: '#2e7d32', fontSize: '8pt', marginTop: '8px' }}>
-                ✍ Firmado por {hc.protocoloAnestesia.nombreFirmante} — {hc.protocoloAnestesia.firmadoEn ? formatDateTime(hc.protocoloAnestesia.firmadoEn) : ''}
-              </p>
-            )}
-          </FormPage>
-        )}
+              )}
+            </>
+          ) : (
+            <p style={{ fontSize: '9pt', color: '#94a3b8', fontStyle: 'italic', marginTop: '8px' }}>
+              Sin protocolo de anestesia registrado.
+            </p>
+          )}
+        </FormPage>
 
         {/* HOJA 8 — Protocolo Quirúrgico */}
         {(data.cirugias?.length ?? 0) > 0 && (
