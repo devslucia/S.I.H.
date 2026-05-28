@@ -4,6 +4,33 @@ import { descontarStock } from "@/lib/utils/stock";
 import { generarCargo } from "@/lib/utils/facturacion";
 import { NextRequest, NextResponse } from "next/server";
 
+export async function GET(req: NextRequest, { params }: { params: { internacionId: string } }) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const prescripcionId = searchParams.get("prescripcionId");
+  if (!prescripcionId) {
+    return NextResponse.json({ error: "prescripcionId requerido" }, { status: 400 });
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const aplicaciones = await prisma.aplicacionMedicamento.findMany({
+    where: {
+      prescripcionId,
+      fecha: { gte: today, lt: tomorrow },
+    },
+    include: { enfermero: { select: { nombre: true } } },
+    orderBy: { hora: "asc" },
+  });
+
+  return NextResponse.json(aplicaciones);
+}
+
 export async function POST(req: NextRequest, { params }: { params: { internacionId: string } }) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });

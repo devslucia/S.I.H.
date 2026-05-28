@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Syringe, HeartPulse, CheckCircle, AlertTriangle, Activity } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Syringe, HeartPulse, CheckCircle, AlertTriangle, Activity, Clock, ChevronDown, ChevronUp, User } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { VoiceInput } from "@/components/ui/VoiceInput";
+import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatDateTime } from "@/lib/utils";
 
 interface Prescripcion {
@@ -16,6 +18,23 @@ interface Prescripcion {
   dieta?: string;
   descripcion?: string;
   estado: string;
+}
+
+interface StockItem {
+  id: string;
+  nombre: string;
+  principioActivo?: string;
+  presentacion?: string;
+  stockActual: number;
+  unidad?: string;
+}
+
+interface Aplicacion {
+  id: string;
+  fecha: string;
+  hora: string;
+  cantidadDescontada?: number;
+  enfermero: { nombre: string };
 }
 
 interface Paciente {
@@ -55,6 +74,35 @@ interface ControlData {
   observacion: string;
 }
 
+interface ControlRecord {
+  id: string;
+  fecha: string;
+  hora: string;
+  tipo: string;
+  datos: any;
+  observacion?: string;
+  usuario: { nombre: string };
+}
+
+interface ParsedMedication {
+  medicamento?: string;
+  dosis?: number;
+  unidad?: string;
+  via?: string;
+  hora?: string;
+  observacion?: string;
+}
+
+interface ParsedVitalSigns {
+  pas?: number;
+  pad?: number;
+  fc?: number;
+  fr?: number;
+  temperatura?: number;
+  spo2?: number;
+  observacion?: string;
+}
+
 const estadoQuirurgicoBadge: Record<string, { variant: "warning" | "info" | "success"; label: string }> = {
   EN_QUIROFANO: { variant: "warning", label: "En quirófano" },
   POSTQUIRURGICO: { variant: "info", label: "Post-Qx" },
@@ -67,6 +115,52 @@ function ControlForm({ internacionId, onSaved }: { internacionId: string; onSave
     PA: "", FC: "", FR: "", temperatura: "", SatO2: "", observacion: "",
   });
   const [saving, setSaving] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState<"idle" | "listening" | "processing" | "ready">("idle");
+  const [showConfirmVitals, setShowConfirmVitals] = useState(false);
+  const [parsedVitals, setParsedVitals] = useState<ParsedVitalSigns | null>(null);
+
+  const handleDictVitals = async (text: string) => {
+    setVoiceStatus("processing");
+    try {
+      const res = await fetch("/api/ai/parse-enfermeria", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto: text, tipo: "signos_vitales" }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.resultado) {
+          setParsedVitals(data.resultado);
+          setShowConfirmVitals(true);
+          setVoiceStatus("ready");
+          return;
+        }
+      }
+      setForm({ ...form, observacion: form.observacion ? form.observacion + " " + text : text });
+      setVoiceStatus("idle");
+    } catch {
+      setForm({ ...form, observacion: form.observacion ? form.observacion + " " + text : text });
+      setVoiceStatus("idle");
+    }
+  };
+
+  const applyParsedVitals = () => {
+    if (!parsedVitals) return;
+    setForm({
+      ...form,
+      PA: parsedVitals.pas && parsedVitals.pad ? `${parsedVitals.pas}/${parsedVitals.pad}` : form.PA,
+      FC: parsedVitals.fc ? String(parsedVitals.fc) : form.FC,
+      FR: parsedVitals.fr ? String(parsedVitals.fr) : form.FR,
+      temperatura: parsedVitals.temperatura ? String(parsedVitals.temperatura) : form.temperatura,
+      SatO2: parsedVitals.spo2 ? String(parsedVitals.spo2) : form.SatO2,
+      observacion: parsedVitals.observacion
+        ? (form.observacion ? form.observacion + " " : "") + parsedVitals.observacion
+        : form.observacion,
+    });
+    setShowConfirmVitals(false);
+    setParsedVitals(null);
+    setVoiceStatus("idle");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,8 +221,42 @@ function ControlForm({ internacionId, onSaved }: { internacionId: string; onSave
       </div>
       <div className="col-span-2">
         <label className="block text-xs text-muted mb-1">Observación</label>
-        <input type="text" placeholder="—" value={form.observacion} onChange={(e) => setForm({ ...form, observacion: e.target.value })} className="input-field text-sm" />
+        <div className="relative">
+          <textarea
+            placeholder="—"
+            rows={3}
+            value={form.observacion}
+            onChange={(e) => setForm({ ...form, observacion: e.target.value })}
+            className="input-field text-sm resize-none min-h-[80px] pr-10"
+          />
+          <div className="absolute top-2 right-2">
+            <VoiceInput
+              onTranscript={handleDictVitals}
+              language="es-AR"
+              status={voiceStatus}
+            />
+          </div>
+        </div>
       </div>
+
+      {showConfirmVitals && parsedVitals && (
+        <div className="col-span-2 md:col-span-4 p-3 bg-teal/10 border border-teal/30 rounded-lg">
+          <p className="text-xs text-teal font-medium mb-2">Datos detectados por IA — Verificá antes de guardar:</p>
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs text-white mb-3">
+            {parsedVitals.pas && parsedVitals.pad && <div>PA: <strong>{parsedVitals.pas}/{parsedVitals.pad}</strong></div>}
+            {parsedVitals.fc && <div>FC: <strong>{parsedVitals.fc}</strong></div>}
+            {parsedVitals.fr && <div>FR: <strong>{parsedVitals.fr}</strong></div>}
+            {parsedVitals.temperatura && <div>T°: <strong>{parsedVitals.temperatura}</strong></div>}
+            {parsedVitals.spo2 && <div>SpO2: <strong>{parsedVitals.spo2}</strong></div>}
+            {parsedVitals.observacion && <div className="col-span-3">Obs: <strong>{parsedVitals.observacion}</strong></div>}
+          </div>
+          <div className="flex gap-2">
+            <button type="button" onClick={applyParsedVitals} className="btn-primary text-xs py-1 px-3">✅ Confirmar y guardar</button>
+            <button type="button" onClick={() => { setShowConfirmVitals(false); setParsedVitals(null); setVoiceStatus("idle"); }} className="btn-secondary text-xs py-1 px-3">✏️ Editar</button>
+          </div>
+        </div>
+      )}
+
       <div className="col-span-2 md:col-span-4 flex justify-end">
         <button type="submit" disabled={saving} className="btn-primary text-sm">
           {saving ? "Guardando..." : "Guardar Control"}
@@ -138,8 +266,68 @@ function ControlForm({ internacionId, onSaved }: { internacionId: string; onSave
   );
 }
 
-function AplicarPrescripcion({ internacionId, prescripcionId, onApplied }: { internacionId: string; prescripcionId: string; onApplied: () => void }) {
+function AplicarPrescripcion({
+  internacionId,
+  prescripcion,
+  onApplied,
+}: {
+  internacionId: string;
+  prescripcion: Prescripcion;
+  onApplied: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [hora, setHora] = useState(
+    new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false })
+  );
+  const [stockItems, setStockItems] = useState<StockItem[]>([]);
+  const [selectedStockId, setSelectedStockId] = useState<string>("");
+  const [stockSearch, setStockSearch] = useState("");
+  const [cantidad, setCantidad] = useState(1);
+  const [aplicaciones, setAplicaciones] = useState<Aplicacion[]>([]);
+  const [loadingApps, setLoadingApps] = useState(false);
+
+  const [voiceStatus, setVoiceStatus] = useState<"idle" | "listening" | "processing" | "ready">("idle");
+  const [showConfirmMed, setShowConfirmMed] = useState(false);
+  const [parsedMed, setParsedMed] = useState<ParsedMedication | null>(null);
+  const [dictatedObs, setDictatedObs] = useState("");
+
+  const fetchAplicaciones = useCallback(async () => {
+    setLoadingApps(true);
+    try {
+      const res = await fetch(`/api/historia-clinica/${internacionId}/enfermeria/aplicar?prescripcionId=${prescripcion.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAplicaciones(Array.isArray(data) ? data : []);
+      }
+    } catch {} finally {
+      setLoadingApps(false);
+    }
+  }, [internacionId, prescripcion.id]);
+
+  useEffect(() => {
+    if (expanded) fetchAplicaciones();
+  }, [expanded, fetchAplicaciones]);
+
+  useEffect(() => {
+    if (!expanded || !prescripcion.droga) return;
+    const q = prescripcion.droga || "";
+    setStockSearch(q);
+    if (q.length < 2) return;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/farmacia/stock-search?q=${encodeURIComponent(q)}`);
+        if (res.ok) {
+          const items = await res.json();
+          setStockItems(items);
+          if (items.length > 0 && !selectedStockId) {
+            setSelectedStockId(items[0].id);
+          }
+        }
+      } catch {}
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [expanded, prescripcion.droga]);
 
   const handleAplicar = async () => {
     setApplying(true);
@@ -147,9 +335,18 @@ function AplicarPrescripcion({ internacionId, prescripcionId, onApplied }: { int
       const res = await fetch(`/api/historia-clinica/${internacionId}/enfermeria/aplicar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prescripcionId }),
+        body: JSON.stringify({
+          prescripcionId: prescripcion.id,
+          hora,
+          stockItemId: selectedStockId || null,
+          cantidad,
+          precioUnitario: 0,
+        }),
       });
-      if (res.ok) onApplied();
+      if (res.ok) {
+        setExpanded(false);
+        onApplied();
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -157,10 +354,172 @@ function AplicarPrescripcion({ internacionId, prescripcionId, onApplied }: { int
     }
   };
 
+  const handleDictMed = async (text: string) => {
+    setVoiceStatus("processing");
+    try {
+      const res = await fetch("/api/ai/parse-enfermeria", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto: text, tipo: "medicacion" }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.resultado) {
+          setParsedMed(data.resultado);
+          setShowConfirmMed(true);
+          setVoiceStatus("ready");
+          return;
+        }
+      }
+      setDictatedObs(dictatedObs ? dictatedObs + " " + text : text);
+      setVoiceStatus("idle");
+    } catch {
+      setDictatedObs(dictatedObs ? dictatedObs + " " + text : text);
+      setVoiceStatus("idle");
+    }
+  };
+
+  const applyParsedMed = () => {
+    if (!parsedMed) return;
+    if (parsedMed.hora) setHora(parsedMed.hora);
+    if (parsedMed.via) {
+      // via is informational, keep it in obs
+    }
+    if (parsedMed.observacion) {
+      setDictatedObs(dictatedObs ? dictatedObs + " " + parsedMed.observacion : parsedMed.observacion);
+    }
+    const refParts: string[] = [];
+    if (parsedMed.medicamento) refParts.push(parsedMed.medicamento);
+    if (parsedMed.dosis) refParts.push(`${parsedMed.dosis}${parsedMed.unidad || ""}`);
+    if (parsedMed.via) refParts.push(`Vía: ${parsedMed.via}`);
+    if (refParts.length > 0) {
+      const refText = `[Ref IA: ${refParts.join(", ")}]`;
+      setDictatedObs(dictatedObs ? dictatedObs + " " + refText : refText);
+    }
+    setShowConfirmMed(false);
+    setParsedMed(null);
+    setVoiceStatus("idle");
+  };
+
   return (
-    <button onClick={handleAplicar} disabled={applying} className="text-xs btn-primary py-1 px-2">
-      {applying ? "..." : "Aplicar"}
-    </button>
+    <>
+      <button onClick={() => setExpanded(!expanded)} className="text-xs btn-primary py-1 px-2">
+        {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Aplicar
+      </button>
+
+      {expanded && (
+        <div className="mt-2 p-3 bg-black/30 rounded-lg border border-border space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs text-muted mb-1">Hora</label>
+              <input
+                type="time"
+                value={hora}
+                onChange={(e) => setHora(e.target.value)}
+                className="input-field text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted mb-1">Stock (opcional)</label>
+              <select
+                value={selectedStockId}
+                onChange={(e) => setSelectedStockId(e.target.value)}
+                className="input-field text-sm"
+              >
+                <option value="">Sin stock</option>
+                {stockItems.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nombre} ({s.stockActual} {s.unidad || "u"})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-muted mb-1">Cantidad</label>
+              <input
+                type="number"
+                min="1"
+                value={cantidad}
+                onChange={(e) => setCantidad(Number(e.target.value))}
+                className="input-field text-sm"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={handleAplicar}
+                disabled={applying}
+                className="btn-primary text-sm w-full"
+              >
+                {applying ? "Aplicando..." : "✅ Confirmar aplicación"}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs text-muted mb-1">Observación</label>
+            <div className="relative">
+              <textarea
+                placeholder="Nota opcional sobre la aplicación..."
+                rows={2}
+                value={dictatedObs}
+                onChange={(e) => setDictatedObs(e.target.value)}
+                className="input-field text-sm resize-none min-h-[60px] pr-10"
+              />
+              <div className="absolute top-2 right-2">
+                <VoiceInput
+                  onTranscript={handleDictMed}
+                  language="es-AR"
+                  status={voiceStatus}
+                />
+              </div>
+            </div>
+          </div>
+
+          {showConfirmMed && parsedMed && (
+            <div className="p-3 bg-teal/10 border border-teal/30 rounded-lg">
+              <p className="text-xs text-teal font-medium mb-2">Datos detectados por IA — Verificá:</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-white mb-3">
+                {parsedMed.medicamento && <div>Med: <strong>{parsedMed.medicamento}</strong></div>}
+                {parsedMed.dosis && <div>Dosis: <strong>{parsedMed.dosis}{parsedMed.unidad || ""}</strong></div>}
+                {parsedMed.via && <div>Vía: <strong>{parsedMed.via}</strong></div>}
+                {parsedMed.hora && <div>Hora: <strong>{parsedMed.hora}</strong></div>}
+                {parsedMed.observacion && <div className="col-span-2">Obs: <strong>{parsedMed.observacion}</strong></div>}
+              </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={applyParsedMed} className="btn-primary text-xs py-1 px-3">✅ Aplicar</button>
+                <button type="button" onClick={() => { setShowConfirmMed(false); setParsedMed(null); setVoiceStatus("idle"); }} className="btn-secondary text-xs py-1 px-3">✏️ Editar</button>
+              </div>
+            </div>
+          )}
+
+          {aplicaciones.length > 0 && (
+            <div>
+              <p className="text-xs text-muted mb-1">Aplicaciones de hoy:</p>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-muted border-b border-border/50">
+                    <th className="text-left py-1">Hora</th>
+                    <th className="text-left py-1">Enfermera/o</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {aplicaciones.map((a) => (
+                    <tr key={a.id} className="border-b border-border/30">
+                      <td className="py-1 text-white">{a.hora}</td>
+                      <td className="py-1 text-muted">{a.enfermero.nombre}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {!loadingApps && aplicaciones.length === 0 && (
+            <p className="text-xs text-muted">Sin aplicaciones registradas hoy.</p>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -199,6 +558,8 @@ export default function EnfermeriaPage() {
   const [protocolosMap, setProtocolosMap] = useState<Record<string, ProtocoloResumen>>({});
   const [loading, setLoading] = useState(true);
   const [selectedInternacion, setSelectedInternacion] = useState<string | null>(null);
+  const [controlesMap, setControlesMap] = useState<Record<string, ControlRecord[]>>({});
+  const [loadingControles, setLoadingControles] = useState(false);
 
   const fetchInternaciones = async () => {
     try {
@@ -234,6 +595,28 @@ export default function EnfermeriaPage() {
     }
   };
 
+  const fetchControles = async (internacionId: string) => {
+    setLoadingControles(true);
+    try {
+      const res = await fetch(`/api/historia-clinica/${internacionId}/enfermeria`);
+      if (res.ok) {
+        const data = await res.json();
+        setControlesMap((prev) => ({ ...prev, [internacionId]: (Array.isArray(data) ? data : []).slice(0, 5) }));
+      }
+    } catch {} finally {
+      setLoadingControles(false);
+    }
+  };
+
+  const toggleControles = (id: string) => {
+    if (selectedInternacion === id) {
+      setSelectedInternacion(null);
+    } else {
+      setSelectedInternacion(id);
+      fetchControles(id);
+    }
+  };
+
   useEffect(() => { fetchInternaciones(); }, []);
 
   if (loading) return <p className="text-muted text-sm">Cargando pacientes...</p>;
@@ -253,6 +636,7 @@ export default function EnfermeriaPage() {
           const prescs = prescripcionesMap[i.id]?.filter((pr) => pr.estado !== "COMPLETADA") || [];
           const badgeCfg = estadoQuirurgicoBadge[i.estado];
           const protocolo = protocolosMap[i.id];
+          const controles = controlesMap[i.id] || [];
           return (
             <div key={i.id} className="card overflow-hidden">
               <div className="p-4 flex items-center justify-between bg-black/20 border-b border-border">
@@ -275,7 +659,7 @@ export default function EnfermeriaPage() {
                     {prescs.length} indicación(es)
                   </Badge>
                   <button
-                    onClick={() => setSelectedInternacion(selectedInternacion === i.id ? null : i.id)}
+                    onClick={() => toggleControles(i.id)}
                     className="text-xs btn-secondary"
                   >
                     {selectedInternacion === i.id ? "Ocultar" : "Controles"}
@@ -330,7 +714,7 @@ export default function EnfermeriaPage() {
                             {pr.tipo === "MEDICACION" && pr.estado !== "COMPLETADA" && pr.estado !== "BLOQUEADA_ALERGIA" && (
                               <AplicarPrescripcion
                                 internacionId={i.id}
-                                prescripcionId={pr.id}
+                                prescripcion={pr}
                                 onApplied={fetchInternaciones}
                               />
                             )}
@@ -344,10 +728,45 @@ export default function EnfermeriaPage() {
 
               {selectedInternacion === i.id && (
                 <div className="p-4 border-t border-border">
+                  {controles.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-xs font-medium text-muted mb-2 uppercase tracking-wide">Últimos controles</h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="text-muted border-b border-border/50">
+                              <th className="text-left py-1 px-2">Hora</th>
+                              <th className="text-left py-1 px-2">PA</th>
+                              <th className="text-left py-1 px-2">FC</th>
+                              <th className="text-left py-1 px-2">FR</th>
+                              <th className="text-left py-1 px-2">T°</th>
+                              <th className="text-left py-1 px-2">SpO2</th>
+                              <th className="text-left py-1 px-2">Obs</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {controles.map((c) => (
+                              <tr key={c.id} className="border-b border-border/30">
+                                <td className="py-1 px-2 text-white">{c.hora}</td>
+                                <td className="py-1 px-2 text-muted">{c.datos?.PA || "—"}</td>
+                                <td className="py-1 px-2 text-muted">{c.datos?.FC || "—"}</td>
+                                <td className="py-1 px-2 text-muted">{c.datos?.FR || "—"}</td>
+                                <td className="py-1 px-2 text-muted">{c.datos?.["T°"] || "—"}</td>
+                                <td className="py-1 px-2 text-muted">{c.datos?.SatO2 || "—"}</td>
+                                <td className="py-1 px-2 text-muted max-w-[120px] truncate">{c.observacion || "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                  {loadingControles && <p className="text-muted text-xs mb-2">Cargando controles...</p>}
+
                   <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
                     <HeartPulse size={16} className="text-teal" /> Registrar Signos Vitales
                   </h4>
-                  <ControlForm internacionId={i.id} onSaved={fetchInternaciones} />
+                  <ControlForm internacionId={i.id} onSaved={() => { fetchInternaciones(); fetchControles(i.id); }} />
                 </div>
               )}
             </div>
