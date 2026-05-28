@@ -7,6 +7,7 @@ async function main() {
   console.log("🌱 Seeding SIMES database...");
 
   // ── Clean existing data (order matters for FK constraints) ──
+  await prisma.firmaDocumento.deleteMany();
   await prisma.cargoFacturacion.deleteMany();
   await prisma.hojaEnfermeria.deleteMany();
   await prisma.controlEnfermeria.deleteMany();
@@ -15,6 +16,7 @@ async function main() {
   await prisma.evolucion.deleteMany();
   await prisma.anamnesis.deleteMany();
   await prisma.valoracionPreanestesia.deleteMany();
+  await prisma.drogaAnestesia.deleteMany();
   await prisma.protocoloAnestesia.deleteMany();
   await prisma.epicrisis.deleteMany();
   await prisma.historiaClinica.deleteMany();
@@ -28,7 +30,13 @@ async function main() {
   await prisma.alergia.deleteMany();
   await prisma.paciente.deleteMany();
   await prisma.movimientoStock.deleteMany();
-  // NOTA: no se borran usuarios, obrasSociales, sectores, camas, stock, nomenclador
+  await prisma.usuario.deleteMany();
+  await prisma.convenio.deleteMany();
+  await prisma.obraSocial.deleteMany();
+  await prisma.nomencladorItem.deleteMany();
+  await prisma.cama.deleteMany();
+  await prisma.sector.deleteMany();
+  await prisma.stockItem.deleteMany();
 
   // ── Usuarios ──
   const adminPw = await bcrypt.hash("Admin1234", 10);

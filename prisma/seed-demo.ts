@@ -24,6 +24,39 @@ function dateAt(base: Date, h: number, m: number): Date {
 async function main() {
   console.log("🏥 Creando paciente de prueba completo: María Elena Fernández...");
 
+  // ── Limpiar datos previos de este paciente ──
+  const existingPaciente = await prisma.paciente.findFirst({ where: { dni: "27845631" } });
+  if (existingPaciente) {
+    const existingInts = await prisma.internacion.findMany({ where: { pacienteId: existingPaciente.id }, select: { id: true } });
+    for (const int of existingInts) {
+      const hc = await prisma.historiaClinica.findFirst({ where: { internacionId: int.id } });
+      if (hc) {
+        await prisma.firmaDocumento.deleteMany({ where: { docId: hc.id } });
+        await prisma.cargoFacturacion.deleteMany({ where: { internacionId: int.id } });
+        await prisma.hojaEnfermeria.deleteMany({ where: { hcId: hc.id } });
+        await prisma.controlEnfermeria.deleteMany({ where: { hcId: hc.id } });
+        await prisma.aplicacionMedicamento.deleteMany({ where: { prescripcion: { hcId: hc.id } } });
+        await prisma.prescripcion.deleteMany({ where: { hcId: hc.id } });
+        await prisma.evolucion.deleteMany({ where: { hcId: hc.id } });
+        await prisma.anamnesis.deleteMany({ where: { hcId: hc.id } });
+        await prisma.valoracionPreanestesia.deleteMany({ where: { hcId: hc.id } });
+        await prisma.drogaAnestesia.deleteMany({ where: { protocolo: { hcId: hc.id } } });
+        await prisma.protocoloAnestesia.deleteMany({ where: { hcId: hc.id } });
+        await prisma.epicrisis.deleteMany({ where: { hcId: hc.id } });
+        await prisma.historiaClinica.delete({ where: { id: hc.id } });
+      }
+      await prisma.medicamentoCirugia.deleteMany({ where: { cirugia: { internacionId: int.id } } });
+      await prisma.practicaCirugia.deleteMany({ where: { cirugia: { internacionId: int.id } } });
+      await prisma.implante.deleteMany({ where: { cirugia: { internacionId: int.id } } });
+      await prisma.reprogramacion.deleteMany({ where: { cirugia: { internacionId: int.id } } });
+      await prisma.cirugia.deleteMany({ where: { internacionId: int.id } });
+      await prisma.internacion.delete({ where: { id: int.id } });
+    }
+    await prisma.alergia.deleteMany({ where: { pacienteId: existingPaciente.id } });
+    await prisma.paciente.delete({ where: { id: existingPaciente.id } });
+    console.log("  ✓ Datos previos limpiados");
+  }
+
   // ── Usuarios existentes ──
   const medicoClinico = await prisma.usuario.findFirst({ where: { email: "depascuale@simes.com.ar" } });
   const cirujano = await prisma.usuario.findFirst({ where: { email: "romero@simes.com.ar" } });
