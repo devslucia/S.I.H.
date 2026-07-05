@@ -130,13 +130,13 @@ export default function UsuariosPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Users className="w-6 h-6 text-teal" />
+          <Users className="w-6 h-6 text-accent" />
           <h2 className="text-xl font-medium text-white">Gestionar Usuarios</h2>
         </div>
         {!showForm && (
           <button
             onClick={() => { resetForm(); setShowForm(true); }}
-            className="flex items-center gap-2 px-3 py-2 bg-teal text-black rounded-lg text-sm font-medium hover:bg-teal/80 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-accent text-black rounded-lg text-sm font-medium hover:bg-accent/80 transition-colors"
           >
             <Plus size={16} /> Nuevo Usuario
           </button>
@@ -144,7 +144,7 @@ export default function UsuariosPage() {
       </div>
 
       {success && (
-        <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center gap-2 text-green-400 text-sm">
+        <div className="p-3 bg-success/10 border border-success/30 rounded-lg flex items-center gap-2 text-success text-sm">
           <CheckCircle size={16} /> {success}
         </div>
       )}
@@ -242,7 +242,7 @@ export default function UsuariosPage() {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-teal text-black rounded-lg text-sm font-medium hover:bg-teal/80 transition-colors"
+              className="px-4 py-2 bg-accent text-black rounded-lg text-sm font-medium hover:bg-accent/80 transition-colors"
             >
               {editingId ? "Guardar Cambios" : "Crear Usuario"}
             </button>
@@ -271,7 +271,7 @@ export default function UsuariosPage() {
                   <td className="p-3 text-white">{u.nombre}</td>
                   <td className="p-3 text-muted">{u.email}</td>
                   <td className="p-3">
-                    <span className="px-2 py-0.5 rounded text-xs bg-teal/10 text-teal border border-teal/30">
+                    <span className="px-2 py-0.5 rounded text-xs bg-accent/10 text-accent border border-accent/30">
                       {u.rol}
                     </span>
                   </td>
@@ -280,7 +280,7 @@ export default function UsuariosPage() {
                   <td className="p-3 text-right">
                     <button
                       onClick={() => handleEdit(u)}
-                      className="p-1.5 text-muted hover:text-teal transition-colors"
+                      className="p-1.5 text-muted hover:text-accent transition-colors"
                       title="Editar"
                     >
                       <Pencil size={16} />

@@ -15,9 +15,9 @@ export function PrintLayout({ children, onPrint }: PrintLayoutProps) {
     <>
       <button
         onClick={handlePrint}
-        className="no-print flex items-center gap-2 px-4 py-2 bg-[#1e2535]
-                   text-[#f1f5f9] rounded-lg hover:bg-[#00d4a1]/10
-                   hover:text-[#00d4a1] border border-[#1e2535] text-sm"
+        className="no-print flex items-center gap-2 px-4 py-2 bg-surface-hover
+                   text-text rounded-lg hover:bg-accent/10
+                   hover:text-accent border border-border text-sm"
       >
         🖨️ Imprimir
       </button>

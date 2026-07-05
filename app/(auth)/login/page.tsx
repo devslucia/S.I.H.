@@ -36,8 +36,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-2">
-            <Activity className="w-10 h-10 text-teal" />
-            <span className="text-3xl font-bold text-teal font-mono">S.I.H.</span>
+            <Activity className="w-10 h-10 text-accent" />
+            <span className="text-3xl font-bold text-accent font-mono">S.I.H.</span>
           </div>
           <p className="text-muted text-sm">Sistema Informático Hospitalario</p>
           <p className="text-muted text-xs mt-1">Sanatorio SIMES — Posadas, Misiones</p>

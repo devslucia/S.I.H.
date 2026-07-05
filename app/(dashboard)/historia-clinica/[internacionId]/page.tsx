@@ -483,8 +483,8 @@ export default function HistoriaClinicaPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
-        <Loader2 className="w-6 h-6 text-[#00d4a1] animate-spin" />
-        <span className="ml-3 text-[#94a3b8]">Cargando historia clínica...</span>
+        <Loader2 className="w-6 h-6 text-accent animate-spin" />
+        <span className="ml-3 text-text-secondary">Cargando historia clínica...</span>
       </div>
     );
   }
@@ -492,14 +492,14 @@ export default function HistoriaClinicaPage() {
   if (error) {
     return (
       <div className="max-w-xl mx-auto mt-12 p-6">
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-5 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+        <div className="bg-error/10 border border-error/30 rounded-xl p-5 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-error mt-0.5 shrink-0" />
           <div>
-            <p className="text-red-400 font-medium mb-1">Error al cargar la historia clínica</p>
+            <p className="text-error font-medium mb-1">Error al cargar la historia clínica</p>
             <p className="text-red-300/70 text-sm">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-3 text-sm text-red-400 underline hover:text-red-300"
+              className="mt-3 text-sm text-error underline hover:text-red-300"
             >
               Reintentar
             </button>
@@ -512,7 +512,7 @@ export default function HistoriaClinicaPage() {
   if (!internacion) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
-        <p className="text-[#6b7280]">Internación no encontrada.</p>
+        <p className="text-muted">Internación no encontrada.</p>
       </div>
     );
   }
@@ -521,7 +521,7 @@ export default function HistoriaClinicaPage() {
   if (!p) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
-        <p className="text-[#6b7280]">La internación no tiene datos de paciente.</p>
+        <p className="text-muted">La internación no tiene datos de paciente.</p>
       </div>
     );
   }
@@ -531,7 +531,7 @@ export default function HistoriaClinicaPage() {
       <div className="flex items-center justify-between">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-[#6b7280] hover:text-[#f1f5f9] transition-colors text-sm"
+          className="flex items-center gap-2 text-muted hover:text-text transition-colors text-sm"
         >
           <ArrowLeft size={16} /> Volver
         </button>
@@ -559,16 +559,16 @@ export default function HistoriaClinicaPage() {
         </div>
       </div>
 
-      <div className="bg-[#161b27] border border-[#1e2535] rounded-xl p-4">
+      <div className="bg-surface border border-border rounded-xl p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#00d4a1]/20 flex items-center justify-center text-[#00d4a1] font-medium shrink-0">
+          <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-medium shrink-0">
             {(p.nombre?.[0] || '?')}{(p.apellido?.[0] || '?')}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[#f1f5f9] font-medium truncate">
+            <p className="text-text font-medium truncate">
               {p.apellido}, {p.nombre}
             </p>
-            <p className="text-[#6b7280] text-xs">
+            <p className="text-muted text-xs">
               DNI: {p.dni} | Internación #{internacion.numero}
               {internacion.cama && <> | Cama: {internacion.cama.numero} - {internacion.cama.sector.nombre}</>}
             </p>
@@ -586,10 +586,10 @@ export default function HistoriaClinicaPage() {
             <button
               key={tab.id}
               onClick={() => router.push(`/historia-clinica/${params.internacionId}/${tab.id}`)}
-              className="bg-[#161b27] border border-[#1e2535] rounded-xl p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-[#00d4a1]/30 transition-colors"
+              className="bg-surface border border-border rounded-xl p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-accent/30 transition-colors"
             >
-              <Icon size={24} className="text-[#00d4a1]" />
-              <span className="text-sm text-[#f1f5f9] font-medium">{tab.label}</span>
+              <Icon size={24} className="text-accent" />
+              <span className="text-sm text-text font-medium">{tab.label}</span>
             </button>
           );
         })}

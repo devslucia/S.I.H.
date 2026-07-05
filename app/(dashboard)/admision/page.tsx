@@ -135,10 +135,10 @@ export default function AdmisionPage() {
             <div
               key={p.id}
               onClick={() => router.push(`/admision/${p.id}`)}
-              className="card p-4 flex items-center justify-between cursor-pointer hover:border-teal/30 transition-colors"
+              className="card p-4 flex items-center justify-between cursor-pointer hover:border-accent/30 transition-colors"
             >
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-teal/20 flex items-center justify-center text-teal font-medium text-sm">
+                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-medium text-sm">
                   {p.nombre[0]}{p.apellido[0]}
                 </div>
                 <div>

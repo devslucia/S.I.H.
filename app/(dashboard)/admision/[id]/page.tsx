@@ -184,7 +184,7 @@ export default function PacienteDetailPage() {
       <div className="card p-5">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-teal/20 flex items-center justify-center text-teal font-medium text-xl">
+            <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center text-accent font-medium text-xl">
               {paciente.nombre[0]}{paciente.apellido[0]}
             </div>
             <div>
@@ -206,7 +206,7 @@ export default function PacienteDetailPage() {
       {/* Alergias Section */}
       <div className="card p-5">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-teal uppercase tracking-wide">Alergias</h3>
+          <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Alergias</h3>
           <Button size="sm" onClick={() => { setEditingAlergia(null); setAlergiaForm(initialAlergiaForm); setAlergiaModalOpen(true); }}>
             <Plus size={14} /> Agregar
           </Button>
@@ -226,7 +226,7 @@ export default function PacienteDetailPage() {
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => openEditAlergia(a)} className="p-1 text-muted hover:text-white transition-colors"><Edit size={14} /></button>
-                  <button onClick={() => handleDeleteAlergia(a.id)} className="p-1 text-muted hover:text-red-400 transition-colors"><Trash2 size={14} /></button>
+                  <button onClick={() => handleDeleteAlergia(a.id)} className="p-1 text-muted hover:text-error transition-colors"><Trash2 size={14} /></button>
                 </div>
               </div>
             ))}
@@ -273,7 +273,7 @@ export default function PacienteDetailPage() {
               <div
                 key={i.id}
                 onClick={() => router.push(`/historia-clinica/${i.id}`)}
-                className="card p-4 flex items-center justify-between cursor-pointer hover:border-teal/30 transition-colors"
+                className="card p-4 flex items-center justify-between cursor-pointer hover:border-accent/30 transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
@@ -299,7 +299,7 @@ export default function PacienteDetailPage() {
 
       {!activeInternacion && (
         <div className="card p-5 text-center">
-          <Activity size={32} className="mx-auto text-teal mb-2" />
+          <Activity size={32} className="mx-auto text-accent mb-2" />
           <p className="text-white font-medium mb-1">No hay internación activa</p>
           <p className="text-muted text-sm mb-3">Este paciente no tiene una internación activa actualmente.</p>
           <Button onClick={() => setNuevaInternacionOpen(true)}>

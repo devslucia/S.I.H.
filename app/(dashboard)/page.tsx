@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 
 const cards = [
-  { name: "Identificación de Pacientes", icon: User, href: "/admision", color: "text-teal", desc: "Gestión de pacientes y coberturas", roles: ["ADMIN","ADMISION"] },
-  { name: "Gestión de Camas", icon: Bed, href: "/camas", color: "text-blue", desc: "Mapa interactivo de camas disponibles", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR","ADMISION","FACTURACION"] },
-  { name: "Atención Médica", icon: Stethoscope, href: "/historia-clinica", color: "text-teal", desc: "Historia clínica digital completa", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR"] },
-  { name: "Enfermería", icon: Syringe, href: "/historia-clinica", color: "text-amber", desc: "Hoja de enfermería y controles", roles: ["ADMIN","ENFERMERO"] },
-  { name: "Quirófano", icon: Activity, href: "/quirofano", color: "text-red", desc: "Agenda quirúrgica y libro de QF", roles: ["ADMIN","MEDICO","ANESTESIOLOGO","INSTRUMENTADOR"] },
-  { name: "Farmacia", icon: Package, href: "/farmacia", color: "text-teal", desc: "Stock y trazabilidad de medicamentos", roles: ["ADMIN","FARMACIA"] },
-  { name: "Auditoría y Facturación", icon: Receipt, href: "/facturacion", color: "text-blue", desc: "Liquidación y cargos por episodio", roles: ["ADMIN","FACTURACION"] },
+  { name: "Identificación de Pacientes", icon: User, href: "/admision", color: "text-accent", desc: "Gestión de pacientes y coberturas", roles: ["ADMIN","ADMISION"] },
+  { name: "Gestión de Camas", icon: Bed, href: "/camas", color: "text-info", desc: "Mapa interactivo de camas disponibles", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR","ADMISION","FACTURACION"] },
+  { name: "Atención Médica", icon: Stethoscope, href: "/historia-clinica", color: "text-accent", desc: "Historia clínica digital completa", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR"] },
+  { name: "Enfermería", icon: Syringe, href: "/historia-clinica", color: "text-warning", desc: "Hoja de enfermería y controles", roles: ["ADMIN","ENFERMERO"] },
+  { name: "Quirófano", icon: Activity, href: "/quirofano", color: "text-error", desc: "Agenda quirúrgica y libro de QF", roles: ["ADMIN","MEDICO","ANESTESIOLOGO","INSTRUMENTADOR"] },
+  { name: "Farmacia", icon: Package, href: "/farmacia", color: "text-accent", desc: "Stock y trazabilidad de medicamentos", roles: ["ADMIN","FARMACIA"] },
+  { name: "Auditoría y Facturación", icon: Receipt, href: "/facturacion", color: "text-info", desc: "Liquidación y cargos por episodio", roles: ["ADMIN","FACTURACION"] },
 ];
 
 export default function DashboardPage() {
@@ -22,9 +22,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Activity className="w-8 h-8 text-teal" />
+        <Activity className="w-8 h-8 text-accent" />
         <div>
-          <h2 className="text-xl font-medium text-white">Dashboard</h2>
+          <h2 className="text-xl font-display font-medium text-text">Dashboard</h2>
           <p className="text-muted text-sm">Bienvenido al Sistema Informático Hospitalario</p>
         </div>
       </div>
@@ -42,7 +42,7 @@ export default function DashboardPage() {
                 <Icon className={`w-8 h-8 ${card.color}`} />
                 <ArrowRight className="w-5 h-5 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-              <h3 className="text-white font-medium mb-1">{card.name}</h3>
+              <h3 className="text-text font-medium mb-1">{card.name}</h3>
               <p className="text-muted text-sm">{card.desc}</p>
             </Link>
           );

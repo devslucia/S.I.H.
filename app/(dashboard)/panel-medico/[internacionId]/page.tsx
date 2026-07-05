@@ -238,7 +238,7 @@ export default function PanelMedicoPage() {
               onClick={() => setActiveTab(t.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === t.id
-                  ? "border-teal text-teal"
+                  ? "border-accent text-accent"
                   : "border-transparent text-muted hover:text-white"
               }`}
             >
@@ -255,7 +255,7 @@ export default function PanelMedicoPage() {
       {activeTab === "indicaciones" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-teal uppercase tracking-wide">Indicaciones con Destino PISO</h3>
+            <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Indicaciones con Destino PISO</h3>
             {isActive && (
               <Button size="sm" onClick={() => setShowPrescripcionModal(true)}>
                 <Plus size={14} /> Nueva Indicación
@@ -292,7 +292,7 @@ export default function PanelMedicoPage() {
       {activeTab === "evolucion" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-teal uppercase tracking-wide">Evolución Diaria</h3>
+            <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Evolución Diaria</h3>
             {isActive && (
               <Button size="sm" onClick={() => setShowEvolucionEditor(true)}>
                 <Plus size={14} /> Nueva Nota
@@ -341,7 +341,7 @@ export default function PanelMedicoPage() {
       {/* Tab: Signos Vitales */}
       {activeTab === "signos" && (
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-teal uppercase tracking-wide">Signos Vitales (cargados por Enfermería)</h3>
+          <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Signos Vitales (cargados por Enfermería)</h3>
           {signosVitales.length === 0 ? (
             <p className="text-muted text-sm">Sin registros de signos vitales.</p>
           ) : (
@@ -374,7 +374,7 @@ export default function PanelMedicoPage() {
       {/* Tab: Indicaciones Postoperatorias */}
       {activeTab === "postop" && (
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-teal uppercase tracking-wide">Indicaciones Postoperatorias (de Quirófano)</h3>
+          <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Indicaciones Postoperatorias (de Quirófano)</h3>
           {indicacionesPostOp.length === 0 ? (
             <p className="text-muted text-sm">Sin indicaciones postoperatorias registradas.</p>
           ) : (

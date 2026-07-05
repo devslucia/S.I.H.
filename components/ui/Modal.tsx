@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type ModalSize = "md" | "lg" | "xl";
+type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
 interface ModalProps {
   open: boolean;
@@ -13,39 +13,65 @@ interface ModalProps {
 }
 
 const sizeStyles: Record<ModalSize, string> = {
+  sm: "max-w-sm",
   md: "max-w-md",
   lg: "max-w-lg",
   xl: "max-w-xl",
+  full: "max-w-3xl",
 };
 
 function Modal({ open, onClose, title, children, size = "md" }: ModalProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    if (open) {
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "";
+    };
+  }, [open, onClose]);
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 animate-fade-in">
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        ref={overlayRef}
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
       <div
         className={cn(
-          "relative z-10 w-full max-h-[90vh] overflow-y-auto rounded-xl border border-[#1e2535] bg-[#161b27] p-4 md:p-6 shadow-2xl",
+          "relative z-10 w-full max-h-[90vh] overflow-y-auto",
+          "bg-surface border border-border rounded-2xl shadow-2xl",
+          "animate-scale-in",
           sizeStyles[size],
           "max-w-[calc(100vw-2rem)]"
         )}
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-border bg-surface/95 backdrop-blur-sm rounded-t-2xl">
           {title && (
-            <h2 className="text-lg font-semibold text-gray-100">{title}</h2>
+            <h2 className="text-lg font-display font-semibold text-text">{title}</h2>
           )}
           <button
             onClick={onClose}
-            className="ml-auto rounded-lg p-1 text-gray-500 hover:bg-[#1e2535] hover:text-gray-300 transition-colors"
+            className={cn(
+              "rounded-lg p-2 text-muted hover:text-text hover:bg-surface-hover transition-colors",
+              !title && "ml-auto"
+            )}
           >
             <X size={18} />
           </button>
         </div>
-        {children}
+        <div className="p-6">
+          {children}
+        </div>
       </div>
     </div>
   );

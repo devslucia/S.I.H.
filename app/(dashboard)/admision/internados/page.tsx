@@ -65,7 +65,7 @@ export default function InternadosPage() {
       </button>
 
       <div className="flex items-center gap-3">
-        <Activity className="w-7 h-7 text-teal" />
+        <Activity className="w-7 h-7 text-accent" />
         <div>
           <h2 className="text-xl font-medium text-white">Pacientes Internados</h2>
           <p className="text-muted text-sm">{filtradas.length} paciente(s) internado(s)</p>
@@ -109,10 +109,10 @@ export default function InternadosPage() {
             <div
               key={i.id}
               onClick={() => router.push(`/historia-clinica/${i.id}`)}
-              className="card p-4 flex items-center justify-between cursor-pointer hover:border-teal/30 transition-colors"
+              className="card p-4 flex items-center justify-between cursor-pointer hover:border-accent/30 transition-colors"
             >
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-teal/20 flex items-center justify-center text-teal">
+                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent">
                   <Bed size={18} />
                 </div>
                 <div>

@@ -22,10 +22,10 @@ const POSICIONES = ["Decúbito dorsal", "Decúbito ventral", "Decúbito lateral"
 const MOTIVOS_REPROG = ["Falta de insumos", "Emergencia", "Paciente no apto", "Cirujano no disponible", "Falta de cama UTI", "Otro"];
 const SANGRE_PERDIDA = ["No", "Sí - Leve", "Sí - Moderada", "Sí - Grave"];
 
-const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-white placeholder:text-muted focus:outline-none focus:border-teal";
+const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-white placeholder:text-muted focus:outline-none focus:border-accent";
 const labelClass = "text-xs text-muted font-medium mb-1 block";
 const btnClass = "px-4 py-2 text-sm rounded font-medium transition-colors";
-const btnTeal = `${btnClass} bg-teal text-black hover:bg-teal/90`;
+const btnTeal = `${btnClass} bg-accent text-black hover:bg-accent/90`;
 const btnOutline = `${btnClass} border border-border text-muted hover:text-white hover:border-muted`;
 const btnDanger = `${btnClass} bg-red/20 text-red hover:bg-red/30`;
 
@@ -266,7 +266,7 @@ export default function LibroQuirofanoFull() {
         {TABS.map((tab, i) => (
           <button key={i} onClick={() => setActiveTab(i)}
             className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-              activeTab === i ? "border-teal text-teal" : "border-transparent text-muted hover:text-white"
+              activeTab === i ? "border-accent text-accent" : "border-transparent text-muted hover:text-white"
             }`}
           >{tab}</button>
         ))}
@@ -278,7 +278,7 @@ export default function LibroQuirofanoFull() {
         {activeTab === 0 && (
           <div className="space-y-6 max-w-5xl">
             <div className="card p-5">
-              <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">Datos Generales</h3>
+              <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Datos Generales</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div><label className={labelClass}>Fecha inicio</label>
                   <input type="date" value={formData?.fechaProgramada?.split("T")[0] || ""} onChange={e => update("fechaProgramada", e.target.value ? new Date(e.target.value).toISOString() : null)} disabled={isReadOnly} className={inputClass} /></div>
@@ -306,7 +306,7 @@ export default function LibroQuirofanoFull() {
             </div>
 
             <div className="card p-5">
-              <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">Equipo Interviniente</h3>
+              <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Equipo Interviniente</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[
                   { label: "Cirujano principal", field: "cirujanoId" },
@@ -330,7 +330,7 @@ export default function LibroQuirofanoFull() {
             </div>
 
             <div className="card p-5">
-              <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">Equipamiento y Muestras</h3>
+              <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Equipamiento y Muestras</h3>
               <div className="flex flex-wrap gap-6 mb-4">
                 {[
                   { label: "ARCO EN C", field: "arcoC" },
@@ -339,7 +339,7 @@ export default function LibroQuirofanoFull() {
                 ].map(({ label, field }) => (
                   <label key={field} className="flex items-center gap-2 text-sm text-gray-300">
                     <input type="checkbox" checked={!!formData?.[field]} onChange={e => update(field, e.target.checked)} disabled={isReadOnly}
-                      className="w-4 h-4 rounded border-border bg-background text-teal focus:ring-teal" />
+                      className="w-4 h-4 rounded border-border bg-background text-accent focus:ring-accent" />
                     {label}
                   </label>
                 ))}
@@ -367,7 +367,7 @@ export default function LibroQuirofanoFull() {
           <div className="space-y-6 max-w-5xl">
             <div className="card p-5">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-teal uppercase tracking-wide">Prácticas Asociadas</h3>
+                <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Prácticas Asociadas</h3>
                 {!isReadOnly && (
                   <button onClick={() => setShowPracticaModal(true)} className={`${btnTeal} flex items-center gap-1 text-xs`}>
                     <Plus size={14} /> Agregar práctica
@@ -401,7 +401,7 @@ export default function LibroQuirofanoFull() {
 
             <div className="card p-5">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-teal uppercase tracking-wide">Medicamentos / Descartables</h3>
+                <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Medicamentos / Descartables</h3>
                 {!isReadOnly && (
                   <button onClick={() => setShowStockModal(true)} className={`${btnTeal} flex items-center gap-1 text-xs`}>
                     <Plus size={14} /> Agregar medicamento
@@ -446,7 +446,7 @@ export default function LibroQuirofanoFull() {
               </div>
             ) : (
               <div className="card p-5">
-                <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">Datos del Parto / Cesárea</h3>
+                <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Datos del Parto / Cesárea</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div><label className={labelClass}>Hora de nacimiento</label>
                     <input type="time" value={formData?.horaNacimiento || ""} onChange={e => update("horaNacimiento", e.target.value)} disabled={isReadOnly} className={inputClass} /></div>
@@ -481,7 +481,7 @@ export default function LibroQuirofanoFull() {
               {SUB_TABS_PARTE.map((st, i) => (
                 <button key={i} onClick={() => setSubTab(i)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-t transition-colors ${
-                    subTab === i ? "bg-surface text-teal border border-border border-b-0" : "text-muted hover:text-white"
+                    subTab === i ? "bg-surface text-accent border border-border border-b-0" : "text-muted hover:text-white"
                   }`}
                 >{st}</button>
               ))}
@@ -492,7 +492,7 @@ export default function LibroQuirofanoFull() {
               <div className="space-y-6">
                 <div className="card p-5">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-teal uppercase tracking-wide">Parte Quirúrgico</h3>
+                    <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Parte Quirúrgico</h3>
                     <div className="flex gap-2">
                       {!isReadOnly && (
                         <button onClick={() => setShowPracticaModal(true)} className={`${btnTeal} flex items-center gap-1 text-xs`}>
@@ -527,13 +527,13 @@ export default function LibroQuirofanoFull() {
                 </div>
 
                 <div className="card p-5">
-                  <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">Operación y Hallazgos</h3>
+                  <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Operación y Hallazgos</h3>
                   <VoiceTextarea value={formData?.hallazgos || ""} onChange={(v) => update("hallazgos", v)} disabled={isReadOnly} rows={8} placeholder="Narrativa completa de la cirugía..." />
                 </div>
 
                 <div className="card p-5">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-teal uppercase tracking-wide">Implantes</h3>
+                    <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Implantes</h3>
                     {!isReadOnly && (
                       <button onClick={() => setShowImplanteModal(true)} className={`${btnTeal} flex items-center gap-1 text-xs`}>
                         <Plus size={14} /> Agregar implante
@@ -565,7 +565,7 @@ export default function LibroQuirofanoFull() {
             {/* Sub-tab B: Evolución Post Int. */}
             {subTab === 1 && (
               <div className="card p-5">
-                <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">Evolución Postoperatoria Inmediata</h3>
+                <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Evolución Postoperatoria Inmediata</h3>
                 <VoiceTextarea value={formData?.evolucionPostInt || ""} onChange={(v) => update("evolucionPostInt", v)} disabled={isReadOnly} rows={12} placeholder={`[${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}]\nEscriba la evolución aquí...`} />
               </div>
             )}
@@ -574,7 +574,7 @@ export default function LibroQuirofanoFull() {
             {subTab === 2 && (
               <div className="card p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-teal uppercase tracking-wide">Indicaciones Postoperatorias</h3>
+                  <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Indicaciones Postoperatorias</h3>
                   {!isReadOnly && (
                     <button onClick={() => {
                       const arr = formData?.indicacionesPostoperatorias || [];
@@ -630,7 +630,7 @@ export default function LibroQuirofanoFull() {
         {activeTab === 4 && (
           <div className="space-y-6 max-w-5xl">
             <div className="card p-5">
-              <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">Balance de Líquidos Intraoperatorio</h3>
+              <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Balance de Líquidos Intraoperatorio</h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -638,7 +638,7 @@ export default function LibroQuirofanoFull() {
                     {!isReadOnly && <button onClick={() => {
                       const arr = formData?.balanceIngresos || [];
                       update("balanceIngresos", [...arr, { tipo: "SF", volumen: "", hora: "" }]);
-                    }} className="text-teal text-xs flex items-center gap-1"><Plus size={12} /> Agregar</button>}
+                    }} className="text-accent text-xs flex items-center gap-1"><Plus size={12} /> Agregar</button>}
                   </div>
                   <table className="w-full text-sm">
                     <thead><tr className="text-left text-muted text-xs uppercase tracking-wide">
@@ -664,7 +664,7 @@ export default function LibroQuirofanoFull() {
                       ))}
                     </tbody>
                   </table>
-                  <p className="text-xs text-teal mt-2">Total ingresos: {totalIngresos} ml</p>
+                  <p className="text-xs text-accent mt-2">Total ingresos: {totalIngresos} ml</p>
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -672,7 +672,7 @@ export default function LibroQuirofanoFull() {
                     {!isReadOnly && <button onClick={() => {
                       const arr = formData?.balanceEgresos || [];
                       update("balanceEgresos", [...arr, { tipo: "Diuresis", volumen: "", hora: "" }]);
-                    }} className="text-teal text-xs flex items-center gap-1"><Plus size={12} /> Agregar</button>}
+                    }} className="text-accent text-xs flex items-center gap-1"><Plus size={12} /> Agregar</button>}
                   </div>
                   <table className="w-full text-sm">
                     <thead><tr className="text-left text-muted text-xs uppercase tracking-wide">
@@ -698,16 +698,16 @@ export default function LibroQuirofanoFull() {
                       ))}
                     </tbody>
                   </table>
-                  <p className="text-xs text-teal mt-2">Total egresos: {totalEgresos} ml</p>
+                  <p className="text-xs text-accent mt-2">Total egresos: {totalEgresos} ml</p>
                 </div>
               </div>
-              <div className={`mt-3 p-3 rounded text-sm font-medium ${balanceTotal >= 0 ? "bg-teal/10 text-teal" : "bg-red/10 text-red"}`}>
+              <div className={`mt-3 p-3 rounded text-sm font-medium ${balanceTotal >= 0 ? "bg-accent/10 text-accent" : "bg-red/10 text-red"}`}>
                 Balance total: {balanceTotal >= 0 ? "+" : ""}{balanceTotal} ml
               </div>
             </div>
 
             <div className="card p-5">
-              <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">Signos Vitales Intraoperatorios</h3>
+              <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Signos Vitales Intraoperatorios</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="text-left text-muted text-xs uppercase tracking-wide">
@@ -759,12 +759,12 @@ export default function LibroQuirofanoFull() {
             </div>
 
             <div className="card p-5">
-              <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">Observaciones del Anestesiólogo</h3>
+              <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Observaciones del Anestesiólogo</h3>
               <VoiceTextarea value={formData?.observacionesAnestesia || ""} onChange={(v) => update("observacionesAnestesia", v)} disabled={isReadOnly} rows={4} placeholder="Observaciones anestesiológicas..." />
             </div>
 
             <div className="card p-5">
-              <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">Posición y Accesorios</h3>
+              <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Posición y Accesorios</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div><label className={labelClass}>Posición operatoria</label>
                   <select value={formData?.posicionOperatoria || ""} onChange={e => update("posicionOperatoria", e.target.value)} disabled={isReadOnly} className={inputClass}>
@@ -774,11 +774,11 @@ export default function LibroQuirofanoFull() {
                   <div className="flex gap-4 mt-2">
                     <label className="flex items-center gap-2 text-sm text-gray-300">
                       <input type="checkbox" checked={!!formData?.sondaNasogastrica} onChange={e => update("sondaNasogastrica", e.target.checked)} disabled={isReadOnly}
-                        className="w-4 h-4 rounded border-border bg-background text-teal" /> Nasogástrica
+                        className="w-4 h-4 rounded border-border bg-background text-accent" /> Nasogástrica
                     </label>
                     <label className="flex items-center gap-2 text-sm text-gray-300">
                       <input type="checkbox" checked={!!formData?.sondaVesical} onChange={e => update("sondaVesical", e.target.checked)} disabled={isReadOnly}
-                        className="w-4 h-4 rounded border-border bg-background text-teal" /> Vesical
+                        className="w-4 h-4 rounded border-border bg-background text-accent" /> Vesical
                     </label>
                   </div></div>
                 <div><label className={labelClass}>Diuresis intraoperatoria (cc)</label>
@@ -797,7 +797,7 @@ export default function LibroQuirofanoFull() {
           <div className="max-w-4xl">
             <div className="card p-5">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-teal uppercase tracking-wide">Historial de Reprogramaciones</h3>
+                <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Historial de Reprogramaciones</h3>
                 {!isReadOnly && (
                   <button onClick={() => setShowReprogModal(true)} className={`${btnTeal} flex items-center gap-1 text-xs`}>
                     <Calendar size={14} /> Agregar reprogramación

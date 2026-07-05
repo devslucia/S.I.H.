@@ -21,10 +21,10 @@ interface Cirugia {
 
 const estadoColors: Record<string, { bg: string; text: string; label: string }> = {
   PROGRAMADA: { bg: "bg-blue-500/10 border-blue-500/30", text: "text-blue-400", label: "Programada" },
-  EN_CURSO: { bg: "bg-amber-500/10 border-amber-500/30", text: "text-amber-400", label: "En Curso" },
-  COMPLETADA: { bg: "bg-green-500/10 border-green-500/30", text: "text-green-400", label: "Completada" },
+  EN_CURSO: { bg: "bg-warning/10 border-warning/30", text: "text-warning", label: "En Curso" },
+  COMPLETADA: { bg: "bg-success/10 border-success/30", text: "text-success", label: "Completada" },
   REPROGRAMADA: { bg: "bg-yellow-500/10 border-yellow-500/30", text: "text-yellow-400", label: "Reprogramada" },
-  CANCELADA: { bg: "bg-red-500/10 border-red-500/30", text: "text-red-400", label: "Cancelada" },
+  CANCELADA: { bg: "bg-error/10 border-error/30", text: "text-error", label: "Cancelada" },
 };
 
 function getTodayStr() {
@@ -76,7 +76,7 @@ export default function QuirofanoPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Activity className="w-6 h-6 text-teal" />
+          <Activity className="w-6 h-6 text-accent" />
           <h2 className="text-xl font-medium text-white">Agenda Quirúrgica</h2>
         </div>
         <div className="flex items-center gap-2">

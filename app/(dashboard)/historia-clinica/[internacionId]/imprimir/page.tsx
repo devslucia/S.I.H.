@@ -195,19 +195,19 @@ export default function ImprimirCarpetaPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[50vh]">
-      <Loader2 className="w-6 h-6 text-[#00d4a1] animate-spin" />
-      <span className="ml-2 text-[#94a3b8]">Cargando carpeta completa...</span>
+      <Loader2 className="w-6 h-6 text-accent animate-spin" />
+      <span className="ml-2 text-text-secondary">Cargando carpeta completa...</span>
     </div>
   );
 
   if (error) return (
     <div className="max-w-xl mx-auto mt-12 p-6">
-      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-5 flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+      <div className="bg-error/10 border border-error/30 rounded-xl p-5 flex items-start gap-3">
+        <AlertCircle className="w-5 h-5 text-error mt-0.5 shrink-0" />
         <div>
-          <p className="text-red-400 font-medium mb-1">Error al cargar la carpeta completa</p>
+          <p className="text-error font-medium mb-1">Error al cargar la carpeta completa</p>
           <p className="text-red-300/70 text-sm">{error}</p>
-          <button onClick={() => window.location.reload()} className="mt-3 text-sm text-red-400 underline hover:text-red-300">
+          <button onClick={() => window.location.reload()} className="mt-3 text-sm text-error underline hover:text-red-300">
             Reintentar
           </button>
         </div>
@@ -217,7 +217,7 @@ export default function ImprimirCarpetaPage() {
 
   if (!data) return (
     <div className="flex items-center justify-center min-h-[50vh]">
-      <p className="text-[#6b7280] text-sm">No se encontraron datos de la internación.</p>
+      <p className="text-muted text-sm">No se encontraron datos de la internación.</p>
     </div>
   );
 
@@ -228,7 +228,7 @@ export default function ImprimirCarpetaPage() {
     <div>
       <div className="no-print space-y-4">
         <div className="flex items-center justify-between">
-          <button onClick={() => router.back()} className="flex items-center gap-2 text-muted hover:text-white transition-colors text-sm">
+          <button onClick={() => router.back()} className="flex items-center gap-2 text-muted hover:text-text transition-colors text-sm">
             <ArrowLeft size={16} /> Volver
           </button>
           <Button onClick={handlePrint}>
@@ -583,7 +583,7 @@ export default function ImprimirCarpetaPage() {
               )}
             </>
           ) : (
-            <p style={{ fontSize: '9pt', color: '#94a3b8', fontStyle: 'italic', marginTop: '8px' }}>
+            <p style={{ fontSize: '9pt', color: 'rgb(var(--color-text-secondary))', fontStyle: 'italic', marginTop: '8px' }}>
               Sin protocolo de anestesia registrado.
             </p>
           )}

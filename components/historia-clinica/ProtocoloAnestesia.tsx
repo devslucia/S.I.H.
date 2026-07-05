@@ -302,7 +302,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
   };
 
   if (loading) {
-    return <p className="text-gray-500 text-sm">Cargando protocolo de anestesia...</p>;
+    return <p className="text-muted text-sm">Cargando protocolo de anestesia...</p>;
   }
 
   const toggleTecnica = (val: string) => {
@@ -325,15 +325,15 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-gray-500 hover:text-white transition-colors">
+          <button onClick={() => router.back()} className="text-muted hover:text-text transition-colors">
             <ArrowLeft size={20} />
           </button>
-          <h2 className="text-xl font-medium text-white">Protocolo de Anestesia</h2>
+          <h2 className="text-xl font-medium text-text">Protocolo de Anestesia</h2>
         </div>
         <div className="flex items-center gap-3">
-          {saving && <span className="text-xs text-gray-500 flex items-center gap-1"><Clock size={12} /> Guardando…</span>}
-          {saved && <span className="text-xs text-[#00d4a1] flex items-center gap-1"><CheckCircle size={12} /> Guardado</span>}
-          {saveError && <span className="text-xs text-red-400 flex items-center gap-1"><AlertCircle size={12} /> Error al guardar</span>}
+          {saving && <span className="text-xs text-muted flex items-center gap-1"><Clock size={12} /> Guardando…</span>}
+          {saved && <span className="text-xs text-accent flex items-center gap-1"><CheckCircle size={12} /> Guardado</span>}
+          {saveError && <span className="text-xs text-error flex items-center gap-1"><AlertCircle size={12} /> Error al guardar</span>}
 
           {firmado ? (
             <Badge variant="success" className="flex items-center gap-1">
@@ -359,9 +359,9 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
       {/* Banner firma */}
       {firmado && firmadoData && (
-        <div className="rounded-lg border border-green-400/25 bg-green-400/5 p-3 flex items-center gap-2">
-          <CheckCircle size={16} className="text-green-400" />
-          <span className="text-sm text-green-400">
+        <div className="rounded-lg border border-success/25 bg-success/5 p-3 flex items-center gap-2">
+          <CheckCircle size={16} className="text-success" />
+          <span className="text-sm text-success">
             Protocolo firmado por {firmadoData.nombre} el {formatDateTime(firmadoData.fecha)}
           </span>
         </div>
@@ -369,11 +369,11 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
       {/* Banner alergias */}
       {alergiasPaciente.length > 0 && !firmado && (
-        <div className="rounded-lg border border-red-400/25 bg-red-400/5 p-3 flex items-start gap-2">
-          <AlertTriangle size={16} className="text-red-400 mt-0.5 shrink-0" />
+        <div className="rounded-lg border border-error/25 bg-error/5 p-3 flex items-start gap-2">
+          <AlertTriangle size={16} className="text-error mt-0.5 shrink-0" />
           <div>
-            <span className="text-sm font-medium text-red-400">ALERTA: Alergias del paciente: </span>
-            <span className="text-sm text-red-300">
+            <span className="text-sm font-medium text-error">ALERTA: Alergias del paciente: </span>
+            <span className="text-sm text-error">
               {alergiasPaciente.map((a: any) => a.sustancia).join(", ")}
             </span>
           </div>
@@ -384,15 +384,15 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
       {pacienteData && (
         <div className="card p-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-            <div><span className="text-gray-500">Paciente:</span> <span className="text-gray-200">{pacienteData.apellido}, {pacienteData.nombre}</span></div>
-            <div><span className="text-gray-500">DNI:</span> <span className="text-gray-200">{pacienteData.dni}</span></div>
-            <div><span className="text-gray-500">Sexo:</span> <span className="text-gray-200">{pacienteData.sexo}</span></div>
-            <div><span className="text-gray-500">Nac.:</span> <span className="text-gray-200">{new Date(pacienteData.fechaNac).toLocaleDateString("es-AR")}</span></div>
+            <div><span className="text-muted">Paciente:</span> <span className="text-text">{pacienteData.apellido}, {pacienteData.nombre}</span></div>
+            <div><span className="text-muted">DNI:</span> <span className="text-text">{pacienteData.dni}</span></div>
+            <div><span className="text-muted">Sexo:</span> <span className="text-text">{pacienteData.sexo}</span></div>
+            <div><span className="text-muted">Nac.:</span> <span className="text-text">{new Date(pacienteData.fechaNac).toLocaleDateString("es-AR")}</span></div>
             {internacionData?.obraSocial && (
-              <div><span className="text-gray-500">Obra Social:</span> <span className="text-gray-200">{internacionData.obraSocial.nombre}</span></div>
+              <div><span className="text-muted">Obra Social:</span> <span className="text-text">{internacionData.obraSocial.nombre}</span></div>
             )}
             {internacionData?.cama && (
-              <div><span className="text-gray-500">Cama:</span> <span className="text-gray-200">{internacionData.cama.numero} - {internacionData.cama.sector?.nombre}</span></div>
+              <div><span className="text-muted">Cama:</span> <span className="text-text">{internacionData.cama.numero} - {internacionData.cama.sector?.nombre}</span></div>
             )}
           </div>
         </div>
@@ -403,10 +403,10 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
         <div key={sec.key} className="card overflow-hidden">
           <button
             onClick={() => toggleSeccion(sec.key)}
-            className="w-full flex items-center justify-between px-5 py-3 text-left hover:bg-[#1e2535]/30 transition-colors"
+            className="w-full flex items-center justify-between px-5 py-3 text-left hover:bg-border/30 transition-colors"
           >
-            <span className="text-sm font-medium text-[#00d4a1] uppercase tracking-wide">{sec.label}</span>
-            {secciones[sec.key] ? <ChevronDown size={16} className="text-gray-500" /> : <ChevronRight size={16} className="text-gray-500" />}
+            <span className="text-sm font-medium text-accent uppercase tracking-wide">{sec.label}</span>
+            {secciones[sec.key] ? <ChevronDown size={16} className="text-muted" /> : <ChevronRight size={16} className="text-muted" />}
           </button>
 
           {secciones[sec.key] && (
@@ -433,14 +433,14 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                 <>
                   {/* Alergias */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-red-400">Alergias</label>
+                    <label className="block text-sm font-medium text-error">Alergias</label>
                     <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2 text-sm text-gray-300">
+                      <label className="flex items-center gap-2 text-sm text-text-secondary">
                         <input type="radio" checked={form.watch("alergiaDetalle") !== "" && form.watch("alergiaDetalle") != null}
                           onChange={() => {}} disabled={firmado}
                           className="accent-red-400" /> SÍ
                       </label>
-                      <label className="flex items-center gap-2 text-sm text-gray-300">
+                      <label className="flex items-center gap-2 text-sm text-text-secondary">
                         <input type="radio" checked={!form.watch("alergiaDetalle")}
                           onChange={() => form.setValue("alergiaDetalle", "", { shouldDirty: true })} disabled={firmado}
                           className="accent-red-400" /> NO
@@ -457,7 +457,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* ASA */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-gray-400">Clasificación ASA</label>
+                    <label className="block text-sm text-muted">Clasificación ASA</label>
                     <div className="flex flex-wrap gap-2">
                       {["I", "II", "III", "IV", "V", "VI"].map((asa) => (
                         <button
@@ -467,16 +467,16 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                           onClick={() => form.setValue("clasificacionASA", asa, { shouldDirty: true })}
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                             form.watch("clasificacionASA") === asa
-                              ? "bg-[#00d4a1] text-black"
-                              : "bg-[#1e2535] text-gray-300 hover:bg-[#263040]"
+                              ? "bg-accent text-black"
+                              : "bg-border text-text-secondary hover:bg-surface-active"
                           }`}
                         >
                           ASA {asa}
                         </button>
                       ))}
                     </div>
-                    <label className="flex items-center gap-2 text-sm text-gray-300 mt-2">
-                      <input type="checkbox" {...form.register("esEmergencia")} disabled={firmado} className="accent-[#00d4a1]" />
+                    <label className="flex items-center gap-2 text-sm text-text-secondary mt-2">
+                      <input type="checkbox" {...form.register("esEmergencia")} disabled={firmado} className="accent-accent" />
                       (E) Emergencia
                     </label>
                   </div>
@@ -489,7 +489,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Estado psíquico */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-gray-400">Estado psíquico preoperatorio</label>
+                    <label className="block text-sm text-muted">Estado psíquico preoperatorio</label>
                     <div className="flex flex-wrap gap-2">
                       {ESTADO_PSICOS.map((ep) => (
                         <button
@@ -499,8 +499,8 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                           onClick={() => form.setValue("estadoPsiquico", ep, { shouldDirty: true })}
                           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                             form.watch("estadoPsiquico") === ep
-                              ? "bg-[#00d4a1] text-black"
-                              : "bg-[#1e2535] text-gray-300 hover:bg-[#263040]"
+                              ? "bg-accent text-black"
+                              : "bg-border text-text-secondary hover:bg-surface-active"
                           }`}
                         >
                           {ep}
@@ -511,9 +511,9 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Vía aérea */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-gray-400 uppercase tracking-wide">Evaluación de vía aérea</label>
+                    <label className="block text-sm text-muted uppercase tracking-wide">Evaluación de vía aérea</label>
                     <div className="flex flex-wrap gap-2">
-                      <span className="text-xs text-gray-500 self-center">Mallampati:</span>
+                      <span className="text-xs text-muted self-center">Mallampati:</span>
                       {MALLAMPATI.map((m) => (
                         <button
                           key={m}
@@ -522,8 +522,8 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                           onClick={() => form.setValue("mallampati", m, { shouldDirty: true })}
                           className={`px-3 py-1 rounded-lg text-sm ${
                             form.watch("mallampati") === m
-                              ? "bg-[#00d4a1] text-black"
-                              : "bg-[#1e2535] text-gray-300 hover:bg-[#263040]"
+                              ? "bg-accent text-black"
+                              : "bg-border text-text-secondary hover:bg-surface-active"
                           }`}
                         >
                           {m}
@@ -538,7 +538,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Checklist */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-gray-400">Checklist de seguridad</label>
+                    <label className="block text-sm text-muted">Checklist de seguridad</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {[
                         { name: "checklistEquipoAnes" as const, label: "Equipo de anestesia y gases verificado" },
@@ -546,8 +546,8 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                         { name: "checklistMonitores" as const, label: "Monitores colocados y alarmas configuradas" },
                         { name: "checklistPosicion" as const, label: "Posición del paciente y zonas de compresión controladas" },
                       ].map((item) => (
-                        <label key={item.name} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                          <input type="checkbox" {...form.register(item.name)} disabled={firmado} className="accent-[#00d4a1]" />
+                        <label key={item.name} className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+                          <input type="checkbox" {...form.register(item.name)} disabled={firmado} className="accent-accent" />
                           {item.label}
                         </label>
                       ))}
@@ -560,16 +560,16 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
               {sec.key === "tecnica" && (
                 <>
                   <div className="space-y-2">
-                    <label className="block text-sm text-gray-400">Técnica anestésica</label>
+                    <label className="block text-sm text-muted">Técnica anestésica</label>
                     <div className="flex gap-3">
                       {["conductiva", "general"].map((t) => (
-                        <label key={t} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                        <label key={t} className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
                           <input
                             type="checkbox"
                             checked={(form.watch("tecnicaAnestesia") || []).includes(t)}
                             onChange={() => toggleTecnica(t)}
                             disabled={firmado}
-                            className="accent-[#00d4a1]"
+                            className="accent-accent"
                           />
                           {t === "conductiva" ? "Conductiva/Regional" : "General"}
                         </label>
@@ -579,18 +579,18 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Conductiva */}
                   {tecnicaConductiva && (
-                    <div className="space-y-3 p-3 rounded-lg bg-[#0f1117] border border-[#1e2535]/50">
-                      <h4 className="text-sm font-medium text-gray-300">Anestesia Conductiva/Regional</h4>
+                    <div className="space-y-3 p-3 rounded-lg bg-background border border-border/50">
+                      <h4 className="text-sm font-medium text-text-secondary">Anestesia Conductiva/Regional</h4>
                       <div className="space-y-2">
-                        <label className="block text-xs text-gray-500">Tipo</label>
+                        <label className="block text-xs text-muted">Tipo</label>
                         <div className="flex flex-wrap gap-2">
                           {TIPOS_CONDUCTIVA.map((tc) => (
                             <button key={tc} type="button" disabled={firmado}
                               onClick={() => form.setValue("tipoConductiva", tc, { shouldDirty: true })}
                               className={`px-3 py-1 rounded-lg text-xs ${
                                 form.watch("tipoConductiva") === tc
-                                  ? "bg-[#00d4a1] text-black"
-                                  : "bg-[#1e2535] text-gray-300 hover:bg-[#263040]"
+                                  ? "bg-accent text-black"
+                                  : "bg-border text-text-secondary hover:bg-surface-active"
                               }`}>{tc}</button>
                           ))}
                         </div>
@@ -601,8 +601,8 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                         <Input label="Tipo y calibre de aguja" {...form.register("agujaDetalle")} disabled={firmado} />
                         <Input label="Fármaco y dosis" {...form.register("farmacoConductiva")} disabled={firmado} />
                       </div>
-                      <label className="flex items-center gap-2 text-sm text-gray-300">
-                        <input type="checkbox" {...form.register("cateter")} disabled={firmado} className="accent-[#00d4a1]" />
+                      <label className="flex items-center gap-2 text-sm text-text-secondary">
+                        <input type="checkbox" {...form.register("cateter")} disabled={firmado} className="accent-accent" />
                         Catéter
                       </label>
                     </div>
@@ -610,32 +610,32 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* General */}
                   {tecnicaGeneral && (
-                    <div className="space-y-3 p-3 rounded-lg bg-[#0f1117] border border-[#1e2535]/50">
-                      <h4 className="text-sm font-medium text-gray-300">Anestesia General</h4>
+                    <div className="space-y-3 p-3 rounded-lg bg-background border border-border/50">
+                      <h4 className="text-sm font-medium text-text-secondary">Anestesia General</h4>
                       <div className="space-y-2">
-                        <label className="block text-xs text-gray-500">Vía de inducción</label>
+                        <label className="block text-xs text-muted">Vía de inducción</label>
                         <div className="flex gap-3">
                           {["Inhalatoria", "Endovenosa"].map((v) => (
                             <button key={v} type="button" disabled={firmado}
                               onClick={() => form.setValue("viaInduccion", v, { shouldDirty: true })}
                               className={`px-3 py-1 rounded-lg text-xs ${
                                 form.watch("viaInduccion") === v
-                                  ? "bg-[#00d4a1] text-black"
-                                  : "bg-[#1e2535] text-gray-300 hover:bg-[#263040]"
+                                  ? "bg-accent text-black"
+                                  : "bg-border text-text-secondary hover:bg-surface-active"
                               }`}>{v}</button>
                           ))}
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <label className="block text-xs text-gray-500">Manejo de vía aérea</label>
+                        <label className="block text-xs text-muted">Manejo de vía aérea</label>
                         <div className="flex flex-wrap gap-2">
                           {VIA_AEREA.map((va) => (
                             <button key={va} type="button" disabled={firmado}
                               onClick={() => form.setValue("manejoViaAerea", va, { shouldDirty: true })}
                               className={`px-3 py-1 rounded-lg text-xs ${
                                 form.watch("manejoViaAerea") === va
-                                  ? "bg-[#00d4a1] text-black"
-                                  : "bg-[#1e2535] text-gray-300 hover:bg-[#263040]"
+                                  ? "bg-accent text-black"
+                                  : "bg-border text-text-secondary hover:bg-surface-active"
                               }`}>{va}</button>
                           ))}
                         </div>
@@ -643,11 +643,11 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Input label="N° tubo" {...form.register("nroTubo")} disabled={firmado} />
                         <div className="flex items-end gap-4">
-                          <label className="flex items-center gap-2 text-sm text-gray-300 pb-2">
-                            <input type="checkbox" {...form.register("conManguito")} disabled={firmado} className="accent-[#00d4a1]" />
+                          <label className="flex items-center gap-2 text-sm text-text-secondary pb-2">
+                            <input type="checkbox" {...form.register("conManguito")} disabled={firmado} className="accent-accent" />
                             Con manguito
                           </label>
-                          <label className="flex items-center gap-2 text-sm text-gray-300 pb-2">
+                          <label className="flex items-center gap-2 text-sm text-text-secondary pb-2">
                             <input type="checkbox" {...form.register("dificultadViaAerea")} disabled={firmado} className="accent-red-400" />
                             Dificultad vía aérea
                           </label>
@@ -658,15 +658,15 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                       )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <label className="block text-xs text-gray-500">Modalidad ventilatoria</label>
+                          <label className="block text-xs text-muted">Modalidad ventilatoria</label>
                           <div className="flex flex-wrap gap-2">
                             {MODALIDAD_VENT.map((mv) => (
                               <button key={mv} type="button" disabled={firmado}
                                 onClick={() => form.setValue("modalidadVentilatoria", mv, { shouldDirty: true })}
                                 className={`px-3 py-1 rounded-lg text-xs ${
                                   form.watch("modalidadVentilatoria") === mv
-                                    ? "bg-[#00d4a1] text-black"
-                                    : "bg-[#1e2535] text-gray-300 hover:bg-[#263040]"
+                                    ? "bg-accent text-black"
+                                    : "bg-border text-text-secondary hover:bg-surface-active"
                                 }`}>{mv}</button>
                             ))}
                           </div>
@@ -697,10 +697,10 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Egresos */}
                   <div className="space-y-3">
-                    <label className="block text-sm text-gray-400 uppercase tracking-wide">Egresos</label>
+                    <label className="block text-sm text-muted uppercase tracking-wide">Egresos</label>
                     <Input label="Diuresis intraoperatoria (ml)" type="number" min={0} {...form.register("diuresis", { valueAsNumber: true })} disabled={firmado} />
                     <div className="space-y-2">
-                      <label className="block text-xs text-gray-500">Pérdida sanguínea estimada</label>
+                      <label className="block text-xs text-muted">Pérdida sanguínea estimada</label>
                       <div className="flex flex-wrap gap-2">
                         {[
                           { val: "no_significativa", label: "No significativa" },
@@ -712,8 +712,8 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                             onClick={() => form.setValue("perdidaSanguinea", opt.val, { shouldDirty: true })}
                             className={`px-3 py-1 rounded-lg text-xs ${
                               form.watch("perdidaSanguinea") === opt.val
-                                ? "bg-[#00d4a1] text-black"
-                                : "bg-[#1e2535] text-gray-300 hover:bg-[#263040]"
+                                ? "bg-accent text-black"
+                                : "bg-border text-text-secondary hover:bg-surface-active"
                             }`}>{opt.label}</button>
                         ))}
                       </div>
@@ -727,26 +727,26 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                   {/* Posición y sondas */}
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <label className="block text-xs text-gray-500">Posición operatoria</label>
+                      <label className="block text-xs text-muted">Posición operatoria</label>
                       <div className="flex flex-wrap gap-2">
                         {POSICIONES.map((p) => (
                           <button key={p} type="button" disabled={firmado}
                             onClick={() => form.setValue("posicionOperatoria", p, { shouldDirty: true })}
                             className={`px-3 py-1 rounded-lg text-xs ${
                               form.watch("posicionOperatoria") === p
-                                ? "bg-[#00d4a1] text-black"
-                                : "bg-[#1e2535] text-gray-300 hover:bg-[#263040]"
+                                ? "bg-accent text-black"
+                                : "bg-border text-text-secondary hover:bg-surface-active"
                             }`}>{p}</button>
                         ))}
                       </div>
                     </div>
                     <div className="flex gap-6">
-                      <label className="flex items-center gap-2 text-sm text-gray-300">
-                        <input type="checkbox" {...form.register("sondaNasogastrica")} disabled={firmado} className="accent-[#00d4a1]" />
+                      <label className="flex items-center gap-2 text-sm text-text-secondary">
+                        <input type="checkbox" {...form.register("sondaNasogastrica")} disabled={firmado} className="accent-accent" />
                         Sonda nasogástrica
                       </label>
-                      <label className="flex items-center gap-2 text-sm text-gray-300">
-                        <input type="checkbox" {...form.register("sondaVesical")} disabled={firmado} className="accent-[#00d4a1]" />
+                      <label className="flex items-center gap-2 text-sm text-text-secondary">
+                        <input type="checkbox" {...form.register("sondaVesical")} disabled={firmado} className="accent-accent" />
                         Sonda vesical
                       </label>
                     </div>
@@ -755,22 +755,22 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                         onClick={() => form.setValue("tipoCirugia", "programada", { shouldDirty: true })}
                         className={`px-3 py-1 rounded-lg text-xs ${
                           form.watch("tipoCirugia") === "programada"
-                            ? "bg-[#00d4a1] text-black"
-                            : "bg-[#1e2535] text-gray-300 hover:bg-[#263040]"
+                            ? "bg-accent text-black"
+                            : "bg-border text-text-secondary hover:bg-surface-active"
                         }`}>Programada</button>
                       <button type="button" disabled={firmado}
                         onClick={() => form.setValue("tipoCirugia", "urgencia", { shouldDirty: true })}
                         className={`px-3 py-1 rounded-lg text-xs ${
                           form.watch("tipoCirugia") === "urgencia"
-                            ? "bg-red-400 text-black"
-                            : "bg-[#1e2535] text-gray-300 hover:bg-[#263040]"
+                            ? "bg-error text-black"
+                            : "bg-border text-text-secondary hover:bg-surface-active"
                         }`}>Urgencia</button>
                     </div>
                   </div>
 
                   {/* Observaciones */}
                   <div className="space-y-1">
-                    <label className="block text-sm text-gray-400">Observaciones / Complicaciones</label>
+                    <label className="block text-sm text-muted">Observaciones / Complicaciones</label>
                     <textarea
                       {...form.register("observaciones")}
                       rows={4}
@@ -787,16 +787,16 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                 <>
                   {/* Estado egreso */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-gray-400">Estado al egreso de quirófano</label>
+                    <label className="block text-sm text-muted">Estado al egreso de quirófano</label>
                     <div className="flex flex-wrap gap-3">
                       {EGRESO_CHECKBOXES.map((eg) => (
-                        <label key={eg} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                        <label key={eg} className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
                           <input
                             type="checkbox"
                             checked={(form.watch("estadoEgreso") || []).includes(eg)}
                             onChange={() => toggleEgreso(eg)}
                             disabled={firmado}
-                            className="accent-[#00d4a1]"
+                            className="accent-accent"
                           />
                           {eg}
                         </label>
@@ -806,15 +806,15 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Destino */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-gray-400">Destino del paciente</label>
+                    <label className="block text-sm text-muted">Destino del paciente</label>
                     <div className="flex flex-wrap gap-2">
                       {DESTINOS.map((d) => (
                         <button key={d} type="button" disabled={firmado}
                           onClick={() => form.setValue("destinoPaciente", d, { shouldDirty: true })}
                           className={`px-3 py-1.5 rounded-lg text-sm ${
                             form.watch("destinoPaciente") === d
-                              ? "bg-[#00d4a1] text-black"
-                              : "bg-[#1e2535] text-gray-300 hover:bg-[#263040]"
+                              ? "bg-accent text-black"
+                              : "bg-border text-text-secondary hover:bg-surface-active"
                           }`}>{d}</button>
                       ))}
                     </div>
@@ -825,7 +825,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Drogas */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-gray-400 uppercase tracking-wide">Medicación administrada</label>
+                    <label className="block text-sm text-muted uppercase tracking-wide">Medicación administrada</label>
                     <PanelDrogas control={form.control} readOnly={firmado} />
                   </div>
                 </>
@@ -839,7 +839,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
       {showFirmarModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="card p-6 w-full max-w-md space-y-4">
-            <h3 className="text-lg font-medium text-white">Firmar Protocolo</h3>
+            <h3 className="text-lg font-medium text-text">Firmar Protocolo</h3>
             <Input label="Nombre y apellido del anestesiólogo" value={firmarNombre} onChange={(e) => setFirmarNombre(e.target.value)} />
             <Input label="Matrícula" value={firmarMatricula} onChange={(e) => setFirmarMatricula(e.target.value)} />
             <div className="flex justify-end gap-3">
@@ -879,20 +879,20 @@ function BalanceLiquidos({ control, register, disabled }: { control: any; regist
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm text-gray-400 uppercase tracking-wide">Ingresos</label>
+      <label className="block text-sm text-muted uppercase tracking-wide">Ingresos</label>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#1e2535]">
-              <th className="py-2 px-2 text-left text-gray-400 font-medium">Tipo de fluido</th>
-              <th className="py-2 px-2 text-right text-gray-400 font-medium w-28">Volumen (ml)</th>
-              <th className="py-2 px-2 text-left text-gray-400 font-medium w-32">N° Unidad/Lote</th>
+            <tr className="border-b border-border">
+              <th className="py-2 px-2 text-left text-muted font-medium">Tipo de fluido</th>
+              <th className="py-2 px-2 text-right text-muted font-medium w-28">Volumen (ml)</th>
+              <th className="py-2 px-2 text-left text-muted font-medium w-32">N° Unidad/Lote</th>
             </tr>
           </thead>
           <tbody>
             {liquidos.map((l, idx) => (
-              <tr key={idx} className="border-b border-[#1e2535]/50">
-                <td className="py-1.5 px-2 text-gray-200 text-xs">{l.tipo}</td>
+              <tr key={idx} className="border-b border-border/50">
+                <td className="py-1.5 px-2 text-text text-xs">{l.tipo}</td>
                 <td className="py-1.5 px-2">
                   <input
                     type="number"
@@ -900,7 +900,7 @@ function BalanceLiquidos({ control, register, disabled }: { control: any; regist
                     value={l.volumen || ""}
                     onChange={(e) => handleChange(idx, "volumen", e.target.value)}
                     disabled={disabled}
-                    className="w-full text-right rounded border border-[#1e2535] bg-[#0f1117] px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-[#00d4a1]"
+                    className="w-full text-right rounded border border-border bg-background px-2 py-1 text-xs text-text focus:outline-none focus:border-accent"
                   />
                 </td>
                 <td className="py-1.5 px-2">
@@ -910,7 +910,7 @@ function BalanceLiquidos({ control, register, disabled }: { control: any; regist
                       value={l.lote}
                       onChange={(e) => handleChange(idx, "lote", e.target.value)}
                       disabled={disabled}
-                      className="w-full rounded border border-[#1e2535] bg-[#0f1117] px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-[#00d4a1]"
+                      className="w-full rounded border border-border bg-background px-2 py-1 text-xs text-text focus:outline-none focus:border-accent"
                     />
                   ) : (
                     <span className="text-gray-600">—</span>
@@ -919,8 +919,8 @@ function BalanceLiquidos({ control, register, disabled }: { control: any; regist
               </tr>
             ))}
             <tr className="font-bold">
-              <td className="py-1.5 px-2 text-[#00d4a1]">TOTAL</td>
-              <td className="py-1.5 px-2 text-right text-[#00d4a1]">{totalIngresos} ml</td>
+              <td className="py-1.5 px-2 text-accent">TOTAL</td>
+              <td className="py-1.5 px-2 text-right text-accent">{totalIngresos} ml</td>
               <td></td>
             </tr>
           </tbody>

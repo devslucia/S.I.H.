@@ -72,7 +72,7 @@ export default function FarmaciaPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Package className="w-6 h-6 text-teal" />
+          <Package className="w-6 h-6 text-accent" />
           <h2 className="text-xl font-medium text-white">Stock de Farmacia</h2>
         </div>
       </div>
@@ -107,11 +107,11 @@ export default function FarmaciaPage() {
                       <td className="px-4 py-3">
                         <span className="flex items-center gap-1">
                           {item.nombre}
-                          {isLow && <AlertTriangle size={12} className="text-red-400" />}
+                          {isLow && <AlertTriangle size={12} className="text-error" />}
                         </span>
                       </td>
                       <td className="hidden md:table-cell px-4 py-3">{item.presentacion || "—"}</td>
-                      <td className={`px-4 py-3 font-medium ${isLow ? "text-red-400" : "text-white"}`}>
+                      <td className={`px-4 py-3 font-medium ${isLow ? "text-error" : "text-white"}`}>
                         {item.stockActual}
                         {isLow && <Badge variant="error" className="ml-2">Stock bajo</Badge>}
                       </td>

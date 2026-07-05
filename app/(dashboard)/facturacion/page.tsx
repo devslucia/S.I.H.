@@ -58,7 +58,7 @@ export default function FacturacionPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Receipt className="w-6 h-6 text-teal" />
+        <Receipt className="w-6 h-6 text-accent" />
         <h2 className="text-xl font-medium text-white">Auditoría y Facturación</h2>
       </div>
 
