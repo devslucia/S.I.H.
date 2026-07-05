@@ -87,7 +87,7 @@ interface CarpetaCompleta {
     } | null;
   } | null;
   cirugias: {
-    id: string; quirofanoNumero: number; fechaProgramada: string;
+    id: string; quirofanoId: string | null; quirofano?: { nombre: string } | null; fechaProgramada: string;
     horaProgramada: string; tipo: string; estado: string;
     procedimiento: string | null; diagnosticoPreop: string | null;
     diagnosticoPostop: string | null; hallazgos: string | null;
@@ -598,7 +598,7 @@ export default function ImprimirCarpetaPage() {
             {data.cirugias.map((cir, i) => (
               <div key={cir.id} style={{ border: '1px solid #000', padding: '8px', marginBottom: '8px' }}>
                 <p style={{ fontSize: '10pt', fontWeight: 'bold', margin: '0 0 4px 0' }}>
-                  Cirugía #{i + 1} — QF {cir.quirofanoNumero} — {cir.estado}
+                  Cirugía #{i + 1} — {cir.quirofano?.nombre || "QF"} — {cir.estado}
                 </p>
                 <p style={{ fontSize: '8pt', margin: '0 0 4px 0' }}>
                   {formatDate(cir.fechaProgramada)} {cir.horaProgramada}

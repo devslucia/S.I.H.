@@ -26,32 +26,54 @@ function HCShell({ internacionId, activeTab }: HCShellProps) {
   const router = useRouter();
 
   return (
-    <div className="flex items-center justify-between border-b border-[#1e2535]">
-      <div className="flex overflow-x-auto">
-        {TABS.map((tab) => {
-          const isActive = tab.id === activeTab;
-          return (
-            <Link
-              key={tab.id}
-              href={`/historia-clinica/${internacionId}/${tab.id}`}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap",
-                isActive
-                  ? "border-[#00d4a1] text-[#00d4a1]"
-                  : "border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-500"
-              )}
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
+    <div className="border-b border-[#1e2535]">
+      {/* Desktop: horizontal tabs */}
+      <div className="hidden md:flex items-center justify-between">
+        <div className="flex overflow-x-auto">
+          {TABS.map((tab) => {
+            const isActive = tab.id === activeTab;
+            return (
+              <Link
+                key={tab.id}
+                href={`/historia-clinica/${internacionId}/${tab.id}`}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap",
+                  isActive
+                    ? "border-[#00d4a1] text-[#00d4a1]"
+                    : "border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-500"
+                )}
+              >
+                {tab.label}
+              </Link>
+            );
+          })}
+        </div>
+        <button
+          onClick={() => router.push(`/historia-clinica/${internacionId}/imprimir`)}
+          className="flex items-center gap-1.5 text-xs text-muted hover:text-teal transition-colors mr-2 no-print"
+        >
+          <Printer size={14} /> Imprimir Carpeta
+        </button>
       </div>
-      <button
-        onClick={() => router.push(`/historia-clinica/${internacionId}/imprimir`)}
-        className="flex items-center gap-1.5 text-xs text-muted hover:text-teal transition-colors mr-2 no-print"
-      >
-        <Printer size={14} /> Imprimir Carpeta
-      </button>
+
+      {/* Mobile: select dropdown */}
+      <div className="flex md:hidden items-center gap-2 p-3">
+        <select
+          value={activeTab}
+          onChange={(e) => router.push(`/historia-clinica/${internacionId}/${e.target.value}`)}
+          className="select-field flex-1 text-sm"
+        >
+          {TABS.map((tab) => (
+            <option key={tab.id} value={tab.id}>{tab.label}</option>
+          ))}
+        </select>
+        <button
+          onClick={() => router.push(`/historia-clinica/${internacionId}/imprimir`)}
+          className="btn-secondary text-xs whitespace-nowrap no-print"
+        >
+          <Printer size={14} /> Imprimir
+        </button>
+      </div>
     </div>
   );
 }

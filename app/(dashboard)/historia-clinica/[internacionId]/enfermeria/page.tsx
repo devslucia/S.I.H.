@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, User, Clock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { VoiceInput } from "@/components/ui/VoiceInput";
 import { formatDateTime } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
 interface ControlEnfermeria {
   id: string;
@@ -46,6 +47,9 @@ const tipoLabels: Record<string, string> = {
 export default function EnfermeriaPage() {
   const params = useParams();
   const router = useRouter();
+  const session = useSession();
+  const userRol = session?.data?.user?.rol;
+  const canCreate = ["ADMIN","ENFERMERO"].includes(userRol || "");
   const [controles, setControles] = useState<ControlEnfermeria[]>([]);
   const [loading, setLoading] = useState(true);
   const [tipo, setTipo] = useState("SIGNOS_VITALES");
@@ -152,6 +156,7 @@ export default function EnfermeriaPage() {
         <h2 className="text-xl font-medium text-white">Enfermería</h2>
       </div>
 
+      {canCreate && (
       <div className="card p-5">
         <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">Nuevo Control</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -216,6 +221,7 @@ export default function EnfermeriaPage() {
           </div>
         </form>
       </div>
+      )}
 
       {loading ? (
         <p className="text-muted text-sm">Cargando controles...</p>

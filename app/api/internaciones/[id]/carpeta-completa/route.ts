@@ -1,13 +1,20 @@
-import { auth } from "@/lib/auth";
+import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { getVisibleInternacionesWhere } from "@/lib/internaciones-visibility";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+const CARPETA_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ADMISION"];
 
-  const internacion = await prisma.internacion.findUnique({
-    where: { id: params.id },
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const { session, error } = await requireRole(...CARPETA_ROLES);
+  if (error) return error;
+
+  const rol = (session!.user as any).rol as string;
+  const userId = session!.user.id as string;
+  const visFilter = getVisibleInternacionesWhere(userId, rol);
+
+  const internacion = await prisma.internacion.findFirst({
+    where: { id: params.id, ...visFilter },
     include: {
       paciente: { include: { alergias: true } },
       cama: { include: { sector: true } },

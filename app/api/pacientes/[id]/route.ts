@@ -1,11 +1,13 @@
-import { auth } from "@/lib/auth";
+import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { updatePacienteSchema } from "@/lib/validations/paciente.schema";
 import { NextRequest, NextResponse } from "next/server";
 
+const PACIENTES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION"];
+
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole(...PACIENTES_READ_ROLES);
+  if (error) return error;
 
   const paciente = await prisma.paciente.findUnique({
     where: { id: params.id },
@@ -29,8 +31,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole("ADMIN", "ADMISION");
+  if (error) return error;
 
   const body = await req.json();
   const parsed = updatePacienteSchema.safeParse(body);
@@ -47,8 +49,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole("ADMIN", "ADMISION");
+  if (error) return error;
 
   const internacionesActivas = await prisma.internacion.count({
     where: { pacienteId: params.id, estado: "ACTIVA" },

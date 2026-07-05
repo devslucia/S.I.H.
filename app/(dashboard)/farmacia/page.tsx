@@ -52,7 +52,7 @@ export default function FarmaciaPage() {
     if (!selectedItem) return;
     setSaving(true);
     try {
-      const res = await fetch("/api/farmacia/stock/movimientos", {
+      const res = await fetch("/api/farmacia/stock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stockItemId: selectedItem.id, ...movForm, cantidad: parseFloat(movForm.cantidad) }),
@@ -85,11 +85,11 @@ export default function FarmaciaPage() {
             <thead className="bg-surface">
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-gray-400">Nombre</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Presentación</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left font-medium text-gray-400">Presentación</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-400">Stock Actual</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-400">Stock Mínimo</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Lote</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Vencimiento</th>
+                <th className="hidden lg:table-cell px-4 py-3 text-left font-medium text-gray-400">Lote</th>
+                <th className="hidden lg:table-cell px-4 py-3 text-left font-medium text-gray-400">Vencimiento</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-400">Acción</th>
               </tr>
             </thead>
@@ -110,14 +110,14 @@ export default function FarmaciaPage() {
                           {isLow && <AlertTriangle size={12} className="text-red-400" />}
                         </span>
                       </td>
-                      <td className="px-4 py-3">{item.presentacion || "—"}</td>
+                      <td className="hidden md:table-cell px-4 py-3">{item.presentacion || "—"}</td>
                       <td className={`px-4 py-3 font-medium ${isLow ? "text-red-400" : "text-white"}`}>
                         {item.stockActual}
                         {isLow && <Badge variant="error" className="ml-2">Stock bajo</Badge>}
                       </td>
                       <td className="px-4 py-3">{item.stockMinimo}</td>
-                      <td className="px-4 py-3">{item.lote || "—"}</td>
-                      <td className="px-4 py-3">{item.vencimiento ? formatDate(item.vencimiento) : "—"}</td>
+                      <td className="hidden lg:table-cell px-4 py-3">{item.lote || "—"}</td>
+                      <td className="hidden lg:table-cell px-4 py-3">{item.vencimiento ? formatDate(item.vencimiento) : "—"}</td>
                       <td className="px-4 py-3">
                         <Button size="sm" variant="secondary" onClick={() => openMovement(item)}>
                           <ArrowUpDown size={12} /> Movimiento

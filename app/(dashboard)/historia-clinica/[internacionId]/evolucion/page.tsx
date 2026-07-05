@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatDateTime } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
 interface Evolucion {
   id: string;
@@ -20,6 +21,9 @@ interface Evolucion {
 export default function EvolucionPage() {
   const params = useParams();
   const router = useRouter();
+  const session = useSession();
+  const userRol = session?.data?.user?.rol;
+  const canCreate = ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO"].includes(userRol || "");
   const [evoluciones, setEvoluciones] = useState<Evolucion[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
@@ -70,9 +74,11 @@ export default function EvolucionPage() {
           </button>
           <h2 className="text-xl font-medium text-white">Evolución</h2>
         </div>
-        <Button onClick={() => setShowEditor(true)}>
-          <Plus size={16} /> Nueva Nota
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setShowEditor(true)}>
+            <Plus size={16} /> Nueva Nota
+          </Button>
+        )}
       </div>
 
       {showEditor && (

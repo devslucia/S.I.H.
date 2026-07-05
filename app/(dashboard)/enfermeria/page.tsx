@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Syringe, HeartPulse, CheckCircle, AlertTriangle, Activity, Clock, ChevronDown, ChevronUp, User } from "lucide-react";
+import { Syringe, HeartPulse, CheckCircle, AlertTriangle, Activity, Clock, ChevronDown, ChevronUp, User, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { VoiceInput } from "@/components/ui/VoiceInput";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
@@ -81,6 +81,7 @@ interface ControlRecord {
   tipo: string;
   datos: any;
   observacion?: string;
+  alertas?: string[];
   usuario: { nombre: string };
 }
 
@@ -194,32 +195,32 @@ function ControlForm({ internacionId, onSaved }: { internacionId: string; onSave
   };
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-black/20 rounded-lg border border-border">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-black/20 rounded-lg border border-border">
       <div>
         <label className="block text-xs text-muted mb-1">Hora</label>
-        <input type="time" value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })} className="input-field text-sm" required />
+        <input type="time" value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })} className="input-field" required />
       </div>
       <div>
         <label className="block text-xs text-muted mb-1">PA (mmHg)</label>
-        <input type="text" placeholder="120/80" value={form.PA} onChange={(e) => setForm({ ...form, PA: e.target.value })} className="input-field text-sm" />
+        <input type="text" placeholder="120/80" value={form.PA} onChange={(e) => setForm({ ...form, PA: e.target.value })} className="input-field" />
       </div>
       <div>
         <label className="block text-xs text-muted mb-1">FC (lpm)</label>
-        <input type="text" placeholder="80" value={form.FC} onChange={(e) => setForm({ ...form, FC: e.target.value })} className="input-field text-sm" />
+        <input type="text" placeholder="80" value={form.FC} onChange={(e) => setForm({ ...form, FC: e.target.value })} className="input-field" />
       </div>
       <div>
         <label className="block text-xs text-muted mb-1">FR (rpm)</label>
-        <input type="text" placeholder="16" value={form.FR} onChange={(e) => setForm({ ...form, FR: e.target.value })} className="input-field text-sm" />
+        <input type="text" placeholder="16" value={form.FR} onChange={(e) => setForm({ ...form, FR: e.target.value })} className="input-field" />
       </div>
       <div>
         <label className="block text-xs text-muted mb-1">Temperatura (°C)</label>
-        <input type="text" placeholder="37.0" value={form.temperatura} onChange={(e) => setForm({ ...form, temperatura: e.target.value })} className="input-field text-sm" />
+        <input type="text" placeholder="37.0" value={form.temperatura} onChange={(e) => setForm({ ...form, temperatura: e.target.value })} className="input-field" />
       </div>
       <div>
         <label className="block text-xs text-muted mb-1">SatO2 (%)</label>
-        <input type="text" placeholder="98" value={form.SatO2} onChange={(e) => setForm({ ...form, SatO2: e.target.value })} className="input-field text-sm" />
+        <input type="text" placeholder="98" value={form.SatO2} onChange={(e) => setForm({ ...form, SatO2: e.target.value })} className="input-field" />
       </div>
-      <div className="col-span-2">
+      <div className="sm:col-span-2">
         <label className="block text-xs text-muted mb-1">Observación</label>
         <div className="relative">
           <textarea
@@ -227,7 +228,7 @@ function ControlForm({ internacionId, onSaved }: { internacionId: string; onSave
             rows={3}
             value={form.observacion}
             onChange={(e) => setForm({ ...form, observacion: e.target.value })}
-            className="input-field text-sm resize-none min-h-[80px] pr-10"
+            className="input-field resize-none min-h-[80px] pr-10"
           />
           <div className="absolute top-2 right-2">
             <VoiceInput
@@ -250,15 +251,15 @@ function ControlForm({ internacionId, onSaved }: { internacionId: string; onSave
             {parsedVitals.spo2 && <div>SpO2: <strong>{parsedVitals.spo2}</strong></div>}
             {parsedVitals.observacion && <div className="col-span-3">Obs: <strong>{parsedVitals.observacion}</strong></div>}
           </div>
-          <div className="flex gap-2">
-            <button type="button" onClick={applyParsedVitals} className="btn-primary text-xs py-1 px-3">✅ Confirmar y guardar</button>
-            <button type="button" onClick={() => { setShowConfirmVitals(false); setParsedVitals(null); setVoiceStatus("idle"); }} className="btn-secondary text-xs py-1 px-3">✏️ Editar</button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button type="button" onClick={applyParsedVitals} className="btn-primary text-xs py-2 px-3 min-h-[44px] w-full sm:w-auto">✅ Confirmar y guardar</button>
+                <button type="button" onClick={() => { setShowConfirmVitals(false); setParsedVitals(null); setVoiceStatus("idle"); }} className="btn-secondary text-xs py-2 px-3 min-h-[44px] w-full sm:w-auto">✏️ Editar</button>
           </div>
         </div>
       )}
 
-      <div className="col-span-2 md:col-span-4 flex justify-end">
-        <button type="submit" disabled={saving} className="btn-primary text-sm">
+      <div className="col-span-1 sm:col-span-2 md:col-span-4 flex justify-end">
+        <button type="submit" disabled={saving} className="btn-primary w-full md:w-auto">
           {saving ? "Guardando..." : "Guardar Control"}
         </button>
       </div>
@@ -340,7 +341,6 @@ function AplicarPrescripcion({
           hora,
           stockItemId: selectedStockId || null,
           cantidad,
-          precioUnitario: 0,
         }),
       });
       if (res.ok) {
@@ -403,13 +403,13 @@ function AplicarPrescripcion({
 
   return (
     <>
-      <button onClick={() => setExpanded(!expanded)} className="text-xs btn-primary py-1 px-2">
+      <button onClick={() => setExpanded(!expanded)} className="text-xs btn-primary py-2 px-3 min-h-[44px]">
         {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Aplicar
       </button>
 
       {expanded && (
         <div className="mt-2 p-3 bg-black/30 rounded-lg border border-border space-y-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs text-muted mb-1">Hora</label>
               <input
@@ -486,9 +486,9 @@ function AplicarPrescripcion({
                 {parsedMed.hora && <div>Hora: <strong>{parsedMed.hora}</strong></div>}
                 {parsedMed.observacion && <div className="col-span-2">Obs: <strong>{parsedMed.observacion}</strong></div>}
               </div>
-              <div className="flex gap-2">
-                <button type="button" onClick={applyParsedMed} className="btn-primary text-xs py-1 px-3">✅ Aplicar</button>
-                <button type="button" onClick={() => { setShowConfirmMed(false); setParsedMed(null); setVoiceStatus("idle"); }} className="btn-secondary text-xs py-1 px-3">✏️ Editar</button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button type="button" onClick={applyParsedMed} className="btn-primary text-xs py-2 px-3 min-h-[44px] w-full sm:w-auto">✅ Aplicar</button>
+                <button type="button" onClick={() => { setShowConfirmMed(false); setParsedMed(null); setVoiceStatus("idle"); }} className="btn-secondary text-xs py-2 px-3 min-h-[44px] w-full sm:w-auto">✏️ Editar</button>
               </div>
             </div>
           )}
@@ -547,6 +547,118 @@ function AldretePostQx({ protocolo }: { protocolo: ProtocoloResumen }) {
       </div>
       {protocolo.destinoPaciente && (
         <p className="mt-1 text-muted">Destino: <strong className="text-white">{protocolo.destinoPaciente}</strong></p>
+      )}
+    </div>
+  );
+}
+
+const HOJA_SECCIONES = [
+  { value: "MATERIAL_DESCARTABLE", label: "Material descartable" },
+  { value: "MEDICACION_ORAL", label: "Medicación oral" },
+  { value: "MEDICACION_ENDOVENOSA", label: "Medicación endovenosa" },
+  { value: "MEDICACION_IM_SC", label: "Medicación IM/SC" },
+] as const;
+
+function HojaEnfermeriaForm({ internacionId, onSaved }: { internacionId: string; onSaved: () => void }) {
+  const [seccion, setSeccion] = useState<string>(HOJA_SECCIONES[0].value);
+  const [item, setItem] = useState("");
+  const [dosis, setDosis] = useState("");
+  const [via, setVia] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!item.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/historia-clinica/${internacionId}/enfermeria`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hora: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false }),
+          tipo: "NOTA_LIBRE",
+          hojasEnfermeria: [{
+            fecha: new Date().toISOString(),
+            seccion,
+            item: item.trim(),
+            dosis: dosis || undefined,
+            via: via || undefined,
+            marcasHorarias: {},
+          }],
+        }),
+      });
+      if (res.ok) {
+        setItem("");
+        setDosis("");
+        setVia("");
+        setExpanded(false);
+        onSaved();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-3">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="text-xs btn-secondary py-2 px-3 flex items-center gap-1"
+      >
+        <FileText size={12} /> Hoja de Enfermería {expanded ? "▲" : "▼"}
+      </button>
+      {expanded && (
+        <form onSubmit={handleSubmit} className="mt-2 p-3 bg-black/20 rounded-lg border border-border space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs text-muted mb-1">Sección</label>
+              <select value={seccion} onChange={(e) => setSeccion(e.target.value)} className="input-field text-sm">
+                {HOJA_SECCIONES.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs text-muted mb-1">Item / Descripción</label>
+              <input
+                type="text"
+                placeholder="Ej: Jeringa 5cc, Paracetamol 500mg..."
+                value={item}
+                onChange={(e) => setItem(e.target.value)}
+                className="input-field text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted mb-1">Dosis</label>
+              <input
+                type="text"
+                placeholder="Ej: 1g, 10ml"
+                value={dosis}
+                onChange={(e) => setDosis(e.target.value)}
+                className="input-field text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted mb-1">Vía</label>
+              <input
+                type="text"
+                placeholder="Ej: IV, VO, IM"
+                value={via}
+                onChange={(e) => setVia(e.target.value)}
+                className="input-field text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button type="submit" disabled={saving || !item.trim()} className="btn-primary text-sm">
+              {saving ? "Guardando..." : "Registrar"}
+            </button>
+          </div>
+        </form>
       )}
     </div>
   );
@@ -639,9 +751,9 @@ export default function EnfermeriaPage() {
           const controles = controlesMap[i.id] || [];
           return (
             <div key={i.id} className="card overflow-hidden">
-              <div className="p-4 flex items-center justify-between bg-black/20 border-b border-border">
+              <div className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-black/20 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-amber/20 flex items-center justify-center text-amber font-medium text-sm">
+                  <div className="w-9 h-9 rounded-full bg-amber/20 flex items-center justify-center text-amber font-medium text-sm flex-shrink-0">
                     {p.nombre[0]}{p.apellido[0]}
                   </div>
                   <div>
@@ -651,7 +763,7 @@ export default function EnfermeriaPage() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {badgeCfg && (
                     <Badge variant={badgeCfg.variant}>{badgeCfg.label}</Badge>
                   )}
@@ -742,6 +854,7 @@ export default function EnfermeriaPage() {
                               <th className="text-left py-1 px-2">T°</th>
                               <th className="text-left py-1 px-2">SpO2</th>
                               <th className="text-left py-1 px-2">Obs</th>
+                              <th className="text-left py-1 px-2">⚠</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -754,6 +867,13 @@ export default function EnfermeriaPage() {
                                 <td className="py-1 px-2 text-muted">{c.datos?.["T°"] || "—"}</td>
                                 <td className="py-1 px-2 text-muted">{c.datos?.SatO2 || "—"}</td>
                                 <td className="py-1 px-2 text-muted max-w-[120px] truncate">{c.observacion || "—"}</td>
+                                <td className="py-1 px-2">
+                                  {c.alertas && c.alertas.length > 0 && (
+                                    <span className="flex items-center gap-1 text-red text-xs">
+                                      <AlertTriangle size={10} /> {c.alertas.length}
+                                    </span>
+                                  )}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -767,6 +887,19 @@ export default function EnfermeriaPage() {
                     <HeartPulse size={16} className="text-teal" /> Registrar Signos Vitales
                   </h4>
                   <ControlForm internacionId={i.id} onSaved={() => { fetchInternaciones(); fetchControles(i.id); }} />
+
+                  <HojaEnfermeriaForm internacionId={i.id} onSaved={() => { fetchInternaciones(); }} />
+
+                  <div className="mt-3">
+                    <a
+                      href={`/api/pdf/hoja-enfermeria/${i.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs btn-secondary py-2 px-3 inline-flex items-center gap-1"
+                    >
+                      <FileText size={12} /> PDF Hoja de Enfermería
+                    </a>
+                  </div>
                 </div>
               )}
             </div>

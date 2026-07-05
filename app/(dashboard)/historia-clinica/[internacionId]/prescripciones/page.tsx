@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { AlertaBloqueada } from "@/components/ui/AlertaBloqueada";
 import { formatDateTime } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
 interface Prescripcion {
   id: string;
@@ -54,6 +55,9 @@ const initialForm = {
 export default function PrescripcionesPage() {
   const params = useParams();
   const router = useRouter();
+  const session = useSession();
+  const userRol = session?.data?.user?.rol;
+  const canCreate = ["ADMIN","MEDICO","ANESTESIOLOGO"].includes(userRol || "");
   const [prescripciones, setPrescripciones] = useState<Prescripcion[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -112,9 +116,11 @@ export default function PrescripcionesPage() {
           </button>
           <h2 className="text-xl font-medium text-white">Prescripciones</h2>
         </div>
-        <Button onClick={() => setModalOpen(true)}>
-          <Plus size={16} /> Nueva Prescripción
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setModalOpen(true)}>
+            <Plus size={16} /> Nueva Prescripción
+          </Button>
+        )}
       </div>
 
       {loading ? (

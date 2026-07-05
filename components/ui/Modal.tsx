@@ -29,8 +29,9 @@ function Modal({ open, onClose, title, children, size = "md" }: ModalProps) {
       />
       <div
         className={cn(
-          "relative z-10 w-full rounded-xl border border-[#1e2535] bg-[#161b27] p-6 shadow-2xl",
-          sizeStyles[size]
+          "relative z-10 w-full max-h-[90vh] overflow-y-auto rounded-xl border border-[#1e2535] bg-[#161b27] p-4 md:p-6 shadow-2xl",
+          sizeStyles[size],
+          "max-w-[calc(100vw-2rem)]"
         )}
       >
         <div className="flex items-center justify-between mb-4">

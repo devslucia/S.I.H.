@@ -1,10 +1,12 @@
-import { auth } from "@/lib/auth";
+import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
+const LIBRO_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
+
 export async function GET(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole(...LIBRO_ROLES);
+  if (error) return error;
 
   const cirugia = await prisma.cirugia.findUnique({
     where: { id: params.cirugiaId },
@@ -13,6 +15,8 @@ export async function GET(req: NextRequest, { params }: { params: { cirugiaId: s
       medicamentos: { include: { stockItem: true } },
       practicas: true,
       reprogramaciones: true,
+      instrumentador: { select: { id: true, nombre: true } },
+      circulante: { select: { id: true, nombre: true } },
       internacion: {
         include: { paciente: true, obraSocial: true, cama: true },
       },
@@ -23,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: { cirugiaId: s
     return NextResponse.json({ error: "Cirugía no encontrada" }, { status: 404 });
   }
 
-  const userIds = [cirugia.cirujanoId, cirugia.ayudante1Id, cirugia.ayudante2Id, cirugia.anestesiologoId, cirugia.instrumentadorId].filter(Boolean) as string[];
+  const userIds = [cirugia.cirujanoId, cirugia.ayudante1Id, cirugia.ayudante2Id, cirugia.anestesiologoId].filter(Boolean) as string[];
   const users = userIds.length > 0
     ? await prisma.usuario.findMany({ where: { id: { in: userIds } }, select: { id: true, nombre: true } })
     : [];
@@ -35,15 +39,16 @@ export async function GET(req: NextRequest, { params }: { params: { cirugiaId: s
     ayudante1: cirugia.ayudante1Id ? userMap[cirugia.ayudante1Id] || null : null,
     ayudante2: cirugia.ayudante2Id ? userMap[cirugia.ayudante2Id] || null : null,
     anestesiologo: cirugia.anestesiologoId ? userMap[cirugia.anestesiologoId] || null : null,
-    instrumentador: cirugia.instrumentadorId ? userMap[cirugia.instrumentadorId] || null : null,
+    instrumentador: cirugia.instrumentador || (cirugia.instrumentadorNombreLegado ? { id: null, nombre: cirugia.instrumentadorNombreLegado } : null),
+    circulante: cirugia.circulante || (cirugia.circulanteNombreLegado ? { id: null, nombre: cirugia.circulanteNombreLegado } : null),
   };
 
   return NextResponse.json(enriched);
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole(...LIBRO_ROLES);
+  if (error) return error;
 
   const body = await req.json();
 
@@ -51,7 +56,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
     const updated = await tx.cirugia.update({
       where: { id: params.cirugiaId },
       data: {
-        quirofanoNumero: body.quirofanoNumero,
+        quirofanoId: body.quirofanoId,
         fechaProgramada: body.fechaProgramada ? new Date(body.fechaProgramada) : undefined,
         horaProgramada: body.horaProgramada,
         tipo: body.tipo,
@@ -61,7 +66,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
         ayudante2Id: body.ayudante2Id,
         anestesiologoId: body.anestesiologoId,
         instrumentadorId: body.instrumentadorId,
-        circulante: body.circulante,
+        circulanteId: body.circulanteId,
         diagnosticoPreop: body.diagnosticoPreop,
         diagnosticoPostop: body.diagnosticoPostop,
         procedimiento: body.procedimiento,
@@ -118,7 +123,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
     return updated;
   });
 
-  const userIds = [cirugia.cirujanoId, cirugia.ayudante1Id, cirugia.ayudante2Id, cirugia.anestesiologoId, cirugia.instrumentadorId].filter(Boolean) as string[];
+  const refreshed = await prisma.cirugia.findUnique({
+    where: { id: params.cirugiaId },
+    select: { instrumentador: { select: { id: true, nombre: true } }, circulante: { select: { id: true, nombre: true } }, instrumentadorNombreLegado: true, circulanteNombreLegado: true },
+  });
+
+  const userIds = [cirugia.cirujanoId, cirugia.ayudante1Id, cirugia.ayudante2Id, cirugia.anestesiologoId].filter(Boolean) as string[];
   const users = userIds.length > 0
     ? await prisma.usuario.findMany({ where: { id: { in: userIds } }, select: { id: true, nombre: true } })
     : [];
@@ -130,7 +140,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
     ayudante1: cirugia.ayudante1Id ? userMap[cirugia.ayudante1Id] || null : null,
     ayudante2: cirugia.ayudante2Id ? userMap[cirugia.ayudante2Id] || null : null,
     anestesiologo: cirugia.anestesiologoId ? userMap[cirugia.anestesiologoId] || null : null,
-    instrumentador: cirugia.instrumentadorId ? userMap[cirugia.instrumentadorId] || null : null,
+    instrumentador: refreshed?.instrumentador || (refreshed?.instrumentadorNombreLegado ? { id: null, nombre: refreshed.instrumentadorNombreLegado } : null),
+    circulante: refreshed?.circulante || (refreshed?.circulanteNombreLegado ? { id: null, nombre: refreshed.circulanteNombreLegado } : null),
   };
 
   return NextResponse.json(enriched);

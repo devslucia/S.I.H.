@@ -1,10 +1,17 @@
-import { auth } from "@/lib/auth";
+import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
 import { NextRequest, NextResponse } from "next/server";
 
+const EPICRISIS_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "INSTRUMENTADOR"];
+
 export async function GET(req: NextRequest, { params }: { params: { internacionId: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole(...EPICRISIS_READ_ROLES);
+  if (error) return error;
+
+  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+  }
 
   const hc = await prisma.historiaClinica.findUnique({
     where: { internacionId: params.internacionId },
@@ -22,8 +29,12 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { internacionId: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole("ADMIN", "MEDICO");
+  if (error) return error;
+
+  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+  }
 
   const hc = await prisma.historiaClinica.findUnique({
     where: { internacionId: params.internacionId },

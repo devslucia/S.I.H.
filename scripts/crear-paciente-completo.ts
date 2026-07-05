@@ -178,7 +178,7 @@ async function main() {
   const cirugia = await prisma.cirugia.create({
     data: {
       internacionId: internacion.id,
-      quirofanoNumero: 1,
+      quirofanoId: null,
       fechaProgramada: new Date('2026-05-21'),
       horaProgramada: '07:30',
       tipo: 'PROGRAMADA',
@@ -186,7 +186,8 @@ async function main() {
       cirujanoId: romero.id,
       anestesiologoId: sosa.id,
       instrumentadorId: vanina.id,
-      circulante: 'Enf. Laura Fernández',
+      circulanteId: null,
+      circulanteNombreLegado: 'Enf. Laura Fernández',
       diagnosticoPreop: 'Colecistitis crónica calculosa',
       diagnosticoPostop: 'Colecistitis crónica calculosa con múltiples cálculos',
       procedimiento: 'Colecistectomía laparoscópica',

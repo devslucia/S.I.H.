@@ -14,6 +14,7 @@ enum Rol {
   ENFERMERO
   ANESTESIOLOGO
   INSTRUMENTADOR
+  ADMISION
   FACTURACION
   FARMACIA
 }
@@ -156,6 +157,9 @@ model Usuario {
   controlesEnfermeria ControlEnfermeria[]
   aplicaciones        AplicacionMedicamento[]
   firmasDocumento   FirmaDocumento[]
+  internacionesTratadas Internacion[] @relation("MedicoTratante")
+  cirugiasInstrumentadas Cirugia[]    @relation("InstrumentadorCirugia")
+  cirugiasCirculante     Cirugia[]    @relation("CirculanteCirugia")
 }
 
 model Paciente {
@@ -242,6 +246,8 @@ model Internacion {
   motivoIngreso      String?
   diagnosticoCIE     String?
   medicoSolicitante  String?
+  medicoTratanteId   String?
+  medicoTratante     Usuario?   @relation("MedicoTratante", fields: [medicoTratanteId], references: [id])
   tipoIngreso        TipoIngreso
   estado             EstadoInternacion   @default(ACTIVA)
   pases              PaseInterno[]
@@ -390,6 +396,18 @@ model HojaEnfermeria {
   createdAt      DateTime            @default(now())
 }
 
+model RangoVital {
+  id            String   @id @default(uuid())
+  parametro     String
+  minimo        Float
+  maximo        Float
+  unidad        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([parametro])
+}
+
 model ValoracionPreanestesia {
   id                  String   @id @default(uuid())
   hcId                String   @unique
@@ -533,11 +551,23 @@ model Epicrisis {
   createdAt             DateTime          @default(now())
 }
 
+model Quirofano {
+  id            String   @id @default(uuid())
+  numero        Int      @unique
+  nombre        String
+  piso          String?
+  disponible    Boolean  @default(true)
+  cirugias      Cirugia[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model Cirugia {
   id                    String              @id @default(uuid())
   internacionId         String
   internacion           Internacion         @relation(fields: [internacionId], references: [id])
-  quirofanoNumero       Int
+  quirofanoId           String?
+  quirofano             Quirofano?          @relation(fields: [quirofanoId], references: [id])
   fechaProgramada       DateTime
   horaProgramada        String
   tipo                  TipoCirugia
@@ -547,7 +577,11 @@ model Cirugia {
   ayudante2Id           String?
   anestesiologoId       String?
   instrumentadorId      String?
-  circulante            String?
+  instrumentador        Usuario?       @relation("InstrumentadorCirugia", fields: [instrumentadorId], references: [id])
+  instrumentadorNombreLegado String?
+  circulanteId          String?
+  circulante            Usuario?       @relation("CirculanteCirugia", fields: [circulanteId], references: [id])
+  circulanteNombreLegado String?
   diagnosticoPreop      String?
   diagnosticoPostop     String?
   procedimiento         String?
@@ -666,6 +700,7 @@ model StockItem {
   lote             String?
   vencimiento      DateTime?
   ubicacion        String?
+  nomencladorCodigo String?
   activo           Boolean                @default(true)
   movimientos      MovimientoStock[]
   aplicaciones     AplicacionMedicamento[]

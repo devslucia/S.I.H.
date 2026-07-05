@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, X, AlertTriangle } from "lucide-react";
+import { Search, Plus, X, AlertTriangle, Activity, Clock } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -19,7 +19,7 @@ interface Paciente {
   domicilio?: string;
   localidad?: string;
   telefono?: string;
-  alergias?: { id: string; descripcion: string }[];
+  alergias?: { id: string; sustancia: string }[];
 }
 
 const initialForm = {
@@ -95,10 +95,18 @@ export default function AdmisionPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-medium text-white">Identificación de Pacientes</h2>
-        <Button onClick={() => setModalOpen(true)}>
-          <Plus size={16} />
-          Nuevo Paciente
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => router.push("/admision/internados")}>
+            <Activity size={14} /> Internados
+          </Button>
+          <Button variant="secondary" onClick={() => router.push("/admision/espera")}>
+            <Clock size={14} /> Espera de Cama
+          </Button>
+          <Button onClick={() => setModalOpen(true)}>
+            <Plus size={16} />
+            Nuevo Paciente
+          </Button>
+        </div>
       </div>
 
       <form onSubmit={handleSearch} className="flex gap-3">
@@ -154,7 +162,7 @@ export default function AdmisionPage() {
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nuevo Paciente" size="xl">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="DNI" name="dni" value={form.dni} onChange={handleChange} required />
             <Input label="Apellido" name="apellido" value={form.apellido} onChange={handleChange} required />
             <Input label="Nombre" name="nombre" value={form.nombre} onChange={handleChange} required />

@@ -84,9 +84,7 @@ export default function LoginPage() {
             {loading ? "Ingresando..." : "Ingresar"}
           </button>
 
-          <div className="text-center text-xs text-muted pt-2">
-            <p>Demo: admin@simes.com.ar / Admin1234</p>
-          </div>
+
         </form>
       </div>
     </div>

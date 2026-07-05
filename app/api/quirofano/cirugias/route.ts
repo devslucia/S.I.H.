@@ -1,10 +1,12 @@
-import { auth } from "@/lib/auth";
+import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
+const Q_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
+
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole(...Q_READ_ROLES);
+  if (error) return error;
 
   const { searchParams } = new URL(req.url);
   const estado = searchParams.get("estado");

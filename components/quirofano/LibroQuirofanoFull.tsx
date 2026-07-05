@@ -144,7 +144,7 @@ export default function LibroQuirofanoFull() {
       <p><strong>Diagnóstico Preop.:</strong> ${data?.diagnosticoPreop || "—"}</p>
       <p><strong>Diagnóstico Postop.:</strong> ${data?.diagnosticoPostop || "—"}</p></div>
       <div class="col"><p><strong>Score ASA:</strong> ${data?.scoreASA || "—"}</p>
-      <p><strong>Quirófano:</strong> #${data?.quirofanoNumero || "—"}</p>
+      <p><strong>Quirófano:</strong> ${data?.quirofano?.nombre || data?.quirofanoId || "—"}</p>
       <p><strong>Tipo:</strong> ${data?.tipo || "—"}</p>
       <p><strong>Arco C:</strong> ${data?.arcoC ? "Sí" : "No"} | <strong>ARM:</strong> ${data?.arm ? "Sí" : "No"} | <strong>Ecógrafo:</strong> ${data?.ecografo ? "Sí" : "No"}</p></div></div>
       </div>
@@ -155,7 +155,7 @@ export default function LibroQuirofanoFull() {
       ${data?.ayudante2 ? `<tr><td>2do Ayudante</td><td>${data.ayudante2.nombre}</td></tr>` : ""}
       ${data?.anestesiologo ? `<tr><td>Anestesiólogo</td><td>${data.anestesiologo.nombre}</td></tr>` : ""}
       ${data?.instrumentador ? `<tr><td>Instrumentador</td><td>${data.instrumentador.nombre}</td></tr>` : ""}
-      ${data?.circulante ? `<tr><td>Circulante</td><td>${data.circulante}</td></tr>` : ""}
+      ${data?.circulante ? `<tr><td>Circulante</td><td>${data.circulante.nombre}</td></tr>` : ""}
       </table></div>
       <div class="section"><h3>Operación y Hallazgos</h3><p>${data?.hallazgos || "—"}</p></div>
       ${data?.implantes?.length ? `<div class="section"><h3>Implantes</h3><table><tr><th>Código</th><th>Nombre</th><th>Lote</th><th>Lado</th></tr>${data.implantes.map((i: any) => `<tr><td>${i.codigo}</td><td>${i.nombre}</td><td>${i.lote || "—"}</td><td>${i.lado || "—"}</td></tr>`).join("")}</table></div>` : ""}
@@ -297,7 +297,7 @@ export default function LibroQuirofanoFull() {
                     <option value="">Seleccionar</option>{[1,2,3,4,5,6].map(n => <option key={n} value={n}>ASA {n}</option>)}
                   </select></div>
                 <div><label className={labelClass}>Quirófano N°</label>
-                  <input type="number" value={formData?.quirofanoNumero || ""} onChange={e => update("quirofanoNumero", Number(e.target.value))} disabled={isReadOnly} className={inputClass} /></div>
+                   <input type="text" value={formData?.quirofanoId || ""} onChange={e => update("quirofanoId", e.target.value)} disabled={isReadOnly} className={inputClass} /></div>
                 <div><label className={labelClass}>Tipo</label>
                   <select value={formData?.tipo || ""} onChange={e => update("tipo", e.target.value)} disabled={isReadOnly} className={inputClass}>
                     <option value="PROGRAMADA">Programada</option><option value="URGENCIA">Urgencia</option><option value="EMERGENCIA">Emergencia</option>
@@ -322,7 +322,10 @@ export default function LibroQuirofanoFull() {
                     </select></div>
                 ))}
                 <div><label className={labelClass}>Circulante</label>
-                  <input type="text" value={formData?.circulante || ""} onChange={e => update("circulante", e.target.value)} disabled={isReadOnly} className={inputClass} placeholder="Nombre del circulante" /></div>
+                  <select value={formData?.circulanteId || ""} onChange={e => update("circulanteId", e.target.value || null)} disabled={isReadOnly} className={inputClass}>
+                    <option value="">Seleccionar</option>
+                    {usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre} ({u.rol})</option>)}
+                  </select></div>
               </div>
             </div>
 

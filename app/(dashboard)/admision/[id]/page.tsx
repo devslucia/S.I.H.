@@ -1,13 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, AlertTriangle, Calendar, Bed, Activity } from "lucide-react";
+import { ArrowLeft, Plus, AlertTriangle, Calendar, Bed, Activity, Trash2, Edit, X } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { formatDate, formatDateTime } from "@/lib/utils";
+
+interface Alergia {
+  id: string;
+  sustancia: string;
+  severidad?: string | null;
+  observacion?: string | null;
+}
 
 interface Paciente {
   id: string;
@@ -20,7 +27,7 @@ interface Paciente {
   domicilio?: string;
   localidad?: string;
   telefono?: string;
-  alergias?: { id: string; descripcion: string; sustancia: string }[];
+  alergias?: Alergia[];
   internaciones: Internacion[];
 }
 
@@ -35,6 +42,10 @@ interface Internacion {
   obraSocial?: { nombre: string; sigla: string } | null;
 }
 
+interface Cama { id: string; numero: string; estado: string; sector: { nombre: string } }
+interface ObraSocial { id: string; nombre: string; sigla: string }
+interface Medico { id: string; nombre: string; matricula?: string | null }
+
 const estadoBadge: Record<string, { variant: "success" | "warning" | "error" | "info" | "default"; label: string }> = {
   ACTIVA: { variant: "success", label: "Activa" },
   ALTA_MEDICA: { variant: "info", label: "Alta Médica" },
@@ -42,57 +53,126 @@ const estadoBadge: Record<string, { variant: "success" | "warning" | "error" | "
   FALLECIDO: { variant: "error", label: "Fallecido" },
 };
 
+const severidadColors: Record<string, string> = {
+  LEVE: "badge-green",
+  MODERADA: "badge-yellow",
+  SEVERA: "badge-orange",
+  ANAFILAXIA: "badge-red",
+};
+
+const initialAlergiaForm = { sustancia: "", severidad: "MODERADA", observacion: "" };
+
 export default function PacienteDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [camas, setCamas] = useState<Cama[]>([]);
+  const [obrasSociales, setObrasSociales] = useState<ObraSocial[]>([]);
+  const [medicos, setMedicos] = useState<Medico[]>([]);
+
   const [nuevaInternacionOpen, setNuevaInternacionOpen] = useState(false);
-  const [form, setForm] = useState({ camaId: "", obraSocialId: "", motivoIngreso: "", tipoIngreso: "PROGRAMADO" });
+  const [form, setForm] = useState({ camaId: "", obraSocialId: "", medicoTratanteId: "", nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO" });
   const [saving, setSaving] = useState(false);
 
-  const fetchPaciente = async () => {
+  const [alergiaModalOpen, setAlergiaModalOpen] = useState(false);
+  const [alergiaForm, setAlergiaForm] = useState(initialAlergiaForm);
+  const [editingAlergia, setEditingAlergia] = useState<string | null>(null);
+  const [savingAlergia, setSavingAlergia] = useState(false);
+
+  const fetchPaciente = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/pacientes/${params.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setPaciente(data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (res.ok) setPaciente(await res.json());
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  }, [params.id]);
 
-  useEffect(() => { fetchPaciente(); }, [params.id]);
+  const fetchLookups = useCallback(async () => {
+    const [camasRes, osRes, medRes] = await Promise.all([
+      fetch("/api/camas"),
+      fetch("/api/obras-sociales"),
+      fetch("/api/usuarios/medicos"),
+    ]);
+    if (camasRes.ok) setCamas(await camasRes.json());
+    if (osRes.ok) setObrasSociales(await osRes.json());
+    if (medRes.ok) setMedicos(await medRes.json());
+  }, []);
+
+  useEffect(() => { fetchPaciente(); fetchLookups(); }, [fetchPaciente, fetchLookups]);
 
   const handleCreateInternacion = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
+      const body: any = {
+        pacienteId: params.id,
+        tipoIngreso: form.tipoIngreso,
+        motivoIngreso: form.motivoIngreso || undefined,
+      };
+      if (form.camaId) body.camaId = form.camaId;
+      if (form.obraSocialId) body.obraSocialId = form.obraSocialId;
+      if (form.medicoTratanteId) body.medicoTratanteId = form.medicoTratanteId;
+      if (form.nroAfiliado) body.nroAfiliado = form.nroAfiliado;
+      if (form.tipoBeneficiario) body.tipoBeneficiario = form.tipoBeneficiario;
+
       const res = await fetch("/api/internaciones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, pacienteId: params.id }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         setNuevaInternacionOpen(false);
-        setForm({ camaId: "", obraSocialId: "", motivoIngreso: "", tipoIngreso: "PROGRAMADO" });
+        setForm({ camaId: "", obraSocialId: "", medicoTratanteId: "", nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO" });
         fetchPaciente();
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setSaving(false); }
+  };
+
+  const handleSaveAlergia = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingAlergia(true);
+    try {
+      const url = editingAlergia
+        ? `/api/pacientes/${params.id}/alergias/${editingAlergia}`
+        : `/api/pacientes/${params.id}/alergias`;
+      const res = await fetch(url, {
+        method: editingAlergia ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(alergiaForm),
+      });
+      if (res.ok) {
+        setAlergiaModalOpen(false);
+        setEditingAlergia(null);
+        setAlergiaForm(initialAlergiaForm);
+        fetchPaciente();
+      }
+    } catch (err) { console.error(err); }
+    finally { setSavingAlergia(false); }
+  };
+
+  const handleDeleteAlergia = async (alergiaId: string) => {
+    if (!confirm("¿Eliminar esta alergia?")) return;
+    try {
+      const res = await fetch(`/api/pacientes/${params.id}/alergias/${alergiaId}`, { method: "DELETE" });
+      if (res.ok) fetchPaciente();
+    } catch (err) { console.error(err); }
+  };
+
+  const openEditAlergia = (a: Alergia) => {
+    setEditingAlergia(a.id);
+    setAlergiaForm({ sustancia: a.sustancia, severidad: a.severidad || "MODERADA", observacion: a.observacion || "" });
+    setAlergiaModalOpen(true);
   };
 
   if (loading) return <p className="text-muted text-sm">Cargando paciente...</p>;
   if (!paciente) return <p className="text-muted text-sm">Paciente no encontrado.</p>;
 
   const activeInternacion = paciente.internaciones.find((i) => i.estado === "ACTIVA");
+  const camasLibres = camas.filter((c) => c.estado === "LIBRE");
 
   return (
     <div className="space-y-6">
@@ -100,6 +180,7 @@ export default function PacienteDetailPage() {
         <ArrowLeft size={16} /> Volver
       </button>
 
+      {/* Patient Card */}
       <div className="card p-5">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
@@ -122,6 +203,59 @@ export default function PacienteDetailPage() {
         </div>
       </div>
 
+      {/* Alergias Section */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-teal uppercase tracking-wide">Alergias</h3>
+          <Button size="sm" onClick={() => { setEditingAlergia(null); setAlergiaForm(initialAlergiaForm); setAlergiaModalOpen(true); }}>
+            <Plus size={14} /> Agregar
+          </Button>
+        </div>
+        {!paciente.alergias || paciente.alergias.length === 0 ? (
+          <p className="text-muted text-sm">Sin alergias registradas.</p>
+        ) : (
+          <div className="space-y-2">
+            {paciente.alergias.map((a) => (
+              <div key={a.id} className="flex items-center justify-between bg-background rounded-lg px-4 py-2">
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${severidadColors[a.severidad || "MODERADA"] || "badge-gray"}`}>
+                    {a.severidad || "—"}
+                  </span>
+                  <span className="text-white text-sm font-medium">{a.sustancia}</span>
+                  {a.observacion && <span className="text-muted text-xs">— {a.observacion}</span>}
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => openEditAlergia(a)} className="p-1 text-muted hover:text-white transition-colors"><Edit size={14} /></button>
+                  <button onClick={() => handleDeleteAlergia(a.id)} className="p-1 text-muted hover:text-red-400 transition-colors"><Trash2 size={14} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Alergia Modal */}
+      <Modal open={alergiaModalOpen} onClose={() => setAlergiaModalOpen(false)} title={editingAlergia ? "Editar Alergia" : "Nueva Alergia"} size="md">
+        <form onSubmit={handleSaveAlergia} className="space-y-4">
+          <Input label="Sustancia" name="sustancia" value={alergiaForm.sustancia} onChange={(e) => setAlergiaForm((p) => ({ ...p, sustancia: e.target.value }))} required />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm text-gray-400">Severidad</label>
+            <select value={alergiaForm.severidad} onChange={(e) => setAlergiaForm((p) => ({ ...p, severidad: e.target.value }))} className="select-field">
+              <option value="LEVE">Leve</option>
+              <option value="MODERADA">Moderada</option>
+              <option value="SEVERA">Severa</option>
+              <option value="ANAFILAXIA">Anafilaxia</option>
+            </select>
+          </div>
+          <Input label="Observación" name="observacion" value={alergiaForm.observacion} onChange={(e) => setAlergiaForm((p) => ({ ...p, observacion: e.target.value }))} />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setAlergiaModalOpen(false)}>Cancelar</Button>
+            <Button type="submit" disabled={savingAlergia}>{savingAlergia ? "Guardando..." : "Guardar"}</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Internaciones Section */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-white">Internaciones</h3>
         <Button onClick={() => setNuevaInternacionOpen(true)}>
@@ -174,11 +308,39 @@ export default function PacienteDetailPage() {
         </div>
       )}
 
+      {/* Nueva Internación Modal */}
       <Modal open={nuevaInternacionOpen} onClose={() => setNuevaInternacionOpen(false)} title="Nueva Internación" size="xl">
         <form onSubmit={handleCreateInternacion} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Cama ID" name="camaId" value={form.camaId} onChange={(e) => setForm((p) => ({ ...p, camaId: e.target.value }))} />
-            <Input label="Obra Social ID" name="obraSocialId" value={form.obraSocialId} onChange={(e) => setForm((p) => ({ ...p, obraSocialId: e.target.value }))} />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm text-gray-400">Cama</label>
+              <select value={form.camaId} onChange={(e) => setForm((p) => ({ ...p, camaId: e.target.value }))} className="select-field">
+                <option value="">Sin cama asignada</option>
+                {camasLibres.map((c) => <option key={c.id} value={c.id}>{c.numero} — {c.sector.nombre}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm text-gray-400">Obra Social</label>
+              <select value={form.obraSocialId} onChange={(e) => setForm((p) => ({ ...p, obraSocialId: e.target.value }))} className="select-field">
+                <option value="">Sin obra social</option>
+                {obrasSociales.map((os) => <option key={os.id} value={os.id}>{os.nombre} ({os.sigla})</option>)}
+              </select>
+            </div>
+            <Input label="N° Afiliado" name="nroAfiliado" value={form.nroAfiliado} onChange={(e) => setForm((p) => ({ ...p, nroAfiliado: e.target.value }))} />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm text-gray-400">Tipo Beneficiario</label>
+              <select value={form.tipoBeneficiario} onChange={(e) => setForm((p) => ({ ...p, tipoBeneficiario: e.target.value }))} className="select-field">
+                <option value="TITULAR">Titular</option>
+                <option value="FAMILIAR">Familiar</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm text-gray-400">Médico Tratante</label>
+              <select value={form.medicoTratanteId} onChange={(e) => setForm((p) => ({ ...p, medicoTratanteId: e.target.value }))} className="select-field">
+                <option value="">Sin asignar</option>
+                {medicos.map((m) => <option key={m.id} value={m.id}>{m.nombre}{m.matricula ? ` (${m.matricula})` : ""}</option>)}
+              </select>
+            </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm text-gray-400">Tipo de Ingreso</label>
               <select name="tipoIngreso" value={form.tipoIngreso} onChange={(e) => setForm((p) => ({ ...p, tipoIngreso: e.target.value }))} className="select-field">
@@ -188,7 +350,9 @@ export default function PacienteDetailPage() {
                 <option value="DERIVACION">Derivación</option>
               </select>
             </div>
-            <Input label="Motivo de Ingreso" name="motivoIngreso" value={form.motivoIngreso} onChange={(e) => setForm((p) => ({ ...p, motivoIngreso: e.target.value }))} />
+            <div className="col-span-2">
+              <Input label="Motivo de Ingreso" name="motivoIngreso" value={form.motivoIngreso} onChange={(e) => setForm((p) => ({ ...p, motivoIngreso: e.target.value }))} />
+            </div>
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setNuevaInternacionOpen(false)}>Cancelar</Button>

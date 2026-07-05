@@ -78,3 +78,18 @@
   td, th { border: 1px solid #000 !important; padding: 3px 6px; font-size: 9pt; }
 }
 .print-only { display: none; }
+
+/* ── Mobile responsive ── */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  button, [role="button"] {
+    min-height: 44px;
+  }
+}
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

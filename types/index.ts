@@ -89,7 +89,7 @@ export interface PrescripcionData {
 
 export interface CirugiaData {
   id: string;
-  quirofanoNumero: number;
+  quirofanoId: string | null;
   fechaProgramada: string;
   horaProgramada: string;
   estado: string;

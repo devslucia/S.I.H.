@@ -7,7 +7,8 @@ import { formatDateTime } from "@/lib/utils";
 
 interface CirugiaProtocolo {
   id: string;
-  quirofanoNumero: number;
+  quirofanoId: string | null;
+  quirofano?: { nombre: string } | null;
   fechaProgramada: string;
   horaProgramada: string;
   tipo: string;
@@ -90,7 +91,7 @@ export default function ProtocoloQuirurgicoPage() {
         <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">Cirugía</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div><span className="text-muted">Procedimiento:</span> <span className="text-white">{cirugia.procedimiento || "—"}</span></div>
-          <div><span className="text-muted">Quirófano:</span> <span className="text-white">#{cirugia.quirofanoNumero}</span></div>
+          <div><span className="text-muted">Quirófano:</span> <span className="text-white">{cirugia.quirofano?.nombre || "—"}</span></div>
           <div><span className="text-muted">Fecha:</span> <span className="text-white">{formatDateTime(cirugia.fechaProgramada)}</span></div>
           <div><span className="text-muted">Hora:</span> <span className="text-white">{cirugia.horaProgramada}</span></div>
           <div><span className="text-muted">Tipo:</span> <span className="text-white">{cirugia.tipo}</span></div>

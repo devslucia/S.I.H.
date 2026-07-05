@@ -75,7 +75,7 @@ export default function CamasPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-medium text-white">Gestión de Camas</h2>
-        <div className="flex items-center gap-3 text-xs text-muted">
+        <div className="flex items-center gap-3 text-xs text-muted overflow-x-auto pb-1">
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-400" /> Libre</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-400" /> Ocupada</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400" /> En Limpieza</span>
@@ -101,8 +101,8 @@ export default function CamasPage() {
                   ) : (
                     <Bed size={16} className={cfg.color} />
                   )}
-                  <span className="text-white text-xs font-medium">{cama.numero}</span>
-                  <span className={`text-[10px] ${cfg.color}`}>{cfg.label}</span>
+                  <span className="text-white text-xs md:text-sm font-medium">{cama.numero}</span>
+                  <span className={`text-[10px] md:text-xs ${cfg.color}`}>{cfg.label}</span>
                 </button>
               );
             })}

@@ -359,14 +359,15 @@ Se administra profilaxis antibiótica: Cefazolina 2g IV 30 minutos previos al co
   const cirugia = await prisma.cirugia.create({
     data: {
       internacionId: internacion.id,
-      quirofanoNumero: 1,
+      quirofanoId: null,
       fechaProgramada: daysAgo(0),
       horaProgramada: "09:00",
       tipo: "PROGRAMADA",
       estado: "COMPLETADA",
       cirujanoId: cirujano.id,
       anestesiologoId: anestesiologo.id,
-      circulante: "Enf. Laura Fernández",
+      circulanteId: null,
+      circulanteNombreLegado: "Enf. Laura Fernández",
       diagnosticoPreop: "Colecistitis aguda litiásica",
       diagnosticoPostop: "Colecistitis aguda litiásica operada",
       procedimiento: "Colecistectomía laparoscópica",
@@ -406,7 +407,7 @@ Se administra profilaxis antibiótica: Cefazolina 2g IV 30 minutos previos al co
       ],
     },
   });
-  console.log(`  ✓ Cirugía completada — Q#${cirugia.quirofanoNumero}`);
+  console.log(`  ✓ Cirugía completada`);
 
   // ═══════════════════════════════════════════
   //  PROTOCOLO DE ANESTESIA COMPLETO

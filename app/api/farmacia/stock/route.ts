@@ -1,10 +1,10 @@
-import { auth } from "@/lib/auth";
+import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole("ADMIN", "FARMACIA");
+  if (error) return error;
 
   const { searchParams } = new URL(req.url);
   const alertas = searchParams.get("alertas");
@@ -22,8 +22,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole("ADMIN", "FARMACIA");
+  if (error) return error;
 
   const body = await req.json();
   const { stockItemId, tipo, cantidad, motivo } = body;

@@ -1,3 +1,4 @@
+import { requireRole } from "@/lib/rbac";
 import { NextRequest, NextResponse } from "next/server";
 
 const PROMPT_MEDICACION = `Sos un asistente de enfermería hospitalaria argentina.
@@ -33,6 +34,9 @@ Formato:
 }`;
 
 export async function POST(req: NextRequest) {
+  const { session, error } = await requireRole("ADMIN", "ENFERMERO");
+  if (error) return error;
+
   try {
     const body = await req.json();
     const { texto, tipo } = body as { texto: string; tipo: "medicacion" | "signos_vitales" };

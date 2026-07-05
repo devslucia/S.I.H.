@@ -1,21 +1,24 @@
 "use client";
 
-import { Activity, Bed, Stethoscope, Syringe, Package, Receipt, ArrowRight } from "lucide-react";
+import { Activity, Bed, Stethoscope, Syringe, Package, Receipt, ArrowRight, User } from "lucide-react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 const cards = [
-  { name: "Identificación de Pacientes", icon: User, href: "/admision", color: "text-teal", desc: "Gestión de pacientes y coberturas" },
-  { name: "Gestión de Camas", icon: Bed, href: "/camas", color: "text-blue", desc: "Mapa interactivo de camas disponibles" },
-  { name: "Atención Médica", icon: Stethoscope, href: "/historia-clinica", color: "text-teal", desc: "Historia clínica digital completa" },
-  { name: "Enfermería", icon: Syringe, href: "/historia-clinica", color: "text-amber", desc: "Hoja de enfermería y controles" },
-  { name: "Quirófano", icon: Activity, href: "/quirofano", color: "text-red", desc: "Agenda quirúrgica y libro de QF" },
-  { name: "Farmacia", icon: Package, href: "/farmacia", color: "text-teal", desc: "Stock y trazabilidad de medicamentos" },
-  { name: "Auditoría y Facturación", icon: Receipt, href: "/facturacion", color: "text-blue", desc: "Liquidación y cargos por episodio" },
+  { name: "Identificación de Pacientes", icon: User, href: "/admision", color: "text-teal", desc: "Gestión de pacientes y coberturas", roles: ["ADMIN","ADMISION"] },
+  { name: "Gestión de Camas", icon: Bed, href: "/camas", color: "text-blue", desc: "Mapa interactivo de camas disponibles", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR","ADMISION","FACTURACION"] },
+  { name: "Atención Médica", icon: Stethoscope, href: "/historia-clinica", color: "text-teal", desc: "Historia clínica digital completa", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR"] },
+  { name: "Enfermería", icon: Syringe, href: "/historia-clinica", color: "text-amber", desc: "Hoja de enfermería y controles", roles: ["ADMIN","ENFERMERO"] },
+  { name: "Quirófano", icon: Activity, href: "/quirofano", color: "text-red", desc: "Agenda quirúrgica y libro de QF", roles: ["ADMIN","MEDICO","ANESTESIOLOGO","INSTRUMENTADOR"] },
+  { name: "Farmacia", icon: Package, href: "/farmacia", color: "text-teal", desc: "Stock y trazabilidad de medicamentos", roles: ["ADMIN","FARMACIA"] },
+  { name: "Auditoría y Facturación", icon: Receipt, href: "/facturacion", color: "text-blue", desc: "Liquidación y cargos por episodio", roles: ["ADMIN","FACTURACION"] },
 ];
 
-import { User } from "lucide-react";
-
 export default function DashboardPage() {
+  const session = useSession();
+  const userRol = session?.data?.user?.rol;
+  const visibleCards = cards.filter((c) => !userRol || c.roles.includes(userRol));
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -27,7 +30,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {cards.map((card) => {
+        {visibleCards.map((card) => {
           const Icon = card.icon;
           return (
             <Link

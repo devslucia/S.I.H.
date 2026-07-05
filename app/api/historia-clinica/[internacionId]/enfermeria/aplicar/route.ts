@@ -1,12 +1,20 @@
-import { auth } from "@/lib/auth";
+import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
 import { descontarStock } from "@/lib/utils/stock";
 import { generarCargo } from "@/lib/utils/facturacion";
 import { NextRequest, NextResponse } from "next/server";
 
+const APLICAR_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
+const APLICAR_WRITE_ROLES = ["ADMIN", "ENFERMERO", "MEDICO", "ANESTESIOLOGO"];
+
 export async function GET(req: NextRequest, { params }: { params: { internacionId: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole(...APLICAR_READ_ROLES);
+  if (error) return error;
+
+  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+  }
 
   const { searchParams } = new URL(req.url);
   const prescripcionId = searchParams.get("prescripcionId");
@@ -32,11 +40,15 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
 }
 
 export async function POST(req: NextRequest, { params }: { params: { internacionId: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole(...APLICAR_WRITE_ROLES);
+  if (error) return error;
+
+  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+  }
 
   const body = await req.json();
-  const { prescripcionId, hora, stockItemId, cantidad, precioUnitario } = body;
+  const { prescripcionId, hora, stockItemId, cantidad } = body;
 
   if (!prescripcionId || !hora) {
     return NextResponse.json({ error: "prescripcionId y hora requeridos" }, { status: 400 });
@@ -80,16 +92,14 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
       },
     });
 
-    if (precioUnitario) {
-      await generarCargo(tx as any, {
-        internacionId: hc.internacion.id,
-        concepto: `Medicación: ${prescripcion.droga || prescripcion.tipo}`,
-        cantidad: cantidad ? Number(cantidad) : 1,
-        precioUnitario,
-        origen: "MEDICACION",
-        aplicacionId: aplicacion.id,
-      });
-    }
+    await generarCargo(tx as any, {
+      internacionId: hc.internacion.id,
+      concepto: `Medicación: ${prescripcion.droga || prescripcion.tipo}`,
+      cantidad: cantidad ? Number(cantidad) : 1,
+      precioUnitario: 0,
+      origen: "MEDICACION",
+      aplicacionId: aplicacion.id,
+    });
 
     return aplicacion;
   });

@@ -1,11 +1,11 @@
-import { auth } from "@/lib/auth";
+import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 const createCirugiaSchema = z.object({
   internacionId: z.string(),
-  quirofanoNumero: z.number().int().min(1).max(20),
+  quirofanoId: z.string().uuid(),
   fechaProgramada: z.string(),
   horaProgramada: z.string(),
   tipo: z.enum(["PROGRAMADA", "URGENCIA", "EMERGENCIA"]),
@@ -16,8 +16,8 @@ const createCirugiaSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole("ADMIN");
+  if (error) return error;
 
   const body = await req.json();
   const parsed = createCirugiaSchema.safeParse(body);
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const cirugia = await prisma.cirugia.create({
     data: {
       internacionId: parsed.data.internacionId,
-      quirofanoNumero: parsed.data.quirofanoNumero,
+      quirofanoId: parsed.data.quirofanoId,
       fechaProgramada: new Date(parsed.data.fechaProgramada),
       horaProgramada: parsed.data.horaProgramada,
       tipo: parsed.data.tipo,

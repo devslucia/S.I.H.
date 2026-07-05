@@ -1,11 +1,18 @@
-import { auth } from "@/lib/auth";
+import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
 import { verificarAlergia } from "@/lib/utils/alertas-alergia";
 import { NextRequest, NextResponse } from "next/server";
 
+const HC_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
+
 export async function POST(req: NextRequest, { params }: { params: { internacionId: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole(...HC_READ_ROLES);
+  if (error) return error;
+
+  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+  }
 
   const hc = await prisma.historiaClinica.findUnique({
     where: { internacionId: params.internacionId },

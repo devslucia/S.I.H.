@@ -89,7 +89,7 @@ export default function FacturacionPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-white font-medium">${liq.totalCargos.toFixed(2)}</p>
+                    <p className="text-white font-medium text-base md:text-sm">${liq.totalCargos.toFixed(2)}</p>
                     <p className="text-muted text-xs">{liq.cargos.length} cargo(s)</p>
                   </div>
                 </button>
@@ -101,9 +101,9 @@ export default function FacturacionPage() {
                         <thead className="bg-background">
                           <tr>
                             <th className="px-4 py-2.5 text-left font-medium text-muted">Concepto</th>
-                            <th className="px-4 py-2.5 text-left font-medium text-muted">Origen</th>
+                            <th className="hidden md:table-cell px-4 py-2.5 text-left font-medium text-muted">Origen</th>
                             <th className="px-4 py-2.5 text-left font-medium text-muted">Cantidad</th>
-                            <th className="px-4 py-2.5 text-left font-medium text-muted">P. Unitario</th>
+                            <th className="hidden md:table-cell px-4 py-2.5 text-left font-medium text-muted">P. Unitario</th>
                             <th className="px-4 py-2.5 text-left font-medium text-muted">Total</th>
                             <th className="px-4 py-2.5 text-left font-medium text-muted">Estado</th>
                           </tr>
@@ -112,9 +112,9 @@ export default function FacturacionPage() {
                           {liq.cargos.map((cargo) => (
                             <tr key={cargo.id} className="border-t border-border hover:bg-border/20">
                               <td className="px-4 py-2.5">{cargo.concepto}</td>
-                              <td className="px-4 py-2.5 text-muted text-xs">{cargo.origen}</td>
+                              <td className="hidden md:table-cell px-4 py-2.5 text-muted text-xs">{cargo.origen}</td>
                               <td className="px-4 py-2.5">{cargo.cantidad}</td>
-                              <td className="px-4 py-2.5">${cargo.precioUnitario.toFixed(2)}</td>
+                              <td className="hidden md:table-cell px-4 py-2.5">${cargo.precioUnitario.toFixed(2)}</td>
                               <td className="px-4 py-2.5 font-medium">${cargo.total.toFixed(2)}</td>
                               <td className="px-4 py-2.5">
                                 {cargo.facturado ? (

@@ -1,11 +1,18 @@
-import { auth } from "@/lib/auth";
+import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
 import { generarCargo } from "@/lib/utils/facturacion";
 import { NextRequest, NextResponse } from "next/server";
 
+const ENFERMERIA_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
+
 export async function GET(req: NextRequest, { params }: { params: { internacionId: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole(...ENFERMERIA_READ_ROLES);
+  if (error) return error;
+
+  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+  }
 
   const hc = await prisma.historiaClinica.findUnique({
     where: { internacionId: params.internacionId },
@@ -25,8 +32,12 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
 }
 
 export async function POST(req: NextRequest, { params }: { params: { internacionId: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole("ADMIN", "ENFERMERO");
+  if (error) return error;
+
+  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+  }
 
   const hc = await prisma.historiaClinica.findUnique({
     where: { internacionId: params.internacionId },
@@ -40,6 +51,23 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
   const body = await req.json();
 
   const result = await prisma.$transaction(async (tx) => {
+    let alertas: string[] = [];
+
+    if (body.tipo === "SIGNOS_VITALES" && body.datos) {
+      const rangos = await tx.rangoVital.findMany();
+      for (const rango of rangos) {
+        const valor = body.datos[rango.parametro] || body.datos[rango.parametro.replace("°", "")];
+        if (valor !== undefined && valor !== null && valor !== "") {
+          const numVal = parseFloat(String(valor).replace(",", "."));
+          if (!isNaN(numVal)) {
+            if (numVal < rango.minimo || numVal > rango.maximo) {
+              alertas.push(`${rango.parametro}: ${numVal} ${rango.unidad} (normal: ${rango.minimo}-${rango.maximo})`);
+            }
+          }
+        }
+      }
+    }
+
     const control = await tx.controlEnfermeria.create({
       data: {
         hcId: hc.id,
@@ -47,7 +75,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
         tipo: body.tipo,
         datos: body.datos ?? {},
         observacion: body.observacion,
-        alertas: body.alertas,
+        alertas: alertas.length > 0 ? alertas : undefined,
         usuarioId: (session.user as any).id,
       },
     });
@@ -67,16 +95,14 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
           },
         });
 
-        if (hoja.precioUnitario) {
-          await generarCargo(tx as any, {
-            internacionId: hc.internacion.id,
-            concepto: `${hoja.seccion} - ${hoja.item}`,
-            cantidad: hoja.cantidad ?? 1,
-            precioUnitario: hoja.precioUnitario,
-            origen: "MATERIAL",
-            hojaEnfermeriaId: created.id,
-          });
-        }
+        await generarCargo(tx as any, {
+          internacionId: hc.internacion.id,
+          concepto: `${hoja.seccion} - ${hoja.item}`,
+          cantidad: hoja.cantidad ?? 1,
+          precioUnitario: 0,
+          origen: "MATERIAL",
+          hojaEnfermeriaId: created.id,
+        });
       }
     }
 

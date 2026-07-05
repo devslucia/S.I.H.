@@ -1,10 +1,25 @@
-import { auth } from "@/lib/auth";
+import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
+async function checkAssignment(userId: string, cirugiaId: string) {
+  const cirugia = await prisma.cirugia.findUnique({
+    where: { id: cirugiaId },
+    select: { instrumentadorId: true, circulanteId: true },
+  });
+  if (!cirugia) return NextResponse.json({ error: "Cirugía no encontrada" }, { status: 404 });
+  if (cirugia.instrumentadorId === userId || cirugia.circulanteId === userId) return null;
+  return NextResponse.json({ error: "No asignado a esta cirugía" }, { status: 403 });
+}
+
 export async function POST(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole("ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR");
+  if (error) return error;
+
+  if (session.user.rol !== "ADMIN") {
+    const denied = await checkAssignment(session.user.id, params.cirugiaId);
+    if (denied) return denied;
+  }
 
   const body = await req.json();
   const result = await prisma.$transaction(async (tx) => {
@@ -44,8 +59,13 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole("ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR");
+  if (error) return error;
+
+  if (session.user.rol !== "ADMIN") {
+    const denied = await checkAssignment(session.user.id, params.cirugiaId);
+    if (denied) return denied;
+  }
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");

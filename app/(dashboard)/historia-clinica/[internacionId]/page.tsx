@@ -35,6 +35,12 @@ interface Usuario {
   rol: string;
 }
 
+interface Quirofano {
+  id: string;
+  nombre: string;
+  numero: number;
+}
+
 const tabs = [
   { id: "anamnesis", label: "Anamnesis", icon: FileText },
   { id: "evolucion", label: "Evolución", icon: Activity },
@@ -377,10 +383,11 @@ export default function HistoriaClinicaPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCirugiaModal, setShowCirugiaModal] = useState(false);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [quirofanos, setQuirofanos] = useState<Quirofano[]>([]);
   const [cirugiaForm, setCirugiaForm] = useState({
     fechaProgramada: new Date().toISOString().split("T")[0],
     horaProgramada: "08:00",
-    quirofanoNumero: 1,
+    quirofanoId: "",
     tipo: "PROGRAMADA" as const,
     cirujanoId: "",
     anestesiologoId: "",
@@ -427,6 +434,12 @@ export default function HistoriaClinicaPage() {
       .then((r) => r.json())
       .then((d) => setUsuarios(Array.isArray(d) ? d : []))
       .catch(() => {});
+    fetch("/api/rangos-vitales")
+      .catch(() => {});
+    fetch("/api/quirofanos")
+      .then((r) => r.json())
+      .then((d) => setQuirofanos(Array.isArray(d) ? d : []))
+      .catch(() => {});
   }, []);
 
   const handleCrearCirugia = async () => {
@@ -438,7 +451,6 @@ export default function HistoriaClinicaPage() {
         body: JSON.stringify({
           ...cirugiaForm,
           internacionId: params.internacionId,
-          quirofanoNumero: Number(cirugiaForm.quirofanoNumero),
         }),
       });
       if (res.ok) {
@@ -537,6 +549,13 @@ export default function HistoriaClinicaPage() {
           >
             <Printer size={14} /> Imprimir Carpeta
           </Button>
+          <Button
+            onClick={() => router.push(`/panel-medico/${params.internacionId}`)}
+            size="sm"
+            variant="secondary"
+          >
+            <Stethoscope size={14} /> Panel Médico
+          </Button>
         </div>
       </div>
 
@@ -598,15 +617,17 @@ export default function HistoriaClinicaPage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-muted mb-1">Quirófano N°</label>
-              <input
-                type="number"
-                min={1}
-                max={20}
-                value={cirugiaForm.quirofanoNumero}
-                onChange={(e) => setCirugiaForm({ ...cirugiaForm, quirofanoNumero: Number(e.target.value) })}
+              <label className="block text-xs text-muted mb-1">Quirófano</label>
+              <select
+                value={cirugiaForm.quirofanoId}
+                onChange={(e) => setCirugiaForm({ ...cirugiaForm, quirofanoId: e.target.value })}
                 className="input-field text-sm w-full"
-              />
+              >
+                <option value="">Seleccionar...</option>
+                {quirofanos.map((q) => (
+                  <option key={q.id} value={q.id}>{q.nombre}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs text-muted mb-1">Tipo</label>

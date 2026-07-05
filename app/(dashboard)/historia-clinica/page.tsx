@@ -81,13 +81,13 @@ export default function HistoriaClinicaListPage() {
               key={i.id}
               className="card p-4 flex items-center justify-between hover:border-teal/30 transition-colors"
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 md:gap-4">
                 <div className="w-10 h-10 rounded-full bg-teal/20 flex items-center justify-center text-teal font-medium">
                   {i.paciente.nombre[0]}{i.paciente.apellido[0]}
                 </div>
-                <div>
-                  <p className="text-white font-medium">{i.paciente.apellido}, {i.paciente.nombre}</p>
-                  <div className="flex items-center gap-3 text-xs text-muted mt-0.5">
+                <div className="min-w-0">
+                  <p className="text-white font-medium text-sm">{i.paciente.apellido}, {i.paciente.nombre}</p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted mt-0.5">
                     <span className="flex items-center gap-1"><User size={12} /> DNI: {i.paciente.dni}</span>
                     {i.cama && (
                       <span className="flex items-center gap-1"><BedDouble size={12} /> {i.cama.numero} - {i.cama.sector.nombre}</span>

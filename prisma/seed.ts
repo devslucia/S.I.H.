@@ -44,6 +44,7 @@ async function main() {
   const enfPw = await bcrypt.hash("Enf1234", 10);
   const farmPw = await bcrypt.hash("Farm1234", 10);
   const factPw = await bcrypt.hash("Fact1234", 10);
+  const admisionPw = await bcrypt.hash("Adm1234", 10);
 
   const admin = await prisma.usuario.create({ data: { nombre: "Administrador", email: "admin@simes.com.ar", password: adminPw, rol: "ADMIN" } });
   const depascuale = await prisma.usuario.create({ data: { nombre: "Carina Depascuale", email: "depascuale@simes.com.ar", password: medPw, rol: "MEDICO", matricula: "MP-1234", especialidad: "Clínica Médica" } });
@@ -52,10 +53,11 @@ async function main() {
   const delgadoPablo = await prisma.usuario.create({ data: { nombre: "Delgado Pablo", email: "delgado@simes.com.ar", password: medPw, rol: "MEDICO", matricula: "MP-3456", especialidad: "Cirugía General" } });
   const enfermero = await prisma.usuario.create({ data: { nombre: "Laura Fernández", email: "enfermeria1@simes.com.ar", password: enfPw, rol: "ENFERMERO" } });
   const vanina = await prisma.usuario.create({ data: { nombre: "Vanina", email: "instrumentador@simes.com.ar", password: enfPw, rol: "INSTRUMENTADOR" } });
+  const admision = await prisma.usuario.create({ data: { nombre: "Personal de Admisión", email: "admision@simes.com.ar", password: admisionPw, rol: "ADMISION" } });
   const farmacia = await prisma.usuario.create({ data: { nombre: "Marcela López", email: "farmacia@simes.com.ar", password: farmPw, rol: "FARMACIA" } });
   const facturacion = await prisma.usuario.create({ data: { nombre: "Analía Gómez", email: "facturacion@simes.com.ar", password: factPw, rol: "FACTURACION" } });
 
-  console.log("✓ Usuarios creados");
+  console.log("✓ Usuarios creados (10)");
 
   // ── Obras Sociales ──
   const osde = await prisma.obraSocial.create({ data: { codigo: "0-0469", nombre: "OSDE", sigla: "OSDE" } });
@@ -67,20 +69,77 @@ async function main() {
   console.log("✓ Obras sociales creadas");
 
   // ── Nomenclador Items ──
-  const nomencladores = await Promise.all([
-    prisma.nomencladorItem.create({ data: { codigo: "CAMA-DIA", descripcion: "Cama/día", tipo: "HOTELERIA" } }),
-    prisma.nomencladorItem.create({ data: { codigo: "CAMA-UTI-DIA", descripcion: "Cama UTI/día", tipo: "HOTELERIA" } }),
-    prisma.nomencladorItem.create({ data: { codigo: "CONS-MED", descripcion: "Consulta médica", tipo: "CONSULTA" } }),
-  ]);
+  const nomencladorData = [
+    { codigo: "CAMA-DIA", descripcion: "Cama/día", tipo: "HOTELERIA" },
+    { codigo: "CAMA-UTI-DIA", descripcion: "Cama UTI/día", tipo: "HOTELERIA" },
+    { codigo: "CONS-MED", descripcion: "Consulta médica", tipo: "CONSULTA" },
+    { codigo: "MED-AMOX", descripcion: "Amoxicilina 500mg", tipo: "MEDICACION" },
+    { codigo: "MED-PARA", descripcion: "Paracetamol 1g", tipo: "MEDICACION" },
+    { codigo: "MED-OMEP", descripcion: "Omeprazol 40mg", tipo: "MEDICACION" },
+    { codigo: "MED-KETO", descripcion: "Ketorolac 2% Iny.", tipo: "MEDICACION" },
+    { codigo: "MED-BUPI", descripcion: "Bupivacaína 0.5%", tipo: "MEDICACION" },
+    { codigo: "MED-ADRE", descripcion: "Adrenalina 1mg", tipo: "MEDICACION" },
+    { codigo: "MED-CEFA", descripcion: "Cefazolina 1g", tipo: "MEDICACION" },
+    { codigo: "MED-DICL", descripcion: "Diclofenac 75mg", tipo: "MEDICACION" },
+    { codigo: "MAT-SFIS", descripcion: "Sol. Fisiológica 1L", tipo: "MATERIAL" },
+    { codigo: "MAT-POVI", descripcion: "Povidona Yodada", tipo: "MATERIAL" },
+    { codigo: "MAT-ABBO", descripcion: "Abbocath Nº20", tipo: "MATERIAL" },
+    { codigo: "MAT-PERF", descripcion: "Equipo de perfusión", tipo: "MATERIAL" },
+    { codigo: "MAT-TEND", descripcion: "Tubo endotraqueal 7.5", tipo: "MATERIAL" },
+    { codigo: "MAT-BIST", descripcion: "Plancha bisturí", tipo: "MATERIAL" },
+    { codigo: "MAT-ELEC", descripcion: "Electrobisturí desc.", tipo: "MATERIAL" },
+  ];
+
+  const nomencladores = [];
+  for (const data of nomencladorData) {
+    const n = await prisma.nomencladorItem.create({ data });
+    nomencladores.push(n);
+  }
 
   console.log("✓ Nomenclador items creados");
 
   // ── Convenios ──
   await prisma.convenio.createMany({
     data: [
+      // HOTELERIA
       { obraSocialId: osde.id, nomencladorId: nomencladores[0].id, valor: 15000, vigenciaDesde: new Date("2025-01-01") },
       { obraSocialId: ioma.id, nomencladorId: nomencladores[0].id, valor: 12000, vigenciaDesde: new Date("2025-01-01") },
       { obraSocialId: pami.id, nomencladorId: nomencladores[0].id, valor: 10000, vigenciaDesde: new Date("2025-01-01") },
+      // MEDICACION - OSDE
+      { obraSocialId: osde.id, nomencladorId: nomencladores[3].id, valor: 850, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: osde.id, nomencladorId: nomencladores[4].id, valor: 350, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: osde.id, nomencladorId: nomencladores[5].id, valor: 1200, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: osde.id, nomencladorId: nomencladores[6].id, valor: 2500, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: osde.id, nomencladorId: nomencladores[7].id, valor: 3200, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: osde.id, nomencladorId: nomencladores[8].id, valor: 1800, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: osde.id, nomencladorId: nomencladores[9].id, valor: 4500, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: osde.id, nomencladorId: nomencladores[10].id, valor: 1500, vigenciaDesde: new Date("2025-01-01") },
+      // MEDICACION - IOMA
+      { obraSocialId: ioma.id, nomencladorId: nomencladores[3].id, valor: 700, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: ioma.id, nomencladorId: nomencladores[4].id, valor: 280, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: ioma.id, nomencladorId: nomencladores[6].id, valor: 2000, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: ioma.id, nomencladorId: nomencladores[9].id, valor: 3800, vigenciaDesde: new Date("2025-01-01") },
+      // MEDICACION - PAMI
+      { obraSocialId: pami.id, nomencladorId: nomencladores[3].id, valor: 600, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: pami.id, nomencladorId: nomencladores[4].id, valor: 250, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: pami.id, nomencladorId: nomencladores[6].id, valor: 1800, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: pami.id, nomencladorId: nomencladores[9].id, valor: 3500, vigenciaDesde: new Date("2025-01-01") },
+      // MATERIAL - OSDE
+      { obraSocialId: osde.id, nomencladorId: nomencladores[11].id, valor: 450, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: osde.id, nomencladorId: nomencladores[12].id, valor: 800, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: osde.id, nomencladorId: nomencladores[13].id, valor: 350, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: osde.id, nomencladorId: nomencladores[14].id, valor: 1200, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: osde.id, nomencladorId: nomencladores[15].id, valor: 5500, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: osde.id, nomencladorId: nomencladores[16].id, valor: 2200, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: osde.id, nomencladorId: nomencladores[17].id, valor: 3800, vigenciaDesde: new Date("2025-01-01") },
+      // MATERIAL - IOMA
+      { obraSocialId: ioma.id, nomencladorId: nomencladores[11].id, valor: 380, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: ioma.id, nomencladorId: nomencladores[13].id, valor: 280, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: ioma.id, nomencladorId: nomencladores[15].id, valor: 4800, vigenciaDesde: new Date("2025-01-01") },
+      // MATERIAL - PAMI
+      { obraSocialId: pami.id, nomencladorId: nomencladores[11].id, valor: 320, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: pami.id, nomencladorId: nomencladores[13].id, valor: 250, vigenciaDesde: new Date("2025-01-01") },
+      { obraSocialId: pami.id, nomencladorId: nomencladores[15].id, valor: 4200, vigenciaDesde: new Date("2025-01-01") },
     ],
   });
 
@@ -119,21 +178,21 @@ async function main() {
 
   // ── Stock Items ──
   const stockData = [
-    { nombre: "Amoxicilina 500mg", principioActivo: "Amoxicilina", presentacion: "Cápsulas", unidad: "unidades", stockActual: 12, stockMinimo: 50, stockMaximo: 200 },
-    { nombre: "Sol. Fisiológica 1L", presentacion: "Bolsa x 1L", unidad: "unidades", stockActual: 32, stockMinimo: 50, stockMaximo: 150 },
-    { nombre: "Paracetamol 1g", principioActivo: "Paracetamol", presentacion: "Comprimidos", unidad: "unidades", stockActual: 240, stockMinimo: 50, stockMaximo: 300 },
-    { nombre: "Omeprazol 40mg", principioActivo: "Omeprazol", presentacion: "Comprimidos", unidad: "unidades", stockActual: 180, stockMinimo: 30, stockMaximo: 200 },
-    { nombre: "Ketorolac 2% Iny.", principioActivo: "Ketorolac", presentacion: "Ampolla 2ml", unidad: "ampollas", stockActual: 48, stockMinimo: 20, stockMaximo: 100 },
-    { nombre: "Bupivacaína 0.5%", principioActivo: "Bupivacaína", presentacion: "Ampolla 10ml", unidad: "ampollas", stockActual: 24, stockMinimo: 10, stockMaximo: 50 },
-    { nombre: "Adrenalina 1mg", principioActivo: "Adrenalina", presentacion: "Ampolla 1ml", unidad: "ampollas", stockActual: 36, stockMinimo: 15, stockMaximo: 60 },
-    { nombre: "Cefazolina 1g", principioActivo: "Cefazolina", presentacion: "Frasco", unidad: "unidades", stockActual: 60, stockMinimo: 25, stockMaximo: 100 },
-    { nombre: "Diclofenac 75mg", principioActivo: "Diclofenac", presentacion: "Ampolla", unidad: "ampollas", stockActual: 90, stockMinimo: 30, stockMaximo: 120 },
-    { nombre: "Povidona Yodada (Redox)", presentacion: "Frasco 500ml", unidad: "unidades", stockActual: 8, stockMinimo: 10, stockMaximo: 30 },
-    { nombre: "Abbocath Nº20", presentacion: "Catéter", unidad: "unidades", stockActual: 45, stockMinimo: 20, stockMaximo: 100 },
-    { nombre: "Equipo de perfusión", presentacion: "Equipo", unidad: "unidades", stockActual: 30, stockMinimo: 15, stockMaximo: 60 },
-    { nombre: "Tubo endotraqueal 7.5", presentacion: "Tubo", unidad: "unidades", stockActual: 12, stockMinimo: 5, stockMaximo: 20 },
-    { nombre: "Plancha bisturí", presentacion: "Plancha", unidad: "unidades", stockActual: 6, stockMinimo: 5, stockMaximo: 15 },
-    { nombre: "Electrobisturí desc.", presentacion: "Electrodo", unidad: "unidades", stockActual: 4, stockMinimo: 3, stockMaximo: 10 },
+    { nombre: "Amoxicilina 500mg", principioActivo: "Amoxicilina", presentacion: "Cápsulas", unidad: "unidades", stockActual: 12, stockMinimo: 50, stockMaximo: 200, nomencladorCodigo: "MED-AMOX" },
+    { nombre: "Sol. Fisiológica 1L", presentacion: "Bolsa x 1L", unidad: "unidades", stockActual: 32, stockMinimo: 50, stockMaximo: 150, nomencladorCodigo: "MAT-SFIS" },
+    { nombre: "Paracetamol 1g", principioActivo: "Paracetamol", presentacion: "Comprimidos", unidad: "unidades", stockActual: 240, stockMinimo: 50, stockMaximo: 300, nomencladorCodigo: "MED-PARA" },
+    { nombre: "Omeprazol 40mg", principioActivo: "Omeprazol", presentacion: "Comprimidos", unidad: "unidades", stockActual: 180, stockMinimo: 30, stockMaximo: 200, nomencladorCodigo: "MED-OMEP" },
+    { nombre: "Ketorolac 2% Iny.", principioActivo: "Ketorolac", presentacion: "Ampolla 2ml", unidad: "ampollas", stockActual: 48, stockMinimo: 20, stockMaximo: 100, nomencladorCodigo: "MED-KETO" },
+    { nombre: "Bupivacaína 0.5%", principioActivo: "Bupivacaína", presentacion: "Ampolla 10ml", unidad: "ampollas", stockActual: 24, stockMinimo: 10, stockMaximo: 50, nomencladorCodigo: "MED-BUPI" },
+    { nombre: "Adrenalina 1mg", principioActivo: "Adrenalina", presentacion: "Ampolla 1ml", unidad: "ampollas", stockActual: 36, stockMinimo: 15, stockMaximo: 60, nomencladorCodigo: "MED-ADRE" },
+    { nombre: "Cefazolina 1g", principioActivo: "Cefazolina", presentacion: "Frasco", unidad: "unidades", stockActual: 60, stockMinimo: 25, stockMaximo: 100, nomencladorCodigo: "MED-CEFA" },
+    { nombre: "Diclofenac 75mg", principioActivo: "Diclofenac", presentacion: "Ampolla", unidad: "ampollas", stockActual: 90, stockMinimo: 30, stockMaximo: 120, nomencladorCodigo: "MED-DICL" },
+    { nombre: "Povidona Yodada (Redox)", presentacion: "Frasco 500ml", unidad: "unidades", stockActual: 8, stockMinimo: 10, stockMaximo: 30, nomencladorCodigo: "MAT-POVI" },
+    { nombre: "Abbocath Nº20", presentacion: "Catéter", unidad: "unidades", stockActual: 45, stockMinimo: 20, stockMaximo: 100, nomencladorCodigo: "MAT-ABBO" },
+    { nombre: "Equipo de perfusión", presentacion: "Equipo", unidad: "unidades", stockActual: 30, stockMinimo: 15, stockMaximo: 60, nomencladorCodigo: "MAT-PERF" },
+    { nombre: "Tubo endotraqueal 7.5", presentacion: "Tubo", unidad: "unidades", stockActual: 12, stockMinimo: 5, stockMaximo: 20, nomencladorCodigo: "MAT-TEND" },
+    { nombre: "Plancha bisturí", presentacion: "Plancha", unidad: "unidades", stockActual: 6, stockMinimo: 5, stockMaximo: 15, nomencladorCodigo: "MAT-BIST" },
+    { nombre: "Electrobisturí desc.", presentacion: "Electrodo", unidad: "unidades", stockActual: 4, stockMinimo: 3, stockMaximo: 10, nomencladorCodigo: "MAT-ELEC" },
   ];
 
   const items = [];
@@ -563,12 +622,13 @@ async function main() {
   // 1. Sureda — Q#1 — 21/05 07:30 — Mastoplastia bilateral — COMPLETADA
   const cirSureda = await prisma.cirugia.create({
     data: {
-      internacionId: intSureda.id, quirofanoNumero: 1,
+      internacionId: intSureda.id, quirofanoId: null,
       fechaProgramada: new Date("2026-05-21"), horaProgramada: "07:30",
       tipo: "PROGRAMADA", estado: "COMPLETADA",
       cirujanoId: depascuale.id, anestesiologoId: sosa.id,
-      ayudante1Id: delgadoPablo.id, instrumentadorId: vanina.id,
-      circulante: "Enf. Laura Fernández",
+      ayudante1Id: delgadoPablo.id,       instrumentadorId: vanina.id,
+      circulanteId: null,
+      circulanteNombreLegado: "Enf. Laura Fernández",
       diagnosticoPreop: "Hipomastia Bilateral",
       diagnosticoPostop: "Hipomastia Bilateral",
       procedimiento: "Mastoplastia de aumento mamario bilateral",
@@ -587,7 +647,7 @@ async function main() {
   // 2. Ferreyra — Q#2 — 28/05 09:30 — Toracocentesis — EN_CURSO
   const cirFerreyra = await prisma.cirugia.create({
     data: {
-      internacionId: intFerreyra.id, quirofanoNumero: 2,
+      internacionId: intFerreyra.id, quirofanoId: null,
       fechaProgramada: new Date("2026-05-28"), horaProgramada: "09:30",
       tipo: "URGENCIA", estado: "EN_CURSO",
       cirujanoId: romero.id, anestesiologoId: sosa.id,
@@ -600,7 +660,7 @@ async function main() {
   // 3. Villalba — Q#1 — 28/05 11:00 — Colecistectomía laparoscópica — PROGRAMADA
   const cirVillalba = await prisma.cirugia.create({
     data: {
-      internacionId: intVillalba.id, quirofanoNumero: 1,
+      internacionId: intVillalba.id, quirofanoId: null,
       fechaProgramada: new Date("2026-05-28"), horaProgramada: "11:00",
       tipo: "PROGRAMADA", estado: "PROGRAMADA",
       cirujanoId: romero.id,
@@ -612,7 +672,7 @@ async function main() {
   // 4. Ramírez — Q#2 — 28/05 08:00 — Apendicectomía laparoscópica — COMPLETADA
   const cirRamirez = await prisma.cirugia.create({
     data: {
-      internacionId: intRamirez.id, quirofanoNumero: 2,
+      internacionId: intRamirez.id, quirofanoId: null,
       fechaProgramada: new Date("2026-05-28"), horaProgramada: "08:00",
       tipo: "PROGRAMADA", estado: "COMPLETADA",
       cirujanoId: romero.id, anestesiologoId: sosa.id,
@@ -628,7 +688,7 @@ async function main() {
   // 5. Gómez — Q#1 — 29/05 07:00 — Laparoscopía diagnóstica — PROGRAMADA
   const cirGomez = await prisma.cirugia.create({
     data: {
-      internacionId: intGomez.id, quirofanoNumero: 1,
+      internacionId: intGomez.id, quirofanoId: null,
       fechaProgramada: new Date("2026-05-29"), horaProgramada: "07:00",
       tipo: "URGENCIA", estado: "PROGRAMADA",
       cirujanoId: romero.id,
@@ -640,7 +700,7 @@ async function main() {
   // 6. Mansilla — Q#1 — 30/05 08:00 — Reducción fractura cadera — REPROGRAMADA
   const cirMansilla = await prisma.cirugia.create({
     data: {
-      internacionId: intMansilla.id, quirofanoNumero: 1,
+      internacionId: intMansilla.id, quirofanoId: null,
       fechaProgramada: new Date("2026-05-30"), horaProgramada: "08:00",
       tipo: "URGENCIA", estado: "REPROGRAMADA",
       cirujanoId: depascuale.id,

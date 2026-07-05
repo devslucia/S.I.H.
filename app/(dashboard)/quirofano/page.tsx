@@ -7,7 +7,8 @@ import { formatDateTime, formatDate } from "@/lib/utils";
 
 interface Cirugia {
   id: string;
-  quirofanoNumero: number;
+  quirofanoId: string | null;
+  quirofano?: { nombre: string } | null;
   fechaProgramada: string;
   horaProgramada: string;
   estado: string;
@@ -62,9 +63,10 @@ export default function QuirofanoPage() {
 
   useEffect(() => { fetchCirugias(fechaSeleccionada); }, [fechaSeleccionada]);
 
-  const grouped = cirugias.reduce<Record<number, Cirugia[]>>((acc, c) => {
-    if (!acc[c.quirofanoNumero]) acc[c.quirofanoNumero] = [];
-    acc[c.quirofanoNumero].push(c);
+  const grouped = cirugias.reduce<Record<string, Cirugia[]>>((acc, c) => {
+    const key = c.quirofano?.nombre || c.quirofanoId || "Sin quirófano";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(c);
     return acc;
   }, {});
 
@@ -88,7 +90,7 @@ export default function QuirofanoPage() {
             type="date"
             value={fechaSeleccionada}
             onChange={(e) => setFechaSeleccionada(e.target.value)}
-            className="input-field text-sm text-center w-40"
+            className="input-field text-sm text-center w-36 md:w-40"
           />
           <button
             onClick={() => setFechaSeleccionada(shiftDate(fechaSeleccionada, 1))}
@@ -99,7 +101,7 @@ export default function QuirofanoPage() {
           {!esHoy && (
             <button
               onClick={() => setFechaSeleccionada(getTodayStr())}
-              className="text-xs btn-secondary ml-2"
+              className="text-xs btn-secondary ml-2 hidden sm:inline-flex"
             >
               Hoy
             </button>
@@ -121,10 +123,10 @@ export default function QuirofanoPage() {
           </p>
         </div>
       ) : (
-        Object.entries(grouped).sort(([a], [b]) => Number(a) - Number(b)).map(([qf, cirugiasQF]) => (
+        Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([qf, cirugiasQF]) => (
           <div key={qf}>
             <h3 className="text-sm font-medium text-gray-300 mb-2 uppercase tracking-wide">
-              Quirófano #{qf}
+              {qf}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {cirugiasQF.map((cirugia) => {
