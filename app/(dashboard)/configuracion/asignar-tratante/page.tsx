@@ -83,7 +83,7 @@ export default function AsignarTratantePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <UserCheck className="w-6 h-6 text-teal" />
+        <UserCheck className="w-6 h-6 text-accent" />
         <h2 className="text-xl font-medium text-white">Asignar Médico Tratante</h2>
       </div>
 
@@ -93,7 +93,7 @@ export default function AsignarTratantePage() {
       </p>
 
       {success && (
-        <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center gap-2 text-green-400 text-sm">
+        <div className="p-3 bg-success/10 border border-success/30 rounded-lg flex items-center gap-2 text-success text-sm">
           <CheckCircle size={16} /> {success}
         </div>
       )}

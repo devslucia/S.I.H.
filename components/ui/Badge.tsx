@@ -7,25 +7,35 @@ interface BadgeProps {
   variant?: BadgeVariant;
   children: React.ReactNode;
   className?: string;
+  dot?: boolean;
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  success: "bg-green-400/10 text-green-400 border-green-400/25",
-  warning: "bg-amber-400/10 text-amber-400 border-amber-400/25",
-  error: "bg-red-400/10 text-red-400 border-red-400/25",
-  info: "bg-[#00d4a1]/10 text-[#00d4a1] border-[#00d4a1]/25",
-  default: "bg-gray-500/10 text-gray-400 border-gray-500/25",
+  success: "bg-success/10 text-success border-success/20",
+  warning: "bg-warning/10 text-warning border-warning/20",
+  error: "bg-error/10 text-error border-error/20",
+  info: "bg-info/10 text-info border-info/20",
+  default: "bg-muted/10 text-muted border-muted/20",
 };
 
-function Badge({ variant = "default", children, className }: BadgeProps) {
+const dotColors: Record<BadgeVariant, string> = {
+  success: "bg-success",
+  warning: "bg-warning",
+  error: "bg-error",
+  info: "bg-info",
+  default: "bg-muted",
+};
+
+function Badge({ variant = "default", children, className, dot }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium",
         variantStyles[variant],
         className
       )}
     >
+      {dot && <span className={cn("w-1.5 h-1.5 rounded-full", dotColors[variant])} />}
       {children}
     </span>
   );

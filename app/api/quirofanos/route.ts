@@ -69,6 +69,11 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "id requerido" }, { status: 400 });
   }
 
+  const cirugiasCount = await prisma.cirugia.count({ where: { quirofanoId: id } });
+  if (cirugiasCount > 0) {
+    return NextResponse.json({ error: "No se puede eliminar: tiene cirugías asociadas" }, { status: 409 });
+  }
+
   await prisma.quirofano.delete({ where: { id } });
 
   return NextResponse.json({ ok: true });

@@ -567,7 +567,7 @@ model Cirugia {
   internacionId         String
   internacion           Internacion         @relation(fields: [internacionId], references: [id])
   quirofanoId           String?
-  quirofano             Quirofano?          @relation(fields: [quirofanoId], references: [id])
+  quirofano             Quirofano?          @relation(fields: [quirofanoId], references: [id], onDelete: Restrict)
   fechaProgramada       DateTime
   horaProgramada        String
   tipo                  TipoCirugia

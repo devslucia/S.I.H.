@@ -61,10 +61,10 @@ export function VoiceInput({
   const effectiveStatus = externalStatus || (isListening ? "listening" : "idle");
 
   const statusStyles: Record<string, string> = {
-    idle: "bg-[#1e2535] text-[#94a3b8] hover:text-[#00d4a1] hover:bg-[#00d4a1]/10 border border-[#1e2535]",
-    listening: "bg-red-500/20 text-red-400 animate-pulse border border-red-500/50",
-    processing: "bg-amber/20 text-amber animate-spin border border-amber/50",
-    ready: "bg-green-500/20 text-green-400 border border-green-500/50",
+    idle: "bg-border text-muted hover:text-accent hover:bg-accent/10 border border-border",
+    listening: "bg-error/20 text-error animate-pulse border border-error/50",
+    processing: "bg-warning/20 text-warning animate-spin border border-warning/50",
+    ready: "bg-success/20 text-success border border-success/50",
   };
 
   const titles: Record<string, string> = {

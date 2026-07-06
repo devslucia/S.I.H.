@@ -1,66 +1,124 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-background text-white font-sans;
-    font-family: 'IBM Plex Sans', sans-serif;
+  /* ── Dark mode (default) ── */
+  :root {
+    --color-bg: 23 21 22;
+    --color-surface: 31 29 30;
+    --color-surface-hover: 39 36 37;
+    --color-surface-active: 47 43 44;
+    --color-border: 45 41 42;
+    --color-border-hover: 61 56 57;
+    --color-accent: 196 122 90;
+    --color-accent-dark: 168 101 72;
+    --color-accent-light: 212 145 110;
+    --color-accent-button: 135 84 62;
+    --color-text: 236 232 228;
+    --color-text-secondary: 158 149 144;
+    --color-muted: 109 101 96;
+    --color-success: 74 222 128;
+    --color-warning: 251 191 36;
+    --color-error: 248 113 113;
+    --color-info: 96 165 250;
   }
-  .font-mono {
-    font-family: 'IBM Plex Mono', monospace !important;
+
+  /* ── Light mode ── */
+  .light {
+    --color-bg: 245 240 235;
+    --color-surface: 255 255 255;
+    --color-surface-hover: 249 245 241;
+    --color-surface-active: 240 235 229;
+    --color-border: 226 219 213;
+    --color-border-hover: 205 196 187;
+    --color-accent: 168 93 63;
+    --color-accent-dark: 140 77 52;
+    --color-accent-light: 196 122 90;
+    --color-accent-button: 168 93 63;
+    --color-text: 45 41 42;
+    --color-text-secondary: 109 101 96;
+    --color-muted: 158 149 144;
+    --color-success: 22 101 52;
+    --color-warning: 146 64 14;
+    --color-error: 185 28 28;
+    --color-info: 29 78 216;
+  }
+
+  body {
+    @apply bg-background text-text font-sans antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  * {
+    @apply border-border;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-surface border border-border rounded-xl;
+    @apply bg-surface border border-border rounded-xl shadow-card;
   }
   .card-hover {
-    @apply card hover:border-teal/30 transition-colors;
+    @apply card hover:border-accent/30 hover:shadow-card-hover transition-all duration-200;
   }
   .input-field {
-    @apply w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-muted focus:outline-none focus:border-teal transition-colors;
+    @apply w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder-muted focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-150;
   }
   .select-field {
-    @apply input-field appearance-none;
+    @apply input-field appearance-none cursor-pointer;
   }
   .btn-primary {
-    @apply bg-teal text-background px-4 py-2 rounded-lg text-sm font-medium hover:brightness-110 transition-all flex items-center gap-2;
+    @apply bg-accent-button text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 hover:shadow-glow active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2;
   }
   .btn-secondary {
-    @apply bg-border text-white px-4 py-2 rounded-lg text-sm hover:bg-border/80 transition-all flex items-center gap-2;
+    @apply bg-surface-hover text-text px-4 py-2.5 rounded-lg text-sm font-medium border border-border hover:border-border-hover hover:bg-surface-active active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2;
   }
   .btn-danger {
-    @apply bg-red/20 text-red px-4 py-2 rounded-lg text-sm hover:bg-red/30 transition-all flex items-center gap-2;
+    @apply bg-error/10 text-error px-4 py-2.5 rounded-lg text-sm font-medium border border-error/20 hover:bg-error/20 hover:border-error/30 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2;
   }
-  .badge-green {
-    @apply bg-green-500/20 text-green-400 px-2 py-0.5 rounded text-xs;
+  .badge-success {
+    @apply bg-success/10 text-success border border-success/20 px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
-  .badge-amber {
-    @apply bg-amber/20 text-amber px-2 py-0.5 rounded text-xs;
+  .badge-warning {
+    @apply bg-warning/10 text-warning border border-warning/20 px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
-  .badge-red {
-    @apply bg-red/20 text-red px-2 py-0.5 rounded text-xs;
+  .badge-error {
+    @apply bg-error/10 text-error border border-error/20 px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
-  .badge-gray {
-    @apply bg-muted/20 text-muted px-2 py-0.5 rounded text-xs;
+  .badge-info {
+    @apply bg-info/10 text-info border border-info/20 px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .badge-default {
+    @apply bg-muted/10 text-muted border border-muted/20 px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
   .tab-active {
-    @apply text-teal border-b-2 border-teal;
+    @apply text-accent border-b-2 border-accent font-medium;
   }
   .tab-inactive {
-    @apply text-muted hover:text-white border-b-2 border-transparent;
+    @apply text-muted hover:text-text border-b-2 border-transparent transition-colors;
   }
 }
 
 * { box-sizing: border-box; }
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #0f1117; }
-::-webkit-scrollbar-thumb { background: #1e2535; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #2a3344; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgb(var(--color-border-hover)); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--color-muted)); }
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  @apply bg-surface-hover rounded-lg;
+  background: linear-gradient(90deg, rgb(var(--color-surface-hover)) 25%, rgb(var(--color-surface-active)) 50%, rgb(var(--color-surface-hover)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
 
 @media print {
   nav, aside, header, .sidebar, .topbar,
@@ -79,7 +137,6 @@
 }
 .print-only { display: none; }
 
-/* ── Mobile responsive ── */
 @media (max-width: 768px) {
   input, select, textarea {
     font-size: 16px !important;

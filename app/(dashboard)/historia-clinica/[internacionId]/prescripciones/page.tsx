@@ -150,7 +150,7 @@ export default function PrescripcionesPage() {
                     <td className="px-4 py-3">{p.tipo}</td>
                     <td className="px-4 py-3">
                       <span className="flex items-center gap-1">
-                        {p.bloqueadaAlergia && <AlertTriangle size={12} className="text-red-400" />}
+                        {p.bloqueadaAlergia && <AlertTriangle size={12} className="text-error" />}
                         {p.droga || "—"}
                       </span>
                     </td>

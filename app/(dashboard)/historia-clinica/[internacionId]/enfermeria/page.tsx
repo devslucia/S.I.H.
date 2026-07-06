@@ -158,7 +158,7 @@ export default function EnfermeriaPage() {
 
       {canCreate && (
       <div className="card p-5">
-        <h3 className="text-sm font-medium text-teal mb-4 uppercase tracking-wide">Nuevo Control</h3>
+        <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Nuevo Control</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
@@ -196,8 +196,8 @@ export default function EnfermeriaPage() {
           </div>
 
           {showConfirmVitals && parsedVitals && (
-            <div className="p-3 bg-teal/10 border border-teal/30 rounded-lg">
-              <p className="text-xs text-teal font-medium mb-2">Datos detectados por IA — Verificá antes de guardar:</p>
+            <div className="p-3 bg-accent/10 border border-accent/30 rounded-lg">
+              <p className="text-xs text-accent font-medium mb-2">Datos detectados por IA — Verificá antes de guardar:</p>
               <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs text-white mb-3">
                 {parsedVitals.pas && parsedVitals.pad && <div>PA: <strong>{parsedVitals.pas}/{parsedVitals.pad}</strong></div>}
                 {parsedVitals.pas && !parsedVitals.pad && <div>PA: <strong>{parsedVitals.pas}</strong></div>}

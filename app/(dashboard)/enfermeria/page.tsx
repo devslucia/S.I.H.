@@ -241,8 +241,8 @@ function ControlForm({ internacionId, onSaved }: { internacionId: string; onSave
       </div>
 
       {showConfirmVitals && parsedVitals && (
-        <div className="col-span-2 md:col-span-4 p-3 bg-teal/10 border border-teal/30 rounded-lg">
-          <p className="text-xs text-teal font-medium mb-2">Datos detectados por IA — Verificá antes de guardar:</p>
+        <div className="col-span-2 md:col-span-4 p-3 bg-accent/10 border border-accent/30 rounded-lg">
+          <p className="text-xs text-accent font-medium mb-2">Datos detectados por IA — Verificá antes de guardar:</p>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs text-white mb-3">
             {parsedVitals.pas && parsedVitals.pad && <div>PA: <strong>{parsedVitals.pas}/{parsedVitals.pad}</strong></div>}
             {parsedVitals.fc && <div>FC: <strong>{parsedVitals.fc}</strong></div>}
@@ -477,8 +477,8 @@ function AplicarPrescripcion({
           </div>
 
           {showConfirmMed && parsedMed && (
-            <div className="p-3 bg-teal/10 border border-teal/30 rounded-lg">
-              <p className="text-xs text-teal font-medium mb-2">Datos detectados por IA — Verificá:</p>
+            <div className="p-3 bg-accent/10 border border-accent/30 rounded-lg">
+              <p className="text-xs text-accent font-medium mb-2">Datos detectados por IA — Verificá:</p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-white mb-3">
                 {parsedMed.medicamento && <div>Med: <strong>{parsedMed.medicamento}</strong></div>}
                 {parsedMed.dosis && <div>Dosis: <strong>{parsedMed.dosis}{parsedMed.unidad || ""}</strong></div>}
@@ -526,12 +526,12 @@ function AplicarPrescripcion({
 function AldretePostQx({ protocolo }: { protocolo: ProtocoloResumen }) {
   const total = (protocolo.aldreteActividad ?? 0) + (protocolo.aldreteRespiracion ?? 0) +
     (protocolo.aldreteCirculacion ?? 0) + (protocolo.aldreteConciencia ?? 0) + (protocolo.aldreteSpo2 ?? 0);
-  const color = total >= 9 ? "text-green-400" : total >= 7 ? "text-amber" : "text-red";
+  const color = total >= 9 ? "text-success" : total >= 7 ? "text-amber" : "text-red";
 
   return (
     <div className="mt-2 p-3 bg-black/20 rounded-lg border border-border text-xs">
       <div className="flex items-center gap-2 mb-2">
-        <Activity size={14} className="text-teal" />
+        <Activity size={14} className="text-accent" />
         <span className="text-white font-medium">Aldrete postquirúrgico</span>
         <span className={`font-bold ${color}`}>{total}/10</span>
         {protocolo.aldreteSpo2 != null && (
@@ -815,7 +815,7 @@ export default function EnfermeriaPage() {
                                 <AlertTriangle size={12} /> Alergia
                               </span>
                             ) : pr.estado === "COMPLETADA" ? (
-                              <span className="flex items-center gap-1 text-green-400 text-xs">
+                              <span className="flex items-center gap-1 text-success text-xs">
                                 <CheckCircle size={12} /> Completa
                               </span>
                             ) : (
@@ -884,7 +884,7 @@ export default function EnfermeriaPage() {
                   {loadingControles && <p className="text-muted text-xs mb-2">Cargando controles...</p>}
 
                   <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
-                    <HeartPulse size={16} className="text-teal" /> Registrar Signos Vitales
+                    <HeartPulse size={16} className="text-accent" /> Registrar Signos Vitales
                   </h4>
                   <ControlForm internacionId={i.id} onSaved={() => { fetchInternaciones(); fetchControles(i.id); }} />
 

@@ -88,7 +88,7 @@ export default function ConfigPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-medium text-white">Configuración del Sistema</h2>
+      <h2 className="text-xl font-medium text-text">Configuración del Sistema</h2>
 
       <div className="flex gap-2 flex-wrap">
         {tabs.map((t) => (
@@ -96,7 +96,7 @@ export default function ConfigPage() {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-              tab === t.id ? "bg-[#00d4a1]/20 text-[#00d4a1] border border-[#00d4a1]/30" : "bg-black/20 text-muted border border-border hover:bg-border/30"
+              tab === t.id ? "bg-accent/20 text-accent border border-accent/30" : "bg-black/20 text-muted border border-border hover:bg-border/30"
             }`}
           >
             <t.icon size={14} /> {t.label}
@@ -144,7 +144,7 @@ function SectoresTab({ sectores, onRefresh }: { sectores: Sector[]; onRefresh: (
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-white">Sectores</h3>
+      <h3 className="text-sm font-medium text-text">Sectores</h3>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <input placeholder="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="input-field text-sm" />
         <input placeholder="Código" value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} className="input-field text-sm" />
@@ -158,11 +158,11 @@ function SectoresTab({ sectores, onRefresh }: { sectores: Sector[]; onRefresh: (
         <tbody>
           {sectores.map((s) => (
             <tr key={s.id} className="border-b border-border/30">
-              <td className="py-2 text-white">{s.nombre}</td>
+              <td className="py-2 text-text">{s.nombre}</td>
               <td className="py-2 text-muted">{s.codigo}</td>
               <td className="py-2 text-muted">{s._count?.camas || 0}</td>
               <td className="py-2 flex gap-2">
-                <button onClick={() => { setEditing(s.id); setForm({ nombre: s.nombre, codigo: s.codigo }); }} className="text-xs text-[#00d4a1]">Editar</button>
+                <button onClick={() => { setEditing(s.id); setForm({ nombre: s.nombre, codigo: s.codigo }); }} className="text-xs text-accent">Editar</button>
                 <button onClick={() => handleDelete(s.id)} className="text-xs text-red"><Trash2 size={12} /></button>
               </td>
             </tr>
@@ -199,7 +199,7 @@ function CamasTab({ camas, sectores, onRefresh }: { camas: Cama[]; sectores: Sec
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-white">Camas</h3>
+      <h3 className="text-sm font-medium text-text">Camas</h3>
       <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
         <input placeholder="Número" value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} className="input-field text-sm" />
         <select value={form.sectorId} onChange={(e) => setForm({ ...form, sectorId: e.target.value })} className="input-field text-sm">
@@ -219,7 +219,7 @@ function CamasTab({ camas, sectores, onRefresh }: { camas: Cama[]; sectores: Sec
           <tbody>
             {camas.map((c) => (
               <tr key={c.id} className="border-b border-border/30">
-                <td className="py-2 text-white">{c.numero}</td>
+                <td className="py-2 text-text">{c.numero}</td>
                 <td className="py-2 text-muted">{c.sector.nombre}</td>
                 <td className="py-2 text-muted">{c.tipo || "—"}</td>
                 <td className="py-2">
@@ -263,7 +263,7 @@ function ObrasTab({ obras, onRefresh }: { obras: ObraSocial[]; onRefresh: () => 
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-white">Obras Sociales</h3>
+      <h3 className="text-sm font-medium text-text">Obras Sociales</h3>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <input placeholder="Código" value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} className="input-field text-sm" />
         <input placeholder="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="input-field text-sm" />
@@ -279,11 +279,11 @@ function ObrasTab({ obras, onRefresh }: { obras: ObraSocial[]; onRefresh: () => 
           {obras.map((o) => (
             <tr key={o.id} className="border-b border-border/30">
               <td className="py-2 text-muted">{o.codigo}</td>
-              <td className="py-2 text-white">{o.nombre}</td>
+              <td className="py-2 text-text">{o.nombre}</td>
               <td className="py-2 text-muted">{o.sigla}</td>
               <td className="py-2"><Badge variant={o.activa ? "success" : "default"}>{o.activa ? "Activa" : "Inactiva"}</Badge></td>
               <td className="py-2 flex gap-2">
-                <button onClick={() => { setEditing(o.id); setForm({ codigo: o.codigo, nombre: o.nombre, sigla: o.sigla }); }} className="text-xs text-[#00d4a1]">Editar</button>
+                <button onClick={() => { setEditing(o.id); setForm({ codigo: o.codigo, nombre: o.nombre, sigla: o.sigla }); }} className="text-xs text-accent">Editar</button>
                 <button onClick={() => handleToggle(o.id, o.activa)} className="text-xs text-amber">{o.activa ? "Desactivar" : "Activar"}</button>
               </td>
             </tr>
@@ -324,7 +324,7 @@ function QuirofanosTab({ quirofanos, onRefresh }: { quirofanos: Quirofano[]; onR
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-white">Quirófanos</h3>
+      <h3 className="text-sm font-medium text-text">Quirófanos</h3>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <input type="number" placeholder="N°" value={form.numero || ""} onChange={(e) => setForm({ ...form, numero: Number(e.target.value) })} className="input-field text-sm" />
         <input placeholder="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="input-field text-sm" />
@@ -340,11 +340,11 @@ function QuirofanosTab({ quirofanos, onRefresh }: { quirofanos: Quirofano[]; onR
           {quirofanos.map((q) => (
             <tr key={q.id} className="border-b border-border/30">
               <td className="py-2 text-muted">{q.numero}</td>
-              <td className="py-2 text-white">{q.nombre}</td>
+              <td className="py-2 text-text">{q.nombre}</td>
               <td className="py-2 text-muted">{q.piso || "—"}</td>
               <td className="py-2"><Badge variant={q.disponible ? "success" : "default"}>{q.disponible ? "Sí" : "No"}</Badge></td>
               <td className="py-2 flex gap-2">
-                <button onClick={() => { setEditing(q.id); setForm({ numero: q.numero, nombre: q.nombre, piso: q.piso || "" }); }} className="text-xs text-[#00d4a1]">Editar</button>
+                <button onClick={() => { setEditing(q.id); setForm({ numero: q.numero, nombre: q.nombre, piso: q.piso || "" }); }} className="text-xs text-accent">Editar</button>
                 <button onClick={() => handleToggle(q.id, q.disponible)} className="text-xs text-amber">{q.disponible ? "Deshabilitar" : "Habilitar"}</button>
                 <button onClick={() => handleDelete(q.id)} className="text-xs text-red"><Trash2 size={12} /></button>
               </td>
@@ -381,7 +381,7 @@ function RangosTab({ rangos, onRefresh }: { rangos: RangoVital[]; onRefresh: () 
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-white">Rangos de Signos Vitales</h3>
+      <h3 className="text-sm font-medium text-text">Rangos de Signos Vitales</h3>
       <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
         <input placeholder="Parámetro (ej: FC)" value={form.parametro} onChange={(e) => setForm({ ...form, parametro: e.target.value })} className="input-field text-sm" />
         <input type="number" placeholder="Mínimo" value={form.minimo || ""} onChange={(e) => setForm({ ...form, minimo: Number(e.target.value) })} className="input-field text-sm" />
@@ -397,12 +397,12 @@ function RangosTab({ rangos, onRefresh }: { rangos: RangoVital[]; onRefresh: () 
         <tbody>
           {rangos.map((r) => (
             <tr key={r.id} className="border-b border-border/30">
-              <td className="py-2 text-white">{r.parametro}</td>
+              <td className="py-2 text-text">{r.parametro}</td>
               <td className="py-2 text-muted">{r.minimo}</td>
               <td className="py-2 text-muted">{r.maximo}</td>
               <td className="py-2 text-muted">{r.unidad}</td>
               <td className="py-2 flex gap-2">
-                <button onClick={() => { setEditing(r.id); setForm({ parametro: r.parametro, minimo: r.minimo, maximo: r.maximo, unidad: r.unidad }); }} className="text-xs text-[#00d4a1]">Editar</button>
+                <button onClick={() => { setEditing(r.id); setForm({ parametro: r.parametro, minimo: r.minimo, maximo: r.maximo, unidad: r.unidad }); }} className="text-xs text-accent">Editar</button>
                 <button onClick={() => handleDelete(r.id)} className="text-xs text-red"><Trash2 size={12} /></button>
               </td>
             </tr>

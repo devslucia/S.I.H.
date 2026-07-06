@@ -13,9 +13,9 @@ interface Cama {
 }
 
 const estadoConfig: Record<string, { color: string; bg: string; label: string }> = {
-  LIBRE: { color: "text-green-400", bg: "bg-green-500/10 border-green-500/30", label: "Libre" },
+  LIBRE: { color: "text-success", bg: "bg-success/10 border-success/30", label: "Libre" },
   OCUPADA: { color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/30", label: "Ocupada" },
-  EN_LIMPIEZA: { color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/30", label: "En Limpieza" },
+  EN_LIMPIEZA: { color: "text-warning", bg: "bg-warning/10 border-warning/30", label: "En Limpieza" },
   FUERA_DE_SERVICIO: { color: "text-gray-500", bg: "bg-gray-500/10 border-gray-500/30", label: "Fuera de Servicio" },
 };
 
@@ -76,9 +76,9 @@ export default function CamasPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-medium text-white">Gestión de Camas</h2>
         <div className="flex items-center gap-3 text-xs text-muted overflow-x-auto pb-1">
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-400" /> Libre</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-success" /> Libre</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-400" /> Ocupada</span>
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400" /> En Limpieza</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-warning" /> En Limpieza</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-gray-500" /> Fuera de Servicio</span>
         </div>
       </div>

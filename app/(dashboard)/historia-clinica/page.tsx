@@ -55,7 +55,7 @@ export default function HistoriaClinicaListPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <FileText className="w-6 h-6 text-teal" />
+        <FileText className="w-6 h-6 text-accent" />
         <h2 className="text-xl font-medium text-white">Historias Clínicas</h2>
       </div>
 
@@ -79,10 +79,10 @@ export default function HistoriaClinicaListPage() {
           {filtered.map((i) => (
             <div
               key={i.id}
-              className="card p-4 flex items-center justify-between hover:border-teal/30 transition-colors"
+              className="card p-4 flex items-center justify-between hover:border-accent/30 transition-colors"
             >
               <div className="flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 rounded-full bg-teal/20 flex items-center justify-center text-teal font-medium">
+                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-medium">
                   {i.paciente.nombre[0]}{i.paciente.apellido[0]}
                 </div>
                 <div className="min-w-0">

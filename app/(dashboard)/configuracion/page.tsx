@@ -31,7 +31,7 @@ export default function ConfiguracionPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Settings className="w-6 h-6 text-teal" />
+        <Settings className="w-6 h-6 text-accent" />
         <h2 className="text-xl font-medium text-white">Configuración</h2>
       </div>
 
@@ -42,10 +42,10 @@ export default function ConfiguracionPage() {
             <Link
               key={mod.id}
               href={mod.href}
-              className="card p-4 hover:border-teal/30 transition-colors"
+              className="card p-4 hover:border-accent/30 transition-colors"
             >
               <div className="flex items-center gap-3 mb-2">
-                <Icon className="w-5 h-5 text-teal" />
+                <Icon className="w-5 h-5 text-accent" />
                 <h3 className="text-white font-medium text-sm">{mod.name}</h3>
               </div>
               <p className="text-muted text-xs">{mod.description}</p>

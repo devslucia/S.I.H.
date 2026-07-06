@@ -47,12 +47,12 @@ const PARAM_LABELS: Record<string, string> = {
 };
 
 const EVENTOS_PREDEFINIDOS = [
-  { key: "inicio_anestesia", label: "Inicio anestesia", color: "#00d4a1" },
+  { key: "inicio_anestesia", label: "Inicio anestesia", color: "#c47a5a" },
   { key: "inicio_cirugia", label: "Inicio cirugía", color: "#f97316" },
   { key: "intubacion", label: "Intubación", color: "#3b82f6" },
   { key: "extubacion", label: "Extubación", color: "#3b82f6" },
   { key: "fin_cirugia", label: "Fin cirugía", color: "#f97316" },
-  { key: "fin_anestesia", label: "Fin anestesia", color: "#00d4a1" },
+  { key: "fin_anestesia", label: "Fin anestesia", color: "#c47a5a" },
 ];
 
 function GraficoSignosVitales({
@@ -150,8 +150,8 @@ function GraficoSignosVitales({
   return (
     <div className="space-y-4">
       {/* Gráfico con scroll horizontal */}
-      <div className="rounded-xl border border-[#1e2535] bg-[#161b27] p-4">
-        <h4 className="text-sm font-medium text-gray-300 mb-3">Registro Gráfico de Signos Vitales</h4>
+      <div className="rounded-xl border border-border bg-surface p-4">
+        <h4 className="text-sm font-medium text-text-secondary mb-3">Registro Gráfico de Signos Vitales</h4>
         <div className="overflow-x-auto" style={{ scrollbarWidth: "thin" }}>
           <div style={{ minWidth: Math.max(800, chartData.length * 40) }}>
             <ComposedChart
@@ -160,7 +160,7 @@ function GraficoSignosVitales({
               data={chartData}
               margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e2535" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-border))" />
               <XAxis
                 dataKey="label"
                 stroke="#6b7280"
@@ -170,8 +170,8 @@ function GraficoSignosVitales({
               <YAxis stroke="#6b7280" tick={{ fontSize: 10 }} domain={[0, 240]} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#161b27",
-                  border: "1px solid #1e2535",
+                  backgroundColor: "rgb(var(--color-surface))",
+                  border: "1px solid rgb(var(--color-border))",
                   borderRadius: "8px",
                   color: "#d1d5db",
                   fontSize: "12px",
@@ -211,11 +211,11 @@ function GraficoSignosVitales({
 
       {/* Panel de ingreso rápido */}
       {!readOnly && (
-        <div className="rounded-xl border border-[#1e2535] bg-[#161b27] p-4">
+        <div className="rounded-xl border border-border bg-surface p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Clock size={16} className="text-[#00d4a1]" />
-              <h4 className="text-sm font-medium text-gray-300">
+              <Clock size={16} className="text-accent" />
+              <h4 className="text-sm font-medium text-text-secondary">
                 Registro rápido — Minuto {minutoActual}
               </h4>
             </div>
@@ -224,26 +224,26 @@ function GraficoSignosVitales({
                 <Plus size={14} /> Evento
               </Button>
               {showEventos && (
-                <div className="absolute z-50 right-0 top-full mt-1 bg-[#161b27] border border-[#1e2535] rounded-lg shadow-lg p-2 w-56">
+                <div className="absolute z-50 right-0 top-full mt-1 bg-surface border border-border rounded-lg shadow-lg p-2 w-56">
                   {EVENTOS_PREDEFINIDOS.map((ev) => (
                     <button
                       key={ev.key}
                       onClick={() => handleAddEvento(ev.key)}
-                      className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-[#1e2535] rounded transition-colors"
+                      className="w-full px-3 py-1.5 text-left text-sm text-text hover:bg-border rounded transition-colors"
                     >
                       {ev.label}
                     </button>
                   ))}
-                  <div className="border-t border-[#1e2535] mt-1 pt-1 flex gap-1">
+                  <div className="border-t border-border mt-1 pt-1 flex gap-1">
                     <input
                       type="text"
                       placeholder="Evento personalizado..."
                       value={eventoCustom}
                       onChange={(e) => setEventoCustom(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleAddEventoCustom()}
-                      className="flex-1 px-2 py-1 text-xs bg-[#0f1117] border border-[#1e2535] rounded text-gray-200 focus:outline-none focus:border-[#00d4a1]"
+                      className="flex-1 px-2 py-1 text-xs bg-background border border-border rounded text-text focus:outline-none focus:border-accent"
                     />
-                    <button onClick={handleAddEventoCustom} className="text-xs text-[#00d4a1] px-2">+</button>
+                    <button onClick={handleAddEventoCustom} className="text-xs text-accent px-2">+</button>
                   </div>
                 </div>
               )}
@@ -253,7 +253,7 @@ function GraficoSignosVitales({
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
             {Object.entries(PARAM_LABELS).map(([key, label]) => (
               <div key={key}>
-                <label className="block text-xs text-gray-400 mb-1">
+                <label className="block text-xs text-muted mb-1">
                   <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: PARAM_COLORES[key] }} />
                   {label}
                 </label>
@@ -262,7 +262,7 @@ function GraficoSignosVitales({
                   step="any"
                   value={form[key as keyof typeof form]}
                   onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
-                  className="w-full rounded-lg border border-[#1e2535] bg-[#0f1117] px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-[#00d4a1]"
+                  className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-text focus:outline-none focus:border-accent"
                 />
               </div>
             ))}

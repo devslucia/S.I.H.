@@ -56,7 +56,7 @@ export default function EsperaCamaPage() {
         <p className="text-muted text-sm">Cargando...</p>
       ) : internaciones.length === 0 ? (
         <div className="card p-8 text-center">
-          <Bed size={32} className="mx-auto text-teal mb-2" />
+          <Bed size={32} className="mx-auto text-accent mb-2" />
           <p className="text-white font-medium">No hay pacientes esperando cama</p>
           <p className="text-muted text-sm mt-1">Todos los pacientes internados tienen cama asignada.</p>
         </div>
@@ -66,10 +66,10 @@ export default function EsperaCamaPage() {
             <div
               key={i.id}
               onClick={() => router.push(`/admision/${i.paciente.id}`)}
-              className="card p-4 flex items-center justify-between cursor-pointer hover:border-teal/30 transition-colors"
+              className="card p-4 flex items-center justify-between cursor-pointer hover:border-accent/30 transition-colors"
             >
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
+                <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center text-warning">
                   <Clock size={18} />
                 </div>
                 <div>
