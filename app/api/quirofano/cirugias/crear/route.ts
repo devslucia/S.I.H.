@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -16,13 +17,23 @@ const createCirugiaSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN");
+  const { session, error } = await requireRole("ADMIN", "MEDICO");
   if (error) return error;
 
   const body = await req.json();
   const parsed = createCirugiaSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+  }
+
+  const rol = session.user.rol;
+  const userId = session.user.id;
+
+  if (rol === "MEDICO") {
+    const visible = await isInternacionVisibleForUser(parsed.data.internacionId, userId, rol);
+    if (!visible) {
+      return NextResponse.json({ error: "No tiene acceso a esta internación" }, { status: 403 });
+    }
   }
 
   const cirugia = await prisma.cirugia.create({
