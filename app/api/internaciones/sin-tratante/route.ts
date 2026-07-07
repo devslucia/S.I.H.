@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
   const internaciones = await prisma.internacion.findMany({
     where: {
-      medicoTratanteId: null,
+      medicosTratantesInternacion: { none: {} },
       estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] },
     },
     include: {

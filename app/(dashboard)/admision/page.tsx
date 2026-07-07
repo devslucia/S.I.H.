@@ -70,14 +70,14 @@ const initialNewPatientForm = {
   nroAfiliado: "",
   tipoBeneficiario: "TITULAR",
   camaId: "",
-  medicoTratanteId: "",
+  medicoTratanteIds: [] as string[],
   tipoIngreso: "PROGRAMADO",
   motivoIngreso: "",
 };
 
 const initialInternacionForm = {
   camaId: "",
-  medicoTratanteId: "",
+  medicoTratanteIds: [] as string[],
   tipoIngreso: "PROGRAMADO",
   motivoIngreso: "",
 };
@@ -204,8 +204,26 @@ export default function AdmisionPage() {
     setNewPatientForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const handleNewPatientMedicoToggle = (medicoId: string) => {
+    setNewPatientForm((prev) => {
+      const ids = prev.medicoTratanteIds.includes(medicoId)
+        ? prev.medicoTratanteIds.filter((id) => id !== medicoId)
+        : [...prev.medicoTratanteIds, medicoId];
+      return { ...prev, medicoTratanteIds: ids };
+    });
+  };
+
   const handleInternacionChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setInternacionForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleInternacionMedicoToggle = (medicoId: string) => {
+    setInternacionForm((prev) => {
+      const ids = prev.medicoTratanteIds.includes(medicoId)
+        ? prev.medicoTratanteIds.filter((id) => id !== medicoId)
+        : [...prev.medicoTratanteIds, medicoId];
+      return { ...prev, medicoTratanteIds: ids };
+    });
   };
 
   const handleCreateAdmission = async (e: React.FormEvent) => {
@@ -213,10 +231,12 @@ export default function AdmisionPage() {
     setSaving(true);
     setError(null);
     try {
+      const body: any = { ...newPatientForm };
+      if (body.medicoTratanteIds?.length === 0) delete body.medicoTratanteIds;
       const res = await fetch("/api/admision/admitir", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newPatientForm),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         setView("search");
@@ -246,7 +266,7 @@ export default function AdmisionPage() {
         motivoIngreso: internacionForm.motivoIngreso || undefined,
       };
       if (internacionForm.camaId) body.camaId = internacionForm.camaId;
-      if (internacionForm.medicoTratanteId) body.medicoTratanteId = internacionForm.medicoTratanteId;
+      if (internacionForm.medicoTratanteIds?.length) body.medicoTratanteIds = internacionForm.medicoTratanteIds;
 
       const res = await fetch("/api/internaciones", {
         method: "POST",
@@ -435,13 +455,31 @@ export default function AdmisionPage() {
                     </select>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm text-gray-400">Médico Tratante</label>
-                    <select name="medicoTratanteId" value={newPatientForm.medicoTratanteId} onChange={handleNewPatientChange} className="select-field">
-                      <option value="">Sin asignar</option>
-                      {medicos.map((m) => (
-                        <option key={m.id} value={m.id}>{m.nombre}{m.matricula ? ` (${m.matricula})` : ""}</option>
-                      ))}
-                    </select>
+                    <label className="text-sm text-gray-400">Médico(s) Tratante(s)</label>
+                    <div className="flex flex-wrap gap-2">
+                      {medicos.map((m) => {
+                        const selected = newPatientForm.medicoTratanteIds.includes(m.id);
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => handleNewPatientMedicoToggle(m.id)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              selected
+                                ? "bg-accent text-white"
+                                : "bg-background border border-border text-muted hover:border-accent/30"
+                            }`}
+                          >
+                            {m.nombre}{m.matricula ? ` (${m.matricula})` : ""}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {newPatientForm.medicoTratanteIds.length > 0 && (
+                      <p className="text-xs text-muted">
+                        {newPatientForm.medicoTratanteIds.length} seleccionado(s)
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm text-gray-400">Tipo de Ingreso *</label>
@@ -570,13 +608,31 @@ export default function AdmisionPage() {
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm text-gray-400">Médico Tratante</label>
-                  <select name="medicoTratanteId" value={internacionForm.medicoTratanteId} onChange={handleInternacionChange} className="select-field">
-                    <option value="">Sin asignar</option>
-                    {medicos.map((m) => (
-                      <option key={m.id} value={m.id}>{m.nombre}{m.matricula ? ` (${m.matricula})` : ""}</option>
-                    ))}
-                  </select>
+                  <label className="text-sm text-gray-400">Médico(s) Tratante(s)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {medicos.map((m) => {
+                      const selected = internacionForm.medicoTratanteIds.includes(m.id);
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => handleInternacionMedicoToggle(m.id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            selected
+                              ? "bg-accent text-white"
+                              : "bg-background border border-border text-muted hover:border-accent/30"
+                          }`}
+                        >
+                          {m.nombre}{m.matricula ? ` (${m.matricula})` : ""}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {internacionForm.medicoTratanteIds.length > 0 && (
+                    <p className="text-xs text-muted">
+                      {internacionForm.medicoTratanteIds.length} seleccionado(s)
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm text-gray-400">Tipo de Ingreso *</label>

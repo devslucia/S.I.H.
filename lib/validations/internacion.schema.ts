@@ -9,7 +9,7 @@ export const createInternacionSchema = z.object({
   motivoIngreso: z.string().optional().nullable(),
   diagnosticoCIE: z.string().optional().nullable(),
   medicoSolicitante: z.string().optional().nullable(),
-  medicoTratanteId: z.string().uuid().optional().nullable(),
+  medicoTratanteIds: z.array(z.string().uuid()).optional().nullable(),
   tipoIngreso: z.enum(["PROGRAMADO", "URGENCIA", "GUARDIA", "DERIVACION"]),
 });
 

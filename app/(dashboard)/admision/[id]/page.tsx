@@ -73,7 +73,7 @@ export default function PacienteDetailPage() {
   const [medicos, setMedicos] = useState<Medico[]>([]);
 
   const [nuevaInternacionOpen, setNuevaInternacionOpen] = useState(false);
-  const [form, setForm] = useState({ camaId: "", obraSocialId: "", medicoTratanteId: "", nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO" });
+  const [form, setForm] = useState({ camaId: "", obraSocialId: "", medicoTratanteIds: [] as string[], nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO" });
   const [saving, setSaving] = useState(false);
 
   const [alergiaModalOpen, setAlergiaModalOpen] = useState(false);
@@ -114,7 +114,7 @@ export default function PacienteDetailPage() {
       };
       if (form.camaId) body.camaId = form.camaId;
       if (form.obraSocialId) body.obraSocialId = form.obraSocialId;
-      if (form.medicoTratanteId) body.medicoTratanteId = form.medicoTratanteId;
+      if (form.medicoTratanteIds?.length) body.medicoTratanteIds = form.medicoTratanteIds;
       if (form.nroAfiliado) body.nroAfiliado = form.nroAfiliado;
       if (form.tipoBeneficiario) body.tipoBeneficiario = form.tipoBeneficiario;
 
@@ -125,7 +125,7 @@ export default function PacienteDetailPage() {
       });
       if (res.ok) {
         setNuevaInternacionOpen(false);
-        setForm({ camaId: "", obraSocialId: "", medicoTratanteId: "", nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO" });
+        setForm({ camaId: "", obraSocialId: "", medicoTratanteIds: [], nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO" });
         fetchPaciente();
       }
     } catch (err) { console.error(err); }
@@ -334,13 +334,40 @@ export default function PacienteDetailPage() {
                 <option value="FAMILIAR">Familiar</option>
               </select>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-gray-400">Médico Tratante</label>
-              <select value={form.medicoTratanteId} onChange={(e) => setForm((p) => ({ ...p, medicoTratanteId: e.target.value }))} className="select-field">
-                <option value="">Sin asignar</option>
-                {medicos.map((m) => <option key={m.id} value={m.id}>{m.nombre}{m.matricula ? ` (${m.matricula})` : ""}</option>)}
-              </select>
-            </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm text-gray-400">Médico(s) Tratante(s)</label>
+                <div className="flex flex-wrap gap-2">
+                  {medicos.map((m) => {
+                    const selected = form.medicoTratanteIds.includes(m.id);
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => {
+                          setForm((p) => ({
+                            ...p,
+                            medicoTratanteIds: selected
+                              ? p.medicoTratanteIds.filter((id) => id !== m.id)
+                              : [...p.medicoTratanteIds, m.id],
+                          }));
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          selected
+                            ? "bg-accent text-white"
+                            : "bg-background border border-border text-muted hover:border-accent/30"
+                        }`}
+                      >
+                        {m.nombre}{m.matricula ? ` (${m.matricula})` : ""}
+                      </button>
+                    );
+                  })}
+                </div>
+                {form.medicoTratanteIds.length > 0 && (
+                  <p className="text-xs text-muted">
+                    {form.medicoTratanteIds.length} seleccionado(s)
+                  </p>
+                )}
+              </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm text-gray-400">Tipo de Ingreso</label>
               <select name="tipoIngreso" value={form.tipoIngreso} onChange={(e) => setForm((p) => ({ ...p, tipoIngreso: e.target.value }))} className="select-field">

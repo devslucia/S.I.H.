@@ -4,13 +4,16 @@ import { getVisibleInternacionesWhere } from "@/lib/internaciones-visibility";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN", "MEDICO");
+  const { session, error } = await requireRole("ADMIN", "MEDICO", "INSTRUMENTADOR", "ANESTESIOLOGO");
   if (error) return error;
 
   const rol = session.user.rol;
   const userId = session.user.id;
 
-  const visibleWhere = getVisibleInternacionesWhere(userId, rol);
+  const QuirofanoFullVisibilityRoles = ["ADMIN", "MEDICO", "INSTRUMENTADOR", "ANESTESIOLOGO"];
+  const visibleWhere = QuirofanoFullVisibilityRoles.includes(rol)
+    ? {}
+    : getVisibleInternacionesWhere(userId, rol);
 
   const internaciones = await prisma.internacion.findMany({
     where: {
@@ -23,9 +26,14 @@ export async function GET(req: NextRequest) {
       ...visibleWhere,
     },
     include: {
-      paciente: true,
+      paciente: {
+        include: { alergias: true },
+      },
       cama: { include: { sector: true } },
-      medicoTratante: { select: { id: true, nombre: true } },
+      obraSocial: { select: { id: true, nombre: true, sigla: true } },
+      medicosTratantesInternacion: {
+        include: { medico: { select: { id: true, nombre: true } } },
+      },
     },
     orderBy: { fechaIngreso: "desc" },
   });

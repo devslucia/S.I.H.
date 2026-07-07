@@ -13,7 +13,7 @@ interface Internacion {
   estado: string;
   motivoIngreso?: string;
   tipoIngreso?: string;
-  medicoTratante?: { id: string; nombre: string } | null;
+  medicosTratantesInternacion?: { medico: { id: string; nombre: string } }[];
   paciente: { id: string; nombre: string; apellido: string; dni: string };
   cama?: { numero: string; sector: { nombre: string } } | null;
   obraSocial?: { nombre: string; sigla: string } | null;
@@ -79,7 +79,12 @@ export default function EsperaCamaPage() {
                   </p>
                   {i.motivoIngreso && <p className="text-muted text-xs">Motivo: {i.motivoIngreso}</p>}
                   {i.tipoIngreso && <p className="text-muted text-xs">Tipo: {i.tipoIngreso}</p>}
-                  {i.medicoTratante && <p className="text-muted text-xs">Tratante: {i.medicoTratante.nombre}</p>}
+                  {i.medicosTratantesInternacion && i.medicosTratantesInternacion.length > 0 && (
+                    <p className="text-muted text-xs">
+                      {"Tratante" + (i.medicosTratantesInternacion.length > 1 ? "s" : "")}:{" "}
+                      {i.medicosTratantesInternacion.map((mt) => mt.medico.nombre).join(", ")}
+                    </p>
+                  )}
                   {i.obraSocial && <p className="text-muted text-xs">OS: {i.obraSocial.nombre}</p>}
                 </div>
               </div>

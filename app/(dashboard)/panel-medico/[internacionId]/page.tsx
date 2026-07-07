@@ -18,7 +18,7 @@ interface Internacion {
   id: string; numero: number; estado: string; fechaIngreso: string;
   paciente: { id: string; nombre: string; apellido: string; dni: string; alergias?: { sustancia: string }[] };
   cama?: { numero: string; sector: { nombre: string } } | null;
-  medicoTratante?: { id: string; nombre: string } | null;
+  medicosTratantesInternacion?: { medico: { id: string; nombre: string } }[];
 }
 
 interface Evolucion {
@@ -208,8 +208,11 @@ export default function PanelMedicoPage() {
               DNI: {internacion.paciente.dni} | HC #{internacion.numero}
               {internacion.cama && ` | Cama: ${internacion.cama.numero} — ${internacion.cama.sector.nombre}`}
             </p>
-            {internacion.medicoTratante && (
-              <p className="text-muted text-xs">Tratante: {internacion.medicoTratante.nombre}</p>
+            {internacion.medicosTratantesInternacion && internacion.medicosTratantesInternacion.length > 0 && (
+              <p className="text-muted text-xs">
+                {"Tratante" + (internacion.medicosTratantesInternacion.length > 1 ? "s" : "")}:{" "}
+                {internacion.medicosTratantesInternacion.map((mt) => mt.medico.nombre).join(", ")}
+              </p>
             )}
           </div>
           <div className="flex items-center gap-2">
