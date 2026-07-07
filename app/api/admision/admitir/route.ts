@@ -14,6 +14,7 @@ const admitirSchema = z.object({
   localidad: z.string().optional().nullable(),
   provincia: z.string().optional().nullable(),
   telefono: z.string().optional().nullable(),
+  estadoCivil: z.enum(["SOLTERO", "CASADO", "DIVORCIADO", "VIUDO", "UNION_CONVIVENCIAL"]).optional().nullable(),
   obraSocialId: z.string().uuid().optional().nullable(),
   nroAfiliado: z.string().optional().nullable(),
   tipoBeneficiario: z.enum(["TITULAR", "FAMILIAR"]).optional().nullable(),
@@ -21,6 +22,8 @@ const admitirSchema = z.object({
   medicoTratanteIds: z.array(z.string().uuid()).optional().nullable(),
   tipoIngreso: z.enum(["PROGRAMADO", "URGENCIA", "GUARDIA", "DERIVACION"]),
   motivoIngreso: z.string().optional().nullable(),
+  peso: z.number().positive().optional().nullable(),
+  diagnosticoCirugia: z.string().optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -54,6 +57,7 @@ export async function POST(req: NextRequest) {
           localidad: data.localidad,
           provincia: data.provincia,
           telefono: data.telefono,
+          estadoCivil: data.estadoCivil,
         },
       });
 
@@ -72,6 +76,8 @@ export async function POST(req: NextRequest) {
           tipoBeneficiario: data.tipoBeneficiario,
           tipoIngreso: data.tipoIngreso,
           motivoIngreso: data.motivoIngreso,
+          peso: data.peso,
+          diagnosticoCirugia: data.diagnosticoCirugia,
           medicosTratantesInternacion: data.medicoTratanteIds?.length
             ? { create: data.medicoTratanteIds.map((id) => ({ medicoId: id })) }
             : undefined,

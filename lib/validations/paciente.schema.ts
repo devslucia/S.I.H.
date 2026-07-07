@@ -13,6 +13,7 @@ export const createPacienteSchema = z.object({
   telefono: z.string().optional().nullable(),
   email: z.string().email().optional().nullable(),
   grupoSangre: z.string().optional().nullable(),
+  estadoCivil: z.enum(["SOLTERO", "CASADO", "DIVORCIADO", "VIUDO", "UNION_CONVIVENCIAL"]).optional().nullable(),
 });
 
 export const updatePacienteSchema = createPacienteSchema.partial();

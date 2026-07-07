@@ -80,6 +80,13 @@ function InformePDF({ paciente, internacion, alergias }: any) {
         <Field label="DNI" value={paciente.dni} />
         <Field label="Sexo" value={paciente.sexo} />
         <Field label="Fecha de Nacimiento" value={paciente.fechaNac ? new Date(paciente.fechaNac).toLocaleDateString("es-AR") : "—"} />
+        <Field label="Estado Civil" value={
+          paciente.estadoCivil === "SOLTERO" ? "Soltero" :
+          paciente.estadoCivil === "CASADO" ? "Casado" :
+          paciente.estadoCivil === "DIVORCIADO" ? "Divorciado" :
+          paciente.estadoCivil === "VIUDO" ? "Viudo" :
+          paciente.estadoCivil === "UNION_CONVIVENCIAL" ? "Unión de hecho" : "—"
+        } />
         <Field label="CUIL" value={paciente.cuil} />
         <Field label="Domicilio" value={`${paciente.domicilio || "—"}${paciente.localidad ? `, ${paciente.localidad}` : ""}`} />
         <Field label="Teléfono" value={paciente.telefono} />
@@ -87,6 +94,8 @@ function InformePDF({ paciente, internacion, alergias }: any) {
         <SectionTitle>Datos de la Internación</SectionTitle>
         <Field label="Tipo de Ingreso" value={internacion.tipoIngreso} />
         <Field label="Motivo de Ingreso" value={internacion.motivoIngreso} />
+        <Field label="Peso" value={internacion.peso ? `${internacion.peso} kg` : "—"} />
+        <Field label="Diagnóstico / Tipo de Cirugía" value={internacion.diagnosticoCirugia} />
         <Field label="Diagnóstico CIE" value={internacion.diagnosticoCIE} />
         <Field label="Médico Solicitante" value={internacion.medicoSolicitante} />
         <Field label="Obra Social" value={internacion.obraSocial ? `${internacion.obraSocial.nombre} (${internacion.obraSocial.sigla})` : "—"} />
