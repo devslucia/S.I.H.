@@ -22,6 +22,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       obraSocial: true,
       pases: true,
       histClinica: true,
+      medicosTratantesInternacion: {
+        include: { medico: { select: { id: true, nombre: true } } },
+      },
     },
   });
 

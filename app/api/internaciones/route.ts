@@ -34,6 +34,9 @@ export async function GET(req: NextRequest) {
       paciente: true,
       cama: { include: { sector: true } },
       obraSocial: true,
+      medicosTratantesInternacion: {
+        include: { medico: { select: { id: true, nombre: true } } },
+      },
     },
     orderBy: { fechaIngreso: "desc" },
   });
