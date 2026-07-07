@@ -7,6 +7,8 @@ export const createInternacionSchema = z.object({
   nroAfiliado: z.string().optional().nullable(),
   tipoBeneficiario: z.enum(["TITULAR", "FAMILIAR"]).optional().nullable(),
   motivoIngreso: z.string().optional().nullable(),
+  peso: z.number().positive().optional().nullable(),
+  diagnosticoCirugia: z.string().optional().nullable(),
   diagnosticoCIE: z.string().optional().nullable(),
   medicoSolicitante: z.string().optional().nullable(),
   medicoTratanteIds: z.array(z.string().uuid()).optional().nullable(),

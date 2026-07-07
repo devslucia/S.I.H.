@@ -25,6 +25,14 @@ enum Sexo {
   OTRO
 }
 
+enum EstadoCivil {
+  SOLTERO
+  CASADO
+  DIVORCIADO
+  VIUDO
+  UNION_CONVIVENCIAL
+}
+
 enum TipoCama {
   ESTANDAR
   TERAPIA_INTENSIVA
@@ -176,6 +184,7 @@ model Paciente {
   telefono    String?
   email       String?
   grupoSangre String?
+  estadoCivil EstadoCivil?
   alergias    Alergia[]
   internaciones Internacion[]
   createdAt   DateTime    @default(now())
@@ -244,6 +253,8 @@ model Internacion {
   fechaIngreso       DateTime            @default(now())
   fechaEgreso        DateTime?
   motivoIngreso      String?
+  peso               Float?
+  diagnosticoCirugia String?
   diagnosticoCIE     String?
   medicoSolicitante  String?
   medicosTratantesInternacion InternacionMedicoTratante[]

@@ -81,6 +81,8 @@ export async function POST(req: NextRequest) {
           nroAfiliado: parsed.data.nroAfiliado,
           tipoBeneficiario: parsed.data.tipoBeneficiario,
           motivoIngreso: parsed.data.motivoIngreso,
+          peso: parsed.data.peso,
+          diagnosticoCirugia: parsed.data.diagnosticoCirugia,
           diagnosticoCIE: parsed.data.diagnosticoCIE,
           medicoSolicitante: parsed.data.medicoSolicitante,
           tipoIngreso: parsed.data.tipoIngreso,

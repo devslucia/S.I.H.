@@ -27,6 +27,7 @@ interface Paciente {
   domicilio?: string;
   localidad?: string;
   telefono?: string;
+  estadoCivil?: string | null;
   alergias?: Alergia[];
   internaciones: Internacion[];
 }
@@ -73,7 +74,7 @@ export default function PacienteDetailPage() {
   const [medicos, setMedicos] = useState<Medico[]>([]);
 
   const [nuevaInternacionOpen, setNuevaInternacionOpen] = useState(false);
-  const [form, setForm] = useState({ camaId: "", obraSocialId: "", medicoTratanteIds: [] as string[], nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO" });
+  const [form, setForm] = useState({ camaId: "", obraSocialId: "", medicoTratanteIds: [] as string[], nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO", peso: "", diagnosticoCirugia: "" });
   const [saving, setSaving] = useState(false);
 
   const [alergiaModalOpen, setAlergiaModalOpen] = useState(false);
@@ -117,6 +118,8 @@ export default function PacienteDetailPage() {
       if (form.medicoTratanteIds?.length) body.medicoTratanteIds = form.medicoTratanteIds;
       if (form.nroAfiliado) body.nroAfiliado = form.nroAfiliado;
       if (form.tipoBeneficiario) body.tipoBeneficiario = form.tipoBeneficiario;
+      if (form.peso) body.peso = parseFloat(form.peso);
+      if (form.diagnosticoCirugia) body.diagnosticoCirugia = form.diagnosticoCirugia;
 
       const res = await fetch("/api/internaciones", {
         method: "POST",
@@ -125,7 +128,7 @@ export default function PacienteDetailPage() {
       });
       if (res.ok) {
         setNuevaInternacionOpen(false);
-        setForm({ camaId: "", obraSocialId: "", medicoTratanteIds: [], nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO" });
+        setForm({ camaId: "", obraSocialId: "", medicoTratanteIds: [], nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO", peso: "", diagnosticoCirugia: "" });
         fetchPaciente();
       }
     } catch (err) { console.error(err); }
@@ -192,7 +195,9 @@ export default function PacienteDetailPage() {
               <p className="text-muted text-sm">
                 DNI: {paciente.dni} | {paciente.sexo} | {paciente.telefono || "—"}
               </p>
-              {paciente.domicilio && <p className="text-muted text-xs">{paciente.domicilio}{paciente.localidad ? `, ${paciente.localidad}` : ""}</p>}
+              <p className="text-muted text-xs">
+                Est. Civil: { paciente.estadoCivil === "SOLTERO" ? "Soltero" : paciente.estadoCivil === "CASADO" ? "Casado" : paciente.estadoCivil === "DIVORCIADO" ? "Divorciado" : paciente.estadoCivil === "VIUDO" ? "Viudo" : paciente.estadoCivil === "UNION_CONVIVENCIAL" ? "Unión de hecho" : "—"}{paciente.domicilio ? ` · ${paciente.domicilio}${paciente.localidad ? `, ${paciente.localidad}` : ""}` : ""}
+              </p>
             </div>
           </div>
           {paciente.alergias && paciente.alergias.length > 0 && (
@@ -379,6 +384,12 @@ export default function PacienteDetailPage() {
             </div>
             <div className="col-span-2">
               <Input label="Motivo de Ingreso" name="motivoIngreso" value={form.motivoIngreso} onChange={(e) => setForm((p) => ({ ...p, motivoIngreso: e.target.value }))} />
+            </div>
+            <div>
+              <Input label="Peso (kg)" name="peso" type="number" step="0.1" min="0" value={form.peso} onChange={(e) => setForm((p) => ({ ...p, peso: e.target.value }))} placeholder="ej: 78.5" />
+            </div>
+            <div>
+              <Input label="Diagnóstico / Tipo de Cirugía" name="diagnosticoCirugia" value={form.diagnosticoCirugia} onChange={(e) => setForm((p) => ({ ...p, diagnosticoCirugia: e.target.value }))} placeholder="Diagnóstico o procedimiento" />
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-2">

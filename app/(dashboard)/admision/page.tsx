@@ -66,6 +66,7 @@ const initialNewPatientForm = {
   localidad: "",
   provincia: "",
   telefono: "",
+  estadoCivil: "",
   obraSocialId: "",
   nroAfiliado: "",
   tipoBeneficiario: "TITULAR",
@@ -73,6 +74,8 @@ const initialNewPatientForm = {
   medicoTratanteIds: [] as string[],
   tipoIngreso: "PROGRAMADO",
   motivoIngreso: "",
+  peso: "",
+  diagnosticoCirugia: "",
 };
 
 const initialInternacionForm = {
@@ -80,6 +83,8 @@ const initialInternacionForm = {
   medicoTratanteIds: [] as string[],
   tipoIngreso: "PROGRAMADO",
   motivoIngreso: "",
+  peso: "",
+  diagnosticoCirugia: "",
 };
 
 const estadoBadge: Record<string, { variant: "success" | "warning" | "error" | "info" | "default"; label: string }> = {
@@ -233,6 +238,10 @@ export default function AdmisionPage() {
     try {
       const body: any = { ...newPatientForm };
       if (body.medicoTratanteIds?.length === 0) delete body.medicoTratanteIds;
+      if (!body.estadoCivil) delete body.estadoCivil;
+      if (body.peso) body.peso = parseFloat(body.peso);
+      else delete body.peso;
+      if (!body.diagnosticoCirugia) delete body.diagnosticoCirugia;
       const res = await fetch("/api/admision/admitir", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -267,6 +276,8 @@ export default function AdmisionPage() {
       };
       if (internacionForm.camaId) body.camaId = internacionForm.camaId;
       if (internacionForm.medicoTratanteIds?.length) body.medicoTratanteIds = internacionForm.medicoTratanteIds;
+      if (internacionForm.peso) body.peso = parseFloat(internacionForm.peso);
+      if (internacionForm.diagnosticoCirugia) body.diagnosticoCirugia = internacionForm.diagnosticoCirugia;
 
       const res = await fetch("/api/internaciones", {
         method: "POST",
@@ -416,6 +427,17 @@ export default function AdmisionPage() {
                   <Input label="Localidad" name="localidad" value={newPatientForm.localidad} onChange={handleNewPatientChange} />
                   <Input label="Provincia" name="provincia" value={newPatientForm.provincia} onChange={handleNewPatientChange} />
                   <Input label="Teléfono" name="telefono" value={newPatientForm.telefono} onChange={handleNewPatientChange} />
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm text-gray-400">Estado Civil</label>
+                    <select name="estadoCivil" value={newPatientForm.estadoCivil} onChange={handleNewPatientChange} className="select-field">
+                      <option value="">No especificado</option>
+                      <option value="SOLTERO">Soltero</option>
+                      <option value="CASADO">Casado</option>
+                      <option value="DIVORCIADO">Divorciado</option>
+                      <option value="VIUDO">Viudo</option>
+                      <option value="UNION_CONVIVENCIAL">Unión de hecho</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -492,6 +514,12 @@ export default function AdmisionPage() {
                   </div>
                   <div className="sm:col-span-2 lg:col-span-3">
                     <Input label="Motivo de Ingreso" name="motivoIngreso" value={newPatientForm.motivoIngreso} onChange={handleNewPatientChange} />
+                  </div>
+                  <div>
+                    <Input label="Peso (kg)" name="peso" type="number" step="0.1" min="0" value={newPatientForm.peso} onChange={handleNewPatientChange} placeholder="ej: 78.5" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Input label="Diagnóstico / Tipo de Cirugía" name="diagnosticoCirugia" value={newPatientForm.diagnosticoCirugia} onChange={handleNewPatientChange} placeholder="Diagnóstico presuntivo o procedimiento previsto" />
                   </div>
                 </div>
               </div>
@@ -645,6 +673,12 @@ export default function AdmisionPage() {
                 </div>
                 <div className="sm:col-span-2">
                   <Input label="Motivo de Ingreso" name="motivoIngreso" value={internacionForm.motivoIngreso} onChange={handleInternacionChange} />
+                </div>
+                <div>
+                  <Input label="Peso (kg)" name="peso" type="number" step="0.1" min="0" value={internacionForm.peso} onChange={handleInternacionChange} placeholder="ej: 78.5" />
+                </div>
+                <div className="sm:col-span-2">
+                  <Input label="Diagnóstico / Tipo de Cirugía" name="diagnosticoCirugia" value={internacionForm.diagnosticoCirugia} onChange={handleInternacionChange} placeholder="Diagnóstico presuntivo o procedimiento previsto" />
                 </div>
               </div>
 

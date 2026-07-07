@@ -32,3 +32,17 @@ ALTER TABLE "Internacion" DROP CONSTRAINT "Internacion_medicoTratanteId_fkey";
 
 -- AlterTable: drop the old column
 ALTER TABLE "Internacion" DROP COLUMN "medicoTratanteId";
+
+-- ============================================================
+-- Nuevos campos: Estado Civil, Peso, Diagnóstico Cirugía
+-- ============================================================
+
+-- Nuevo enum EstadoCivil
+CREATE TYPE "EstadoCivil" AS ENUM ('SOLTERO', 'CASADO', 'DIVORCIADO', 'VIUDO', 'UNION_CONVIVENCIAL');
+
+-- Nuevo campo en Paciente
+ALTER TABLE "Paciente" ADD COLUMN "estadoCivil" "EstadoCivil";
+
+-- Nuevos campos en Internacion
+ALTER TABLE "Internacion" ADD COLUMN "peso" DOUBLE PRECISION;
+ALTER TABLE "Internacion" ADD COLUMN "diagnosticoCirugia" TEXT;
