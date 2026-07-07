@@ -83,8 +83,10 @@ export async function POST(req: NextRequest) {
           motivoIngreso: parsed.data.motivoIngreso,
           diagnosticoCIE: parsed.data.diagnosticoCIE,
           medicoSolicitante: parsed.data.medicoSolicitante,
-          medicoTratanteId: parsed.data.medicoTratanteId,
           tipoIngreso: parsed.data.tipoIngreso,
+          medicosTratantesInternacion: parsed.data.medicoTratanteIds?.length
+            ? { create: parsed.data.medicoTratanteIds.map((id) => ({ medicoId: id })) }
+            : undefined,
         },
       });
 

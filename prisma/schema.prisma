@@ -157,7 +157,7 @@ model Usuario {
   controlesEnfermeria ControlEnfermeria[]
   aplicaciones        AplicacionMedicamento[]
   firmasDocumento   FirmaDocumento[]
-  internacionesTratadas Internacion[] @relation("MedicoTratante")
+  internacionesTratadas InternacionMedicoTratante[]
   cirugiasInstrumentadas Cirugia[]    @relation("InstrumentadorCirugia")
   cirugiasCirculante     Cirugia[]    @relation("CirculanteCirugia")
 }
@@ -246,8 +246,7 @@ model Internacion {
   motivoIngreso      String?
   diagnosticoCIE     String?
   medicoSolicitante  String?
-  medicoTratanteId   String?
-  medicoTratante     Usuario?   @relation("MedicoTratante", fields: [medicoTratanteId], references: [id])
+  medicosTratantesInternacion InternacionMedicoTratante[]
   tipoIngreso        TipoIngreso
   estado             EstadoInternacion   @default(ACTIVA)
   pases              PaseInterno[]
@@ -256,6 +255,17 @@ model Internacion {
   cargosFacturacion  CargoFacturacion[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+}
+
+model InternacionMedicoTratante {
+  id              String      @id @default(uuid())
+  internacionId   String
+  internacion     Internacion @relation(fields: [internacionId], references: [id], onDelete: Cascade)
+  medicoId        String
+  medico          Usuario     @relation(fields: [medicoId], references: [id], onDelete: Cascade)
+  fechaAsignacion DateTime    @default(now())
+
+  @@unique([internacionId, medicoId])
 }
 
 model PaseInterno {

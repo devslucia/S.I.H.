@@ -18,7 +18,7 @@ const admitirSchema = z.object({
   nroAfiliado: z.string().optional().nullable(),
   tipoBeneficiario: z.enum(["TITULAR", "FAMILIAR"]).optional().nullable(),
   camaId: z.string().uuid().optional().nullable(),
-  medicoTratanteId: z.string().uuid().optional().nullable(),
+  medicoTratanteIds: z.array(z.string().uuid()).optional().nullable(),
   tipoIngreso: z.enum(["PROGRAMADO", "URGENCIA", "GUARDIA", "DERIVACION"]),
   motivoIngreso: z.string().optional().nullable(),
 });
@@ -70,9 +70,11 @@ export async function POST(req: NextRequest) {
           obraSocialId: data.obraSocialId,
           nroAfiliado: data.nroAfiliado,
           tipoBeneficiario: data.tipoBeneficiario,
-          medicoTratanteId: data.medicoTratanteId,
           tipoIngreso: data.tipoIngreso,
           motivoIngreso: data.motivoIngreso,
+          medicosTratantesInternacion: data.medicoTratanteIds?.length
+            ? { create: data.medicoTratanteIds.map((id) => ({ medicoId: id })) }
+            : undefined,
         },
       });
 

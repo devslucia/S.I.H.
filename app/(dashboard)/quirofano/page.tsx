@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Activity, Clock, User, Calendar, ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
+import { Activity, Clock, User, Calendar, ChevronLeft, ChevronRight, Plus, Search, AlertTriangle, Eye } from "lucide-react";
 import { formatDateTime, formatDate } from "@/lib/utils";
 import { Modal } from "@/components/ui/Modal";
 
@@ -26,9 +26,18 @@ interface InternacionDisponible {
   numero: number;
   fechaIngreso: string;
   motivoIngreso?: string | null;
-  paciente: { id: string; nombre: string; apellido: string; dni: string } | null;
+  paciente: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    dni: string;
+    fechaNac?: string;
+    telefono?: string;
+    alergias?: { id: string; sustancia: string; severidad?: string | null }[];
+  } | null;
   cama?: { numero: string; sector: { nombre: string } } | null;
-  medicoTratante?: { id: string; nombre: string } | null;
+  obraSocial?: { id: string; nombre: string; sigla: string } | null;
+  medicosTratantesInternacion?: { medico: { id: string; nombre: string } }[];
 }
 
 interface Quirofano {
@@ -67,11 +76,24 @@ function formatFechaLarga(dateStr: string) {
   return d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
+function calcularEdad(fechaNac?: string): string | null {
+  if (!fechaNac) return null;
+  const nac = new Date(fechaNac);
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - nac.getFullYear();
+  const mes = hoy.getMonth() - nac.getMonth();
+  if (mes < 0 || (mes === 0 && hoy.getDate() < nac.getDate())) {
+    edad--;
+  }
+  return `${edad} años`;
+}
+
 export default function QuirofanoPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const userRol = session?.user?.rol;
   const canCreate = userRol === "ADMIN" || userRol === "MEDICO";
+  const canViewInternaciones = ["ADMIN", "MEDICO", "INSTRUMENTADOR", "ANESTESIOLOGO"].includes(userRol || "");
 
   const [cirugias, setCirugias] = useState<Cirugia[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,6 +108,9 @@ export default function QuirofanoPage() {
   const [selectedInternacion, setSelectedInternacion] = useState<InternacionDisponible | null>(null);
   const [quirofanos, setQuirofanos] = useState<Quirofano[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [showPacienteModal, setShowPacienteModal] = useState(false);
+  const [selectedPaciente, setSelectedPaciente] = useState<InternacionDisponible | null>(null);
+
   const [savingCirugia, setSavingCirugia] = useState(false);
   const [cirugiaForm, setCirugiaForm] = useState({
     fechaProgramada: getTodayStr(),
@@ -144,7 +169,10 @@ export default function QuirofanoPage() {
     }
   };
 
-  useEffect(() => { fetchCirugias(fechaSeleccionada); }, [fechaSeleccionada]);
+  useEffect(() => {
+    fetchCirugias(fechaSeleccionada);
+    fetchInternaciones();
+  }, [fechaSeleccionada]);
 
   const handleOpenInternaciones = () => {
     setSearchTerm("");
@@ -315,6 +343,83 @@ export default function QuirofanoPage() {
         ))
       )}
 
+      {canViewInternaciones && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-300 uppercase tracking-wide">
+              Pacientes Disponibles para Programar
+            </h3>
+            {canCreate && (
+              <button
+                onClick={handleOpenInternaciones}
+                className="text-xs text-accent hover:text-accent/80"
+              >
+                Ver todas →
+              </button>
+            )}
+          </div>
+
+          {loadingInternaciones ? (
+            <p className="text-muted text-sm">Cargando pacientes disponibles...</p>
+          ) : internaciones.length === 0 ? (
+            <div className="card p-4 text-center">
+              <p className="text-muted text-sm">No hay pacientes disponibles para programar cirugía.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {internaciones.slice(0, 6).map((internacion) => (
+                <div
+                  key={internacion.id}
+                  className="card p-4 hover:border-accent/30 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-medium text-sm">
+                        {internacion.paciente?.apellido}, {internacion.paciente?.nombre}
+                      </p>
+                      <p className="text-muted text-xs mt-0.5">
+                        DNI: {internacion.paciente?.dni}
+                      </p>
+                      {internacion.cama && (
+                        <p className="text-muted text-xs">
+                          Cama: {internacion.cama.numero} - {internacion.cama.sector.nombre}
+                        </p>
+                      )}
+                      {internacion.medicosTratantesInternacion && internacion.medicosTratantesInternacion.length > 0 && (
+                        <p className="text-muted text-xs">
+                          Dr.{internacion.medicosTratantesInternacion.length > 1 ? "s" : ""}{" "}
+                          {internacion.medicosTratantesInternacion.map((mt) => mt.medico.nombre).join(", ")}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 ml-2 shrink-0">
+                      <button
+                        onClick={() => {
+                          setSelectedPaciente(internacion);
+                          setShowPacienteModal(true);
+                        }}
+                        className="p-1.5 rounded-lg bg-background border border-border hover:border-accent/30 transition-colors"
+                        title="Ver detalle del paciente"
+                      >
+                        <Eye size={14} className="text-muted" />
+                      </button>
+                      {canCreate && (
+                        <button
+                          onClick={() => handleSelectInternacion(internacion)}
+                          className="text-xs text-accent hover:text-accent/80"
+                        >
+                          Seleccionar →
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <Modal open={showInternacionesModal} onClose={() => setShowInternacionesModal(false)} title="Seleccionar Paciente para Programar Cirugía" size="lg">
         <div className="space-y-4">
           <div className="relative">
@@ -341,11 +446,13 @@ export default function QuirofanoPage() {
               {filteredInternaciones.map((internacion) => (
                 <div
                   key={internacion.id}
-                  onClick={() => handleSelectInternacion(internacion)}
-                  className="card p-4 cursor-pointer hover:border-accent/30 transition-colors"
+                  className="card p-4 hover:border-accent/30 transition-colors"
                 >
                   <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
+                    <div
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => handleSelectInternacion(internacion)}
+                    >
                       <p className="text-white font-medium text-sm">
                         {internacion.paciente?.apellido}, {internacion.paciente?.nombre}
                       </p>
@@ -357,15 +464,34 @@ export default function QuirofanoPage() {
                           Cama: {internacion.cama.numero} - {internacion.cama.sector.nombre}
                         </p>
                       )}
-                      {internacion.medicoTratante && (
+                      {internacion.medicosTratantesInternacion && internacion.medicosTratantesInternacion.length > 0 && (
                         <p className="text-muted text-xs">
-                          Dr. {internacion.medicoTratante.nombre}
+                          Dr.{internacion.medicosTratantesInternacion.length > 1 ? "s" : ""}{" "}
+                          {internacion.medicosTratantesInternacion.map((mt) => mt.medico.nombre).join(", ")}
                         </p>
                       )}
                     </div>
-                    <button className="text-xs text-accent hover:text-accent/80 ml-2 shrink-0">
-                      Seleccionar →
-                    </button>
+                    <div className="flex items-center gap-2 ml-2 shrink-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPaciente(internacion);
+                          setShowPacienteModal(true);
+                        }}
+                        className="p-1.5 rounded-lg bg-background border border-border hover:border-accent/30 transition-colors"
+                        title="Ver detalle del paciente"
+                      >
+                        <Eye size={14} className="text-muted" />
+                      </button>
+                      {canCreate && (
+                        <button
+                          onClick={() => handleSelectInternacion(internacion)}
+                          className="text-xs text-accent hover:text-accent/80"
+                        >
+                          Seleccionar →
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -496,6 +622,95 @@ export default function QuirofanoPage() {
                 {savingCirugia ? "Guardando..." : "Programar Cirugía"}
               </button>
             </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={showPacienteModal}
+        onClose={() => { setShowPacienteModal(false); setSelectedPaciente(null); }}
+        title="Detalle del Paciente"
+        size="md"
+      >
+        {selectedPaciente && selectedPaciente.paciente && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center text-accent font-medium text-xl">
+                {selectedPaciente.paciente.nombre[0]}{selectedPaciente.paciente.apellido[0]}
+              </div>
+              <div>
+                <h3 className="text-lg font-medium text-white">
+                  {selectedPaciente.paciente.apellido}, {selectedPaciente.paciente.nombre}
+                </h3>
+                <p className="text-muted text-sm">DNI: {selectedPaciente.paciente.dni}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-muted uppercase tracking-wide">Edad</p>
+                <p className="text-white text-sm">{calcularEdad(selectedPaciente.paciente.fechaNac) || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted uppercase tracking-wide">Teléfono</p>
+                <p className="text-white text-sm">{selectedPaciente.paciente.telefono || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted uppercase tracking-wide">Internación</p>
+                <p className="text-white text-sm">#{selectedPaciente.numero}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted uppercase tracking-wide">Ingreso</p>
+                <p className="text-white text-sm">{formatDateTime(selectedPaciente.fechaIngreso)}</p>
+              </div>
+              {selectedPaciente.cama && (
+                <div>
+                  <p className="text-xs text-muted uppercase tracking-wide">Cama</p>
+                  <p className="text-white text-sm">{selectedPaciente.cama.numero} — {selectedPaciente.cama.sector.nombre}</p>
+                </div>
+              )}
+              {selectedPaciente.obraSocial && (
+                <div>
+                  <p className="text-xs text-muted uppercase tracking-wide">Obra Social</p>
+                  <p className="text-white text-sm">{selectedPaciente.obraSocial.nombre} ({selectedPaciente.obraSocial.sigla})</p>
+                </div>
+              )}
+            </div>
+
+            {selectedPaciente.medicosTratantesInternacion && selectedPaciente.medicosTratantesInternacion.length > 0 && (
+              <div>
+                <p className="text-xs text-muted uppercase tracking-wide mb-1">Médico(s) Tratante(s)</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedPaciente.medicosTratantesInternacion.map((mt) => (
+                    <span key={mt.medico.id} className="px-2 py-1 rounded-lg bg-background border border-border text-white text-xs">
+                      {mt.medico.nombre}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedPaciente.paciente.alergias && selectedPaciente.paciente.alergias.length > 0 && (
+              <div>
+                <p className="text-xs text-muted uppercase tracking-wide mb-1 flex items-center gap-1">
+                  <AlertTriangle size={12} className="text-error" /> Alergias
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedPaciente.paciente.alergias.map((a) => (
+                    <span key={a.id} className="px-2 py-1 rounded-lg bg-error/10 border border-error/30 text-error text-xs">
+                      {a.sustancia}{a.severidad ? ` (${a.severidad})` : ""}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedPaciente.motivoIngreso && (
+              <div>
+                <p className="text-xs text-muted uppercase tracking-wide">Motivo de Ingreso</p>
+                <p className="text-white text-sm">{selectedPaciente.motivoIngreso}</p>
+              </div>
+            )}
           </div>
         )}
       </Modal>

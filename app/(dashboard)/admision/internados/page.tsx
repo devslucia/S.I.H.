@@ -13,7 +13,7 @@ interface Internacion {
   fechaIngreso: string;
   estado: string;
   motivoIngreso?: string;
-  medicoTratante?: { id: string; nombre: string } | null;
+  medicosTratantesInternacion?: { medico: { id: string; nombre: string } }[];
   paciente: { id: string; nombre: string; apellido: string; dni: string };
   cama?: { numero: string; sector: { nombre: string } } | null;
   obraSocial?: { nombre: string; sigla: string } | null;
@@ -43,12 +43,18 @@ export default function InternadosPage() {
 
   const sectores = [...new Set(internaciones.filter((i) => i.cama?.sector).map((i) => i.cama!.sector.nombre))];
   const obrasSociales = [...new Set(internaciones.filter((i) => i.obraSocial).map((i) => i.obraSocial!.sigla))];
-  const medicos = [...new Map(internaciones.filter((i) => i.medicoTratante).map((i) => [i.medicoTratante!.id, i.medicoTratante!])).values()];
+  const medicosMap = new Map<string, { id: string; nombre: string }>();
+  internaciones.forEach((i) => {
+    i.medicosTratantesInternacion?.forEach((mt) => {
+      if (!medicosMap.has(mt.medico.id)) medicosMap.set(mt.medico.id, mt.medico);
+    });
+  });
+  const medicos = [...medicosMap.values()];
 
   const filtradas = internaciones.filter((i) => {
     if (filtroSector && i.cama?.sector.nombre !== filtroSector) return false;
     if (filtroOS && i.obraSocial?.sigla !== filtroOS) return false;
-    if (filtroMedico && i.medicoTratante?.id !== filtroMedico) return false;
+    if (filtroMedico && !i.medicosTratantesInternacion?.some((mt) => mt.medico.id === filtroMedico)) return false;
     return true;
   });
 
@@ -121,7 +127,12 @@ export default function InternadosPage() {
                     DNI: {i.paciente.dni} | HC #{i.numero} | Ingreso: {formatDateTime(i.fechaIngreso)}
                   </p>
                   {i.cama && <p className="text-muted text-xs">Cama: {i.cama.numero} — {i.cama.sector.nombre}</p>}
-                  {i.medicoTratante && <p className="text-muted text-xs">Tratante: {i.medicoTratante.nombre}</p>}
+                  {i.medicosTratantesInternacion && i.medicosTratantesInternacion.length > 0 && (
+                    <p className="text-muted text-xs">
+                      {"Tratante" + (i.medicosTratantesInternacion.length > 1 ? "s" : "")}:{" "}
+                      {i.medicosTratantesInternacion.map((mt) => mt.medico.nombre).join(", ")}
+                    </p>
+                  )}
                   {i.obraSocial && <p className="text-muted text-xs">OS: {i.obraSocial.nombre}</p>}
                 </div>
               </div>

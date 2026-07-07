@@ -50,30 +50,5 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(internacion);
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const { session, error } = await requireRole("ADMIN");
-  if (error) return error;
-
-  const body = await req.json();
-  const { medicoTratanteId } = body;
-
-  if (medicoTratanteId !== undefined && medicoTratanteId !== null) {
-    const medico = await prisma.usuario.findUnique({
-      where: { id: medicoTratanteId },
-      select: { id: true, rol: true },
-    });
-    if (!medico) {
-      return NextResponse.json({ error: "Médico no encontrado" }, { status: 404 });
-    }
-    if (!["MEDICO", "ANESTESIOLOGO"].includes(medico.rol)) {
-      return NextResponse.json({ error: "El usuario debe tener rol MEDICO o ANESTESIOLOGO" }, { status: 400 });
-    }
-  }
-
-  const internacion = await prisma.internacion.update({
-    where: { id: params.id },
-    data: { medicoTratanteId: medicoTratanteId || null },
-  });
-
-  return NextResponse.json(internacion);
-}
+// PATCH eliminado: la asignación de médicos tratantes ahora se maneja
+// vía POST/DELETE /api/internaciones/[id]/medicos-tratantes

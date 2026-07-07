@@ -9,7 +9,7 @@ export function getVisibleInternacionesWhere(userId: string, rol: string): Prism
   }
 
   if (rol === "MEDICO") {
-    return { medicoTratanteId: userId };
+    return { medicosTratantesInternacion: { some: { medicoId: userId } } };
   }
 
   if (rol === "ANESTESIOLOGO") {

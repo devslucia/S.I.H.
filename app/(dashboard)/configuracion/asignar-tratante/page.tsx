@@ -52,10 +52,10 @@ export default function AsignarTratantePage() {
     setSuccess(null);
     setError(null);
     try {
-      const res = await fetch(`/api/internaciones/${internacionId}`, {
-        method: "PATCH",
+      const res = await fetch(`/api/internaciones/${internacionId}/medicos-tratantes`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ medicoTratanteId: medicoId }),
+        body: JSON.stringify({ medicoId }),
       });
       if (res.ok) {
         setSuccess("Médico tratante asignado correctamente");
