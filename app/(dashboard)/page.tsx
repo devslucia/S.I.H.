@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 const cards = [
   { name: "Identificación de Pacientes", icon: User, href: "/admision", color: "text-accent", desc: "Gestión de pacientes y coberturas", roles: ["ADMIN","ADMISION"] },
   { name: "Gestión de Camas", icon: Bed, href: "/camas", color: "text-info", desc: "Mapa interactivo de camas disponibles", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR","ADMISION","FACTURACION"] },
-  { name: "Atención Médica", icon: Stethoscope, href: "/historia-clinica", color: "text-accent", desc: "Historia clínica digital completa", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR"] },
+  { name: "Atención Médica", icon: Stethoscope, href: "/atencion-medica", color: "text-accent", desc: "Pacientes activos y Panel Médico", roles: ["ADMIN","MEDICO","ANESTESIOLOGO"] },
   { name: "Enfermería", icon: Syringe, href: "/historia-clinica", color: "text-warning", desc: "Hoja de enfermería y controles", roles: ["ADMIN","ENFERMERO"] },
   { name: "Quirófano", icon: Activity, href: "/quirofano", color: "text-error", desc: "Agenda quirúrgica y libro de QF", roles: ["ADMIN","MEDICO","ANESTESIOLOGO","INSTRUMENTADOR"] },
   { name: "Farmacia", icon: Package, href: "/farmacia", color: "text-accent", desc: "Stock y trazabilidad de medicamentos", roles: ["ADMIN","FARMACIA"] },
