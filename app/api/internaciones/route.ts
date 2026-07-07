@@ -51,6 +51,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
   }
 
+  const internacionActiva = await prisma.internacion.findFirst({
+    where: {
+      pacienteId: parsed.data.pacienteId,
+      estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] },
+    },
+  });
+  if (internacionActiva) {
+    return NextResponse.json(
+      { error: "El paciente ya tiene una internación activa" },
+      { status: 409 }
+    );
+  }
+
   let result;
   try {
     result = await prisma.$transaction(async (tx) => {
