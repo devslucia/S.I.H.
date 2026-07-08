@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatDateTime } from "@/lib/utils";
 import { ProtocoloAnestesiaComponent } from "@/components/historia-clinica/ProtocoloAnestesia";
+import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
 import {
   X, Save, Printer, CheckCircle, Plus, Trash2,
   Search, Syringe, Microscope, Activity, User, Hash, Clock,
@@ -166,15 +167,26 @@ export default function LibroQuirofanoFull() {
     w.document.close();
   };
 
-  const addMedicamento = async (item: StockItemData) => {
-    if (!medForm.cantidad || medForm.cantidad < 1) return alert("Ingrese cantidad válida");
+  const addMedicamentos = async (items: SelectedItem[]): Promise<{ ok: boolean; items: { index: number; nombre: string; ok: boolean; error?: string }[] }> => {
+    const payload = items.map((sel) => ({
+      stockItemId: sel.stockItem.id,
+      cantidad: sel.values.cantidad || 1,
+      via: sel.values.via || "EV",
+      horaAplicacion: sel.values.horaAplicacion || "",
+      observacion: sel.values.observacion || "",
+    }));
     const res = await fetch(`/api/quirofano/${cirugiaId}/medicamentos`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stockItemId: item.id, cantidad: medForm.cantidad, via: medForm.via, horaAplicacion: medForm.horaAplicacion, observacion: medForm.observacion }),
+      body: JSON.stringify({ items: payload }),
     });
-    if (res.ok) { fetchData(); setShowStockModal(false); setMedForm({ cantidad: 1, via: "EV", horaAplicacion: "", observacion: "" }); }
-    else { const e = await res.json(); alert(e.error || "Error al agregar medicamento"); }
+    if (res.ok) {
+      const data = await res.json();
+      fetchData();
+      return data;
+    }
+    const e = await res.json();
+    return { ok: false, items: items.map((sel, i) => ({ index: i, nombre: sel.stockItem.nombre, ok: false, error: e.error || "Error al agregar" })) };
   };
 
   const deleteMedicamento = async (medId: string) => {
@@ -858,43 +870,28 @@ export default function LibroQuirofanoFull() {
         </div>
       </div>
 
-      {/* Modal: Agregar medicamento (buscar en stock) */}
+      {/* Modal: Agregar medicamentos (multi-select) */}
       {showStockModal && (
         <div className="fixed inset-0 z-60 bg-black/60 flex items-center justify-center" onClick={() => setShowStockModal(false)}>
           <div className="bg-surface border border-border rounded-lg p-5 w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-medium text-white">Agregar medicamento / descartable</h3>
+              <h3 className="text-sm font-medium text-white">Agregar medicamentos / descartables</h3>
               <button onClick={() => setShowStockModal(false)} className="text-muted hover:text-white"><X size={18} /></button>
             </div>
-            <div className="relative mb-4">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-              <input type="text" value={stockQuery} onChange={e => searchStock(e.target.value)} placeholder="Buscar por nombre..." className={`${inputClass} pl-9`} autoFocus />
-            </div>
-            {stockItems.length > 0 && (
-              <div className="max-h-40 overflow-y-auto mb-4 border border-border rounded">
-                {stockItems.map(item => (
-                  <button key={item.id} onClick={() => addMedicamento(item)}
-                    className="w-full text-left px-3 py-2 text-sm text-white hover:bg-background transition-colors border-b border-border last:border-b-0">
-                    <span className="font-medium">{item.nombre}</span>
-                    <span className="text-muted ml-2">Stock: {String(item.stockActual)}</span>
-                    {item.presentacion && <span className="text-muted ml-2">({item.presentacion})</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className={labelClass}>Cantidad</label>
-                <input type="number" min="1" value={medForm.cantidad} onChange={e => setMedForm({ ...medForm, cantidad: Number(e.target.value) })} className={inputClass} /></div>
-              <div><label className={labelClass}>Vía</label>
-                <select value={medForm.via} onChange={e => setMedForm({ ...medForm, via: e.target.value })} className={inputClass}>
-                  <option value="EV">EV</option><option value="IM">IM</option><option value="SC">SC</option><option value="VO">VO</option><option value="Tópica">Tópica</option><option value="Inhalatoria">Inhalatoria</option>
-                </select></div>
-              <div><label className={labelClass}>Hora aplicación</label>
-                <input type="time" value={medForm.horaAplicacion} onChange={e => setMedForm({ ...medForm, horaAplicacion: e.target.value })} className={inputClass} /></div>
-              <div><label className={labelClass}>Observación</label>
-                <input type="text" value={medForm.observacion} onChange={e => setMedForm({ ...medForm, observacion: e.target.value })} className={inputClass} /></div>
-            </div>
-            <p className="text-xs text-muted mt-3">Seleccione un item de la lista para agregarlo.</p>
+            <MedicacionMultiSelect
+              searchPlaceholder="Buscar por nombre..."
+              extraFields={[
+                { key: "cantidad", label: "Cantidad", type: "number", defaultValue: 1, required: true },
+                { key: "via", label: "Vía", type: "select", defaultValue: "EV", options: [
+                  { value: "EV", label: "EV" }, { value: "IM", label: "IM" }, { value: "SC", label: "SC" },
+                  { value: "VO", label: "VO" }, { value: "Tópica", label: "Tópica" }, { value: "Inhalatoria", label: "Inhalatoria" }
+                ]},
+                { key: "horaAplicacion", label: "Hora aplicación", type: "text", placeholder: "HH:MM" },
+                { key: "observacion", label: "Observación", type: "text" },
+              ]}
+              submitLabel="Agregar medicamentos"
+              onSubmit={addMedicamentos}
+            />
           </div>
         </div>
       )}

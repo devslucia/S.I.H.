@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
+import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
 import { formatDateTime } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
@@ -145,6 +146,30 @@ export default function PanelMedicoPage() {
       }
     } catch (err) { console.error(err); }
     finally { setSavingPrescripcion(false); }
+  };
+
+  const handleBatchPrescribir = async (items: SelectedItem[]): Promise<{ ok: boolean; items: { index: number; nombre: string; ok: boolean; error?: string }[] }> => {
+    const payload = items.map((sel) => ({
+      tipo: "MEDICACION",
+      droga: sel.stockItem.nombre,
+      dosis: sel.values.dosis || "",
+      unidad: sel.values.unidad || "",
+      frecuencia: sel.values.frecuencia || "",
+      via: sel.values.via || "",
+      descripcion: sel.values.descripcion || "",
+    }));
+    const res = await fetch(`/api/historia-clinica/${internacionId}/prescripciones`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: payload }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      fetchData();
+      return data;
+    }
+    const e = await res.json();
+    return { ok: false, items: items.map((sel, i) => ({ index: i, nombre: sel.stockItem.nombre, ok: false, error: e.error || "Error al prescribir" })) };
   };
 
   const handleCrearEvolucion = async () => {
@@ -405,31 +430,49 @@ export default function PanelMedicoPage() {
 
       {/* Modal: Nueva Prescripción */}
       <Modal open={showPrescripcionModal} onClose={() => setShowPrescripcionModal(false)} title="Nueva Indicación (Destino PISO)" size="xl">
-        <form onSubmit={handleCrearPrescripcion} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-gray-400">Tipo</label>
-              <select value={prescripcionForm.tipo} onChange={(e) => setPrescripcionForm((p) => ({ ...p, tipo: e.target.value }))} className="select-field">
-                <option value="MEDICACION">Medicación</option>
-                <option value="DIETA">Dieta</option>
-                <option value="ESTUDIO">Estudio</option>
-                <option value="PRACTICA">Práctica</option>
-                <option value="ACTIVIDAD">Actividad</option>
-                <option value="OTRA">Otra</option>
-              </select>
-            </div>
-            <Input label="Droga" name="droga" value={prescripcionForm.droga} onChange={(e) => setPrescripcionForm((p) => ({ ...p, droga: e.target.value }))} />
-            <Input label="Dosis" name="dosis" value={prescripcionForm.dosis} onChange={(e) => setPrescripcionForm((p) => ({ ...p, dosis: e.target.value }))} />
-            <Input label="Unidad" name="unidad" value={prescripcionForm.unidad} onChange={(e) => setPrescripcionForm((p) => ({ ...p, unidad: e.target.value }))} />
-            <Input label="Frecuencia" name="frecuencia" value={prescripcionForm.frecuencia} onChange={(e) => setPrescripcionForm((p) => ({ ...p, frecuencia: e.target.value }))} />
-            <Input label="Vía" name="via" value={prescripcionForm.via} onChange={(e) => setPrescripcionForm((p) => ({ ...p, via: e.target.value }))} />
+        <div className="space-y-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm text-gray-400">Tipo</label>
+            <select value={prescripcionForm.tipo} onChange={(e) => setPrescripcionForm((p) => ({ ...p, tipo: e.target.value }))} className="select-field">
+              <option value="MEDICACION">Medicación</option>
+              <option value="DIETA">Dieta</option>
+              <option value="ESTUDIO">Estudio</option>
+              <option value="PRACTICA">Práctica</option>
+              <option value="ACTIVIDAD">Actividad</option>
+              <option value="OTRA">Otra</option>
+            </select>
           </div>
-          <Input label="Descripción" name="descripcion" value={prescripcionForm.descripcion} onChange={(e) => setPrescripcionForm((p) => ({ ...p, descripcion: e.target.value }))} />
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setShowPrescripcionModal(false)}>Cancelar</Button>
-            <Button type="submit" disabled={savingPrescripcion}>{savingPrescripcion ? "Guardando..." : "Prescribir"}</Button>
-          </div>
-        </form>
+
+          {prescripcionForm.tipo === "MEDICACION" ? (
+            <MedicacionMultiSelect
+              searchPlaceholder="Buscar medicamento..."
+              extraFields={[
+                { key: "dosis", label: "Dosis", type: "text", placeholder: "ej: 500" },
+                { key: "unidad", label: "Unidad", type: "text", placeholder: "ej: mg" },
+                { key: "frecuencia", label: "Frecuencia", type: "text", placeholder: "ej: cada 8hs" },
+                { key: "via", label: "Vía", type: "text", placeholder: "ej: VO" },
+                { key: "descripcion", label: "Descripción", type: "text", placeholder: "Indicaciones adicionales" },
+              ]}
+              submitLabel="Prescribir medicamentos"
+              onSubmit={handleBatchPrescribir}
+            />
+          ) : (
+            <form onSubmit={handleCrearPrescripcion} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Droga" name="droga" value={prescripcionForm.droga} onChange={(e) => setPrescripcionForm((p) => ({ ...p, droga: e.target.value }))} />
+                <Input label="Dosis" name="dosis" value={prescripcionForm.dosis} onChange={(e) => setPrescripcionForm((p) => ({ ...p, dosis: e.target.value }))} />
+                <Input label="Unidad" name="unidad" value={prescripcionForm.unidad} onChange={(e) => setPrescripcionForm((p) => ({ ...p, unidad: e.target.value }))} />
+                <Input label="Frecuencia" name="frecuencia" value={prescripcionForm.frecuencia} onChange={(e) => setPrescripcionForm((p) => ({ ...p, frecuencia: e.target.value }))} />
+                <Input label="Vía" name="via" value={prescripcionForm.via} onChange={(e) => setPrescripcionForm((p) => ({ ...p, via: e.target.value }))} />
+              </div>
+              <Input label="Descripción" name="descripcion" value={prescripcionForm.descripcion} onChange={(e) => setPrescripcionForm((p) => ({ ...p, descripcion: e.target.value }))} />
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="secondary" type="button" onClick={() => setShowPrescripcionModal(false)}>Cancelar</Button>
+                <Button type="submit" disabled={savingPrescripcion}>{savingPrescripcion ? "Guardando..." : "Prescribir"}</Button>
+              </div>
+            </form>
+          )}
+        </div>
       </Modal>
 
       {/* Modal: Alta Médica */}

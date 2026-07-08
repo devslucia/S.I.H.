@@ -51,39 +51,55 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
   }
 
   const body = await req.json();
-  const parsed = createPrescripcionSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
-  }
+  const items = Array.isArray(body.items) ? body.items : [body];
 
-  const data = parsed.data;
+  const results: { ok: boolean; nombre: string; error?: string; prescripcion?: any }[] = [];
 
-  if (data.droga) {
-    const { bloqueada, alergia } = await verificarAlergia(hc.internacion.pacienteId, data.droga);
-    if (bloqueada) {
+  for (const item of items) {
+    const parsed = createPrescripcionSchema.safeParse(item);
+    if (!parsed.success) {
+      results.push({ ok: false, nombre: item.droga || item.tipo || "desconocido", error: "Datos inválidos" });
+      continue;
+    }
+
+    const data = parsed.data;
+
+    if (data.droga) {
+      const { bloqueada, alergia } = await verificarAlergia(hc.internacion.pacienteId, data.droga);
+      if (bloqueada) {
+        const prescripcion = await prisma.prescripcion.create({
+          data: {
+            ...data,
+            hcId: hc.id,
+            usuarioId: (session.user as any).id,
+            estado: "BLOQUEADA_ALERGIA",
+            bloqueadaAlergia: true,
+          },
+        });
+        results.push({
+          ok: false,
+          nombre: data.droga || data.tipo,
+          error: `Alergia: ${alergia?.sustancia || "reacción registrada"}`,
+          prescripcion,
+        });
+        continue;
+      }
+    }
+
+    try {
       const prescripcion = await prisma.prescripcion.create({
         data: {
           ...data,
           hcId: hc.id,
           usuarioId: (session.user as any).id,
-          estado: "BLOQUEADA_ALERGIA",
-          bloqueadaAlergia: true,
         },
       });
-      return NextResponse.json(
-        { error: "Alerta de alergia", prescripcion, alergia },
-        { status: 409 }
-      );
+      results.push({ ok: true, nombre: data.droga || data.tipo, prescripcion });
+    } catch (e: any) {
+      results.push({ ok: false, nombre: data.droga || data.tipo, error: e.message || "Error al crear" });
     }
   }
 
-  const prescripcion = await prisma.prescripcion.create({
-    data: {
-      ...data,
-      hcId: hc.id,
-      usuarioId: (session.user as any).id,
-    },
-  });
-
-  return NextResponse.json(prescripcion, { status: 201 });
+  const allOk = results.every((r) => r.ok);
+  return NextResponse.json({ ok: allOk, items: results }, { status: allOk ? 201 : 207 });
 }

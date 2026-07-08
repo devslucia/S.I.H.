@@ -19,11 +19,9 @@ export async function GET(req: NextRequest) {
   }
 
   if (fecha) {
-    const date = new Date(fecha);
-    where.fechaProgramada = {
-      gte: new Date(date.setHours(0, 0, 0, 0)),
-      lte: new Date(date.setHours(23, 59, 59, 999)),
-    };
+    const startOfDay = new Date(`${fecha}T00:00:00.000Z`);
+    const endOfDay = new Date(`${fecha}T23:59:59.999Z`);
+    where.fechaProgramada = { gte: startOfDay, lte: endOfDay };
   }
 
   const cirugias = await prisma.cirugia.findMany({
