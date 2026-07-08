@@ -374,13 +374,14 @@ model Prescripcion {
 
 model AplicacionMedicamento {
   id                 String              @id @default(uuid())
-  prescripcionId     String
-  prescripcion       Prescripcion        @relation(fields: [prescripcionId], references: [id])
+  prescripcionId     String?
+  prescripcion       Prescripcion?       @relation(fields: [prescripcionId], references: [id])
   fecha              DateTime
   hora               String
   stockItemId        String?
   stockItem          StockItem?          @relation(fields: [stockItemId], references: [id])
   cantidadDescontada Decimal?
+  motivo             String?
   enfermeroId        String
   enfermero          Usuario             @relation(fields: [enfermeroId], references: [id])
   cargo              CargoFacturacion?

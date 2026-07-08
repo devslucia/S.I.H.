@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Syringe, HeartPulse, CheckCircle, AlertTriangle, Activity, Clock, ChevronDown, ChevronUp, User, FileText } from "lucide-react";
+import { Syringe, HeartPulse, CheckCircle, AlertTriangle, Activity, Clock, ChevronDown, ChevronUp, User, FileText, Pill } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { VoiceInput } from "@/components/ui/VoiceInput";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
+import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
 import { formatDateTime } from "@/lib/utils";
 
 interface Prescripcion {
@@ -664,6 +665,72 @@ function HojaEnfermeriaForm({ internacionId, onSaved }: { internacionId: string;
   );
 }
 
+function MedicacionAdHoc({ internacionId, onApplied }: { internacionId: string; onApplied: () => void }) {
+  const [showModal, setShowModal] = useState(false);
+
+  const handleSubmit = async (items: SelectedItem[]): Promise<{ ok: boolean; items: { index: number; nombre: string; ok: boolean; error?: string }[] }> => {
+    const payload = items.map((sel) => ({
+      stockItemId: sel.stockItem.id,
+      nombre: sel.stockItem.nombre,
+      cantidad: sel.values.cantidad || 1,
+      via: sel.values.via || "VO",
+      hora: sel.values.hora || new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false }),
+      motivo: sel.values.motivo || "",
+    }));
+    const res = await fetch(`/api/historia-clinica/${internacionId}/enfermeria/ad-hoc`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: payload }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setShowModal(false);
+      onApplied();
+      return data;
+    }
+    const e = await res.json();
+    return { ok: false, items: items.map((sel, i) => ({ index: i, nombre: sel.stockItem.nombre, ok: false, error: e.error || "Error al registrar" })) };
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setShowModal(true)}
+        className="text-xs btn-secondary py-1.5 px-2.5 inline-flex items-center gap-1.5"
+      >
+        <Pill size={12} /> Med. ad-hoc
+      </button>
+
+      {showModal && (
+        <div className="fixed inset-0 z-60 bg-black/60 flex items-center justify-center" onClick={() => setShowModal(false)}>
+          <div className="bg-surface border border-border rounded-lg p-5 w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-medium text-white">Medicación ad-hoc (sin prescripción)</h3>
+              <button onClick={() => setShowModal(false)} className="text-muted hover:text-white">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <MedicacionMultiSelect
+              searchPlaceholder="Buscar medicamento..."
+              extraFields={[
+                { key: "cantidad", label: "Cantidad", type: "number", defaultValue: 1, required: true },
+                { key: "via", label: "Vía", type: "select", defaultValue: "VO", options: [
+                  { value: "EV", label: "EV" }, { value: "IM", label: "IM" }, { value: "SC", label: "SC" },
+                  { value: "VO", label: "VO" }, { value: "Tópica", label: "Tópica" }, { value: "Inhalatoria", label: "Inhalatoria" }
+                ]},
+                { key: "hora", label: "Hora", type: "text", placeholder: "HH:MM", defaultValue: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false }) },
+                { key: "motivo", label: "Motivo / Observación *", type: "text", required: true, placeholder: "ej: indicación verbal Dr. X, PRN por dolor" },
+              ]}
+              submitLabel="Registrar medicación"
+              onSubmit={handleSubmit}
+            />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function EnfermeriaPage() {
   const [internaciones, setInternaciones] = useState<Internacion[]>([]);
   const [prescripcionesMap, setPrescripcionesMap] = useState<Record<string, Prescripcion[]>>({});
@@ -837,6 +904,10 @@ export default function EnfermeriaPage() {
                   </table>
                 </div>
               )}
+
+              <div className="px-4 py-2 border-t border-border/50 flex items-center gap-2">
+                <MedicacionAdHoc internacionId={i.id} onApplied={fetchInternaciones} />
+              </div>
 
               {selectedInternacion === i.id && (
                 <div className="p-4 border-t border-border">
