@@ -9,6 +9,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { AlertaBloqueada } from "@/components/ui/AlertaBloqueada";
+import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
 import { formatDateTime } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
@@ -107,6 +108,34 @@ export default function PrescripcionesPage() {
     }
   };
 
+  const handleBatchPrescribir = async (items: SelectedItem[]): Promise<{ ok: boolean; items: { index: number; nombre: string; ok: boolean; error?: string }[] }> => {
+    const payload = items.map((sel) => ({
+      tipo: "MEDICACION",
+      droga: sel.stockItem.nombre,
+      dosis: sel.values.dosis || "",
+      unidad: sel.values.unidad || "",
+      frecuencia: sel.values.frecuencia || "",
+      via: sel.values.via || "",
+      duracion: sel.values.duracion || "",
+      descripcion: sel.values.descripcion || "",
+    }));
+    const res = await fetch(`/api/historia-clinica/${params.internacionId}/prescripciones`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: payload }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      fetchPrescripciones();
+      return data;
+    }
+    const e = await res.json();
+    if (res.status === 409) {
+      setAlerta({ droga: e.alergia?.sustancia || "", fechaAlta: formatDateTime(e.alergia?.createdAt || new Date().toISOString()) });
+    }
+    return { ok: false, items: items.map((sel, i) => ({ index: i, nombre: sel.stockItem.nombre, ok: false, error: e.error || "Error al prescribir" })) };
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -167,35 +196,54 @@ export default function PrescripcionesPage() {
       )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nueva Prescripción" size="xl">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-gray-400">Tipo</label>
-              <select name="tipo" value={form.tipo} onChange={handleChange} className="select-field">
-                <option value="MEDICACION">Medicación</option>
-                <option value="DIETA">Dieta</option>
-                <option value="ESTUDIO">Estudio</option>
-                <option value="PRACTICA">Práctica</option>
-                <option value="ACTIVIDAD">Actividad</option>
-                <option value="OTRA">Otra</option>
-              </select>
-            </div>
-            <Input label="Droga" name="droga" value={form.droga} onChange={handleChange} />
-            <Input label="Dosis" name="dosis" value={form.dosis} onChange={handleChange} />
-            <Input label="Unidad" name="unidad" value={form.unidad} onChange={handleChange} />
-            <Input label="Frecuencia" name="frecuencia" value={form.frecuencia} onChange={handleChange} />
-            <Input label="Vía" name="via" value={form.via} onChange={handleChange} />
-            <Input label="Duración" name="duracion" value={form.duracion} onChange={handleChange} />
-            <Input label="Dieta" name="dieta" value={form.dieta} onChange={handleChange} />
-            <Input label="Estudio" name="estudio" value={form.estudio} onChange={handleChange} />
-            <Input label="Práctica" name="practica" value={form.practica} onChange={handleChange} />
+        <div className="space-y-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm text-gray-400">Tipo</label>
+            <select name="tipo" value={form.tipo} onChange={handleChange} className="select-field">
+              <option value="MEDICACION">Medicación</option>
+              <option value="DIETA">Dieta</option>
+              <option value="ESTUDIO">Estudio</option>
+              <option value="PRACTICA">Práctica</option>
+              <option value="ACTIVIDAD">Actividad</option>
+              <option value="OTRA">Otra</option>
+            </select>
           </div>
-          <VoiceTextarea label="Descripción" value={form.descripcion} onChange={(v) => setForm((prev) => ({ ...prev, descripcion: v }))} rows={2} />
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Prescribir"}</Button>
-          </div>
-        </form>
+
+          {form.tipo === "MEDICACION" ? (
+            <MedicacionMultiSelect
+              searchPlaceholder="Buscar medicamento..."
+              extraFields={[
+                { key: "dosis", label: "Dosis", type: "text", placeholder: "ej: 500" },
+                { key: "unidad", label: "Unidad", type: "text", placeholder: "ej: mg" },
+                { key: "frecuencia", label: "Frecuencia", type: "text", placeholder: "ej: cada 8hs" },
+                { key: "via", label: "Vía", type: "text", placeholder: "ej: VO" },
+                { key: "duracion", label: "Duración", type: "text", placeholder: "ej: 7 días" },
+                { key: "descripcion", label: "Descripción", type: "text", placeholder: "Indicaciones adicionales" },
+              ]}
+              submitLabel="Prescribir medicamentos"
+              onSubmit={handleBatchPrescribir}
+            />
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Droga" name="droga" value={form.droga} onChange={handleChange} />
+                <Input label="Dosis" name="dosis" value={form.dosis} onChange={handleChange} />
+                <Input label="Unidad" name="unidad" value={form.unidad} onChange={handleChange} />
+                <Input label="Frecuencia" name="frecuencia" value={form.frecuencia} onChange={handleChange} />
+                <Input label="Vía" name="via" value={form.via} onChange={handleChange} />
+                <Input label="Duración" name="duracion" value={form.duracion} onChange={handleChange} />
+                <Input label="Dieta" name="dieta" value={form.dieta} onChange={handleChange} />
+                <Input label="Estudio" name="estudio" value={form.estudio} onChange={handleChange} />
+                <Input label="Práctica" name="practica" value={form.practica} onChange={handleChange} />
+              </div>
+              <VoiceTextarea label="Descripción" value={form.descripcion} onChange={(v) => setForm((prev) => ({ ...prev, descripcion: v }))} rows={2} />
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancelar</Button>
+                <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Prescribir"}</Button>
+              </div>
+            </form>
+          )}
+        </div>
       </Modal>
 
       {alerta && <AlertaBloqueada droga={alerta.droga} fechaAlta={alerta.fechaAlta} onClose={() => setAlerta(null)} />}
