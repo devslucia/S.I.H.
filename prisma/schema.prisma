@@ -277,6 +277,8 @@ model InternacionMedicoTratante {
   fechaAsignacion DateTime    @default(now())
 
   @@unique([internacionId, medicoId])
+  @@index([internacionId])
+  @@index([medicoId])
 }
 
 model PaseInterno {
