@@ -22,28 +22,30 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Activity className="w-8 h-8 text-accent" />
+        <div className="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center">
+          <Activity className="w-5 h-5 text-accent" />
+        </div>
         <div>
-          <h2 className="text-xl font-display font-medium text-text">Dashboard</h2>
-          <p className="text-muted text-sm">Bienvenido al Sistema Informático Hospitalario</p>
+          <h2 className="text-lg font-display font-semibold text-text">Dashboard</h2>
+          <p className="text-muted text-[13px]">Bienvenido al Sistema Informático Hospitalario</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {visibleCards.map((card) => {
           const Icon = card.icon;
           return (
             <Link
               key={card.name}
               href={card.href}
-              className="card-hover p-5 group cursor-pointer"
+              className="card-hover p-4 group cursor-pointer"
             >
               <div className="flex items-start justify-between mb-3">
-                <Icon className={`w-8 h-8 ${card.color}`} />
-                <ArrowRight className="w-5 h-5 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Icon className={`w-6 h-6 ${card.color}`} />
+                <ArrowRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-              <h3 className="text-text font-medium mb-1">{card.name}</h3>
-              <p className="text-muted text-sm">{card.desc}</p>
+              <h3 className="text-text text-[13px] font-medium mb-0.5">{card.name}</h3>
+              <p className="text-muted text-[12px]">{card.desc}</p>
             </Link>
           );
         })}

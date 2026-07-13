@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN", "FARMACIA", "ENFERMERO", "INSTRUMENTADOR");
+  const { session, error } = await requireRole("ADMIN", "FARMACIA", "ENFERMERO", "INSTRUMENTADOR", "MEDICO", "ANESTESIOLOGO");
   if (error) return error;
 
   const { searchParams } = new URL(req.url);

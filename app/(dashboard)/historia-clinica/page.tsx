@@ -56,7 +56,7 @@ export default function HistoriaClinicaListPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <FileText className="w-6 h-6 text-accent" />
-        <h2 className="text-xl font-medium text-white">Historias Clínicas</h2>
+        <h2 className="text-lg font-display font-semibold text-text">Historias Clínicas</h2>
       </div>
 
       <div className="relative max-w-md">
@@ -86,7 +86,7 @@ export default function HistoriaClinicaListPage() {
                   {i.paciente.nombre[0]}{i.paciente.apellido[0]}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-white font-medium text-sm">{i.paciente.apellido}, {i.paciente.nombre}</p>
+                  <p className="text-text font-medium text-sm">{i.paciente.apellido}, {i.paciente.nombre}</p>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted mt-0.5">
                     <span className="flex items-center gap-1"><User size={12} /> DNI: {i.paciente.dni}</span>
                     {i.cama && (

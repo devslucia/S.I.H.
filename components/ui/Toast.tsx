@@ -24,10 +24,10 @@ interface ToastContextType {
 const ToastContext = createContext<ToastContextType | null>(null);
 
 const icons: Record<ToastType, React.ReactNode> = {
-  success: <CheckCircle size={18} className="text-success" />,
-  error: <AlertCircle size={18} className="text-error" />,
-  warning: <AlertTriangle size={18} className="text-warning" />,
-  info: <Info size={18} className="text-info" />,
+  success: <CheckCircle size={16} className="text-success" />,
+  error: <AlertCircle size={16} className="text-error" />,
+  warning: <AlertTriangle size={16} className="text-warning" />,
+  info: <Info size={16} className="text-info" />,
 };
 
 const styles: Record<ToastType, string> = {
@@ -74,12 +74,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             )}
           >
             {icons[t.type]}
-            <span className="text-sm text-text flex-1">{t.message}</span>
+            <span className="text-[13px] text-text flex-1">{t.message}</span>
             <button
               onClick={() => removeToast(t.id)}
               className="text-muted hover:text-text transition-colors p-1"
             >
-              <X size={14} />
+              <X size={13} />
             </button>
           </div>
         ))}

@@ -56,18 +56,23 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
           open ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0"
         )}
       >
-        {/* Accent gradient border */}
-        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-accent to-accent-dark" />
+        {/* Monitor glow — signature element */}
+        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-accent shadow-monitor-glow" />
 
         {/* Logo */}
         <div className={cn(
           "h-14 border-b border-border flex items-center shrink-0",
           collapsed ? "justify-center px-2" : "px-4 justify-between"
         )}>
-          <Link href="/" className="flex items-center gap-2" onClick={onClose}>
-            <Activity className="w-6 h-6 text-accent shrink-0" />
+          <Link href="/" className="flex items-center gap-2.5" onClick={onClose}>
+            <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center shrink-0">
+              <Activity className="w-4.5 h-4.5 text-accent" />
+            </div>
             {!collapsed && (
-              <span className="text-accent font-display font-semibold tracking-wide">S.I.H.</span>
+              <div className="flex flex-col">
+                <span className="text-accent font-display font-semibold text-sm tracking-wide leading-none">S.I.H.</span>
+                <span className="text-muted text-[10px] font-mono leading-none mt-0.5">Sanatorio SIMES</span>
+              </div>
             )}
           </Link>
           <div className="flex items-center gap-1">
@@ -77,7 +82,7 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
                 className="hidden md:flex p-1.5 text-muted hover:text-text hover:bg-surface-hover rounded-lg transition-colors"
                 title={collapsed ? "Expandir" : "Colapsar"}
               >
-                {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
               </button>
             )}
             <button onClick={onClose} className="md:hidden p-1.5 text-muted hover:text-text rounded-lg">
@@ -99,22 +104,22 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
                 onClick={onClose}
                 title={collapsed ? mod.name : undefined}
                 className={cn(
-                  "w-full flex items-center gap-3 rounded-xl transition-all duration-150 group relative",
+                  "w-full flex items-center gap-3 rounded-lg transition-all duration-150 group relative",
                   collapsed ? "px-2 py-2.5 justify-center" : "px-3 py-2.5",
                   active
-                    ? "bg-accent/10 text-accent border border-accent/20"
+                    ? "bg-accent/10 text-accent nav-active-glow"
                     : "text-muted hover:bg-surface-hover hover:text-text border border-transparent"
                 )}
               >
-                <Icon className={cn("w-5 h-5 shrink-0", active && "text-accent")} />
+                <Icon className={cn("w-[18px] h-[18px] shrink-0", active && "text-accent")} />
                 {!collapsed && (
                   <>
-                    <span className="text-sm font-medium flex-1">{mod.name}</span>
-                    {active && <ChevronRight className="w-4 h-4 text-accent/60" />}
+                    <span className="text-[13px] font-medium flex-1">{mod.name}</span>
+                    {active && <ChevronRight className="w-3.5 h-3.5 text-accent/50" />}
                   </>
                 )}
                 {collapsed && active && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-accent rounded-r-full" />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-accent rounded-r-full status-pulse" />
                 )}
               </Link>
             );
@@ -130,13 +135,13 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
             "flex items-center",
             collapsed ? "justify-center" : "gap-3"
           )}>
-            <div className="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center text-accent font-medium text-sm shrink-0">
+            <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center text-accent font-medium text-xs shrink-0">
               {session?.data?.user?.name?.[0] || "U"}
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <div className="text-text text-sm font-medium truncate">{session?.data?.user?.name || "Usuario"}</div>
-                <div className="text-muted text-xs truncate">{session?.data?.user?.rol || "—"}</div>
+                <div className="text-text text-[13px] font-medium truncate">{session?.data?.user?.name || "Usuario"}</div>
+                <div className="text-muted text-[11px] font-mono truncate uppercase tracking-wider">{session?.data?.user?.rol || "—"}</div>
               </div>
             )}
             {!collapsed && (
@@ -145,7 +150,7 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
                 className="text-muted hover:text-error transition-colors p-1.5 rounded-lg hover:bg-error/10"
                 title="Cerrar sesión"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                   <polyline points="16 17 21 12 16 7" />
                   <line x1="21" y1="12" x2="9" y2="12" />

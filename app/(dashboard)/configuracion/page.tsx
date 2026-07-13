@@ -32,7 +32,7 @@ export default function ConfiguracionPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Settings className="w-6 h-6 text-accent" />
-        <h2 className="text-xl font-medium text-white">Configuración</h2>
+        <h2 className="text-lg font-display font-semibold text-text">Configuración</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -46,7 +46,7 @@ export default function ConfiguracionPage() {
             >
               <div className="flex items-center gap-3 mb-2">
                 <Icon className="w-5 h-5 text-accent" />
-                <h3 className="text-white font-medium text-sm">{mod.name}</h3>
+                <h3 className="text-text font-medium text-[13px]">{mod.name}</h3>
               </div>
               <p className="text-muted text-xs">{mod.description}</p>
             </Link>

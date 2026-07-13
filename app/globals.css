@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,44 +7,44 @@
 @layer base {
   /* ── Dark mode (default) ── */
   :root {
-    --color-bg: 23 21 22;
-    --color-surface: 31 29 30;
-    --color-surface-hover: 39 36 37;
-    --color-surface-active: 47 43 44;
-    --color-border: 45 41 42;
-    --color-border-hover: 61 56 57;
-    --color-accent: 196 122 90;
-    --color-accent-dark: 168 101 72;
-    --color-accent-light: 212 145 110;
-    --color-accent-button: 135 84 62;
-    --color-text: 236 232 228;
-    --color-text-secondary: 158 149 144;
-    --color-muted: 109 101 96;
-    --color-success: 74 222 128;
-    --color-warning: 251 191 36;
-    --color-error: 248 113 113;
-    --color-info: 96 165 250;
+    --color-bg: 16 18 24;
+    --color-surface: 22 25 32;
+    --color-surface-hover: 28 32 40;
+    --color-surface-active: 34 38 48;
+    --color-border: 34 38 48;
+    --color-border-hover: 46 51 62;
+    --color-accent: 0 188 180;
+    --color-accent-dark: 0 158 152;
+    --color-accent-light: 50 210 200;
+    --color-accent-button: 0 120 114;
+    --color-text: 230 235 240;
+    --color-text-secondary: 148 158 172;
+    --color-muted: 108 118 134;
+    --color-success: 40 180 110;
+    --color-warning: 255 183 40;
+    --color-error: 230 72 72;
+    --color-info: 80 160 255;
   }
 
   /* ── Light mode ── */
   .light {
-    --color-bg: 245 240 235;
+    --color-bg: 238 242 248;
     --color-surface: 255 255 255;
-    --color-surface-hover: 249 245 241;
-    --color-surface-active: 240 235 229;
-    --color-border: 226 219 213;
-    --color-border-hover: 205 196 187;
-    --color-accent: 168 93 63;
-    --color-accent-dark: 140 77 52;
-    --color-accent-light: 196 122 90;
-    --color-accent-button: 168 93 63;
-    --color-text: 45 41 42;
-    --color-text-secondary: 109 101 96;
-    --color-muted: 158 149 144;
-    --color-success: 22 101 52;
-    --color-warning: 146 64 14;
-    --color-error: 185 28 28;
-    --color-info: 29 78 216;
+    --color-surface-hover: 245 248 252;
+    --color-surface-active: 232 237 244;
+    --color-border: 215 222 230;
+    --color-border-hover: 184 194 208;
+    --color-accent: 0 120 114;
+    --color-accent-dark: 0 96 92;
+    --color-accent-light: 0 158 152;
+    --color-accent-button: 0 120 114;
+    --color-text: 18 24 38;
+    --color-text-secondary: 72 84 102;
+    --color-muted: 120 132 150;
+    --color-success: 16 110 52;
+    --color-warning: 148 72 8;
+    --color-error: 175 28 28;
+    --color-info: 20 72 180;
   }
 
   body {
@@ -54,6 +54,11 @@
 
   * {
     @apply border-border;
+  }
+
+  /* Tabular figures for data alignment */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -100,6 +105,19 @@
   .tab-inactive {
     @apply text-muted hover:text-text border-b-2 border-transparent transition-colors;
   }
+
+  /* Monitor glow — signature element */
+  .sidebar-glow {
+    border-left: 3px solid rgb(var(--color-accent));
+    box-shadow: 4px 0 24px rgb(var(--color-accent) / 0.12);
+  }
+  .nav-active-glow {
+    border-left: 3px solid rgb(var(--color-accent));
+    box-shadow: 3px 0 16px rgb(var(--color-accent) / 0.10);
+  }
+  .status-pulse {
+    animation: monitor-pulse 3s ease-in-out infinite;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -111,6 +129,11 @@
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
+}
+
+@keyframes monitor-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgb(var(--color-accent) / 0.15); }
+  50% { box-shadow: 0 0 18px rgb(var(--color-accent) / 0.30); }
 }
 
 .skeleton {

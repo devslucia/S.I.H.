@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Wifi, LogOut, Menu, User, ChevronDown, Sun, Moon } from "lucide-react";
+import { LogOut, Menu, ChevronDown, Sun, Moon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
@@ -38,9 +38,9 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
   const title = moduleNames[pathname] || moduleNames[basePath] || "S.I.H.";
 
   const today = new Date().toLocaleDateString("es-AR", {
-    weekday: "long",
+    weekday: "short",
     year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
   });
 
@@ -67,26 +67,26 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
           <Menu size={22} />
         </button>
         <div>
-          <h1 className="text-lg font-display font-semibold text-text">{title}</h1>
+          <h1 className="text-base font-display font-semibold text-text">{title}</h1>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-4">
+      <div className="flex items-center gap-2 md:gap-3">
         {/* Theme toggle */}
         <button
           onClick={toggle}
           className="p-2 text-muted hover:text-text hover:bg-surface-hover rounded-lg transition-all duration-150"
           title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
         >
-          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
         </button>
 
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/10 border border-success/20">
-          <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-          <span className="text-xs text-success font-medium">Conectado</span>
+        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/10 border border-success/20">
+          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+          <span className="text-[11px] text-success font-medium font-mono">ONLINE</span>
         </div>
 
-        <div className="hidden lg:block text-xs text-muted font-mono">
+        <div className="hidden lg:block text-[11px] text-muted font-mono uppercase tracking-wider">
           {today}
         </div>
 
@@ -100,28 +100,28 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
                 : "hover:bg-surface-hover border border-transparent"
             )}
           >
-            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-medium text-sm">
+            <div className="w-7 h-7 rounded-full bg-accent/15 flex items-center justify-center text-accent font-medium text-xs">
               {user?.name?.[0] || "U"}
             </div>
             <div className="hidden md:block text-left">
-              <div className="text-sm text-text font-medium leading-tight">{user?.name || "Usuario"}</div>
-              <div className="text-xs text-muted leading-tight">{user?.rol || "—"}</div>
+              <div className="text-[13px] text-text font-medium leading-tight">{user?.name || "Usuario"}</div>
+              <div className="text-[10px] text-muted font-mono uppercase tracking-wider leading-tight">{user?.rol || "—"}</div>
             </div>
-            <ChevronDown size={14} className={cn("text-muted transition-transform duration-150", userMenuOpen && "rotate-180")} />
+            <ChevronDown size={13} className={cn("text-muted transition-transform duration-150", userMenuOpen && "rotate-180")} />
           </button>
 
           {userMenuOpen && (
             <div className="absolute right-0 top-full mt-2 w-56 bg-surface border border-border rounded-xl shadow-lg py-1 animate-scale-in z-50">
               <div className="px-4 py-3 border-b border-border">
                 <div className="text-sm font-medium text-text">{user?.name || "Usuario"}</div>
-                <div className="text-xs text-muted">{user?.email || ""}</div>
-                <div className="text-xs text-accent mt-0.5">{user?.rol || "—"}</div>
+                <div className="text-xs text-muted font-mono">{user?.email || ""}</div>
+                <div className="text-[11px] text-accent font-mono uppercase tracking-wider mt-0.5">{user?.rol || "—"}</div>
               </div>
               <button
                 onClick={() => signOut({ callbackUrl: "/login" })}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error/10 transition-colors"
               >
-                <LogOut size={16} />
+                <LogOut size={15} />
                 Cerrar sesión
               </button>
             </div>

@@ -44,10 +44,10 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="card p-6 space-y-4">
-          <h2 className="text-xl font-medium text-white">Iniciar Sesión</h2>
+          <h2 className="text-lg font-display font-semibold text-text">Iniciar Sesión</h2>
 
           {error && (
-            <div className="bg-red/20 border border-red/50 rounded-lg p-3 text-red text-sm">
+            <div className="bg-error/10 border border-error/30 rounded-lg p-3 text-error text-sm">
               {error}
             </div>
           )}

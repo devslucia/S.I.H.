@@ -15,7 +15,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label htmlFor={inputId} className="text-sm font-medium text-text-secondary">
+          <label htmlFor={inputId} className="text-[13px] font-medium text-text-secondary">
             {label}
           </label>
         )}
@@ -23,7 +23,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={cn(
-            "w-full rounded-lg border bg-background px-3 py-2.5 text-sm text-text placeholder-muted",
+            "w-full rounded-lg border bg-background px-3 py-2.5 text-sm text-text placeholder-muted font-mono",
             "transition-all duration-150",
             "focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-background",
             error

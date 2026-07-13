@@ -51,14 +51,14 @@ function DataTable<T extends Record<string, unknown>>({
 
   return (
     <div className="overflow-x-auto rounded-xl border border-border">
-      <table className="w-full text-sm text-text-secondary">
+      <table className="w-full text-[13px] text-text-secondary">
         <thead className="bg-surface">
           <tr>
             {columns.map((col) => (
               <th
                 key={col.key}
                 className={cn(
-                  "px-4 py-3 text-left font-medium text-muted",
+                  "px-4 py-2.5 text-left font-medium text-muted text-[11px] font-mono uppercase tracking-wider",
                   col.sortable && "cursor-pointer select-none hover:text-text"
                 )}
                 onClick={() => col.sortable && handleSort(col.key)}
@@ -66,10 +66,10 @@ function DataTable<T extends Record<string, unknown>>({
                 <span className="inline-flex items-center gap-1">
                   {col.label}
                   {col.sortable && sortKey === col.key && (
-                    sortDir === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />
+                    sortDir === "asc" ? <ChevronUp size={13} /> : <ChevronDown size={13} />
                   )}
                   {col.sortable && sortKey !== col.key && (
-                    <ChevronUp size={14} className="opacity-30" />
+                    <ChevronUp size={13} className="opacity-30" />
                   )}
                 </span>
               </th>

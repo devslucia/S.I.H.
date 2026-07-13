@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Syringe, HeartPulse, CheckCircle, AlertTriangle, Activity, Clock, ChevronDown, ChevronUp, User, FileText } from "lucide-react";
+import { Syringe, HeartPulse, CheckCircle, AlertTriangle, Activity, Clock, ChevronDown, ChevronUp, User, FileText, Pill } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { VoiceInput } from "@/components/ui/VoiceInput";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
+import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
 import { formatDateTime } from "@/lib/utils";
 
 interface Prescripcion {
@@ -195,7 +196,7 @@ function ControlForm({ internacionId, onSaved }: { internacionId: string; onSave
   };
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-black/20 rounded-lg border border-border">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-surface-hover rounded-lg border border-border">
       <div>
         <label className="block text-xs text-muted mb-1">Hora</label>
         <input type="time" value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })} className="input-field" required />
@@ -243,7 +244,7 @@ function ControlForm({ internacionId, onSaved }: { internacionId: string; onSave
       {showConfirmVitals && parsedVitals && (
         <div className="col-span-2 md:col-span-4 p-3 bg-accent/10 border border-accent/30 rounded-lg">
           <p className="text-xs text-accent font-medium mb-2">Datos detectados por IA — Verificá antes de guardar:</p>
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs text-white mb-3">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs text-text mb-3">
             {parsedVitals.pas && parsedVitals.pad && <div>PA: <strong>{parsedVitals.pas}/{parsedVitals.pad}</strong></div>}
             {parsedVitals.fc && <div>FC: <strong>{parsedVitals.fc}</strong></div>}
             {parsedVitals.fr && <div>FR: <strong>{parsedVitals.fr}</strong></div>}
@@ -408,7 +409,7 @@ function AplicarPrescripcion({
       </button>
 
       {expanded && (
-        <div className="mt-2 p-3 bg-black/30 rounded-lg border border-border space-y-3">
+        <div className="mt-2 p-3 bg-surface-active rounded-lg border border-border space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs text-muted mb-1">Hora</label>
@@ -479,7 +480,7 @@ function AplicarPrescripcion({
           {showConfirmMed && parsedMed && (
             <div className="p-3 bg-accent/10 border border-accent/30 rounded-lg">
               <p className="text-xs text-accent font-medium mb-2">Datos detectados por IA — Verificá:</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-white mb-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-text mb-3">
                 {parsedMed.medicamento && <div>Med: <strong>{parsedMed.medicamento}</strong></div>}
                 {parsedMed.dosis && <div>Dosis: <strong>{parsedMed.dosis}{parsedMed.unidad || ""}</strong></div>}
                 {parsedMed.via && <div>Vía: <strong>{parsedMed.via}</strong></div>}
@@ -506,7 +507,7 @@ function AplicarPrescripcion({
                 <tbody>
                   {aplicaciones.map((a) => (
                     <tr key={a.id} className="border-b border-border/30">
-                      <td className="py-1 text-white">{a.hora}</td>
+                      <td className="py-1 text-text">{a.hora}</td>
                       <td className="py-1 text-muted">{a.enfermero.nombre}</td>
                     </tr>
                   ))}
@@ -526,16 +527,16 @@ function AplicarPrescripcion({
 function AldretePostQx({ protocolo }: { protocolo: ProtocoloResumen }) {
   const total = (protocolo.aldreteActividad ?? 0) + (protocolo.aldreteRespiracion ?? 0) +
     (protocolo.aldreteCirculacion ?? 0) + (protocolo.aldreteConciencia ?? 0) + (protocolo.aldreteSpo2 ?? 0);
-  const color = total >= 9 ? "text-success" : total >= 7 ? "text-amber" : "text-red";
+  const color = total >= 9 ? "text-success" : total >= 7 ? "text-warning" : "text-error";
 
   return (
-    <div className="mt-2 p-3 bg-black/20 rounded-lg border border-border text-xs">
+    <div className="mt-2 p-3 bg-surface-hover rounded-lg border border-border text-xs">
       <div className="flex items-center gap-2 mb-2">
         <Activity size={14} className="text-accent" />
-        <span className="text-white font-medium">Aldrete postquirúrgico</span>
+        <span className="text-text font-medium">Aldrete postquirúrgico</span>
         <span className={`font-bold ${color}`}>{total}/10</span>
         {protocolo.aldreteSpo2 != null && (
-          <span className="text-muted ml-auto">SpO₂: <strong className="text-white">{protocolo.aldreteSpo2}%</strong></span>
+          <span className="text-muted ml-auto">SpO₂: <strong className="text-text">{protocolo.aldreteSpo2}%</strong></span>
         )}
       </div>
       <div className="grid grid-cols-5 gap-2 text-muted">
@@ -546,7 +547,7 @@ function AldretePostQx({ protocolo }: { protocolo: ProtocoloResumen }) {
         <div>SpO₂: {protocolo.aldreteSpo2}</div>
       </div>
       {protocolo.destinoPaciente && (
-        <p className="mt-1 text-muted">Destino: <strong className="text-white">{protocolo.destinoPaciente}</strong></p>
+        <p className="mt-1 text-muted">Destino: <strong className="text-text">{protocolo.destinoPaciente}</strong></p>
       )}
     </div>
   );
@@ -611,7 +612,7 @@ function HojaEnfermeriaForm({ internacionId, onSaved }: { internacionId: string;
         <FileText size={12} /> Hoja de Enfermería {expanded ? "▲" : "▼"}
       </button>
       {expanded && (
-        <form onSubmit={handleSubmit} className="mt-2 p-3 bg-black/20 rounded-lg border border-border space-y-3">
+        <form onSubmit={handleSubmit} className="mt-2 p-3 bg-surface-hover rounded-lg border border-border space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs text-muted mb-1">Sección</label>
@@ -661,6 +662,72 @@ function HojaEnfermeriaForm({ internacionId, onSaved }: { internacionId: string;
         </form>
       )}
     </div>
+  );
+}
+
+function MedicacionAdHoc({ internacionId, onApplied }: { internacionId: string; onApplied: () => void }) {
+  const [showModal, setShowModal] = useState(false);
+
+  const handleSubmit = async (items: SelectedItem[]): Promise<{ ok: boolean; items: { index: number; nombre: string; ok: boolean; error?: string }[] }> => {
+    const payload = items.map((sel) => ({
+      stockItemId: sel.stockItem.id,
+      nombre: sel.stockItem.nombre,
+      cantidad: sel.values.cantidad || 1,
+      via: sel.values.via || "VO",
+      hora: sel.values.hora || new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false }),
+      motivo: sel.values.motivo || "",
+    }));
+    const res = await fetch(`/api/historia-clinica/${internacionId}/enfermeria/ad-hoc`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: payload }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setShowModal(false);
+      onApplied();
+      return data;
+    }
+    const e = await res.json();
+    return { ok: false, items: items.map((sel, i) => ({ index: i, nombre: sel.stockItem.nombre, ok: false, error: e.error || "Error al registrar" })) };
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setShowModal(true)}
+        className="text-xs btn-secondary py-1.5 px-2.5 inline-flex items-center gap-1.5"
+      >
+        <Pill size={12} /> Med. ad-hoc
+      </button>
+
+      {showModal && (
+        <div className="fixed inset-0 z-60 bg-black/60 flex items-center justify-center" onClick={() => setShowModal(false)}>
+          <div className="bg-surface border border-border rounded-lg p-5 w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-medium text-text">Medicación ad-hoc (sin prescripción)</h3>
+              <button onClick={() => setShowModal(false)} className="text-muted hover:text-text">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <MedicacionMultiSelect
+              searchPlaceholder="Buscar medicamento..."
+              extraFields={[
+                { key: "cantidad", label: "Cantidad", type: "number", defaultValue: 1, required: true },
+                { key: "via", label: "Vía", type: "select", defaultValue: "VO", options: [
+                  { value: "EV", label: "EV" }, { value: "IM", label: "IM" }, { value: "SC", label: "SC" },
+                  { value: "VO", label: "VO" }, { value: "Tópica", label: "Tópica" }, { value: "Inhalatoria", label: "Inhalatoria" }
+                ]},
+                { key: "hora", label: "Hora", type: "text", placeholder: "HH:MM", defaultValue: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false }) },
+                { key: "motivo", label: "Motivo / Observación *", type: "text", required: true, placeholder: "ej: indicación verbal Dr. X, PRN por dolor" },
+              ]}
+              submitLabel="Registrar medicación"
+              onSubmit={handleSubmit}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -736,8 +803,8 @@ export default function EnfermeriaPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Syringe className="w-6 h-6 text-amber" />
-        <h2 className="text-xl font-medium text-white">Enfermería</h2>
+        <Syringe className="w-6 h-6 text-warning" />
+        <h2 className="text-xl font-medium text-text">Enfermería</h2>
       </div>
 
       {internaciones.length === 0 ? (
@@ -751,13 +818,13 @@ export default function EnfermeriaPage() {
           const controles = controlesMap[i.id] || [];
           return (
             <div key={i.id} className="card overflow-hidden">
-              <div className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-black/20 border-b border-border">
+              <div className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-surface-hover border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-amber/20 flex items-center justify-center text-amber font-medium text-sm flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-warning/15 flex items-center justify-center text-warning font-medium text-sm flex-shrink-0">
                     {p.nombre[0]}{p.apellido[0]}
                   </div>
                   <div>
-                    <p className="text-white font-medium text-sm">{p.apellido}, {p.nombre}</p>
+                    <p className="text-text font-medium text-sm">{p.apellido}, {p.nombre}</p>
                     <p className="text-xs text-muted">
                       DNI: {p.dni} | {i.cama ? `${i.cama.numero} - ${i.cama.sector.nombre}` : "Sin cama"} | #{i.numero}
                     </p>
@@ -806,12 +873,12 @@ export default function EnfermeriaPage() {
                               {pr.tipo}
                             </Badge>
                           </td>
-                          <td className="px-4 py-2.5 text-white">{pr.droga || pr.dieta || pr.descripcion}</td>
+                          <td className="px-4 py-2.5 text-text">{pr.droga || pr.dieta || pr.descripcion}</td>
                           <td className="px-4 py-2.5 text-muted">{pr.dosis}{pr.via ? ` - ${pr.via}` : ""}</td>
                           <td className="px-4 py-2.5 text-muted">{pr.frecuencia || "—"}</td>
                           <td className="px-4 py-2.5">
                             {pr.estado === "BLOQUEADA_ALERGIA" ? (
-                              <span className="flex items-center gap-1 text-red text-xs">
+                              <span className="flex items-center gap-1 text-error text-xs">
                                 <AlertTriangle size={12} /> Alergia
                               </span>
                             ) : pr.estado === "COMPLETADA" ? (
@@ -819,7 +886,7 @@ export default function EnfermeriaPage() {
                                 <CheckCircle size={12} /> Completa
                               </span>
                             ) : (
-                              <span className="text-amber text-xs">Pendiente</span>
+                              <span className="text-warning text-xs">Pendiente</span>
                             )}
                           </td>
                           <td className="px-4 py-2.5">
@@ -837,6 +904,10 @@ export default function EnfermeriaPage() {
                   </table>
                 </div>
               )}
+
+              <div className="px-4 py-2 border-t border-border/50 flex items-center gap-2">
+                <MedicacionAdHoc internacionId={i.id} onApplied={fetchInternaciones} />
+              </div>
 
               {selectedInternacion === i.id && (
                 <div className="p-4 border-t border-border">
@@ -860,7 +931,7 @@ export default function EnfermeriaPage() {
                           <tbody>
                             {controles.map((c) => (
                               <tr key={c.id} className="border-b border-border/30">
-                                <td className="py-1 px-2 text-white">{c.hora}</td>
+                                <td className="py-1 px-2 text-text">{c.hora}</td>
                                 <td className="py-1 px-2 text-muted">{c.datos?.PA || "—"}</td>
                                 <td className="py-1 px-2 text-muted">{c.datos?.FC || "—"}</td>
                                 <td className="py-1 px-2 text-muted">{c.datos?.FR || "—"}</td>
@@ -869,7 +940,7 @@ export default function EnfermeriaPage() {
                                 <td className="py-1 px-2 text-muted max-w-[120px] truncate">{c.observacion || "—"}</td>
                                 <td className="py-1 px-2">
                                   {c.alertas && c.alertas.length > 0 && (
-                                    <span className="flex items-center gap-1 text-red text-xs">
+                                    <span className="flex items-center gap-1 text-error text-xs">
                                       <AlertTriangle size={10} /> {c.alertas.length}
                                     </span>
                                   )}
@@ -883,7 +954,7 @@ export default function EnfermeriaPage() {
                   )}
                   {loadingControles && <p className="text-muted text-xs mb-2">Cargando controles...</p>}
 
-                  <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-medium text-text mb-3 flex items-center gap-2">
                     <HeartPulse size={16} className="text-accent" /> Registrar Signos Vitales
                   </h4>
                   <ControlForm internacionId={i.id} onSaved={() => { fetchInternaciones(); fetchControles(i.id); }} />

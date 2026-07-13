@@ -69,10 +69,10 @@ export default function EvolucionPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-muted hover:text-white transition-colors">
+          <button onClick={() => router.back()} className="text-muted hover:text-text transition-colors">
             <ArrowLeft size={20} />
           </button>
-          <h2 className="text-xl font-medium text-white">Evolución</h2>
+          <h2 className="text-lg font-display font-semibold text-text">Evolución</h2>
         </div>
         {canCreate && (
           <Button onClick={() => setShowEditor(true)}>
@@ -121,7 +121,7 @@ export default function EvolucionPage() {
                   )}
                 </div>
               </div>
-              <p className="text-white text-sm whitespace-pre-wrap">{evo.contenido}</p>
+              <p className="text-text text-sm whitespace-pre-wrap">{evo.contenido}</p>
               <div className="flex items-center gap-1 mt-2 text-xs text-muted">
                 <User size={12} /> {evo.usuario.nombre} ({evo.usuario.rol})
               </div>
