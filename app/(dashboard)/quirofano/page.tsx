@@ -53,10 +53,10 @@ interface Usuario {
 }
 
 const estadoColors: Record<string, { bg: string; text: string; label: string }> = {
-  PROGRAMADA: { bg: "bg-blue-500/10 border-blue-500/30", text: "text-blue-400", label: "Programada" },
+  PROGRAMADA: { bg: "bg-info/10 border-info/30", text: "text-info", label: "Programada" },
   EN_CURSO: { bg: "bg-warning/10 border-warning/30", text: "text-warning", label: "En Curso" },
   COMPLETADA: { bg: "bg-success/10 border-success/30", text: "text-success", label: "Completada" },
-  REPROGRAMADA: { bg: "bg-yellow-500/10 border-yellow-500/30", text: "text-yellow-400", label: "Reprogramada" },
+  REPROGRAMADA: { bg: "bg-warning/10 border-warning/30", text: "text-warning", label: "Reprogramada" },
   CANCELADA: { bg: "bg-error/10 border-error/30", text: "text-error", label: "Cancelada" },
 };
 
@@ -247,20 +247,20 @@ export default function QuirofanoPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Activity className="w-6 h-6 text-accent" />
-          <h2 className="text-xl font-medium text-white">Agenda Quirúrgica</h2>
+          <h2 className="text-lg font-display font-semibold text-text">Agenda Quirúrgica</h2>
         </div>
         <div className="flex items-center gap-2">
           {canCreate && (
             <button
               onClick={handleOpenInternaciones}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-colors"
+              className="btn-primary text-sm"
             >
               <Plus size={16} /> Programar Cirugía
             </button>
           )}
           <button
             onClick={() => setFechaSeleccionada(shiftDate(fechaSeleccionada, -1))}
-            className="p-1.5 rounded-lg bg-black/30 border border-border hover:bg-border/30 transition-colors"
+            className="p-1.5 rounded-lg bg-surface-hover border border-border hover:bg-surface-active transition-colors"
           >
             <ChevronLeft size={16} className="text-muted" />
           </button>
@@ -272,7 +272,7 @@ export default function QuirofanoPage() {
           />
           <button
             onClick={() => setFechaSeleccionada(shiftDate(fechaSeleccionada, 1))}
-            className="p-1.5 rounded-lg bg-black/30 border border-border hover:bg-border/30 transition-colors"
+            className="p-1.5 rounded-lg bg-surface-hover border border-border hover:bg-surface-active transition-colors"
           >
             <ChevronRight size={16} className="text-muted" />
           </button>
@@ -303,12 +303,12 @@ export default function QuirofanoPage() {
       ) : (
         Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([qf, cirugiasQF]) => (
           <div key={qf}>
-            <h3 className="text-sm font-medium text-gray-300 mb-2 uppercase tracking-wide">
+            <h3 className="text-[11px] font-medium text-text-secondary font-mono uppercase tracking-wider mb-2">
               {qf}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {cirugiasQF.map((cirugia) => {
-                const cfg = estadoColors[cirugia.estado] || { bg: "bg-gray-500/10 border-gray-500/30", text: "text-gray-400", label: cirugia.estado };
+                const cfg = estadoColors[cirugia.estado] || { bg: "bg-muted/10 border-muted/30", text: "text-muted", label: cirugia.estado };
                 return (
                   <div
                     key={cirugia.id}
@@ -323,7 +323,7 @@ export default function QuirofanoPage() {
                         <Clock size={12} /> {cirugia.horaProgramada}
                       </span>
                     </div>
-                    <p className="text-white font-medium text-sm mb-1">
+                    <p className="text-text font-medium text-sm mb-1">
                       {cirugia.internacion?.paciente ? `${cirugia.internacion.paciente.apellido}, ${cirugia.internacion.paciente.nombre}` : "—"}
                     </p>
                     <p className="text-muted text-xs mb-1">{cirugia.procedimiento || "—"}</p>
@@ -346,7 +346,7 @@ export default function QuirofanoPage() {
       {canViewInternaciones && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-gray-300 uppercase tracking-wide">
+            <h3 className="text-[11px] font-medium text-text-secondary font-mono uppercase tracking-wider">
               Pacientes Disponibles para Programar
             </h3>
             {canCreate && (
@@ -374,7 +374,7 @@ export default function QuirofanoPage() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="text-white font-medium text-sm">
+                      <p className="text-text font-medium text-sm">
                         {internacion.paciente?.apellido}, {internacion.paciente?.nombre}
                       </p>
                       <p className="text-muted text-xs mt-0.5">
@@ -453,7 +453,7 @@ export default function QuirofanoPage() {
                       className="flex-1 min-w-0 cursor-pointer"
                       onClick={() => handleSelectInternacion(internacion)}
                     >
-                      <p className="text-white font-medium text-sm">
+                      <p className="text-text font-medium text-sm">
                         {internacion.paciente?.apellido}, {internacion.paciente?.nombre}
                       </p>
                       <p className="text-muted text-xs mt-0.5">
@@ -504,7 +504,7 @@ export default function QuirofanoPage() {
         {selectedInternacion && (
           <div className="space-y-4">
             <div className="bg-surface border border-border rounded-lg p-3">
-              <p className="text-white text-sm font-medium">
+              <p className="text-text text-sm font-medium">
                 {selectedInternacion.paciente?.apellido}, {selectedInternacion.paciente?.nombre}
               </p>
               <p className="text-muted text-xs">
@@ -635,11 +635,11 @@ export default function QuirofanoPage() {
         {selectedPaciente && selectedPaciente.paciente && (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center text-accent font-medium text-xl">
+              <div className="w-14 h-14 rounded-full bg-accent/15 flex items-center justify-center text-accent font-medium text-xl">
                 {selectedPaciente.paciente.nombre[0]}{selectedPaciente.paciente.apellido[0]}
               </div>
               <div>
-                <h3 className="text-lg font-medium text-white">
+                <h3 className="text-lg font-medium text-text">
                   {selectedPaciente.paciente.apellido}, {selectedPaciente.paciente.nombre}
                 </h3>
                 <p className="text-muted text-sm">DNI: {selectedPaciente.paciente.dni}</p>
@@ -649,30 +649,30 @@ export default function QuirofanoPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-muted uppercase tracking-wide">Edad</p>
-                <p className="text-white text-sm">{calcularEdad(selectedPaciente.paciente.fechaNac) || "—"}</p>
+                <p className="text-text text-sm">{calcularEdad(selectedPaciente.paciente.fechaNac) || "—"}</p>
               </div>
               <div>
                 <p className="text-xs text-muted uppercase tracking-wide">Teléfono</p>
-                <p className="text-white text-sm">{selectedPaciente.paciente.telefono || "—"}</p>
+                <p className="text-text text-sm">{selectedPaciente.paciente.telefono || "—"}</p>
               </div>
               <div>
                 <p className="text-xs text-muted uppercase tracking-wide">Internación</p>
-                <p className="text-white text-sm">#{selectedPaciente.numero}</p>
+                <p className="text-text text-sm">#{selectedPaciente.numero}</p>
               </div>
               <div>
                 <p className="text-xs text-muted uppercase tracking-wide">Ingreso</p>
-                <p className="text-white text-sm">{formatDateTime(selectedPaciente.fechaIngreso)}</p>
+                <p className="text-text text-sm">{formatDateTime(selectedPaciente.fechaIngreso)}</p>
               </div>
               {selectedPaciente.cama && (
                 <div>
                   <p className="text-xs text-muted uppercase tracking-wide">Cama</p>
-                  <p className="text-white text-sm">{selectedPaciente.cama.numero} — {selectedPaciente.cama.sector.nombre}</p>
+                  <p className="text-text text-sm">{selectedPaciente.cama.numero} — {selectedPaciente.cama.sector.nombre}</p>
                 </div>
               )}
               {selectedPaciente.obraSocial && (
                 <div>
                   <p className="text-xs text-muted uppercase tracking-wide">Obra Social</p>
-                  <p className="text-white text-sm">{selectedPaciente.obraSocial.nombre} ({selectedPaciente.obraSocial.sigla})</p>
+                  <p className="text-text text-sm">{selectedPaciente.obraSocial.nombre} ({selectedPaciente.obraSocial.sigla})</p>
                 </div>
               )}
             </div>
@@ -682,7 +682,7 @@ export default function QuirofanoPage() {
                 <p className="text-xs text-muted uppercase tracking-wide mb-1">Médico(s) Tratante(s)</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedPaciente.medicosTratantesInternacion.map((mt) => (
-                    <span key={mt.medico.id} className="px-2 py-1 rounded-lg bg-background border border-border text-white text-xs">
+                    <span key={mt.medico.id} className="px-2 py-1 rounded-lg bg-background border border-border text-text text-xs">
                       {mt.medico.nombre}
                     </span>
                   ))}
@@ -708,7 +708,7 @@ export default function QuirofanoPage() {
             {selectedPaciente.motivoIngreso && (
               <div>
                 <p className="text-xs text-muted uppercase tracking-wide">Motivo de Ingreso</p>
-                <p className="text-white text-sm">{selectedPaciente.motivoIngreso}</p>
+                <p className="text-text text-sm">{selectedPaciente.motivoIngreso}</p>
               </div>
             )}
           </div>

@@ -14,9 +14,9 @@ interface Cama {
 
 const estadoConfig: Record<string, { color: string; bg: string; label: string }> = {
   LIBRE: { color: "text-success", bg: "bg-success/10 border-success/30", label: "Libre" },
-  OCUPADA: { color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/30", label: "Ocupada" },
+  OCUPADA: { color: "text-info", bg: "bg-info/10 border-info/30", label: "Ocupada" },
   EN_LIMPIEZA: { color: "text-warning", bg: "bg-warning/10 border-warning/30", label: "En Limpieza" },
-  FUERA_DE_SERVICIO: { color: "text-gray-500", bg: "bg-gray-500/10 border-gray-500/30", label: "Fuera de Servicio" },
+  FUERA_DE_SERVICIO: { color: "text-muted", bg: "bg-muted/10 border-muted/30", label: "Fuera de Servicio" },
 };
 
 const nextEstado: Record<string, string> = {
@@ -74,18 +74,18 @@ export default function CamasPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-medium text-white">Gestión de Camas</h2>
+        <h2 className="text-xl font-medium text-text">Gestión de Camas</h2>
         <div className="flex items-center gap-3 text-xs text-muted overflow-x-auto pb-1">
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-success" /> Libre</span>
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-400" /> Ocupada</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-info" /> Ocupada</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-warning" /> En Limpieza</span>
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-gray-500" /> Fuera de Servicio</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-muted" /> Fuera de Servicio</span>
         </div>
       </div>
 
       {Object.entries(grouped).map(([sector, sectorCamas]) => (
         <div key={sector}>
-          <h3 className="text-sm font-medium text-gray-300 mb-2 uppercase tracking-wide">{sector}</h3>
+          <h3 className="text-sm font-medium text-text-secondary mb-2 uppercase tracking-wide">{sector}</h3>
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
             {sectorCamas.map((cama) => {
               const cfg = estadoConfig[cama.estado];
@@ -101,7 +101,7 @@ export default function CamasPage() {
                   ) : (
                     <Bed size={16} className={cfg.color} />
                   )}
-                  <span className="text-white text-xs md:text-sm font-medium">{cama.numero}</span>
+                  <span className="text-text text-xs md:text-sm font-medium">{cama.numero}</span>
                   <span className={`text-[10px] md:text-xs ${cfg.color}`}>{cfg.label}</span>
                 </button>
               );

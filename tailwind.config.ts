@@ -38,20 +38,21 @@ const config: Config = {
         info: "rgb(var(--color-info) / <alpha-value>)",
       },
       fontFamily: {
-        display: ["Outfit", "sans-serif"],
-        sans: ["Inter", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
+        display: ["Geist", "sans-serif"],
+        sans: ["Geist", "sans-serif"],
+        mono: ["Geist Mono", "monospace"],
       },
       borderRadius: {
         xl: "0.75rem",
         "2xl": "1rem",
       },
       boxShadow: {
-        card: "0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+        card: "0 1px 3px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.10)",
         "card-hover":
-          "0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)",
+          "0 4px 12px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.12)",
         glow: "0 0 20px rgb(var(--color-accent) / 0.15)",
-        "glow-lg": "0 0 40px rgb(var(--color-accent) / 0.2)",
+        "glow-lg": "0 0 40px rgb(var(--color-accent) / 0.20)",
+        "monitor-glow": "4px 0 24px rgb(var(--color-accent) / 0.12)",
       },
       animation: {
         "fade-in": "fadeIn 0.2s ease-out",

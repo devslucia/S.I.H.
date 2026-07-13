@@ -46,7 +46,7 @@ export default function AtencionMedicaPage() {
       <div className="flex items-center gap-3">
         <Stethoscope className="w-7 h-7 text-accent" />
         <div>
-          <h2 className="text-xl font-medium text-white">Atención Médica</h2>
+          <h2 className="text-xl font-medium text-text">Atención Médica</h2>
           <p className="text-muted text-sm">{internaciones.length} paciente(s) activo(s)</p>
         </div>
       </div>
@@ -56,7 +56,7 @@ export default function AtencionMedicaPage() {
       ) : internaciones.length === 0 ? (
         <div className="card p-8 text-center">
           <Activity size={32} className="mx-auto text-accent mb-2" />
-          <p className="text-white font-medium">No hay pacientes activos</p>
+          <p className="text-text font-medium">No hay pacientes activos</p>
           <p className="text-muted text-sm mt-1">No tiene internaciones asignadas actualmente.</p>
         </div>
       ) : (
@@ -72,7 +72,7 @@ export default function AtencionMedicaPage() {
                   <Stethoscope size={18} />
                 </div>
                 <div>
-                  <p className="text-white font-medium">{i.paciente.apellido}, {i.paciente.nombre}</p>
+                  <p className="text-text font-medium">{i.paciente.apellido}, {i.paciente.nombre}</p>
                   <p className="text-muted text-xs">
                     DNI: {i.paciente.dni} | HC #{i.numero} | Ingreso: {formatDateTime(i.fechaIngreso)}
                   </p>

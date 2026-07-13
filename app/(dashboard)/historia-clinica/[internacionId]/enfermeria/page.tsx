@@ -150,10 +150,10 @@ export default function EnfermeriaPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="text-muted hover:text-white transition-colors">
+        <button onClick={() => router.back()} className="text-muted hover:text-text transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <h2 className="text-xl font-medium text-white">Enfermería</h2>
+        <h2 className="text-lg font-display font-semibold text-text">Enfermería</h2>
       </div>
 
       {canCreate && (
@@ -198,7 +198,7 @@ export default function EnfermeriaPage() {
           {showConfirmVitals && parsedVitals && (
             <div className="p-3 bg-accent/10 border border-accent/30 rounded-lg">
               <p className="text-xs text-accent font-medium mb-2">Datos detectados por IA — Verificá antes de guardar:</p>
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs text-white mb-3">
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs text-text mb-3">
                 {parsedVitals.pas && parsedVitals.pad && <div>PA: <strong>{parsedVitals.pas}/{parsedVitals.pad}</strong></div>}
                 {parsedVitals.pas && !parsedVitals.pad && <div>PA: <strong>{parsedVitals.pas}</strong></div>}
                 {parsedVitals.fc && <div>FC: <strong>{parsedVitals.fc}</strong></div>}
@@ -237,7 +237,7 @@ export default function EnfermeriaPage() {
                 </div>
                 <span className="badge-green text-[10px]">{tipoLabels[c.tipo] || c.tipo}</span>
               </div>
-              {c.observacion && <p className="text-white text-sm mb-1">{c.observacion}</p>}
+              {c.observacion && <p className="text-text text-sm mb-1">{c.observacion}</p>}
               <div className="text-xs text-muted font-mono">{JSON.stringify(c.datos)}</div>
               <div className="flex items-center gap-1 mt-1 text-xs text-muted">
                 <User size={12} /> {c.usuario.nombre}

@@ -49,27 +49,27 @@ function Modal({ open, onClose, title, children, size = "md" }: ModalProps) {
       <div
         className={cn(
           "relative z-10 w-full max-h-[90vh] overflow-y-auto",
-          "bg-surface border border-border rounded-2xl shadow-2xl",
+          "bg-surface border border-border rounded-xl shadow-2xl",
           "animate-scale-in",
           sizeStyles[size],
           "max-w-[calc(100vw-2rem)]"
         )}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-border bg-surface/95 backdrop-blur-sm rounded-t-2xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3.5 border-b border-border bg-surface/95 backdrop-blur-sm rounded-t-xl">
           {title && (
-            <h2 className="text-lg font-display font-semibold text-text">{title}</h2>
+            <h2 className="text-base font-display font-semibold text-text">{title}</h2>
           )}
           <button
             onClick={onClose}
             className={cn(
-              "rounded-lg p-2 text-muted hover:text-text hover:bg-surface-hover transition-colors",
+              "rounded-lg p-1.5 text-muted hover:text-text hover:bg-surface-hover transition-colors",
               !title && "ml-auto"
             )}
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
-        <div className="p-6">
+        <div className="p-5">
           {children}
         </div>
       </div>

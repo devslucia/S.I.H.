@@ -81,33 +81,33 @@ export default function ProtocoloQuirurgicoPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="text-muted hover:text-white transition-colors">
+        <button onClick={() => router.back()} className="text-muted hover:text-text transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <h2 className="text-xl font-medium text-white">Protocolo Quirúrgico</h2>
+        <h2 className="text-lg font-display font-semibold text-text">Protocolo Quirúrgico</h2>
       </div>
 
       <div className="card p-5">
         <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Cirugía</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div><span className="text-muted">Procedimiento:</span> <span className="text-white">{cirugia.procedimiento || "—"}</span></div>
-          <div><span className="text-muted">Quirófano:</span> <span className="text-white">{cirugia.quirofano?.nombre || "—"}</span></div>
-          <div><span className="text-muted">Fecha:</span> <span className="text-white">{formatDateTime(cirugia.fechaProgramada)}</span></div>
-          <div><span className="text-muted">Hora:</span> <span className="text-white">{cirugia.horaProgramada}</span></div>
-          <div><span className="text-muted">Tipo:</span> <span className="text-white">{cirugia.tipo}</span></div>
-          <div><span className="text-muted">Estado:</span> <span className="text-white">{cirugia.estado}</span></div>
-          <div><span className="text-muted">Hora Inicio:</span> <span className="text-white">{cirugia.horaInicio || "—"}</span></div>
-          <div><span className="text-muted">Hora Fin:</span> <span className="text-white">{cirugia.horaFin || "—"}</span></div>
+          <div><span className="text-muted">Procedimiento:</span> <span className="text-text">{cirugia.procedimiento || "—"}</span></div>
+          <div><span className="text-muted">Quirófano:</span> <span className="text-text">{cirugia.quirofano?.nombre || "—"}</span></div>
+          <div><span className="text-muted">Fecha:</span> <span className="text-text">{formatDateTime(cirugia.fechaProgramada)}</span></div>
+          <div><span className="text-muted">Hora:</span> <span className="text-text">{cirugia.horaProgramada}</span></div>
+          <div><span className="text-muted">Tipo:</span> <span className="text-text">{cirugia.tipo}</span></div>
+          <div><span className="text-muted">Estado:</span> <span className="text-text">{cirugia.estado}</span></div>
+          <div><span className="text-muted">Hora Inicio:</span> <span className="text-text">{cirugia.horaInicio || "—"}</span></div>
+          <div><span className="text-muted">Hora Fin:</span> <span className="text-text">{cirugia.horaFin || "—"}</span></div>
         </div>
       </div>
 
       <div className="card p-5">
         <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Diagnósticos</h3>
         <div className="space-y-2 text-sm">
-          <div><span className="text-muted">Preoperatorio:</span> <span className="text-white">{cirugia.diagnosticoPreop || "—"}</span></div>
-          <div><span className="text-muted">Postoperatorio:</span> <span className="text-white">{cirugia.diagnosticoPostop || "—"}</span></div>
-          <div><span className="text-muted">Hallazgos:</span> <span className="text-white">{cirugia.hallazgos || "—"}</span></div>
-          <div><span className="text-muted">Intervenciones agregadas:</span> <span className="text-white">{cirugia.intervencionesAgregadas || "—"}</span></div>
+          <div><span className="text-muted">Preoperatorio:</span> <span className="text-text">{cirugia.diagnosticoPreop || "—"}</span></div>
+          <div><span className="text-muted">Postoperatorio:</span> <span className="text-text">{cirugia.diagnosticoPostop || "—"}</span></div>
+          <div><span className="text-muted">Hallazgos:</span> <span className="text-text">{cirugia.hallazgos || "—"}</span></div>
+          <div><span className="text-muted">Intervenciones agregadas:</span> <span className="text-text">{cirugia.intervencionesAgregadas || "—"}</span></div>
         </div>
       </div>
 

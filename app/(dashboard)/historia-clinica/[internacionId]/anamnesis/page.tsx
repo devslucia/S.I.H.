@@ -113,10 +113,10 @@ export default function AnamnesisPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-muted hover:text-white transition-colors">
+          <button onClick={() => router.back()} className="text-muted hover:text-text transition-colors">
             <ArrowLeft size={20} />
           </button>
-          <h2 className="text-xl font-medium text-white">Anamnesis</h2>
+          <h2 className="text-lg font-display font-semibold text-text">Anamnesis</h2>
         </div>
         <div className="flex items-center gap-3">
           {data.firmadoAt ? (

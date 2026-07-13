@@ -307,7 +307,7 @@ export default function AdmisionPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-medium text-white">Admisión</h2>
+        <h2 className="text-xl font-medium text-text">Admisión</h2>
         <div className="flex items-center gap-2">
           <Button variant="secondary" onClick={() => router.push("/admision/internados")}>
             <Activity size={14} /> Internados
@@ -360,7 +360,7 @@ export default function AdmisionPage() {
                       {p.nombre[0]}{p.apellido[0]}
                     </div>
                     <div>
-                      <p className="text-white font-medium">{p.apellido}, {p.nombre}</p>
+                      <p className="text-text font-medium">{p.apellido}, {p.nombre}</p>
                       <p className="text-muted text-xs">DNI: {p.dni} | {p.sexo} | {p.telefono || "---"}</p>
                     </div>
                   </div>
@@ -384,7 +384,7 @@ export default function AdmisionPage() {
         <div className="space-y-6">
           <button
             onClick={() => setView("search")}
-            className="flex items-center gap-2 text-muted hover:text-white transition-colors text-sm"
+            className="flex items-center gap-2 text-muted hover:text-text transition-colors text-sm"
           >
             <ArrowLeft size={16} /> Volver a búsqueda
           </button>
@@ -395,7 +395,7 @@ export default function AdmisionPage() {
                 <Plus size={20} />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-white">Nuevo Paciente + Internación</h3>
+                <h3 className="text-lg font-medium text-text">Nuevo Paciente + Internación</h3>
                 <p className="text-muted text-sm">Complete todos los datos en un solo paso</p>
               </div>
             </div>
@@ -414,7 +414,7 @@ export default function AdmisionPage() {
                   <Input label="Apellido *" name="apellido" value={newPatientForm.apellido} onChange={handleNewPatientChange} required />
                   <Input label="Nombre *" name="nombre" value={newPatientForm.nombre} onChange={handleNewPatientChange} required />
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm text-gray-400">Sexo *</label>
+                    <label className="text-sm text-text-secondary">Sexo *</label>
                     <select name="sexo" value={newPatientForm.sexo} onChange={handleNewPatientChange} className="select-field">
                       <option value="MASCULINO">Masculino</option>
                       <option value="FEMENINO">Femenino</option>
@@ -428,7 +428,7 @@ export default function AdmisionPage() {
                   <Input label="Provincia" name="provincia" value={newPatientForm.provincia} onChange={handleNewPatientChange} />
                   <Input label="Teléfono" name="telefono" value={newPatientForm.telefono} onChange={handleNewPatientChange} />
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm text-gray-400">Estado Civil</label>
+                    <label className="text-sm text-text-secondary">Estado Civil</label>
                     <select name="estadoCivil" value={newPatientForm.estadoCivil} onChange={handleNewPatientChange} className="select-field">
                       <option value="">No especificado</option>
                       <option value="SOLTERO">Soltero</option>
@@ -445,7 +445,7 @@ export default function AdmisionPage() {
                 <h4 className="text-sm font-medium text-accent uppercase tracking-wide mb-3">Obra Social</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm text-gray-400">Obra Social</label>
+                    <label className="text-sm text-text-secondary">Obra Social</label>
                     <select name="obraSocialId" value={newPatientForm.obraSocialId} onChange={handleNewPatientChange} className="select-field">
                       <option value="">Sin obra social</option>
                       {obrasSociales.map((os) => (
@@ -455,7 +455,7 @@ export default function AdmisionPage() {
                   </div>
                   <Input label="N° Afiliado" name="nroAfiliado" value={newPatientForm.nroAfiliado} onChange={handleNewPatientChange} />
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm text-gray-400">Tipo Beneficiario</label>
+                    <label className="text-sm text-text-secondary">Tipo Beneficiario</label>
                     <select name="tipoBeneficiario" value={newPatientForm.tipoBeneficiario} onChange={handleNewPatientChange} className="select-field">
                       <option value="TITULAR">Titular</option>
                       <option value="FAMILIAR">Familiar</option>
@@ -468,7 +468,7 @@ export default function AdmisionPage() {
                 <h4 className="text-sm font-medium text-accent uppercase tracking-wide mb-3">Datos de la Internación</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm text-gray-400">Cama</label>
+                    <label className="text-sm text-text-secondary">Cama</label>
                     <select name="camaId" value={newPatientForm.camaId} onChange={handleNewPatientChange} className="select-field">
                       <option value="">Sin cama asignada</option>
                       {camasLibres.map((c) => (
@@ -477,7 +477,7 @@ export default function AdmisionPage() {
                     </select>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm text-gray-400">Médico(s) Tratante(s)</label>
+                    <label className="text-sm text-text-secondary">Médico(s) Tratante(s)</label>
                     <div className="flex flex-wrap gap-2">
                       {medicos.map((m) => {
                         const selected = newPatientForm.medicoTratanteIds.includes(m.id);
@@ -488,7 +488,7 @@ export default function AdmisionPage() {
                             onClick={() => handleNewPatientMedicoToggle(m.id)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                               selected
-                                ? "bg-accent text-white"
+                                ? "bg-accent text-text"
                                 : "bg-background border border-border text-muted hover:border-accent/30"
                             }`}
                           >
@@ -504,7 +504,7 @@ export default function AdmisionPage() {
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm text-gray-400">Tipo de Ingreso *</label>
+                    <label className="text-sm text-text-secondary">Tipo de Ingreso *</label>
                     <select name="tipoIngreso" value={newPatientForm.tipoIngreso} onChange={handleNewPatientChange} className="select-field">
                       <option value="PROGRAMADO">Programado</option>
                       <option value="URGENCIA">Urgencia</option>
@@ -541,7 +541,7 @@ export default function AdmisionPage() {
         <div className="space-y-6">
           <button
             onClick={() => { setView("search"); setSelectedPaciente(null); }}
-            className="flex items-center gap-2 text-muted hover:text-white transition-colors text-sm"
+            className="flex items-center gap-2 text-muted hover:text-text transition-colors text-sm"
           >
             <ArrowLeft size={16} /> Volver a búsqueda
           </button>
@@ -553,7 +553,7 @@ export default function AdmisionPage() {
                   {selectedPaciente.nombre[0]}{selectedPaciente.apellido[0]}
                 </div>
                 <div>
-                  <h2 className="text-xl font-medium text-white">{selectedPaciente.apellido}, {selectedPaciente.nombre}</h2>
+                  <h2 className="text-xl font-medium text-text">{selectedPaciente.apellido}, {selectedPaciente.nombre}</h2>
                   <p className="text-muted text-sm">
                     DNI: {selectedPaciente.dni} | {selectedPaciente.sexo} | {selectedPaciente.telefono || "—"}
                   </p>
@@ -588,11 +588,11 @@ export default function AdmisionPage() {
                       className="flex items-center justify-between bg-background rounded-lg px-4 py-2 cursor-pointer hover:border-accent/30 transition-colors border border-border"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                        <div className="w-8 h-8 rounded-full bg-info/15 flex items-center justify-center text-info">
                           <Activity size={14} />
                         </div>
                         <div>
-                          <p className="text-white text-sm font-medium">Internación #{i.numero}</p>
+                          <p className="text-text text-sm font-medium">Internación #{i.numero}</p>
                           <p className="text-muted text-xs">
                             {formatDateTime(i.fechaIngreso)}
                             {i.cama && ` | Cama: ${i.cama.numero}`}
@@ -613,7 +613,7 @@ export default function AdmisionPage() {
                 <Plus size={20} />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-white">Nueva Internación</h3>
+                <h3 className="text-lg font-medium text-text">Nueva Internación</h3>
                 <p className="text-muted text-sm">Complete los datos para la nueva internación</p>
               </div>
             </div>
@@ -627,7 +627,7 @@ export default function AdmisionPage() {
             <form onSubmit={handleCreateInternacion} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm text-gray-400">Cama</label>
+                  <label className="text-sm text-text-secondary">Cama</label>
                   <select name="camaId" value={internacionForm.camaId} onChange={handleInternacionChange} className="select-field">
                     <option value="">Sin cama asignada</option>
                     {camasLibres.map((c) => (
@@ -636,7 +636,7 @@ export default function AdmisionPage() {
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm text-gray-400">Médico(s) Tratante(s)</label>
+                  <label className="text-sm text-text-secondary">Médico(s) Tratante(s)</label>
                   <div className="flex flex-wrap gap-2">
                     {medicos.map((m) => {
                       const selected = internacionForm.medicoTratanteIds.includes(m.id);
@@ -647,7 +647,7 @@ export default function AdmisionPage() {
                           onClick={() => handleInternacionMedicoToggle(m.id)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                             selected
-                              ? "bg-accent text-white"
+                              ? "bg-accent text-text"
                               : "bg-background border border-border text-muted hover:border-accent/30"
                           }`}
                         >
@@ -663,7 +663,7 @@ export default function AdmisionPage() {
                   )}
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm text-gray-400">Tipo de Ingreso *</label>
+                  <label className="text-sm text-text-secondary">Tipo de Ingreso *</label>
                   <select name="tipoIngreso" value={internacionForm.tipoIngreso} onChange={handleInternacionChange} className="select-field">
                     <option value="PROGRAMADO">Programado</option>
                     <option value="URGENCIA">Urgencia</option>
