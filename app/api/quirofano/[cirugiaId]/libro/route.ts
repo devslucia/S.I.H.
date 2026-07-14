@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { getEffectiveRole, validatePatchBody, type EffectiveRole } from "@/lib/quirofano-rbac";
 
 const LIBRO_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
 
@@ -33,6 +34,13 @@ export async function GET(req: NextRequest, { params }: { params: { cirugiaId: s
     : [];
   const userMap = Object.fromEntries(users.map(u => [u.id, { id: u.id, nombre: u.nombre }]));
 
+  // Resolver el rol efectivo del usuario actual para esta cirugía
+  const effectiveRole = getEffectiveRole(
+    cirugia,
+    session.user.id,
+    session.user.rol
+  );
+
   const enriched = {
     ...cirugia,
     cirujano: cirugia.cirujanoId ? userMap[cirugia.cirujanoId] || null : null,
@@ -41,6 +49,7 @@ export async function GET(req: NextRequest, { params }: { params: { cirugiaId: s
     anestesiologo: cirugia.anestesiologoId ? userMap[cirugia.anestesiologoId] || null : null,
     instrumentador: cirugia.instrumentador || (cirugia.instrumentadorNombreLegado ? { id: null, nombre: cirugia.instrumentadorNombreLegado } : null),
     circulante: cirugia.circulante || (cirugia.circulanteNombreLegado ? { id: null, nombre: cirugia.circulanteNombreLegado } : null),
+    _effectiveRole: effectiveRole,
   };
 
   return NextResponse.json(enriched);
@@ -52,56 +61,107 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
 
   const body = await req.json();
 
+  // Obtener la cirugía actual para resolver el rol efectivo
+  const cirugiaActual = await prisma.cirugia.findUnique({
+    where: { id: params.cirugiaId },
+    select: {
+      cirujanoId: true, ayudante1Id: true, ayudante2Id: true,
+      anestesiologoId: true, instrumentadorId: true, circulanteId: true,
+      estado: true, internacionId: true,
+    },
+  });
+
+  if (!cirugiaActual) {
+    return NextResponse.json({ error: "Cirugía no encontrada" }, { status: 404 });
+  }
+
+  // Resolver rol efectivo del usuario en esta cirugía
+  const effectiveRole = getEffectiveRole(
+    cirugiaActual,
+    session.user.id,
+    session.user.rol
+  );
+
+  // Validar el body contra los permisos del rol
+  const { allowedBody, rejected } = validatePatchBody(body, effectiveRole, cirugiaActual);
+
+  if (rejected) {
+    return NextResponse.json(
+      { error: "No tiene permiso para modificar estos campos", fields: rejected.fields },
+      { status: 403 }
+    );
+  }
+
+  // Si la cirugía está COMPLETADA o REPROGRAMADA, no permitir edición (excepto ADMIN)
+  if (["COMPLETADA", "REPROGRAMADA"].includes(cirugiaActual.estado) && effectiveRole !== "ADMIN") {
+    return NextResponse.json(
+      { error: "La cirugía está cerrada o reprogramada" },
+      { status: 403 }
+    );
+  }
+
+  // Construir el data update solo con campos permitidos
+  const dataUpdate: Record<string, any> = {};
+
+  // Mapear campos del body a columnas de Prisma
+  const fieldMap: Record<string, (v: any) => any> = {
+    quirofanoId: (v) => v,
+    fechaProgramada: (v) => v ? new Date(v) : undefined,
+    horaProgramada: (v) => v,
+    tipo: (v) => v,
+    estado: (v) => v,
+    cirujanoId: (v) => v || null,
+    ayudante1Id: (v) => v || null,
+    ayudante2Id: (v) => v || null,
+    anestesiologoId: (v) => v || null,
+    instrumentadorId: (v) => v || null,
+    circulanteId: (v) => v || null,
+    diagnosticoPreop: (v) => v,
+    diagnosticoPostop: (v) => v,
+    procedimiento: (v) => v,
+    intervencionesAgregadas: (v) => v,
+    hallazgos: (v) => v,
+    horaInicio: (v) => v,
+    horaFin: (v) => v,
+    scoreASA: (v) => v,
+    muestrasPatologicas: (v) => v,
+    muestrasBacteriologicas: (v) => v,
+    muestrasPatologicasObs: (v) => v,
+    muestrasBacteriologicasObs: (v) => v,
+    arcoC: (v) => v,
+    arm: (v) => v,
+    ecografo: (v) => v,
+    observaciones: (v) => v,
+    horaNacimiento: (v) => v,
+    sexoRN: (v) => v,
+    pesoRN: (v) => v,
+    apgar1: (v) => v,
+    apgar5: (v) => v,
+    tipoParto: (v) => v,
+    complicacionesParto: (v) => v,
+    balanceIngresos: (v) => v,
+    balanceEgresos: (v) => v,
+    signosVitalesIntraop: (v) => v,
+    observacionesAnestesia: (v) => v,
+    posicionOperatoria: (v) => v,
+    sondaNasogastrica: (v) => v,
+    sondaVesical: (v) => v,
+    diuresisIntraop: (v) => v,
+    sangrePerdida: (v) => v,
+    evolucionPostInt: (v) => v,
+    indicacionesPostoperatorias: (v) => v,
+  };
+
+  for (const [key, value] of Object.entries(allowedBody)) {
+    if (key in fieldMap) {
+      dataUpdate[key] = fieldMap[key](value);
+    }
+  }
+
   const cirugia = await prisma.$transaction(async (tx) => {
     const updated = await tx.cirugia.update({
       where: { id: params.cirugiaId },
-      data: {
-        quirofanoId: body.quirofanoId,
-        fechaProgramada: body.fechaProgramada ? new Date(body.fechaProgramada) : undefined,
-        horaProgramada: body.horaProgramada,
-        tipo: body.tipo,
-        estado: body.estado,
-        cirujanoId: body.cirujanoId,
-        ayudante1Id: body.ayudante1Id,
-        ayudante2Id: body.ayudante2Id,
-        anestesiologoId: body.anestesiologoId,
-        instrumentadorId: body.instrumentadorId,
-        circulanteId: body.circulanteId,
-        diagnosticoPreop: body.diagnosticoPreop,
-        diagnosticoPostop: body.diagnosticoPostop,
-        procedimiento: body.procedimiento,
-        intervencionesAgregadas: body.intervencionesAgregadas,
-        hallazgos: body.hallazgos,
-        horaInicio: body.horaInicio,
-        horaFin: body.horaFin,
-        scoreASA: body.scoreASA,
-        muestrasPatologicas: body.muestrasPatologicas,
-        muestrasBacteriologicas: body.muestrasBacteriologicas,
-        muestrasPatologicasObs: body.muestrasPatologicasObs,
-        muestrasBacteriologicasObs: body.muestrasBacteriologicasObs,
-        arcoC: body.arcoC,
-        arm: body.arm,
-        ecografo: body.ecografo,
-        observaciones: body.observaciones,
-        horaNacimiento: body.horaNacimiento,
-        sexoRN: body.sexoRN,
-        pesoRN: body.pesoRN,
-        apgar1: body.apgar1,
-        apgar5: body.apgar5,
-        tipoParto: body.tipoParto,
-        complicacionesParto: body.complicacionesParto,
-        balanceIngresos: body.balanceIngresos,
-        balanceEgresos: body.balanceEgresos,
-        signosVitalesIntraop: body.signosVitalesIntraop,
-        observacionesAnestesia: body.observacionesAnestesia,
-        posicionOperatoria: body.posicionOperatoria,
-        sondaNasogastrica: body.sondaNasogastrica,
-        sondaVesical: body.sondaVesical,
-        diuresisIntraop: body.diuresisIntraop,
-        sangrePerdida: body.sangrePerdida,
-        evolucionPostInt: body.evolucionPostInt,
-        indicacionesPostoperatorias: body.indicacionesPostoperatorias,
-      },
+      data: dataUpdate,
     });
 
     if (body.estado && updated.internacionId) {
@@ -142,6 +202,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
     anestesiologo: cirugia.anestesiologoId ? userMap[cirugia.anestesiologoId] || null : null,
     instrumentador: refreshed?.instrumentador || (refreshed?.instrumentadorNombreLegado ? { id: null, nombre: refreshed.instrumentadorNombreLegado } : null),
     circulante: refreshed?.circulante || (refreshed?.circulanteNombreLegado ? { id: null, nombre: refreshed.circulanteNombreLegado } : null),
+    _effectiveRole: effectiveRole,
   };
 
   return NextResponse.json(enriched);
