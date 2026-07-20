@@ -238,3 +238,230 @@ export interface ProtocoloAnestesiaData {
   creadoEn?: string;
   actualizadoEn?: string;
 }
+
+// === Valoración Preanestésica — Antecedentes Clínicos ===
+
+export interface AntecCardiovasculares {
+  hipertension: boolean;
+  hipotension: boolean;
+  arritmias: boolean;
+  infartoPrevio: boolean;
+  disneaEsfuerzo: boolean;
+  disneaReposo: boolean;
+  anginaPecho: boolean;
+  insuficienciaCardiaca: boolean;
+  arterialPeriferica: boolean;
+  varices: boolean;
+  otros: string;
+}
+
+export interface AntecRespiratorios {
+  asmaBronquial: boolean;
+  broncoespasmo: boolean;
+  neumonia: boolean;
+  neumonitis: boolean;
+  pleuresia: boolean;
+  tos: boolean;
+  expectoracion: boolean;
+  epoc: boolean;
+  otros: string;
+}
+
+export interface AntecEndocrinos {
+  diabetes: boolean;
+  obesidad: boolean;
+  hipertiroidismo: boolean;
+  hipotiroidismo: boolean;
+  otros: string;
+}
+
+export interface AntecDigestivos {
+  esofago: boolean;
+  estomago: boolean;
+  intestino: boolean;
+  recto: boolean;
+  ano: boolean;
+  diarrea: boolean;
+  vomitos: boolean;
+  higado: boolean;
+  viasBiliares: boolean;
+  otros: string;
+}
+
+export interface AntecHematologicos {
+  anemia: boolean;
+  trastornoCoagulacion: boolean;
+  otros: string;
+}
+
+export interface AntecGineco {
+  embarazos: boolean;
+  partos: boolean;
+  cesareas: boolean;
+  otros: string;
+}
+
+export interface AntecNefrourologicos {
+  nefrouropatias: boolean;
+  urolitiasis: boolean;
+  hematuria: boolean;
+  dialisis: boolean;
+  sondaVesical: boolean;
+  otros: string;
+}
+
+export interface AntecNeurologicos {
+  meningoencefalitis: boolean;
+  traumatismoCraneo: boolean;
+  perdidaConocimiento: boolean;
+  coma: boolean;
+  convulsiones: boolean;
+  disritmia: boolean;
+  paralysis: boolean;
+  otros: string;
+}
+
+export interface AntecTraumaticos {
+  fracturas: boolean;
+  hematomas: boolean;
+  artritis: boolean;
+  artrosis: boolean;
+  protesis: boolean;
+  otros: string;
+}
+
+export interface AntecHabitosToxicos {
+  tabaquismo: boolean;
+  etilismo: boolean;
+  otros: string;
+}
+
+export interface AntecClinicos {
+  cardiovasculares: AntecCardiovasculares;
+  respiratorios: AntecRespiratorios;
+  endocrinosMetabolicos: AntecEndocrinos;
+  digestivos: AntecDigestivos;
+  hematologicos: AntecHematologicos;
+  ginecobstetricos: AntecGineco;
+  nefrourologicos: AntecNefrourologicos;
+  neurologicos: AntecNeurologicos;
+  traumaticos: AntecTraumaticos;
+  habitosToxicos: AntecHabitosToxicos;
+  alimentacion: string;
+  medicamentosos: string;
+  otros: string;
+}
+
+// === Valoración Preanestésica — Examen Físico ===
+
+export type PsiquismoValor = "" | "Normal" | "Ansioso" | "Hiperemotivo" | "Excitado" | "Deprimido" | "Comatoso";
+export type MallampatiValor = "" | "I" | "II" | "III" | "IV";
+export type EmbarazoValor = "" | "si" | "ignora" | "niega";
+
+export interface ExamenFisico {
+  psiquismo: PsiquismoValor;
+  cabezaCuello: {
+    movilidad: string;
+    mallampati: MallampatiValor;
+    protesisDental: boolean;
+    otros: string;
+  };
+  cardiovascular: string;
+  respiratorio: string;
+  embarazo: EmbarazoValor;
+  otros: string;
+}
+
+// === Defaults para inicialización ===
+
+export const defaultAntecCardiovasculares: AntecCardiovasculares = {
+  hipertension: false, hipotension: false, arritmias: false, infartoPrevio: false,
+  disneaEsfuerzo: false, disneaReposo: false, anginaPecho: false,
+  insuficienciaCardiaca: false, arterialPeriferica: false, varices: false, otros: "",
+};
+
+export const defaultAntecRespiratorios: AntecRespiratorios = {
+  asmaBronquial: false, broncoespasmo: false, neumonia: false, neumonitis: false,
+  pleuresia: false, tos: false, expectoracion: false, epoc: false, otros: "",
+};
+
+export const defaultAntecEndocrinos: AntecEndocrinos = {
+  diabetes: false, obesidad: false, hipertiroidismo: false, hipotiroidismo: false, otros: "",
+};
+
+export const defaultAntecDigestivos: AntecDigestivos = {
+  esofago: false, estomago: false, intestino: false, recto: false, ano: false,
+  diarrea: false, vomitos: false, higado: false, viasBiliares: false, otros: "",
+};
+
+export const defaultAntecHematologicos: AntecHematologicos = {
+  anemia: false, trastornoCoagulacion: false, otros: "",
+};
+
+export const defaultAntecGineco: AntecGineco = {
+  embarazos: false, partos: false, cesareas: false, otros: "",
+};
+
+export const defaultAntecNefrourologicos: AntecNefrourologicos = {
+  nefrouropatias: false, urolitiasis: false, hematuria: false, dialisis: false, sondaVesical: false, otros: "",
+};
+
+export const defaultAntecNeurologicos: AntecNeurologicos = {
+  meningoencefalitis: false, traumatismoCraneo: false, perdidaConocimiento: false,
+  coma: false, convulsiones: false, disritmia: false, paralysis: false, otros: "",
+};
+
+export const defaultAntecTraumaticos: AntecTraumaticos = {
+  fracturas: false, hematomas: false, artritis: false, artrosis: false, protesis: false, otros: "",
+};
+
+export const defaultAntecHabitosToxicos: AntecHabitosToxicos = {
+  tabaquismo: false, etilismo: false, otros: "",
+};
+
+export const defaultAntecClinicos: AntecClinicos = {
+  cardiovasculares: defaultAntecCardiovasculares,
+  respiratorios: defaultAntecRespiratorios,
+  endocrinosMetabolicos: defaultAntecEndocrinos,
+  digestivos: defaultAntecDigestivos,
+  hematologicos: defaultAntecHematologicos,
+  ginecobstetricos: defaultAntecGineco,
+  nefrourologicos: defaultAntecNefrourologicos,
+  neurologicos: defaultAntecNeurologicos,
+  traumaticos: defaultAntecTraumaticos,
+  habitosToxicos: defaultAntecHabitosToxicos,
+  alimentacion: "",
+  medicamentosos: "",
+  otros: "",
+};
+
+export const defaultExamenFisico: ExamenFisico = {
+  psiquismo: "",
+  cabezaCuello: { movilidad: "", mallampati: "", protesisDental: false, otros: "" },
+  cardiovascular: "",
+  respiratorio: "",
+  embarazo: "",
+  otros: "",
+};
+
+// === Valoración Preanestésica — Interfaz principal ===
+
+export interface PreanestesiaData {
+  id?: string;
+  peso?: number | null;
+  talla?: number | null;
+  diagnosticoPreoperatorio?: string | null;
+  cirugiaPropuestaTipo?: string | null;
+  cirugiaPropuestaDesc?: string | null;
+  antecQuirurgicos?: string;
+  antecClinicos?: AntecClinicos;
+  enfermedadesTratamiento?: string;
+  examenFisico?: ExamenFisico;
+  laboratorio?: string;
+  scoreASA?: number | null;
+  anestesiaSugerida?: string;
+  comentarios?: string;
+  anestesiologoId?: string | null;
+  firmadaAt?: string | null;
+  createdAt?: string;
+}
