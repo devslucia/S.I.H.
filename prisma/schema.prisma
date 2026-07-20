@@ -437,6 +437,11 @@ model ValoracionPreanestesia {
   hcId                String   @unique
   hc                  HistoriaClinica @relation(fields: [hcId], references: [id])
   cirugiaId           String?
+  peso                Float?
+  talla               Float?
+  diagnosticoPreoperatorio String?
+  cirugiaPropuestaTipo       String?  // "programada" | "urgencia"
+  cirugiaPropuestaDesc       String?
   antecQuirurgicos    String?
   antecClinicos       Json?
   enfermedadesTratamiento String?

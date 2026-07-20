@@ -15,11 +15,21 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
 
   let hc = await prisma.historiaClinica.findUnique({
     where: { internacionId: params.internacionId },
+    include: {
+      internacion: {
+        include: { paciente: true },
+      },
+    },
   });
 
   if (!hc) {
     hc = await prisma.historiaClinica.create({
       data: { internacionId: params.internacionId },
+      include: {
+        internacion: {
+          include: { paciente: true },
+        },
+      },
     });
   }
 
