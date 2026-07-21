@@ -18,18 +18,18 @@ export async function GET(req: NextRequest) {
     orderBy: { fecha: "desc" },
   });
 
-  const grouped = cargos.reduce<Record<string, { internacion: any; cargos: any[]; total: number }>>(
+  const grouped = cargos.reduce<Record<string, { internacion: any; cargos: any[]; totalCargos: number }>>(
     (acc, cargo) => {
       const key = cargo.internacionId;
       if (!acc[key]) {
         acc[key] = {
           internacion: cargo.internacion,
           cargos: [],
-          total: 0,
+          totalCargos: 0,
         };
       }
       acc[key].cargos.push(cargo);
-      acc[key].total += Number(cargo.total);
+      acc[key].totalCargos += Number(cargo.total);
       return acc;
     },
     {}
