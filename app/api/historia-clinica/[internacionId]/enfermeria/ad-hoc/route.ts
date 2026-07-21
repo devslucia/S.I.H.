@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
 import { descontarStock } from "@/lib/utils/stock";
 import { generarCargo } from "@/lib/utils/facturacion";
+import { verificarAlergia } from "@/lib/utils/alertas-alergia";
 import { NextRequest, NextResponse } from "next/server";
 
 const ADHOC_WRITE_ROLES = ["ADMIN", "ENFERMERO", "MEDICO", "ANESTESIOLOGO"];
@@ -30,6 +31,23 @@ async function processOneAdHoc(
 
   if (!hc) {
     return { ok: false, nombre: nombre || "desconocido", error: "Historia clínica no encontrada" };
+  }
+
+  if (nombre) {
+    const internacion = await tx.internacion.findUnique({
+      where: { id: internacionId },
+      select: { pacienteId: true },
+    });
+    if (internacion) {
+      const { bloqueada, alergia } = await verificarAlergia(internacion.pacienteId, nombre);
+      if (bloqueada) {
+        return {
+          ok: false,
+          nombre,
+          error: `ALERTA ALERGIA: Paciente alérgico a ${alergia?.sustancia || "sustancia registrada"}. Medicación NO administrada.`,
+        };
+      }
+    }
   }
 
   if (stockItemId && cantidad) {

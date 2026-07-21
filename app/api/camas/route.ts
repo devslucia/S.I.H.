@@ -49,6 +49,19 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "id y estado son requeridos" }, { status: 400 });
   }
 
+  if (session!.user.rol === "ENFERMERO") {
+    const internacionActiva = await prisma.internacion.findFirst({
+      where: { camaId: id, estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] } },
+    });
+
+    if (internacionActiva) {
+      return NextResponse.json(
+        { error: "Esta cama tiene una internación activa, no se puede cambiar el estado directamente" },
+        { status: 409 }
+      );
+    }
+  }
+
   const cama = await prisma.cama.update({
     where: { id },
     data: { estado },

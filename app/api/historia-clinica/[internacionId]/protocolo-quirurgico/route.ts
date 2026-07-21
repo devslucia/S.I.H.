@@ -40,16 +40,21 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
   }
 
   const body = await req.json();
-  const { id, ...data } = body;
 
-  if (!id) {
-    return NextResponse.json({ error: "id de cirugía requerido" }, { status: 400 });
+  const cirugia = await prisma.cirugia.findFirst({
+    where: { internacionId: params.internacionId },
+  });
+
+  if (!cirugia) {
+    return NextResponse.json({ error: "No se encontró cirugía para esta internación" }, { status: 404 });
   }
 
-  const cirugia = await prisma.cirugia.update({
-    where: { id },
+  const { id: _ignore, ...data } = body;
+
+  const updated = await prisma.cirugia.update({
+    where: { id: cirugia.id },
     data,
   });
 
-  return NextResponse.json(cirugia);
+  return NextResponse.json(updated);
 }

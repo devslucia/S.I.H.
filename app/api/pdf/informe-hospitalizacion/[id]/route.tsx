@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/rbac";
+import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
@@ -141,6 +142,10 @@ const INFORME_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUM
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const { session, error } = await requireRole(...INFORME_ROLES);
   if (error) return error;
+
+  if (!(await isInternacionVisibleForUser(params.id, session!.user.id, session!.user.rol))) {
+    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+  }
 
   const internacion = await prisma.internacion.findUnique({
     where: { id: params.id },

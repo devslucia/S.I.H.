@@ -13,7 +13,7 @@ async function checkAssignment(userId: string, cirugiaId: string) {
 }
 
 export async function POST(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const { session, error } = await requireRole("ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR");
+  const { session, error } = await requireRole("ADMIN", "ENFERMERO", "INSTRUMENTADOR");
   if (error) return error;
 
   if (session.user.rol !== "ADMIN") {
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const { session, error } = await requireRole("ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR");
+  const { session, error } = await requireRole("ADMIN", "ENFERMERO", "INSTRUMENTADOR");
   if (error) return error;
 
   if (session.user.rol !== "ADMIN") {
@@ -48,6 +48,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { cirugiaId
   const { searchParams } = new URL(req.url);
   const implanteId = searchParams.get("id");
   if (!implanteId) return NextResponse.json({ error: "Falta id" }, { status: 400 });
+
+  const implante = await prisma.implante.findUnique({ where: { id: implanteId } });
+  if (!implante) return NextResponse.json({ error: "Implante no encontrado" }, { status: 404 });
+  if (implante.cirugiaId !== params.cirugiaId) {
+    return NextResponse.json({ error: "El implante no pertenece a esta cirugía" }, { status: 403 });
+  }
 
   await prisma.implante.delete({ where: { id: implanteId } });
   return NextResponse.json({ ok: true });

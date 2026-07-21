@@ -28,6 +28,10 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
       throw new Error("Epicrisis no encontrada");
     }
 
+    if (epicrisis.hc.internacionId !== params.internacionId) {
+      throw new Error("La epicrisis no pertenece a esta internación");
+    }
+
     await tx.epicrisis.update({
       where: { id: epicrisisId },
       data: { firmadaAt: new Date() },

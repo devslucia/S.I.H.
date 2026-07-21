@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getEffectiveRole, validatePatchBody, type EffectiveRole } from "@/lib/quirofano-rbac";
 
-const LIBRO_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
+const LIBRO_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ENFERMERO"];
 
 export async function GET(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
   const { session, error } = await requireRole(...LIBRO_ROLES);
@@ -164,14 +164,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
       data: dataUpdate,
     });
 
-    if (body.estado && updated.internacionId) {
+    if (dataUpdate.estado && updated.internacionId) {
       const estadoMap: Record<string, string> = {
         EN_CURSO: "EN_QUIROFANO",
         COMPLETADA: "POSTQUIRURGICO",
         CANCELADA: "ACTIVA",
         REPROGRAMADA: "ACTIVA",
       };
-      const nuevoEstadoInternacion = estadoMap[body.estado];
+      const nuevoEstadoInternacion = estadoMap[dataUpdate.estado as string];
       if (nuevoEstadoInternacion) {
         await tx.internacion.update({
           where: { id: updated.internacionId },

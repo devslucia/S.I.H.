@@ -14,19 +14,20 @@ export async function descontarStock(
   internacionId?: string,
   cirugiaId?: string
 ): Promise<void> {
-  const item = await tx.stockItem.findUniqueOrThrow({
-    where: { id: stockItemId },
+  const resultado = await tx.stockItem.updateMany({
+    where: {
+      id: stockItemId,
+      stockActual: { gte: cantidad },
+    },
+    data: {
+      stockActual: { decrement: cantidad },
+    },
   });
 
-  const nuevoStock = Number(item.stockActual) - cantidad;
-  if (nuevoStock < 0) {
-    throw new Error(`Stock insuficiente para ${item.nombre}`);
+  if (resultado.count === 0) {
+    const item = await tx.stockItem.findUnique({ where: { id: stockItemId } });
+    throw new Error(`Stock insuficiente para ${item?.nombre ?? "ítem desconocido"}`);
   }
-
-  await tx.stockItem.update({
-    where: { id: stockItemId },
-    data: { stockActual: nuevoStock },
-  });
 
   await tx.movimientoStock.create({
     data: {
