@@ -31,7 +31,7 @@ export function PendingChecklist({ items, effectiveRole, onNavigate }: PendingCh
   const myPending = items.filter(i => !i.done && i.role === effectiveRole);
 
   return (
-    <div className="card p-4 mb-4">
+    <div className="card p-4 mb-0">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-foreground">Estado de carga</h3>

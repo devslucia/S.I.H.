@@ -292,6 +292,7 @@ function PreanestesiaPDF({ preanestesia, paciente, internacion }: any) {
         <Field label="Antecedentes Quirúrgicos" value={p.antecQuirurgicos || "—"} />
         <Field label="Enfermedades en Tratamiento" value={p.enfermedadesTratamiento || "—"} />
         <Field label="Laboratorio" value={p.laboratorio || "—"} />
+        <Field label="Fecha laboratorio" value={p.laboratorioFecha ? new Date(p.laboratorioFecha).toLocaleDateString("es-AR") : "—"} />
         <Field label="Anestesia Sugerida" value={p.anestesiaSugerida || "—"} />
         <Field label="Comentarios" value={p.comentarios || "—"} />
 
