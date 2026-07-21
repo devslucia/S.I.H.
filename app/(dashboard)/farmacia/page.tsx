@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Package, AlertTriangle, Plus, ArrowUpDown } from "lucide-react";
+import { Package, AlertTriangle, Plus, ArrowUpDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -11,21 +11,31 @@ import { formatDate } from "@/lib/utils";
 interface StockItem {
   id: string;
   nombre: string;
+  principioActivo?: string;
   presentacion?: string;
+  unidad: string;
   stockActual: number;
   stockMinimo: number;
+  stockMaximo: number;
   lote?: string;
   vencimiento?: string;
   ubicacion?: string;
+  nomencladorCodigo?: string;
 }
 
 export default function FarmaciaPage() {
   const [stock, setStock] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [movementModal, setMovementModal] = useState(false);
+  const [createModal, setCreateModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<StockItem | null>(null);
   const [movForm, setMovForm] = useState({ tipo: "INGRESO", cantidad: "1", motivo: "" });
+  const [createForm, setCreateForm] = useState({
+    nombre: "", principioActivo: "", presentacion: "", unidad: "unidades",
+    stockActual: "0", stockMinimo: "0", stockMaximo: "0", lote: "", vencimiento: "", ubicacion: "", nomencladorCodigo: "",
+  });
   const [saving, setSaving] = useState(false);
+  const [userRole, setUserRole] = useState<string>("");
 
   const fetchStock = async () => {
     setLoading(true);
@@ -39,7 +49,10 @@ export default function FarmaciaPage() {
     }
   };
 
-  useEffect(() => { fetchStock(); }, []);
+  useEffect(() => {
+    fetchStock();
+    fetch("/api/auth/session").then(r => r.json()).then(d => setUserRole(d?.user?.rol || "")).catch(() => {});
+  }, []);
 
   const openMovement = (item: StockItem) => {
     setSelectedItem(item);
@@ -68,6 +81,49 @@ export default function FarmaciaPage() {
     }
   };
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch("/api/farmacia/stock/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: createForm.nombre,
+          principioActivo: createForm.principioActivo || undefined,
+          presentacion: createForm.presentacion || undefined,
+          unidad: createForm.unidad,
+          stockActual: parseFloat(createForm.stockActual) || 0,
+          stockMinimo: parseFloat(createForm.stockMinimo) || 0,
+          stockMaximo: parseFloat(createForm.stockMaximo) || 0,
+          lote: createForm.lote || undefined,
+          vencimiento: createForm.vencimiento || undefined,
+          ubicacion: createForm.ubicacion || undefined,
+          nomencladorCodigo: createForm.nomencladorCodigo || undefined,
+        }),
+      });
+      if (res.ok) {
+        setCreateModal(false);
+        setCreateForm({ nombre: "", principioActivo: "", presentacion: "", unidad: "unidades", stockActual: "0", stockMinimo: "0", stockMaximo: "0", lote: "", vencimiento: "", ubicacion: "", nomencladorCodigo: "" });
+        fetchStock();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Desactivar este ítem? No se eliminará permanentemente.")) return;
+    try {
+      const res = await fetch(`/api/farmacia/stock/items?id=${id}`, { method: "DELETE" });
+      if (res.ok) fetchStock();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -75,6 +131,11 @@ export default function FarmaciaPage() {
           <Package className="w-6 h-6 text-accent" />
           <h2 className="text-xl font-medium text-white">Stock de Farmacia</h2>
         </div>
+        {userRole === "ADMIN" && (
+          <Button onClick={() => setCreateModal(true)}>
+            <Plus size={14} /> Nuevo medicamento
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -119,9 +180,16 @@ export default function FarmaciaPage() {
                       <td className="hidden lg:table-cell px-4 py-3">{item.lote || "—"}</td>
                       <td className="hidden lg:table-cell px-4 py-3">{item.vencimiento ? formatDate(item.vencimiento) : "—"}</td>
                       <td className="px-4 py-3">
-                        <Button size="sm" variant="secondary" onClick={() => openMovement(item)}>
-                          <ArrowUpDown size={12} /> Movimiento
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="secondary" onClick={() => openMovement(item)}>
+                            <ArrowUpDown size={12} /> Movimiento
+                          </Button>
+                          {userRole === "ADMIN" && (
+                            <Button size="sm" variant="secondary" onClick={() => handleDelete(item.id)}>
+                              <Trash2 size={12} className="text-error" />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -148,6 +216,48 @@ export default function FarmaciaPage() {
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setMovementModal(false)}>Cancelar</Button>
             <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar"}</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={createModal} onClose={() => setCreateModal(false)} title="Nuevo medicamento">
+        <form onSubmit={handleCreate} className="space-y-4">
+          <Input label="Nombre *" name="nombre" value={createForm.nombre}
+            onChange={(e) => setCreateForm((p) => ({ ...p, nombre: e.target.value }))} required />
+          <Input label="Principio activo" name="principioActivo" value={createForm.principioActivo}
+            onChange={(e) => setCreateForm((p) => ({ ...p, principioActivo: e.target.value }))} />
+          <Input label="Presentación" name="presentacion" value={createForm.presentacion}
+            onChange={(e) => setCreateForm((p) => ({ ...p, presentacion: e.target.value }))} />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm text-gray-400">Unidad *</label>
+            <select value={createForm.unidad} onChange={(e) => setCreateForm((p) => ({ ...p, unidad: e.target.value }))} className="select-field" required>
+              <option value="unidades">Unidades</option>
+              <option value="mg">mg</option>
+              <option value="ml">ml</option>
+              <option value="g">g</option>
+              <option value="cajas">Cajas</option>
+              <option value="ampolletas">Ampolletas</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Input label="Stock actual" name="stockActual" type="number" step="0.01" value={createForm.stockActual}
+              onChange={(e) => setCreateForm((p) => ({ ...p, stockActual: e.target.value }))} />
+            <Input label="Stock mínimo" name="stockMinimo" type="number" step="0.01" value={createForm.stockMinimo}
+              onChange={(e) => setCreateForm((p) => ({ ...p, stockMinimo: e.target.value }))} />
+            <Input label="Stock máximo" name="stockMaximo" type="number" step="0.01" value={createForm.stockMaximo}
+              onChange={(e) => setCreateForm((p) => ({ ...p, stockMaximo: e.target.value }))} />
+          </div>
+          <Input label="Lote" name="lote" value={createForm.lote}
+            onChange={(e) => setCreateForm((p) => ({ ...p, lote: e.target.value }))} />
+          <Input label="Vencimiento" name="vencimiento" type="date" value={createForm.vencimiento}
+            onChange={(e) => setCreateForm((p) => ({ ...p, vencimiento: e.target.value }))} />
+          <Input label="Ubicación" name="ubicacion" value={createForm.ubicacion}
+            onChange={(e) => setCreateForm((p) => ({ ...p, ubicacion: e.target.value }))} />
+          <Input label="Código nomenclador" name="nomencladorCodigo" value={createForm.nomencladorCodigo}
+            onChange={(e) => setCreateForm((p) => ({ ...p, nomencladorCodigo: e.target.value }))} />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setCreateModal(false)}>Cancelar</Button>
+            <Button type="submit" disabled={saving}>{saving ? "Creando..." : "Crear"}</Button>
           </div>
         </form>
       </Modal>
