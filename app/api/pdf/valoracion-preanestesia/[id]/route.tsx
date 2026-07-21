@@ -1,4 +1,5 @@
-import { auth } from "@/lib/auth";
+import { requireRole } from "@/lib/rbac";
+import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
@@ -11,6 +12,8 @@ import {
   StyleSheet,
 } from "@react-pdf/renderer";
 import type { AntecClinicos, ExamenFisico } from "@/types";
+
+const PREANESTESIA_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ADMISION"];
 
 const styles = StyleSheet.create({
   page: { padding: "1.5cm 2cm", fontSize: 9, fontFamily: "Helvetica" },
@@ -320,8 +323,8 @@ function PreanestesiaPDF({ preanestesia, paciente, internacion }: any) {
 }
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { session, error } = await requireRole(...PREANESTESIA_ROLES);
+  if (error) return error;
 
   const preanestesia = await prisma.valoracionPreanestesia.findUnique({
     where: { id: params.id },
@@ -342,8 +345,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: "Valoración preanestésica no encontrada" }, { status: 404 });
   }
 
-  const paciente = (preanestesia as any).hc.internacion.paciente;
   const internacion = (preanestesia as any).hc.internacion;
+  if (!(await isInternacionVisibleForUser(internacion.id, session!.user.id, session!.user.rol))) {
+    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+  }
+
+  const paciente = internacion.paciente;
 
   const buffer = await renderToBuffer(
     React.createElement(PreanestesiaPDF, {

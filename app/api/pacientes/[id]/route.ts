@@ -52,13 +52,13 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const { session, error } = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
-  const internacionesActivas = await prisma.internacion.count({
-    where: { pacienteId: params.id, estado: "ACTIVA" },
+  const internacionesNoEliminables = await prisma.internacion.count({
+    where: { pacienteId: params.id, estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] } },
   });
 
-  if (internacionesActivas > 0) {
+  if (internacionesNoEliminables > 0) {
     return NextResponse.json(
-      { error: "No se puede eliminar: el paciente tiene internaciones activas" },
+      { error: "No se puede eliminar: el paciente tiene internaciones activas o en proceso quirúrgico" },
       { status: 409 }
     );
   }

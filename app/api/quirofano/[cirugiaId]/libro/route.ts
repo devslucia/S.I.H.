@@ -164,14 +164,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
       data: dataUpdate,
     });
 
-    if (body.estado && updated.internacionId) {
+    if (dataUpdate.estado && updated.internacionId) {
       const estadoMap: Record<string, string> = {
         EN_CURSO: "EN_QUIROFANO",
         COMPLETADA: "POSTQUIRURGICO",
         CANCELADA: "ACTIVA",
         REPROGRAMADA: "ACTIVA",
       };
-      const nuevoEstadoInternacion = estadoMap[body.estado];
+      const nuevoEstadoInternacion = estadoMap[dataUpdate.estado as string];
       if (nuevoEstadoInternacion) {
         await tx.internacion.update({
           where: { id: updated.internacionId },
