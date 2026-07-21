@@ -266,8 +266,6 @@ model Internacion {
   cargosFacturacion  CargoFacturacion[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
-
-  @@unique([pacienteId], name: "uniq_paciente_internacion_activa", where: "estado IN ('ACTIVA','EN_QUIROFANO','POSTQUIRURGICO')")
 }
 
 model InternacionMedicoTratante {
