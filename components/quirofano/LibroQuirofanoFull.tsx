@@ -209,7 +209,7 @@ export default function LibroQuirofanoFull() {
 
       {/* Pending checklist */}
       <div className="px-6 pt-4 shrink-0">
-        <PendingChecklist items={pendingItems} effectiveRole={effectiveRole} onNavigate={setActiveTab} />
+        <PendingChecklist items={pendingItems} effectiveRole={effectiveRole} onNavigate={setActiveTab} cirugiaId={cirugiaId} />
       </div>
 
       {/* Tab navigation */}
