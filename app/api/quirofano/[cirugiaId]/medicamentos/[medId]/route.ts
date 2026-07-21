@@ -13,7 +13,7 @@ async function checkAssignment(userId: string, cirugiaId: string) {
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { cirugiaId: string; medId: string } }) {
-  const { session, error } = await requireRole("ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR");
+  const { session, error } = await requireRole("ADMIN", "ENFERMERO", "INSTRUMENTADOR");
   if (error) return error;
 
   if (session.user.rol !== "ADMIN") {

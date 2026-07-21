@@ -20,10 +20,15 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
 
   const protocolo = await prisma.protocoloAnestesia.findUnique({
     where: { id: protocoloId },
+    include: { hc: true },
   });
 
   if (!protocolo) {
     return NextResponse.json({ error: "Protocolo no encontrado" }, { status: 404 });
+  }
+
+  if (protocolo.hc.internacionId !== params.internacionId) {
+    return NextResponse.json({ error: "El protocolo no pertenece a esta internación" }, { status: 403 });
   }
 
   if (protocolo.firmado) {

@@ -13,7 +13,7 @@ async function checkAssignment(userId: string, cirugiaId: string) {
 }
 
 export async function POST(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const { session, error } = await requireRole("ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR");
+  const { session, error } = await requireRole("ADMIN", "ENFERMERO", "INSTRUMENTADOR");
   if (error) return error;
 
   if (session.user.rol !== "ADMIN") {
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const { session, error } = await requireRole("ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR");
+  const { session, error } = await requireRole("ADMIN", "ENFERMERO", "INSTRUMENTADOR");
   if (error) return error;
 
   if (session.user.rol !== "ADMIN") {
@@ -70,6 +70,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { cirugiaId
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Falta id" }, { status: 400 });
+
+  const practica = await prisma.practicaCirugia.findUnique({ where: { id } });
+  if (!practica) return NextResponse.json({ error: "Práctica no encontrada" }, { status: 404 });
+  if (practica.cirugiaId !== params.cirugiaId) {
+    return NextResponse.json({ error: "La práctica no pertenece a esta cirugía" }, { status: 403 });
+  }
 
   await prisma.practicaCirugia.delete({ where: { id } });
   return NextResponse.json({ ok: true });

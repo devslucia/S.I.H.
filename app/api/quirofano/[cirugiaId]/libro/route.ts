@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getEffectiveRole, validatePatchBody, type EffectiveRole } from "@/lib/quirofano-rbac";
 
-const LIBRO_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
+const LIBRO_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ENFERMERO"];
 
 export async function GET(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
   const { session, error } = await requireRole(...LIBRO_ROLES);

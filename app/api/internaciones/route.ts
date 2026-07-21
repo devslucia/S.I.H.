@@ -54,22 +54,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
   }
 
-  const internacionActiva = await prisma.internacion.findFirst({
-    where: {
-      pacienteId: parsed.data.pacienteId,
-      estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] },
-    },
-  });
-  if (internacionActiva) {
-    return NextResponse.json(
-      { error: "El paciente ya tiene una internación activa" },
-      { status: 409 }
-    );
-  }
-
   let result;
   try {
     result = await prisma.$transaction(async (tx) => {
+      const internacionActiva = await tx.internacion.findFirst({
+        where: {
+          pacienteId: parsed.data.pacienteId,
+          estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] },
+        },
+      });
+      if (internacionActiva) {
+        throw new Error("PACIENTE_YA_ACTIVO");
+      }
+
       if (parsed.data.camaId) {
         const cama = await tx.cama.findUnique({ where: { id: parsed.data.camaId } });
         if (!cama) throw new Error("CAMA_NOT_FOUND");
@@ -109,6 +106,12 @@ export async function POST(req: NextRequest) {
       return internacion;
     });
   } catch (e: any) {
+    if (e.message === "PACIENTE_YA_ACTIVO") {
+      return NextResponse.json(
+        { error: "El paciente ya tiene una internación activa" },
+        { status: 409 }
+      );
+    }
     if (e.message === "CAMA_NOT_FOUND") {
       return NextResponse.json({ error: "Cama no encontrada" }, { status: 404 });
     }

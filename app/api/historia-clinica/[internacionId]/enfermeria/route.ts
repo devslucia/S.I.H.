@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
+import { descontarStock } from "@/lib/utils/stock";
 import { generarCargo } from "@/lib/utils/facturacion";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -94,6 +95,16 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
             stockItemId: hoja.stockItemId,
           },
         });
+
+        if (hoja.stockItemId && hoja.cantidad) {
+          await descontarStock(
+            tx,
+            hoja.stockItemId,
+            Number(hoja.cantidad),
+            `Hoja de enfermería: ${hoja.item}`,
+            hc.internacion.id
+          );
+        }
 
         await generarCargo(tx as any, {
           internacionId: hc.internacion.id,
