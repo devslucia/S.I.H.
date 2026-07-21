@@ -94,7 +94,7 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
       {/* Sección 2: Equipo Interviniente */}
       <div className="card p-5">
         <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Equipo Interviniente</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[
             { label: "Cirujano principal", field: "cirujanoId" },
             { label: "1er Ayudante", field: "ayudante1Id" },
