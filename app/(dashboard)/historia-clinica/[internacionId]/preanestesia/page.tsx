@@ -186,6 +186,9 @@ export default function PreanestesiaPage() {
           placeholder="Resultados de laboratorio relevantes..."
           rows={3}
         />
+        <Input label="Fecha de laboratorio" type="date"
+          value={data.laboratorioFecha ? new Date(data.laboratorioFecha).toISOString().slice(0, 10) : ""}
+          onChange={(e) => handleChange("laboratorioFecha", e.target.value ? new Date(e.target.value).toISOString() : null)} />
         <VoiceTextarea
           label="Anestesia Sugerida"
           value={data.anestesiaSugerida || ""}

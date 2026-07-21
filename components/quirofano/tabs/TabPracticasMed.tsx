@@ -74,7 +74,7 @@ export function TabPracticasMed({ data, formData, update, isReadOnly, effectiveR
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-7xl">
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Prácticas Asociadas</h3>

@@ -216,7 +216,7 @@ export default function LibroQuirofanoFull() {
       <div className="flex border-b border-border bg-surface shrink-0 overflow-x-auto">
         {TABS.map((tab, i) => (
           <button key={i} onClick={() => setActiveTab(i)}
-            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+            className={`px-5 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
               activeTab === i ? "border-accent text-accent" : "border-transparent text-muted hover:text-foreground"
             }`}
           >{tab}</button>
@@ -257,7 +257,7 @@ export default function LibroQuirofanoFull() {
         )}
 
         {activeTab === 6 && data?.internacion?.id && (
-          <div className="max-w-5xl">
+          <div className="max-w-7xl">
             <ProtocoloAnestesiaComponent internacionId={data.internacion.id} cirugiaId={cirugiaId} />
           </div>
         )}

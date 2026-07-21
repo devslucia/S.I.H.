@@ -21,7 +21,7 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
   const disabled = (field: string) => isReadOnly || !canEdit(field);
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-7xl">
       {/* Sección 1: Datos Generales */}
       <div className="card p-5">
         <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Datos Generales</h3>

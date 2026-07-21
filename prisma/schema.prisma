@@ -447,6 +447,7 @@ model ValoracionPreanestesia {
   enfermedadesTratamiento String?
   examenFisico        Json?
   laboratorio         String?
+  laboratorioFecha    DateTime?
   scoreASA            Int?
   anestesiaSugerida   String?
   comentarios         String?
@@ -474,9 +475,13 @@ model ProtocoloAnestesia {
   alergiaDetalle        String?
   clasificacionASA      String?
   esEmergencia          Boolean  @default(false)
+  grupoSangre           String?
   ayunoSolidos          Int?
   ayunoLiquidos         Int?
+  ultimaIngesta         String?
   estadoPsiquico        String?
+  premedicacion         Json?
+  signosVitaPreop       Json?
   mallampati            String?
   distTiromentoniana    Float?
   aperturaBucal         Float?
@@ -497,12 +502,16 @@ model ProtocoloAnestesia {
   // General
   viaInduccion          String?
   manejoViaAerea        String?
+  intubacionSubtipo     String?
+  canulaFaringealTipo   String?
   nroTubo               String?
   conManguito           Boolean?
   dificultadViaAerea    Boolean?
   detalleViaAerea       String?
   modalidadVentilatoria String?
+  modalidadVentFranja   Json?
   fio2                  Float?
+  oxigenoFlujo          Float?
 
   // Bloque 4 - Registro
   drogas                DrogaAnestesia[]

@@ -74,6 +74,7 @@ function ProtocoloPDF({ protocolo, paciente, internacion }: any) {
             <Text style={{ width: "50%", fontSize: 8 }}><Text style={{ fontWeight: "bold" }}>Paciente:</Text> {paciente.apellido}, {paciente.nombre}</Text>
             <Text style={{ width: "50%", fontSize: 8 }}><Text style={{ fontWeight: "bold" }}>DNI:</Text> {paciente.dni}</Text>
             <Text style={{ width: "50%", fontSize: 8 }}><Text style={{ fontWeight: "bold" }}>HC N°:</Text> {internacion.numero}</Text>
+            <Text style={{ width: "50%", fontSize: 8 }}><Text style={{ fontWeight: "bold" }}>Grupo sanguíneo:</Text> {paciente.grupoSangre || "—"}</Text>
             <Text style={{ width: "50%", fontSize: 8 }}><Text style={{ fontWeight: "bold" }}>Fecha:</Text> {p.fechaCirugia ? new Date(p.fechaCirugia).toLocaleDateString("es-AR") : "—"}</Text>
           </View>
         </View>
@@ -94,7 +95,14 @@ function ProtocoloPDF({ protocolo, paciente, internacion }: any) {
         <Field label="ASA" value={`${p.clasificacionASA || "—"}${p.esEmergencia ? " (E) Emergencia" : ""}`} />
         <Field label="Ayuno sólidos" value={p.ayunoSolidos != null ? `${p.ayunoSolidos}h` : "—"} />
         <Field label="Ayuno líquidos" value={p.ayunoLiquidos != null ? `${p.ayunoLiquidos}h` : "—"} />
+        <Field label="Última ingesta" value={p.ultimaIngesta} />
         <Field label="Estado psíquico" value={p.estadoPsiquico} />
+        {p.premedicacion && p.premedicacion.length > 0 && (
+          <Field label="Premedicación" value={p.premedicacion.map((pm: any) => `${pm.droga}${pm.dosis ? ` ${pm.dosis}` : ""} ${pm.via}${pm.hora ? ` (${pm.hora})` : ""}`).join("; ")} />
+        )}
+        {p.signosVitaPreop && (
+          <Field label="SV Preoperatorios" value={`PAS: ${p.signosVitaPreop.pas ?? "—"} | PAD: ${p.signosVitaPreop.pad ?? "—"} | FC: ${p.signosVitaPreop.fc ?? "—"} | FR: ${p.signosVitaPreop.fr ?? "—"} | T: ${p.signosVitaPreop.temp ?? "—"}°C`} />
+        )}
         <Field label="Mallampati" value={p.mallampati} />
         <Field label="Dist. tiromentoniana" value={p.distTiromentoniana != null ? `${p.distTiromentoniana} cm` : "—"} />
         <Field label="Apertura bucal" value={p.aperturaBucal != null ? `${p.aperturaBucal} cm` : "—"} />
@@ -115,9 +123,15 @@ function ProtocoloPDF({ protocolo, paciente, internacion }: any) {
           <>
             <Field label="Vía inducción" value={p.viaInduccion} />
             <Field label="Vía aérea" value={p.manejoViaAerea} />
+            {p.intubacionSubtipo && <Field label="Subtipo intubación" value={p.intubacionSubtipo} />}
+            {p.canulaFaringealTipo && <Field label="Cánula faríngea" value={p.canulaFaringealTipo} />}
             <Field label="N° tubo" value={p.nroTubo} />
             <Field label="FiO₂" value={p.fio2 != null ? `${p.fio2}%` : "—"} />
+            <Field label="Oxígeno flujo" value={p.oxigenoFlujo != null ? `${p.oxigenoFlujo} L/min` : "—"} />
             <Field label="Modalidad ventilatoria" value={p.modalidadVentilatoria} />
+            {p.modalidadVentFranja && p.modalidadVentFranja.length > 0 && (
+              <Field label="Vent. por franja" value={p.modalidadVentFranja.map((f: any) => `${f.desde}'-${f.hasta}': ${f.modalidad}`).join("; ")} />
+            )}
           </>
         )}
 

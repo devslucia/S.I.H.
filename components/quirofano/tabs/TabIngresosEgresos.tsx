@@ -36,7 +36,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
   const disabledPosicion = isReadOnly || !isInstrumentador;
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-7xl">
       {/* Balance de Líquidos */}
       <div className="card p-5">
         <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Balance de Líquidos Intraoperatorio</h3>
@@ -132,24 +132,24 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                   <td className="px-3 py-1"><input type="time" value={sv.hora || ""} disabled={disabledVitals}
                     onChange={e => { const arr = [...formData.signosVitalesIntraop]; arr[idx].hora = e.target.value; update("signosVitalesIntraop", arr); }}
                     className="bg-transparent border-none text-sm text-foreground w-20" /></td>
-                  <td className="px-3 py-1"><input type="number" value={sv.taSistolica || ""} disabled={disabledVitals}
+                    <td className="px-3 py-1"><input type="number" value={sv.taSistolica || ""} disabled={disabledVitals}
                     onChange={e => { const arr = [...formData.signosVitalesIntraop]; arr[idx].taSistolica = e.target.value; update("signosVitalesIntraop", arr); }}
-                    className="bg-transparent border-none text-sm text-foreground w-14" /></td>
+                    className="bg-transparent border-none text-sm text-foreground w-16" /></td>
                   <td className="px-3 py-1"><input type="number" value={sv.taDiastolica || ""} disabled={disabledVitals}
                     onChange={e => { const arr = [...formData.signosVitalesIntraop]; arr[idx].taDiastolica = e.target.value; update("signosVitalesIntraop", arr); }}
-                    className="bg-transparent border-none text-sm text-foreground w-14" /></td>
+                    className="bg-transparent border-none text-sm text-foreground w-16" /></td>
                   <td className="px-3 py-1"><input type="number" value={sv.fc || ""} disabled={disabledVitals}
                     onChange={e => { const arr = [...formData.signosVitalesIntraop]; arr[idx].fc = e.target.value; update("signosVitalesIntraop", arr); }}
-                    className="bg-transparent border-none text-sm text-foreground w-14" /></td>
+                    className="bg-transparent border-none text-sm text-foreground w-16" /></td>
                   <td className="px-3 py-1"><input type="number" value={sv.satO2 || ""} disabled={disabledVitals}
                     onChange={e => { const arr = [...formData.signosVitalesIntraop]; arr[idx].satO2 = e.target.value; update("signosVitalesIntraop", arr); }}
-                    className="bg-transparent border-none text-sm text-foreground w-14" /></td>
+                    className="bg-transparent border-none text-sm text-foreground w-16" /></td>
                   <td className="px-3 py-1"><input type="number" step="0.1" value={sv.temp || ""} disabled={disabledVitals}
                     onChange={e => { const arr = [...formData.signosVitalesIntraop]; arr[idx].temp = e.target.value; update("signosVitalesIntraop", arr); }}
-                    className="bg-transparent border-none text-sm text-foreground w-14" /></td>
+                    className="bg-transparent border-none text-sm text-foreground w-16" /></td>
                   <td className="px-3 py-1"><input type="text" value={sv.observacion || ""} disabled={disabledVitals}
                     onChange={e => { const arr = [...formData.signosVitalesIntraop]; arr[idx].observacion = e.target.value; update("signosVitalesIntraop", arr); }}
-                    className="bg-transparent border-none text-sm text-foreground w-24" /></td>
+                    className="bg-transparent border-none text-sm text-foreground w-28" /></td>
                   {!disabledVitals && <td className="px-3 py-1"><button onClick={() => {
                     const arr = formData.signosVitalesIntraop.filter((_: any, j: number) => j !== idx); update("signosVitalesIntraop", arr);
                   }} className="text-red"><Trash2 size={12} /></button></td>}

@@ -153,7 +153,30 @@ export interface SignoVitalRegistro {
   fr?: number | null;
   etco2?: number | null;
   temp?: number | null;
+  oxigenoFlujo?: number | null;
+  modalidadVent?: string | null;
   eventos?: string[];
+}
+
+export interface PremedicacionItem {
+  droga: string;
+  dosis?: string | null;
+  via: string;
+  hora?: string | null;
+}
+
+export interface SignoVitalPreop {
+  pas?: number | null;
+  pad?: number | null;
+  fc?: number | null;
+  fr?: number | null;
+  temp?: number | null;
+}
+
+export interface ModalidadVentFranja {
+  desde: number;
+  hasta: number;
+  modalidad: string;
 }
 
 export interface ProtocoloAnestesiaData {
@@ -172,9 +195,13 @@ export interface ProtocoloAnestesiaData {
   alergiaDetalle?: string | null;
   clasificacionASA?: string | null;
   esEmergencia?: boolean;
+  grupoSangre?: string | null;
   ayunoSolidos?: number | null;
   ayunoLiquidos?: number | null;
+  ultimaIngesta?: string | null;
   estadoPsiquico?: string | null;
+  premedicacion?: PremedicacionItem[] | null;
+  signosVitaPreop?: SignoVitalPreop | null;
   mallampati?: string | null;
   distTiromentoniana?: number | null;
   aperturaBucal?: number | null;
@@ -193,12 +220,16 @@ export interface ProtocoloAnestesiaData {
   farmacoConductiva?: string | null;
   viaInduccion?: string | null;
   manejoViaAerea?: string | null;
+  intubacionSubtipo?: string | null;
+  canulaFaringealTipo?: string | null;
   nroTubo?: string | null;
   conManguito?: boolean | null;
   dificultadViaAerea?: boolean | null;
   detalleViaAerea?: string | null;
   modalidadVentilatoria?: string | null;
+  modalidadVentFranja?: ModalidadVentFranja[] | null;
   fio2?: number | null;
+  oxigenoFlujo?: number | null;
 
   // Bloque 4
   drogas?: DrogaAnestesiaData[];
@@ -458,6 +489,7 @@ export interface PreanestesiaData {
   enfermedadesTratamiento?: string;
   examenFisico?: ExamenFisico;
   laboratorio?: string;
+  laboratorioFecha?: string | null;
   scoreASA?: number | null;
   anestesiaSugerida?: string;
   comentarios?: string;

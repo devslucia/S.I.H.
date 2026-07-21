@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft, Save, CheckCircle, AlertCircle, ChevronDown, ChevronRight,
-  Printer, PenLine, AlertTriangle, Clock,
+  Printer, PenLine, AlertTriangle, Clock, Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -15,7 +15,7 @@ import { formatDateTime } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
 import { protocoloAnestesiaSchema } from "@/lib/validations/protocolo-anestesia";
 import type { ProtocoloAnestesiaFormData } from "@/lib/validations/protocolo-anestesia";
-import type { SignoVitalRegistro } from "@/types";
+import type { SignoVitalRegistro, PremedicacionItem } from "@/types";
 import { EscalaAldrete } from "./anestesia/EscalaAldrete";
 import { PanelDrogas } from "./anestesia/PanelDrogas";
 import { GraficoSignosVitales } from "./anestesia/GraficoSignosVitales";
@@ -38,6 +38,8 @@ const ESTADO_PSICOS = ["Normal", "Ansioso", "Hiperemotivo", "Excitado", "Deprimi
 const MALLAMPATI = ["I", "II", "III", "IV"];
 const TIPOS_CONDUCTIVA = ["Peridural", "Raquídea", "Troncular", "Plexual", "Local", "Regional I.V."];
 const VIA_AEREA = ["Intubación traqueal", "Máscara facial", "Máscara laríngea", "Cánula faríngea", "Cánula nasal (bigotera)"];
+const INTUBACION_SUBTIPO = ["OR (orotraqueal)", "NS (nasotraqueal)", "Pack F."];
+const CANULA_FARINGEAL = ["Oral", "Nasal"];
 const MODALIDAD_VENT = ["Espontánea", "Asistida", "Controlada", "Mecánica", "Manual"];
 const POSICIONES = ["Supino", "Prono", "Lateral derecho", "Lateral izquierdo", "Litotomía", "Trendelenburg", "Anti-Trendelenburg", "Sentado", "Otro"];
 const DESTINOS = ["URPA", "Internación general", "UTI", "Ambulatorio"];
@@ -82,6 +84,8 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
       sondaNasogastrica: false,
       sondaVesical: false,
       estadoEgreso: [],
+      premedicacion: [],
+      modalidadVentFranja: [],
     },
   });
 
@@ -132,9 +136,13 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
               alergiaDetalle: p.alergiaDetalle || "",
               clasificacionASA: p.clasificacionASA || "",
               esEmergencia: p.esEmergencia || false,
+              grupoSangre: p.grupoSangre || "",
               ayunoSolidos: p.ayunoSolidos ?? null,
               ayunoLiquidos: p.ayunoLiquidos ?? null,
+              ultimaIngesta: p.ultimaIngesta || "",
               estadoPsiquico: p.estadoPsiquico || "",
+              premedicacion: p.premedicacion || [],
+              signosVitaPreop: p.signosVitaPreop || null,
               mallampati: p.mallampati || "",
               distTiromentoniana: p.distTiromentoniana ?? null,
               aperturaBucal: p.aperturaBucal ?? null,
@@ -151,12 +159,16 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
               farmacoConductiva: p.farmacoConductiva || "",
               viaInduccion: p.viaInduccion || "",
               manejoViaAerea: p.manejoViaAerea || "",
+              intubacionSubtipo: p.intubacionSubtipo || "",
+              canulaFaringealTipo: p.canulaFaringealTipo || "",
               nroTubo: p.nroTubo || "",
               conManguito: p.conManguito ?? null,
               dificultadViaAerea: p.dificultadViaAerea ?? null,
               detalleViaAerea: p.detalleViaAerea || "",
               modalidadVentilatoria: p.modalidadVentilatoria || "",
+              modalidadVentFranja: p.modalidadVentFranja || [],
               fio2: p.fio2 ?? null,
+              oxigenoFlujo: p.oxigenoFlujo ?? null,
               peso: p.peso ?? null,
               talla: p.talla ?? null,
               liquidosIngresados: p.liquidosIngresados || [],
@@ -319,6 +331,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
   const tecnicaConductiva = (form.watch("tecnicaAnestesia") || []).includes("conductiva");
   const tecnicaGeneral = (form.watch("tecnicaAnestesia") || []).includes("general");
+  const manejoViaAerea = form.watch("manejoViaAerea");
 
   return (
     <div className="space-y-4">
@@ -388,6 +401,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
             <div><span className="text-muted">DNI:</span> <span className="text-text">{pacienteData.dni}</span></div>
             <div><span className="text-muted">Sexo:</span> <span className="text-text">{pacienteData.sexo}</span></div>
             <div><span className="text-muted">Nac.:</span> <span className="text-text">{new Date(pacienteData.fechaNac).toLocaleDateString("es-AR")}</span></div>
+            <div><span className="text-muted">Grupo sanguíneo:</span> <span className="text-text font-medium">{pacienteData.grupoSangre || "—"}</span></div>
             {internacionData?.obraSocial && (
               <div><span className="text-muted">Obra Social:</span> <span className="text-text">{internacionData.obraSocial.nombre}</span></div>
             )}
@@ -553,6 +567,48 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                       ))}
                     </div>
                   </div>
+
+                  {/* Premedicación */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-sm text-muted uppercase tracking-wide">Premedicación</label>
+                      <Button type="button" variant="secondary" size="sm" disabled={firmado}
+                        onClick={() => {
+                          const prev = form.getValues("premedicacion") || [];
+                          form.setValue("premedicacion", [...prev, { droga: "", dosis: "", via: "", hora: "" }], { shouldDirty: true });
+                        }}>+ Agregar</Button>
+                    </div>
+                    {(form.watch("premedicacion") || []).length === 0 && (
+                      <p className="text-xs text-muted italic">Sin premedicación registrada</p>
+                    )}
+                    {(form.watch("premedicacion") || []).map((_: PremedicacionItem, idx: number) => (
+                      <div key={idx} className="grid grid-cols-1 sm:grid-cols-4 gap-2 p-2 rounded bg-background border border-border/50 items-end">
+                        <Input label="Droga" {...form.register(`premedicacion.${idx}.droga`)} disabled={firmado} />
+                        <Input label="Dosis" {...form.register(`premedicacion.${idx}.dosis`)} disabled={firmado} />
+                        <Input label="Vía" {...form.register(`premedicacion.${idx}.via`)} disabled={firmado} />
+                        <div className="flex gap-2 items-end">
+                          <Input label="Hora" type="time" {...form.register(`premedicacion.${idx}.hora`)} disabled={firmado} className="flex-1" />
+                          <Button type="button" variant="danger" size="sm" disabled={firmado}
+                            onClick={() => {
+                              const prev = form.getValues("premedicacion") || [];
+                              form.setValue("premedicacion", prev.filter((_: any, i: number) => i !== idx), { shouldDirty: true });
+                            }}><Trash2 size={12} /></Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Signos vitales preoperatorios */}
+                  <div className="space-y-3">
+                    <label className="block text-sm text-muted uppercase tracking-wide">Signos Vitales Preoperatorios (baseline)</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                      <Input label="PAS (mmHg)" type="number" min={0} {...form.register("signosVitaPreop.pas", { valueAsNumber: true })} disabled={firmado} />
+                      <Input label="PAD (mmHg)" type="number" min={0} {...form.register("signosVitaPreop.pad", { valueAsNumber: true })} disabled={firmado} />
+                      <Input label="FC (lpm)" type="number" min={0} {...form.register("signosVitaPreop.fc", { valueAsNumber: true })} disabled={firmado} />
+                      <Input label="FR (rpm)" type="number" min={0} {...form.register("signosVitaPreop.fr", { valueAsNumber: true })} disabled={firmado} />
+                      <Input label="Temp (°C)" type="number" min={0} step={0.1} {...form.register("signosVitaPreop.temp", { valueAsNumber: true })} disabled={firmado} />
+                    </div>
+                  </div>
                 </>
               )}
 
@@ -640,6 +696,38 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                           ))}
                         </div>
                       </div>
+                      {manejoViaAerea === "Intubación traqueal" && (
+                        <div className="space-y-2">
+                          <label className="block text-xs text-muted">Subtipo de intubación</label>
+                          <div className="flex flex-wrap gap-2">
+                            {INTUBACION_SUBTIPO.map((ist) => (
+                              <button key={ist} type="button" disabled={firmado}
+                                onClick={() => form.setValue("intubacionSubtipo", ist, { shouldDirty: true })}
+                                className={`px-3 py-1 rounded-lg text-xs ${
+                                  form.watch("intubacionSubtipo") === ist
+                                    ? "bg-accent text-black"
+                                    : "bg-border text-text-secondary hover:bg-surface-active"
+                                }`}>{ist}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {(manejoViaAerea === "Máscara laríngea" || manejoViaAerea === "Cánula faríngea") && (
+                        <div className="space-y-2">
+                          <label className="block text-xs text-muted">Tipo de cánula</label>
+                          <div className="flex flex-wrap gap-2">
+                            {CANULA_FARINGEAL.map((cf) => (
+                              <button key={cf} type="button" disabled={firmado}
+                                onClick={() => form.setValue("canulaFaringealTipo", cf, { shouldDirty: true })}
+                                className={`px-3 py-1 rounded-lg text-xs ${
+                                  form.watch("canulaFaringealTipo") === cf
+                                    ? "bg-accent text-black"
+                                    : "bg-border text-text-secondary hover:bg-surface-active"
+                                }`}>{cf}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Input label="N° tubo" {...form.register("nroTubo")} disabled={firmado} />
                         <div className="flex items-end gap-4">
@@ -672,6 +760,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                           </div>
                         </div>
                         <Input label="FiO₂ administrada (%)" type="number" min={0} max={100} step={1} {...form.register("fio2", { valueAsNumber: true })} disabled={firmado} />
+                        <Input label="Oxígeno flujo (L/min)" type="number" min={0} step={0.5} {...form.register("oxigenoFlujo", { valueAsNumber: true })} disabled={firmado} />
                       </div>
                     </div>
                   )}

@@ -33,6 +33,7 @@ const PARAM_COLORES: Record<string, string> = {
   fr: "#06b6d4",
   etco2: "#eab308",
   temp: "#ec4899",
+  oxigenoFlujo: "#8b5cf6",
 };
 
 const PARAM_LABELS: Record<string, string> = {
@@ -44,6 +45,7 @@ const PARAM_LABELS: Record<string, string> = {
   fr: "Freq. Respiratoria",
   etco2: "EtCO₂",
   temp: "Temp",
+  oxigenoFlujo: "O₂ Flujo (L/min)",
 };
 
 const EVENTOS_PREDEFINIDOS = [
@@ -71,6 +73,7 @@ function GraficoSignosVitales({
     fr: "",
     etco2: "",
     temp: "",
+    oxigenoFlujo: "",
   });
   const [eventoCustom, setEventoCustom] = useState("");
   const [showEventos, setShowEventos] = useState(false);
@@ -129,9 +132,10 @@ function GraficoSignosVitales({
       fr: form.fr ? parseFloat(form.fr) : null,
       etco2: form.etco2 ? parseFloat(form.etco2) : null,
       temp: form.temp ? parseFloat(form.temp) : null,
+      oxigenoFlujo: form.oxigenoFlujo ? parseFloat(form.oxigenoFlujo) : null,
     };
     onAddRegistro(registro);
-    setForm({ pas: "", pad: "", pam: "", fc: "", spo2: "", fr: "", etco2: "", temp: "" });
+    setForm({ pas: "", pad: "", pam: "", fc: "", spo2: "", fr: "", etco2: "", temp: "", oxigenoFlujo: "" });
   };
 
   const handleAddEvento = (key: string) => {
