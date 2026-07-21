@@ -207,11 +207,6 @@ export default function LibroQuirofanoFull() {
         </div>
       </div>
 
-      {/* Pending checklist */}
-      <div className="px-6 pt-4 shrink-0">
-        <PendingChecklist items={pendingItems} effectiveRole={effectiveRole} onNavigate={setActiveTab} cirugiaId={cirugiaId} />
-      </div>
-
       {/* Tab navigation */}
       <div className="flex border-b border-border bg-surface shrink-0 overflow-x-auto">
         {TABS.map((tab, i) => (
@@ -224,7 +219,9 @@ export default function LibroQuirofanoFull() {
       </div>
 
       {/* Tab content - scrollable */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <PendingChecklist items={pendingItems} effectiveRole={effectiveRole} onNavigate={setActiveTab} cirugiaId={cirugiaId} />
+
         {activeTab === 0 && (
           <TabCirugia formData={formData} update={update} isReadOnly={isReadOnly}
             effectiveRole={effectiveRole} canEdit={canEdit} usuarios={usuarios} />
