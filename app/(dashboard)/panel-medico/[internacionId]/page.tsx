@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
+import { AnamnesisForm } from "@/components/historia-clinica/AnamnesisForm";
+import { EpicrisisForm } from "@/components/historia-clinica/EpicrisisForm";
 import { formatDateTime } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
@@ -71,7 +73,7 @@ export default function PanelMedicoPage() {
   const [indicacionesPostOp, setIndicacionesPostOp] = useState<CirugiaConIndicaciones[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [activeTab, setActiveTab] = useState<"indicaciones" | "evolucion" | "signos" | "postop">("indicaciones");
+  const [activeTab, setActiveTab] = useState<"indicaciones" | "evolucion" | "signos" | "postop" | "anamnesis" | "epicrisis">("indicaciones");
 
   const [showPrescripcionModal, setShowPrescripcionModal] = useState(false);
   const [prescripcionForm, setPrescripcionForm] = useState({
@@ -218,6 +220,8 @@ export default function PanelMedicoPage() {
     { id: "evolucion" as const, label: "Evolución", icon: Activity, count: evoluciones.length },
     { id: "signos" as const, label: "Signos Vitales", icon: Syringe, count: signosVitales.length },
     { id: "postop" as const, label: "Postoperatorio", icon: FileText, count: indicacionesPostOp.reduce((acc, c) => acc + (c.indicacionesPostoperatorias?.length || 0), 0) },
+    { id: "anamnesis" as const, label: "Anamnesis", icon: FileText },
+    { id: "epicrisis" as const, label: "Epicrisis", icon: FileText },
   ];
 
   return (
@@ -275,7 +279,7 @@ export default function PanelMedicoPage() {
               }`}
             >
               <Icon size={16} /> {t.label}
-              {t.count > 0 && (
+              {t.count !== undefined && t.count > 0 && (
                 <span className="ml-1 text-xs bg-surface px-1.5 py-0.5 rounded-full">{t.count}</span>
               )}
             </button>
@@ -430,6 +434,20 @@ export default function PanelMedicoPage() {
             ))
           )}
         </div>
+      )}
+
+      {/* Tab: Anamnesis */}
+      {activeTab === "anamnesis" && (
+        <AnamnesisForm internacionId={internacionId} />
+      )}
+
+      {/* Tab: Epicrisis */}
+      {activeTab === "epicrisis" && (
+        <EpicrisisForm
+          internacionId={internacionId}
+          readOnly={session.data?.user?.rol === "ENFERMERO"}
+          onSigned={() => fetchData()}
+        />
       )}
 
       {/* Modal: Nueva Prescripción */}
