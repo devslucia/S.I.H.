@@ -89,21 +89,17 @@ export default function PanelMedicoPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [intRes, evoRes, presRes, enfRes, cirRes] = await Promise.all([
+      const [intRes, evoRes, presRes, enfRes] = await Promise.all([
         fetch(`/api/internaciones/${internacionId}`),
         fetch(`/api/historia-clinica/${internacionId}/evoluciones`),
         fetch(`/api/historia-clinica/${internacionId}/prescripciones`),
         fetch(`/api/historia-clinica/${internacionId}/enfermeria`),
-        fetch(`/api/internaciones/${internacionId}`),
       ]);
-
-      if (intRes.ok) setInternacion(await intRes.json());
-      if (evoRes.ok) setEvoluciones(await evoRes.json());
-      if (presRes.ok) setPrescripciones(await presRes.json());
-      if (enfRes.ok) setControlesEnfermeria(await enfRes.json());
 
       if (intRes.ok) {
         const intData = await intRes.json();
+        setInternacion(intData);
+
         if (intData.paciente?.id) {
           const pacRes = await fetch(`/api/pacientes/${intData.paciente.id}`);
           if (pacRes.ok) {
@@ -124,6 +120,9 @@ export default function PanelMedicoPage() {
           }
         }
       }
+      if (evoRes.ok) setEvoluciones(await evoRes.json());
+      if (presRes.ok) setPrescripciones(await presRes.json());
+      if (enfRes.ok) setControlesEnfermeria(await enfRes.json());
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }, [internacionId]);
