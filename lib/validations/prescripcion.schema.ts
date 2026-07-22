@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createPrescripcionSchema = z.object({
-  hcId: z.string().uuid(),
+  hcId: z.string().uuid().optional(),
   tipo: z.enum(["MEDICACION", "DIETA", "ESTUDIO", "PRACTICA", "ACTIVIDAD", "OTRA"]),
   droga: z.string().optional().nullable(),
   dosis: z.string().optional().nullable(),

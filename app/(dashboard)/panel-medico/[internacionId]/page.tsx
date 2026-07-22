@@ -138,10 +138,15 @@ export default function PanelMedicoPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(prescripcionForm),
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (data.ok) {
         setShowPrescripcionModal(false);
         setPrescripcionForm({ tipo: "MEDICACION", droga: "", dosis: "", unidad: "", frecuencia: "", via: "", descripcion: "", destino: "PISO" });
         fetchData();
+      } else {
+        const fallidos = data.items?.filter((i: any) => !i.ok) || [];
+        const mensajes = fallidos.map((i: any) => `${i.nombre}: ${i.error}`).join("\n");
+        alert(`Algunos ítems no se guardaron:\n${mensajes}`);
       }
     } catch (err) { console.error(err); }
     finally { setSavingPrescripcion(false); }

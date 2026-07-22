@@ -97,9 +97,16 @@ export default function PrescripcionesPage() {
         const data = await res.json();
         setAlerta({ droga: data.alergia?.sustancia || form.droga, fechaAlta: formatDateTime(data.alergia?.createdAt || new Date().toISOString()) });
       } else if (res.ok) {
-        setModalOpen(false);
-        setForm(initialForm);
-        fetchPrescripciones();
+        const data = await res.json();
+        if (data.ok) {
+          setModalOpen(false);
+          setForm(initialForm);
+          fetchPrescripciones();
+        } else {
+          const fallidos = data.items?.filter((i: any) => !i.ok) || [];
+          const mensajes = fallidos.map((i: any) => `${i.nombre}: ${i.error}`).join("\n");
+          alert(`Algunos ítems no se guardaron:\n${mensajes}`);
+        }
       }
     } catch (err) {
       console.error(err);

@@ -684,8 +684,10 @@ function MedicacionAdHoc({ internacionId, onApplied }: { internacionId: string; 
     });
     if (res.ok) {
       const data = await res.json();
-      setShowModal(false);
-      onApplied();
+      if (data.ok) {
+        setShowModal(false);
+        onApplied();
+      }
       return data;
     }
     const e = await res.json();
