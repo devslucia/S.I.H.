@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { SearchableMultiSelect } from "@/components/ui/SearchableMultiSelect";
 import { formatDate, formatDateTime } from "@/lib/utils";
 
 interface Alergia {
@@ -341,37 +342,12 @@ export default function PacienteDetailPage() {
             </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm text-gray-400">Médico(s) Tratante(s)</label>
-                <div className="flex flex-wrap gap-2">
-                  {medicos.map((m) => {
-                    const selected = form.medicoTratanteIds.includes(m.id);
-                    return (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => {
-                          setForm((p) => ({
-                            ...p,
-                            medicoTratanteIds: selected
-                              ? p.medicoTratanteIds.filter((id) => id !== m.id)
-                              : [...p.medicoTratanteIds, m.id],
-                          }));
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                          selected
-                            ? "bg-accent text-white"
-                            : "bg-background border border-border text-muted hover:border-accent/30"
-                        }`}
-                      >
-                        {m.nombre}{m.matricula ? ` (${m.matricula})` : ""}
-                      </button>
-                    );
-                  })}
-                </div>
-                {form.medicoTratanteIds.length > 0 && (
-                  <p className="text-xs text-muted">
-                    {form.medicoTratanteIds.length} seleccionado(s)
-                  </p>
-                )}
+                <SearchableMultiSelect
+                  items={medicos.map((m) => ({ id: m.id, label: m.nombre, sublabel: m.matricula || undefined }))}
+                  selectedIds={form.medicoTratanteIds}
+                  onChange={(ids) => setForm((p) => ({ ...p, medicoTratanteIds: ids }))}
+                  placeholder="Buscar médico..."
+                />
               </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm text-gray-400">Tipo de Ingreso</label>
