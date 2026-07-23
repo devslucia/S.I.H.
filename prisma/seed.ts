@@ -46,16 +46,16 @@ async function main() {
   const factPw = await bcrypt.hash("Fact1234", 10);
   const admisionPw = await bcrypt.hash("Adm1234", 10);
 
-  const admin = await prisma.usuario.create({ data: { nombre: "Administrador", email: "admin@simes.com.ar", password: adminPw, rol: "ADMIN" } });
-  const depascuale = await prisma.usuario.create({ data: { nombre: "Carina Depascuale", email: "depascuale@simes.com.ar", password: medPw, rol: "MEDICO", matricula: "MP-1234", especialidad: "Clínica Médica" } });
-  const romero = await prisma.usuario.create({ data: { nombre: "Raúl Romero", email: "romero@simes.com.ar", password: medPw, rol: "MEDICO", matricula: "MP-5678", especialidad: "Cirugía General" } });
-  const sosa = await prisma.usuario.create({ data: { nombre: "Carlos Sergio Sosa", email: "sosa@simes.com.ar", password: medPw, rol: "ANESTESIOLOGO", matricula: "MP-2765", especialidad: "Anestesiología" } });
-  const delgadoPablo = await prisma.usuario.create({ data: { nombre: "Delgado Pablo", email: "delgado@simes.com.ar", password: medPw, rol: "MEDICO", matricula: "MP-3456", especialidad: "Cirugía General" } });
-  const enfermero = await prisma.usuario.create({ data: { nombre: "Laura Fernández", email: "enfermeria1@simes.com.ar", password: enfPw, rol: "ENFERMERO" } });
-  const vanina = await prisma.usuario.create({ data: { nombre: "Vanina", email: "instrumentador@simes.com.ar", password: enfPw, rol: "INSTRUMENTADOR" } });
-  const admision = await prisma.usuario.create({ data: { nombre: "Personal de Admisión", email: "admision@simes.com.ar", password: admisionPw, rol: "ADMISION" } });
-  const farmacia = await prisma.usuario.create({ data: { nombre: "Marcela López", email: "farmacia@simes.com.ar", password: farmPw, rol: "FARMACIA" } });
-  const facturacion = await prisma.usuario.create({ data: { nombre: "Analía Gómez", email: "facturacion@simes.com.ar", password: factPw, rol: "FACTURACION" } });
+  const admin = await prisma.usuario.create({ data: { nombre: "administrador", email: "admin@simes.com.ar", password: adminPw, rol: "ADMIN" } });
+  const depascuale = await prisma.usuario.create({ data: { nombre: "carina", apellido: "depascuale", email: "depascuale@simes.com.ar", password: medPw, rol: "MEDICO", matricula: "MP-1234", especialidad: "Clínica Médica" } });
+  const romero = await prisma.usuario.create({ data: { nombre: "raúl", apellido: "romero", email: "romero@simes.com.ar", password: medPw, rol: "MEDICO", matricula: "MP-5678", especialidad: "Cirugía General" } });
+  const sosa = await prisma.usuario.create({ data: { nombre: "carlos sergio", apellido: "sosa", email: "sosa@simes.com.ar", password: medPw, rol: "ANESTESIOLOGO", matricula: "MP-2765", especialidad: "Anestesiología" } });
+  const delgadoPablo = await prisma.usuario.create({ data: { nombre: "pablo", apellido: "delgado", email: "delgado@simes.com.ar", password: medPw, rol: "MEDICO", matricula: "MP-3456", especialidad: "Cirugía General" } });
+  const enfermero = await prisma.usuario.create({ data: { nombre: "laura", apellido: "fernández", email: "enfermeria1@simes.com.ar", password: enfPw, rol: "ENFERMERO" } });
+  const vanina = await prisma.usuario.create({ data: { nombre: "vanina", email: "instrumentador@simes.com.ar", password: enfPw, rol: "INSTRUMENTADOR" } });
+  const admision = await prisma.usuario.create({ data: { nombre: "personal de admisión", email: "admision@simes.com.ar", password: admisionPw, rol: "ADMISION" } });
+  const farmacia = await prisma.usuario.create({ data: { nombre: "marcela", apellido: "lópez", email: "farmacia@simes.com.ar", password: farmPw, rol: "FARMACIA" } });
+  const facturacion = await prisma.usuario.create({ data: { nombre: "analía", apellido: "gómez", email: "facturacion@simes.com.ar", password: factPw, rol: "FACTURACION" } });
 
   console.log("✓ Usuarios creados (10)");
 

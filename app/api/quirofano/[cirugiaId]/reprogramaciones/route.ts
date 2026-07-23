@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { capitalize } from "@/lib/utils";
 
 export async function POST(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
   const { session, error } = await requireRole("ADMIN");
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
         fechaOriginal: cirugia.fechaProgramada,
         nuevaFecha: new Date(body.nuevaFecha),
         motivo: body.motivo,
-        registradoPor: usuario?.nombre || "Desconocido",
+        registradoPor: usuario ? (usuario.apellido ? `${capitalize(usuario.apellido)}, ${capitalize(usuario.nombre)}` : capitalize(usuario.nombre)) : "Desconocido",
       },
     });
 

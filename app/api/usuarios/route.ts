@@ -10,7 +10,7 @@ export async function GET() {
 
   const usuarios = await prisma.usuario.findMany({
     where: { activo: true },
-    select: { id: true, nombre: true, email: true, rol: true, matricula: true, especialidad: true },
+    select: { id: true, nombre: true, apellido: true, email: true, rol: true, matricula: true, especialidad: true },
     orderBy: { nombre: "asc" },
   });
 
@@ -36,14 +36,15 @@ export async function POST(req: NextRequest) {
 
   const usuario = await prisma.usuario.create({
     data: {
-      nombre: parsed.data.nombre,
+      nombre: parsed.data.nombre.toLowerCase(),
+      apellido: parsed.data.apellido?.toLowerCase() || null,
       email: parsed.data.email,
       password: hashedPassword,
       rol: parsed.data.rol,
       matricula: parsed.data.matricula ?? null,
       especialidad: parsed.data.especialidad ?? null,
     },
-    select: { id: true, nombre: true, email: true, rol: true, matricula: true, especialidad: true },
+    select: { id: true, nombre: true, apellido: true, email: true, rol: true, matricula: true, especialidad: true },
   });
 
   return NextResponse.json(usuario, { status: 201 });

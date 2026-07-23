@@ -32,7 +32,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   const updateData: Record<string, any> = {};
-  if (parsed.data.nombre !== undefined) updateData.nombre = parsed.data.nombre;
+  if (parsed.data.nombre !== undefined) updateData.nombre = parsed.data.nombre.toLowerCase();
+  if (parsed.data.apellido !== undefined) updateData.apellido = parsed.data.apellido?.toLowerCase() || null;
   if (parsed.data.email !== undefined) updateData.email = parsed.data.email;
   if (parsed.data.rol !== undefined) updateData.rol = parsed.data.rol;
   if (parsed.data.matricula !== undefined) updateData.matricula = parsed.data.matricula;
@@ -46,7 +47,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const usuario = await prisma.usuario.update({
     where: { id },
     data: updateData,
-    select: { id: true, nombre: true, email: true, rol: true, matricula: true, especialidad: true, activo: true },
+    select: { id: true, nombre: true, apellido: true, email: true, rol: true, matricula: true, especialidad: true, activo: true },
   });
 
   return NextResponse.json(usuario);

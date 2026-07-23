@@ -24,3 +24,15 @@ export function formatDateTime(date: Date | string): string {
     minute: "2-digit",
   });
 }
+
+export function capitalize(str: string): string {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export function formatUserName(user: { nombre: string; apellido?: string | null }): string {
+  const nombre = capitalize(user.nombre);
+  const apellido = user.apellido ? capitalize(user.apellido) : "";
+  if (!apellido) return nombre;
+  return `${apellido}, ${nombre}`;
+}

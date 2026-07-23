@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { Users, Plus, Pencil, X, CheckCircle, AlertTriangle } from "lucide-react";
+import { formatUserName } from "@/lib/utils";
 
 const ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ADMISION", "FACTURACION", "FARMACIA"] as const;
 
 interface Usuario {
   id: string;
   nombre: string;
+  apellido?: string | null;
   email: string;
   rol: string;
   matricula?: string | null;
@@ -24,6 +26,7 @@ export default function UsuariosPage() {
 
   const [form, setForm] = useState({
     nombre: "",
+    apellido: "",
     email: "",
     password: "",
     rol: "MEDICO",
@@ -46,7 +49,7 @@ export default function UsuariosPage() {
   useEffect(() => { fetchUsuarios(); }, []);
 
   const resetForm = () => {
-    setForm({ nombre: "", email: "", password: "", rol: "MEDICO", matricula: "", especialidad: "" });
+    setForm({ nombre: "", apellido: "", email: "", password: "", rol: "MEDICO", matricula: "", especialidad: "" });
     setEditingId(null);
     setShowForm(false);
     setError(null);
@@ -55,6 +58,7 @@ export default function UsuariosPage() {
   const handleEdit = (u: Usuario) => {
     setForm({
       nombre: u.nombre,
+      apellido: u.apellido || "",
       email: u.email,
       password: "",
       rol: u.rol,
@@ -73,6 +77,7 @@ export default function UsuariosPage() {
 
     const payload: Record<string, any> = {
       nombre: form.nombre,
+      apellido: form.apellido || null,
       email: form.email,
       rol: form.rol,
       matricula: form.matricula || null,
@@ -176,6 +181,16 @@ export default function UsuariosPage() {
               />
             </div>
             <div>
+              <label className="text-xs text-muted block mb-1">Apellido *</label>
+              <input
+                type="text"
+                value={form.apellido}
+                onChange={(e) => setForm({ ...form, apellido: e.target.value })}
+                className="input-field w-full"
+                required
+              />
+            </div>
+            <div>
               <label className="text-xs text-muted block mb-1">Email *</label>
               <input
                 type="email"
@@ -268,7 +283,7 @@ export default function UsuariosPage() {
             <tbody>
               {usuarios.map((u) => (
                 <tr key={u.id} className="border-b border-border/50 hover:bg-background/50">
-                  <td className="p-3 text-white">{u.nombre}</td>
+                  <td className="p-3 text-white">{formatUserName(u)}</td>
                   <td className="p-3 text-muted">{u.email}</td>
                   <td className="p-3">
                     <span className="px-2 py-0.5 rounded text-xs bg-accent/10 text-accent border border-accent/30">

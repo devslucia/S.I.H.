@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Stethoscope, Bed, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, formatUserName } from "@/lib/utils";
 
 interface Internacion {
   id: string;
@@ -82,7 +82,7 @@ export default function AtencionMedicaPage() {
                   {i.medicosTratantesInternacion && i.medicosTratantesInternacion.length > 0 && (
                     <p className="text-muted text-xs">
                       {"Tratante" + (i.medicosTratantesInternacion.length > 1 ? "s" : "")}:{" "}
-                      {i.medicosTratantesInternacion.map((mt) => mt.medico.nombre).join(", ")}
+                      {i.medicosTratantesInternacion.map((mt) => formatUserName(mt.medico)).join(", ")}
                     </p>
                   )}
                 </div>

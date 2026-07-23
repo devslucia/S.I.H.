@@ -1,6 +1,7 @@
 "use client";
 
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
+import { formatUserName } from "@/lib/utils";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
 
 type UsuarioData = { id: string; nombre: string; email: string; rol: string; matricula?: string; especialidad?: string };
@@ -107,7 +108,7 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
               <select value={formData?.[field] || ""} onChange={e => update(field, e.target.value || null)}
                 disabled={disabled(field)} className={inputClass}>
                 <option value="">Seleccionar</option>
-                {usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre} ({u.rol})</option>)}
+                {usuarios.map(u => <option key={u.id} value={u.id}>{formatUserName(u)} ({u.rol})</option>)}
               </select>
             </div>
           ))}

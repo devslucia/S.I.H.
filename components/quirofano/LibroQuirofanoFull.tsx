@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Badge } from "@/components/ui/Badge";
 import { Save, Printer, CheckCircle } from "lucide-react";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, formatUserName } from "@/lib/utils";
 import { ProtocoloAnestesiaComponent } from "@/components/historia-clinica/ProtocoloAnestesia";
 import { getEffectiveRole, canEditField, canCloseSurgery, getPendingItems, type EffectiveRole } from "@/lib/quirofano-rbac";
 import { TabCirugia } from "./tabs/TabCirugia";
@@ -150,12 +150,12 @@ export default function LibroQuirofanoFull() {
       </div>
       <div class="section"><h3>Equipo Interviniente</h3>
       <table><tr><th>Rol</th><th>Nombre</th></tr>
-      ${data?.cirujano ? `<tr><td>Cirujano</td><td>${data.cirujano.nombre}</td></tr>` : ""}
-      ${data?.ayudante1 ? `<tr><td>1er Ayudante</td><td>${data.ayudante1.nombre}</td></tr>` : ""}
-      ${data?.ayudante2 ? `<tr><td>2do Ayudante</td><td>${data.ayudante2.nombre}</td></tr>` : ""}
-      ${data?.anestesiologo ? `<tr><td>Anestesiólogo</td><td>${data.anestesiologo.nombre}</td></tr>` : ""}
-      ${data?.instrumentador ? `<tr><td>Instrumentador</td><td>${data.instrumentador.nombre}</td></tr>` : ""}
-      ${data?.circulante ? `<tr><td>Circulante</td><td>${data.circulante.nombre}</td></tr>` : ""}
+      ${data?.cirujano ? `<tr><td>Cirujano</td><td>${formatUserName(data.cirujano)}</td></tr>` : ""}
+      ${data?.ayudante1 ? `<tr><td>1er Ayudante</td><td>${formatUserName(data.ayudante1)}</td></tr>` : ""}
+      ${data?.ayudante2 ? `<tr><td>2do Ayudante</td><td>${formatUserName(data.ayudante2)}</td></tr>` : ""}
+      ${data?.anestesiologo ? `<tr><td>Anestesiólogo</td><td>${formatUserName(data.anestesiologo)}</td></tr>` : ""}
+      ${data?.instrumentador ? `<tr><td>Instrumentador</td><td>${formatUserName(data.instrumentador)}</td></tr>` : ""}
+      ${data?.circulante ? `<tr><td>Circulante</td><td>${formatUserName(data.circulante)}</td></tr>` : ""}
       </table></div>
       <div class="section"><h3>Operación y Hallazgos</h3><p>${data?.hallazgos || "—"}</p></div>
       ${data?.implantes?.length ? `<div class="section"><h3>Implantes</h3><table><tr><th>Código</th><th>Nombre</th><th>Lote</th><th>Lado</th></tr>${data.implantes.map((i: any) => `<tr><td>${i.codigo}</td><td>${i.nombre}</td><td>${i.lote || "—"}</td><td>${i.lado || "—"}</td></tr>`).join("")}</table></div>` : ""}

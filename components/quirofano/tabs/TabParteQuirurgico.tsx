@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, Trash2, Printer } from "lucide-react";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, formatUserName } from "@/lib/utils";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
 
 const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent";
@@ -104,7 +104,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
                     <td className="px-3 py-2">{data?.horaInicio || "—"}</td>
                     <td className="px-3 py-2">{data?.horaFin ? formatDateTime(data.fechaProgramada) : "—"}</td>
                     <td className="px-3 py-2">{data?.horaFin || "—"}</td>
-                    <td className="px-3 py-2">{data?.cirujano?.nombre || "—"}</td>
+                    <td className="px-3 py-2">{data?.cirujano ? formatUserName(data.cirujano) : "—"}</td>
                     <td className="px-3 py-2">{data?.procedimiento || "—"}</td>
                   </tr>
                 </tbody>

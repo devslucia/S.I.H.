@@ -153,6 +153,7 @@ enum OrigenCargo {
 model Usuario {
   id                String               @id @default(uuid())
   nombre            String
+  apellido          String?
   email             String               @unique
   password          String
   rol               Rol
