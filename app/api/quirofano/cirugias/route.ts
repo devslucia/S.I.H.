@@ -36,9 +36,9 @@ export async function GET(req: NextRequest) {
 
   const allUserIds = cirugias.flatMap(c => [c.cirujanoId, c.ayudante1Id, c.ayudante2Id, c.anestesiologoId, c.instrumentadorId]).filter(Boolean) as string[];
   const users = allUserIds.length > 0
-    ? await prisma.usuario.findMany({ where: { id: { in: allUserIds } }, select: { id: true, nombre: true } })
+    ? await prisma.usuario.findMany({ where: { id: { in: allUserIds } }, select: { id: true, nombre: true, apellido: true } })
     : [];
-  const userMap = Object.fromEntries(users.map(u => [u.id, { id: u.id, nombre: u.nombre }]));
+  const userMap = Object.fromEntries(users.map(u => [u.id, { id: u.id, nombre: u.nombre, apellido: u.apellido }]));
 
   const enriched = cirugias.map(c => ({
     ...c,

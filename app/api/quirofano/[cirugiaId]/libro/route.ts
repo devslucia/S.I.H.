@@ -30,9 +30,9 @@ export async function GET(req: NextRequest, { params }: { params: { cirugiaId: s
 
   const userIds = [cirugia.cirujanoId, cirugia.ayudante1Id, cirugia.ayudante2Id, cirugia.anestesiologoId].filter(Boolean) as string[];
   const users = userIds.length > 0
-    ? await prisma.usuario.findMany({ where: { id: { in: userIds } }, select: { id: true, nombre: true } })
+    ? await prisma.usuario.findMany({ where: { id: { in: userIds } }, select: { id: true, nombre: true, apellido: true } })
     : [];
-  const userMap = Object.fromEntries(users.map(u => [u.id, { id: u.id, nombre: u.nombre }]));
+  const userMap = Object.fromEntries(users.map(u => [u.id, { id: u.id, nombre: u.nombre, apellido: u.apellido }]));
 
   // Resolver el rol efectivo del usuario actual para esta cirugía
   const effectiveRole = getEffectiveRole(
@@ -185,14 +185,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
 
   const refreshed = await prisma.cirugia.findUnique({
     where: { id: params.cirugiaId },
-    select: { instrumentador: { select: { id: true, nombre: true } }, circulante: { select: { id: true, nombre: true } }, instrumentadorNombreLegado: true, circulanteNombreLegado: true },
+    select: { instrumentador: { select: { id: true, nombre: true, apellido: true } }, circulante: { select: { id: true, nombre: true, apellido: true } }, instrumentadorNombreLegado: true, circulanteNombreLegado: true },
   });
 
   const userIds = [cirugia.cirujanoId, cirugia.ayudante1Id, cirugia.ayudante2Id, cirugia.anestesiologoId].filter(Boolean) as string[];
   const users = userIds.length > 0
-    ? await prisma.usuario.findMany({ where: { id: { in: userIds } }, select: { id: true, nombre: true } })
+    ? await prisma.usuario.findMany({ where: { id: { in: userIds } }, select: { id: true, nombre: true, apellido: true } })
     : [];
-  const userMap = Object.fromEntries(users.map(u => [u.id, { id: u.id, nombre: u.nombre }]));
+  const userMap = Object.fromEntries(users.map(u => [u.id, { id: u.id, nombre: u.nombre, apellido: u.apellido }]));
 
   const enriched = {
     ...cirugia,

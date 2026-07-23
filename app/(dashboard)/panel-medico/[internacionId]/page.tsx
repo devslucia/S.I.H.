@@ -14,7 +14,7 @@ import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
 import { AnamnesisForm } from "@/components/historia-clinica/AnamnesisForm";
 import { EpicrisisForm } from "@/components/historia-clinica/EpicrisisForm";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, formatUserName } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
 interface Internacion {
@@ -244,7 +244,7 @@ export default function PanelMedicoPage() {
             {internacion.medicosTratantesInternacion && internacion.medicosTratantesInternacion.length > 0 && (
               <p className="text-muted text-xs">
                 {"Tratante" + (internacion.medicosTratantesInternacion.length > 1 ? "s" : "")}:{" "}
-                {internacion.medicosTratantesInternacion.map((mt) => mt.medico.nombre).join(", ")}
+                {internacion.medicosTratantesInternacion.map((mt) => formatUserName(mt.medico)).join(", ")}
               </p>
             )}
           </div>
@@ -313,7 +313,7 @@ export default function PanelMedicoPage() {
                         {p.via && `Vía: ${p.via}`}{p.frecuencia && ` | Frec: ${p.frecuencia}`}
                         {p.descripcion && ` | ${p.descripcion}`}
                       </p>
-                      {p.usuario && <p className="text-muted text-xs">Por: {p.usuario.nombre}</p>}
+                      {p.usuario && <p className="text-muted text-xs">Por: {formatUserName(p.usuario)}</p>}
                     </div>
                     <Badge variant={estadoPrescColors[p.estado] || "default"}>{p.estado}</Badge>
                   </div>
@@ -366,7 +366,7 @@ export default function PanelMedicoPage() {
                     {e.firmada && <Badge variant="success" className="flex items-center gap-1"><CheckCircle size={10} /> Firmada</Badge>}
                   </div>
                   <p className="text-white text-sm whitespace-pre-wrap">{e.contenido}</p>
-                  <p className="text-muted text-xs mt-2">— {e.usuario.nombre} ({e.usuario.rol})</p>
+                  <p className="text-muted text-xs mt-2">— {formatUserName(e.usuario)} ({e.usuario.rol})</p>
                 </div>
               ))}
             </div>
@@ -399,7 +399,7 @@ export default function PanelMedicoPage() {
                     {sv.datos?.Peso && <div>Peso: <strong>{sv.datos.Peso}</strong></div>}
                   </div>
                   {sv.observacion && <p className="text-muted text-xs mt-2">{sv.observacion}</p>}
-                  <p className="text-muted text-xs mt-1">— {sv.usuario.nombre}</p>
+                  <p className="text-muted text-xs mt-1">— {formatUserName(sv.usuario)}</p>
                 </div>
               ))}
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Bed, Stethoscope, Syringe, Package, Receipt, ArrowRight, User } from "lucide-react";
+import { Activity, Bed, Stethoscope, Syringe, Package, Receipt, ArrowRight, User, FileText } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 
@@ -8,7 +8,8 @@ const cards = [
   { name: "Identificación de Pacientes", icon: User, href: "/admision", color: "text-accent", desc: "Gestión de pacientes y coberturas", roles: ["ADMIN","ADMISION"] },
   { name: "Gestión de Camas", icon: Bed, href: "/camas", color: "text-info", desc: "Mapa interactivo de camas disponibles", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR","ADMISION","FACTURACION"] },
   { name: "Atención Médica", icon: Stethoscope, href: "/atencion-medica", color: "text-accent", desc: "Pacientes activos y Panel Médico", roles: ["ADMIN","MEDICO","ANESTESIOLOGO"] },
-  { name: "Enfermería", icon: Syringe, href: "/historia-clinica", color: "text-warning", desc: "Hoja de enfermería y controles", roles: ["ADMIN","ENFERMERO"] },
+  { name: "Enfermería", icon: Syringe, href: "/enfermeria", color: "text-warning", desc: "Hoja de enfermería y controles", roles: ["ADMIN","ENFERMERO"] },
+  { name: "Historia Clínica", icon: FileText, href: "/historia-clinica", color: "text-info", desc: "Historias clínicas y documentación", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR"] },
   { name: "Quirófano", icon: Activity, href: "/quirofano", color: "text-error", desc: "Agenda quirúrgica y libro de QF", roles: ["ADMIN","MEDICO","ANESTESIOLOGO","INSTRUMENTADOR"] },
   { name: "Farmacia", icon: Package, href: "/farmacia", color: "text-accent", desc: "Stock y trazabilidad de medicamentos", roles: ["ADMIN","FARMACIA"] },
   { name: "Auditoría y Facturación", icon: Receipt, href: "/facturacion", color: "text-info", desc: "Liquidación y cargos por episodio", roles: ["ADMIN","FACTURACION"] },

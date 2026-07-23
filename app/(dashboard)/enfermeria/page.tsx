@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { VoiceInput } from "@/components/ui/VoiceInput";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, formatUserName } from "@/lib/utils";
 
 interface Prescripcion {
   id: string;
@@ -508,7 +508,7 @@ function AplicarPrescripcion({
                   {aplicaciones.map((a) => (
                     <tr key={a.id} className="border-b border-border/30">
                       <td className="py-1 text-text">{a.hora}</td>
-                      <td className="py-1 text-muted">{a.enfermero.nombre}</td>
+                      <td className="py-1 text-muted">{formatUserName(a.enfermero)}</td>
                     </tr>
                   ))}
                 </tbody>

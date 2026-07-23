@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Activity, Clock, User, Calendar, ChevronLeft, ChevronRight, Plus, Search, AlertTriangle, Eye } from "lucide-react";
-import { formatDateTime, formatDate } from "@/lib/utils";
+import { formatDateTime, formatDate, formatUserName } from "@/lib/utils";
 import { Modal } from "@/components/ui/Modal";
 
 interface Cirugia {
@@ -329,7 +329,7 @@ export default function QuirofanoPage() {
                     <p className="text-muted text-xs mb-1">{cirugia.procedimiento || "—"}</p>
                     {cirugia.cirujano && (
                       <p className="text-xs text-muted flex items-center gap-1">
-                        <User size={12} /> {cirugia.cirujano.nombre}
+                        <User size={12} /> {formatUserName(cirugia.cirujano)}
                       </p>
                     )}
                     <p className="text-xs text-muted flex items-center gap-1 mt-1">
@@ -388,7 +388,7 @@ export default function QuirofanoPage() {
                       {internacion.medicosTratantesInternacion && internacion.medicosTratantesInternacion.length > 0 && (
                         <p className="text-muted text-xs">
                           Dr.{internacion.medicosTratantesInternacion.length > 1 ? "s" : ""}{" "}
-                          {internacion.medicosTratantesInternacion.map((mt) => mt.medico.nombre).join(", ")}
+                          {internacion.medicosTratantesInternacion.map((mt) => formatUserName(mt.medico)).join(", ")}
                         </p>
                       )}
                     </div>
@@ -467,7 +467,7 @@ export default function QuirofanoPage() {
                       {internacion.medicosTratantesInternacion && internacion.medicosTratantesInternacion.length > 0 && (
                         <p className="text-muted text-xs">
                           Dr.{internacion.medicosTratantesInternacion.length > 1 ? "s" : ""}{" "}
-                          {internacion.medicosTratantesInternacion.map((mt) => mt.medico.nombre).join(", ")}
+                          {internacion.medicosTratantesInternacion.map((mt) => formatUserName(mt.medico)).join(", ")}
                         </p>
                       )}
                     </div>
@@ -565,7 +565,7 @@ export default function QuirofanoPage() {
                 >
                   <option value="">Seleccionar...</option>
                   {usuarios.filter((u) => u.rol === "MEDICO").map((u) => (
-                    <option key={u.id} value={u.id}>{u.nombre}</option>
+                    <option key={u.id} value={u.id}>{formatUserName(u)}</option>
                   ))}
                 </select>
               </div>
@@ -578,7 +578,7 @@ export default function QuirofanoPage() {
                 >
                   <option value="">Seleccionar...</option>
                   {usuarios.filter((u) => u.rol === "ANESTESIOLOGO").map((u) => (
-                    <option key={u.id} value={u.id}>{u.nombre}</option>
+                    <option key={u.id} value={u.id}>{formatUserName(u)}</option>
                   ))}
                 </select>
               </div>
@@ -683,7 +683,7 @@ export default function QuirofanoPage() {
                 <div className="flex flex-wrap gap-2">
                   {selectedPaciente.medicosTratantesInternacion.map((mt) => (
                     <span key={mt.medico.id} className="px-2 py-1 rounded-lg bg-background border border-border text-text text-xs">
-                      {mt.medico.nombre}
+                      {formatUserName(mt.medico)}
                     </span>
                   ))}
                 </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { UserCheck, Search, CheckCircle, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { formatUserName } from "@/lib/utils";
 
 interface Internacion {
   id: string;
@@ -73,7 +74,7 @@ export default function AsignarTratantePage() {
 
   const filteredMedicos = medicos.filter(
     (m) =>
-      m.nombre.toLowerCase().includes(searchMedico.toLowerCase()) ||
+      formatUserName(m).toLowerCase().includes(searchMedico.toLowerCase()) ||
       m.email.toLowerCase().includes(searchMedico.toLowerCase()) ||
       (m.matricula && m.matricula.toLowerCase().includes(searchMedico.toLowerCase()))
   );
@@ -141,7 +142,7 @@ export default function AsignarTratantePage() {
                     </option>
                     {filteredMedicos.map((m) => (
                       <option key={m.id} value={m.id}>
-                        {m.nombre} {m.matricula ? `(${m.matricula})` : ""} - {m.especialidad || "Sin especialidad"}
+                        {formatUserName(m)} {m.matricula ? `(${m.matricula})` : ""} - {m.especialidad || "Sin especialidad"}
                       </option>
                     ))}
                   </select>

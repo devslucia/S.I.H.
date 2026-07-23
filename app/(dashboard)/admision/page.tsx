@@ -8,7 +8,7 @@ import { SearchableMultiSelect } from "@/components/ui/SearchableMultiSelect";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDate, formatDateTime, formatUserName } from "@/lib/utils";
 
 interface Paciente {
   id: string;
@@ -462,7 +462,7 @@ export default function AdmisionPage() {
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm text-text-secondary">Médico(s) Tratante(s)</label>
                     <SearchableMultiSelect
-                      items={medicos.map((m) => ({ id: m.id, label: m.nombre, sublabel: m.matricula || undefined }))}
+                      items={medicos.map((m) => ({ id: m.id, label: formatUserName(m), sublabel: m.matricula || undefined }))}
                       selectedIds={newPatientForm.medicoTratanteIds}
                       onChange={(ids) => setNewPatientForm((prev) => ({ ...prev, medicoTratanteIds: ids }))}
                       placeholder="Buscar médico..."
