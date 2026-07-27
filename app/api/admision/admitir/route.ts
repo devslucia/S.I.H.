@@ -88,6 +88,29 @@ export async function POST(req: NextRequest) {
         data: { internacionId: internacion.id },
       });
 
+      // HC nueva por paciente (para soporte de Episodios)
+      let hcNueva = await tx.historiaClinica.findFirst({
+        where: { pacienteId: paciente.id, internacionId: null },
+      });
+      if (!hcNueva) {
+        hcNueva = await tx.historiaClinica.create({
+          data: { pacienteId: paciente.id, internacionId: null },
+        });
+      }
+
+      // Episodio para esta internación
+      await tx.episodio.create({
+        data: {
+          hcId: hcNueva.id,
+          tipo: "INTERNACION",
+          internacionId: internacion.id,
+          motivoIngreso: internacion.motivoIngreso,
+          diagnostico: internacion.diagnosticoCirugia,
+          estado: "EN_CURSO",
+          fechaInicio: internacion.fechaIngreso,
+        },
+      });
+
       if (data.camaId) {
         await tx.cama.update({
           where: { id: data.camaId },

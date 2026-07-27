@@ -33,5 +33,36 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
     });
   }
 
+  // Ensure HC nueva por paciente + Episodio existen
+  if (hc.internacion) {
+    const pacienteId = hc.internacion.pacienteId;
+
+    let hcNueva = await prisma.historiaClinica.findFirst({
+      where: { pacienteId, internacionId: null },
+    });
+    if (!hcNueva) {
+      hcNueva = await prisma.historiaClinica.create({
+        data: { pacienteId, internacionId: null },
+      });
+    }
+
+    const episodioExistente = await prisma.episodio.findFirst({
+      where: { internacionId: params.internacionId },
+    });
+    if (!episodioExistente) {
+      await prisma.episodio.create({
+        data: {
+          hcId: hcNueva.id,
+          tipo: "INTERNACION",
+          internacionId: params.internacionId,
+          motivoIngreso: hc.internacion.motivoIngreso,
+          diagnostico: hc.internacion.diagnosticoCirugia,
+          estado: "EN_CURSO",
+          fechaInicio: hc.internacion.fechaIngreso,
+        },
+      });
+    }
+  }
+
   return NextResponse.json(hc);
 }

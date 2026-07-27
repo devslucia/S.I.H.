@@ -49,6 +49,17 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
     return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
   }
 
+  const episodio = await prisma.episodio.findFirst({
+    where: { internacionId: params.internacionId },
+  });
+
+  if (!episodio) {
+    return NextResponse.json(
+      { error: "No se encontró el episodio clínico para esta internación" },
+      { status: 404 }
+    );
+  }
+
   const body = await req.json();
 
   const result = await prisma.$transaction(async (tx) => {
@@ -72,6 +83,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
     const control = await tx.controlEnfermeria.create({
       data: {
         hcId: hc.id,
+        episodioId: episodio.id,
         hora: body.hora,
         tipo: body.tipo,
         datos: body.datos ?? {},
@@ -86,6 +98,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
         const created = await tx.hojaEnfermeria.create({
           data: {
             hcId: hc.id,
+            episodioId: episodio.id,
             fecha: new Date(hoja.fecha),
             seccion: hoja.seccion,
             item: hoja.item,

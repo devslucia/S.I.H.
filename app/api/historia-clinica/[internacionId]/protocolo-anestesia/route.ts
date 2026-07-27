@@ -65,6 +65,17 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
     return NextResponse.json({ error: "El protocolo está firmado y no puede modificarse" }, { status: 403 });
   }
 
+  const episodio = await prisma.episodio.findFirst({
+    where: { internacionId: params.internacionId },
+  });
+
+  if (!episodio) {
+    return NextResponse.json(
+      { error: "No se encontró el episodio clínico para esta internación" },
+      { status: 404 }
+    );
+  }
+
   const body = await req.json();
   const { drogas, cirugiaId, ...campos } = body;
 
@@ -72,7 +83,7 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
     const result = await tx.protocoloAnestesia.upsert({
       where: { hcId: hc.id },
       update: { ...campos, cirugiaId: cirugiaId || undefined },
-      create: { hcId: hc.id, cirugiaId: cirugiaId || null, ...campos },
+      create: { hcId: hc.id, episodioId: episodio.id, cirugiaId: cirugiaId || null, ...campos },
     });
 
     if (Array.isArray(drogas)) {
