@@ -30,6 +30,10 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
     return NextResponse.json({ error: "Campo 'droga' requerido" }, { status: 400 });
   }
 
+  if (!hc.internacion) {
+    return NextResponse.json({ error: "HC sin internación asociada" }, { status: 400 });
+  }
+
   const result = await verificarAlergia(hc.internacion.pacienteId, droga);
   return NextResponse.json(result);
 }

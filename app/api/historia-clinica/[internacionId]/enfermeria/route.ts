@@ -96,7 +96,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
           },
         });
 
-        if (hoja.stockItemId && hoja.cantidad) {
+        if (hoja.stockItemId && hoja.cantidad && hc.internacion) {
           await descontarStock(
             tx,
             hoja.stockItemId,
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
         }
 
         await generarCargo(tx as any, {
-          internacionId: hc.internacion.id,
+          internacionId: hc.internacion?.id ?? "",
           concepto: `${hoja.seccion} - ${hoja.item}`,
           cantidad: hoja.cantidad ?? 1,
           precioUnitario: 0,
