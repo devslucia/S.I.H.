@@ -11,7 +11,7 @@ const ADHOC_WRITE_ROLES = ["ADMIN", "ENFERMERO", "MEDICO", "ANESTESIOLOGO"];
 async function processOneAdHoc(
   tx: any,
   item: any,
-  internacionId: string,
+  hc: { id: string; internacionId: string },
   userId: string
 ): Promise<{ ok: boolean; nombre: string; error?: string }> {
   const { stockItemId, cantidad, via, hora, motivo, nombre } = item;
@@ -24,39 +24,13 @@ async function processOneAdHoc(
     return { ok: false, nombre: nombre || "desconocido", error: "Hora requerida" };
   }
 
-  const hc = await tx.historiaClinica.findUnique({
-    where: { internacionId },
-    include: { internacion: { select: { id: true } } },
-  });
-
-  if (!hc) {
-    return { ok: false, nombre: nombre || "desconocido", error: "Historia clínica no encontrada" };
-  }
-
-  if (nombre) {
-    const internacion = await tx.internacion.findUnique({
-      where: { id: internacionId },
-      select: { pacienteId: true },
-    });
-    if (internacion) {
-      const { bloqueada, alergia } = await verificarAlergia(internacion.pacienteId, nombre);
-      if (bloqueada) {
-        return {
-          ok: false,
-          nombre,
-          error: `ALERTA ALERGIA: Paciente alérgico a ${alergia?.sustancia || "sustancia registrada"}. Medicación NO administrada.`,
-        };
-      }
-    }
-  }
-
   if (stockItemId && cantidad) {
     await descontarStock(
       tx,
       stockItemId,
       Number(cantidad),
       `Medicación ad-hoc: ${nombre || "sin nombre"}`,
-      hc.internacion.id
+      hc.internacionId
     );
   }
 
@@ -73,7 +47,7 @@ async function processOneAdHoc(
   });
 
   await generarCargo(tx, {
-    internacionId: hc.internacion.id,
+    internacionId: hc.internacionId,
     concepto: `Medicación ad-hoc: ${nombre || "sin nombre"}`,
     cantidad: cantidad ? Number(cantidad) : 1,
     precioUnitario: 0,
@@ -99,12 +73,42 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
     return NextResponse.json({ error: "No hay ítems para procesar" }, { status: 400 });
   }
 
+  // Queries de validación FUERA de la transacción
+  const hc = await prisma.historiaClinica.findUnique({
+    where: { internacionId: params.internacionId },
+    select: { id: true, internacionId: true },
+  });
+
+  if (!hc || !hc.internacionId) {
+    return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
+  }
+
+  const hcData = { id: hc.id, internacionId: hc.internacionId };
+
+  const internacion = await prisma.internacion.findUnique({
+    where: { id: params.internacionId },
+    select: { pacienteId: true },
+  });
+
   const results: { ok: boolean; nombre: string; error?: string }[] = [];
 
   for (const item of items) {
+    // Chequeo de alergia FUERA de la transacción
+    if (item.nombre && internacion) {
+      const { bloqueada, alergia } = await verificarAlergia(internacion.pacienteId, item.nombre);
+      if (bloqueada) {
+        results.push({
+          ok: false,
+          nombre: item.nombre || "desconocido",
+          error: `ALERTA ALERGIA: Paciente alérgico a ${alergia?.sustancia || "sustancia registrada"}. Medicación NO administrada.`,
+        });
+        continue;
+      }
+    }
+
     try {
       const result = await prisma.$transaction(async (tx) => {
-        return processOneAdHoc(tx, item, params.internacionId, (session.user as any).id);
+        return processOneAdHoc(tx, item, hcData, (session.user as any).id);
       });
       results.push(result);
     } catch (e: any) {

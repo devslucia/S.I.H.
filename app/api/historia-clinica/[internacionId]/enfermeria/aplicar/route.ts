@@ -42,31 +42,14 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
 async function processOneAplicacion(
   tx: any,
   item: any,
+  hcId: string,
   internacionId: string,
   userId: string
 ): Promise<{ ok: boolean; nombre: string; error?: string }> {
-  const { prescripcionId, hora, stockItemId, cantidad } = item;
+  const { prescripcionId, hora, stockItemId, cantidad, droga } = item;
 
   if (!prescripcionId || !hora) {
     return { ok: false, nombre: item.nombre || prescripcionId || "desconocido", error: "prescripcionId y hora requeridos" };
-  }
-
-  const prescripcion = await tx.prescripcion.findUnique({
-    where: { id: prescripcionId },
-    include: { hc: { select: { internacionId: true, id: true } } },
-  });
-
-  if (!prescripcion || prescripcion.hc.internacionId !== internacionId) {
-    return { ok: false, nombre: prescripcion?.droga || "desconocido", error: "Prescripción no encontrada" };
-  }
-
-  const hc = await tx.historiaClinica.findUnique({
-    where: { internacionId },
-    include: { internacion: { select: { id: true } } },
-  });
-
-  if (!hc) {
-    return { ok: false, nombre: prescripcion.droga || "desconocido", error: "Historia clínica no encontrada" };
   }
 
   if (stockItemId && cantidad) {
@@ -74,8 +57,8 @@ async function processOneAplicacion(
       tx,
       stockItemId,
       Number(cantidad),
-      `Aplicación de ${prescripcion.droga || prescripcion.tipo}`,
-      hc.internacion.id
+      `Aplicación de ${droga || "medicación"}`,
+      internacionId
     );
   }
 
@@ -91,15 +74,15 @@ async function processOneAplicacion(
   });
 
   await generarCargo(tx, {
-    internacionId: hc.internacion.id,
-    concepto: `Medicación: ${prescripcion.droga || prescripcion.tipo}`,
+    internacionId,
+    concepto: `Medicación: ${droga || "medicación"}`,
     cantidad: cantidad ? Number(cantidad) : 1,
     precioUnitario: 0,
     origen: "MEDICACION",
     aplicacionId: aplicacion.id,
   });
 
-  return { ok: true, nombre: prescripcion.droga || prescripcion.tipo };
+  return { ok: true, nombre: droga || item.nombre || "desconocido" };
 }
 
 export async function POST(req: NextRequest, { params }: { params: { internacionId: string } }) {
@@ -113,12 +96,38 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
   const body = await req.json();
   const items = Array.isArray(body.items) ? body.items : [body];
 
+  // Queries de validación FUERA de la transacción
+  const hc = await prisma.historiaClinica.findUnique({
+    where: { internacionId: params.internacionId },
+    select: { id: true, internacionId: true },
+  });
+
+  if (!hc || !hc.internacionId) {
+    return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
+  }
+
   const results: { ok: boolean; nombre: string; error?: string }[] = [];
 
   for (const item of items) {
+    // Validación de prescripción FUERA de la transacción
+    if (!item.prescripcionId || !item.hora) {
+      results.push({ ok: false, nombre: item.nombre || item.prescripcionId || "desconocido", error: "prescripcionId y hora requeridos" });
+      continue;
+    }
+
+    const prescripcion = await prisma.prescripcion.findUnique({
+      where: { id: item.prescripcionId },
+      select: { droga: true, tipo: true, hc: { select: { internacionId: true } } },
+    });
+
+    if (!prescripcion || prescripcion.hc.internacionId !== params.internacionId) {
+      results.push({ ok: false, nombre: prescripcion?.droga || "desconocido", error: "Prescripción no encontrada" });
+      continue;
+    }
+
     try {
       const result = await prisma.$transaction(async (tx) => {
-        return processOneAplicacion(tx, item, params.internacionId, (session.user as any).id);
+        return processOneAplicacion(tx, item, hc.id, params.internacionId, (session.user as any).id);
       });
       results.push(result);
     } catch (e: any) {
