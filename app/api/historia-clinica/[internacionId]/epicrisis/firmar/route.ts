@@ -45,7 +45,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
       },
     });
 
-    if (epicrisis.hc.internacion.camaId) {
+    if (epicrisis.hc.internacion?.camaId) {
       await tx.cama.update({
         where: { id: epicrisis.hc.internacion.camaId },
         data: { estado: "EN_LIMPIEZA" },

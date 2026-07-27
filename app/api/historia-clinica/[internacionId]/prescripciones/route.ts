@@ -64,7 +64,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
 
     const data = parsed.data;
 
-    if (data.droga) {
+    if (data.droga && hc.internacion) {
       const { bloqueada, alergia } = await verificarAlergia(hc.internacion.pacienteId, data.droga);
       if (bloqueada) {
         const prescripcion = await prisma.prescripcion.create({

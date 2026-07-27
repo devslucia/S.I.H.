@@ -150,6 +150,17 @@ enum OrigenCargo {
   OTRO
 }
 
+enum TipoEpisodio {
+  INTERNACION
+  CONSULTA
+}
+
+enum EstadoEpisodio {
+  EN_CURSO
+  FINALIZADO
+  CANCELADO
+}
+
 model Usuario {
   id                String               @id @default(uuid())
   nombre            String
@@ -188,6 +199,7 @@ model Paciente {
   estadoCivil EstadoCivil?
   alergias    Alergia[]
   internaciones Internacion[]
+  historiasClinicas HistoriaClinica[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -263,6 +275,7 @@ model Internacion {
   estado             EstadoInternacion   @default(ACTIVA)
   pases              PaseInterno[]
   histClinica        HistoriaClinica?
+  episodio           Episodio?
   cirugias           Cirugia[]
   cargosFacturacion  CargoFacturacion[]
   createdAt          DateTime            @default(now())
@@ -295,8 +308,10 @@ model PaseInterno {
 
 model HistoriaClinica {
   id                    String                    @id @default(uuid())
-  internacionId         String                    @unique
-  internacion           Internacion               @relation(fields: [internacionId], references: [id])
+  internacionId         String?                   @unique
+  internacion           Internacion?              @relation(fields: [internacionId], references: [id])
+  pacienteId            String?
+  paciente              Paciente?                 @relation(fields: [pacienteId], references: [id])
   anamnesis             Anamnesis?
   evoluciones           Evolucion[]
   prescripciones        Prescripcion[]
@@ -305,13 +320,45 @@ model HistoriaClinica {
   valoracionPreanestesia ValoracionPreanestesia?
   protocoloAnestesia    ProtocoloAnestesia?
   epicrisis             Epicrisis?
+  episodios             Episodio[]
   createdAt             DateTime                  @default(now())
+}
+
+model Episodio {
+  id                String           @id @default(uuid())
+  hcId              String
+  hc                HistoriaClinica  @relation(fields: [hcId], references: [id])
+  tipo              TipoEpisodio
+  internacionId     String?          @unique
+  internacion       Internacion?     @relation(fields: [internacionId], references: [id])
+  numero            Int              @default(autoincrement())
+  motivoIngreso     String?
+  diagnostico       String?
+  estado            EstadoEpisodio   @default(EN_CURSO)
+  fechaInicio       DateTime         @default(now())
+  fechaFin          DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  anamnesis         Anamnesis[]
+  evoluciones       Evolucion[]
+  prescripciones    Prescripcion[]
+  controlesEnfermeria ControlEnfermeria[]
+  hojaEnfermeria    HojaEnfermeria[]
+  valoracionPreanestesia ValoracionPreanestesia?
+  protocoloAnestesia ProtocoloAnestesia?
+  epicrisis         Epicrisis?
+
+  @@index([hcId, fechaInicio])
+  @@index([tipo])
 }
 
 model Anamnesis {
   id                String   @id @default(uuid())
   hcId              String   @unique
   hc                HistoriaClinica @relation(fields: [hcId], references: [id])
+  episodioId        String?
+  episodio          Episodio? @relation(fields: [episodioId], references: [id])
   motivoConsulta    String?
   enfermedadActual  String?
   antecPatologicos  String?
@@ -343,6 +390,8 @@ model Evolucion {
   id        String   @id @default(uuid())
   hcId      String
   hc        HistoriaClinica @relation(fields: [hcId], references: [id])
+  episodioId String?
+  episodio  Episodio? @relation(fields: [episodioId], references: [id])
   fecha     DateTime @default(now())
   contenido String
   usuarioId String
@@ -355,6 +404,8 @@ model Prescripcion {
   id               String                  @id @default(uuid())
   hcId             String
   hc               HistoriaClinica         @relation(fields: [hcId], references: [id])
+  episodioId       String?
+  episodio         Episodio?               @relation(fields: [episodioId], references: [id])
   fecha            DateTime                @default(now())
   tipo             TipoPrescripcion
   droga            String?
@@ -395,6 +446,8 @@ model ControlEnfermeria {
   id          String       @id @default(uuid())
   hcId        String
   hc          HistoriaClinica @relation(fields: [hcId], references: [id])
+  episodioId  String?
+  episodio    Episodio?    @relation(fields: [episodioId], references: [id])
   fecha       DateTime     @default(now())
   hora        String
   tipo        TipoControl
@@ -409,6 +462,8 @@ model HojaEnfermeria {
   id             String              @id @default(uuid())
   hcId           String
   hc             HistoriaClinica     @relation(fields: [hcId], references: [id])
+  episodioId     String?
+  episodio       Episodio?           @relation(fields: [episodioId], references: [id])
   fecha          DateTime
   seccion        SeccionEnfermeria
   item           String
@@ -437,6 +492,8 @@ model ValoracionPreanestesia {
   id                  String   @id @default(uuid())
   hcId                String   @unique
   hc                  HistoriaClinica @relation(fields: [hcId], references: [id])
+  episodioId          String?   @unique
+  episodio            Episodio? @relation(fields: [episodioId], references: [id])
   cirugiaId           String?
   peso                Float?
   talla               Float?
@@ -461,6 +518,8 @@ model ProtocoloAnestesia {
   id                    String   @id @default(uuid())
   hcId                  String   @unique
   hc                    HistoriaClinica @relation(fields: [hcId], references: [id])
+  episodioId            String?   @unique
+  episodio              Episodio? @relation(fields: [episodioId], references: [id])
   cirugiaId             String?
   cirugia               Cirugia? @relation(fields: [cirugiaId], references: [id])
 
@@ -571,6 +630,8 @@ model Epicrisis {
   id                    String           @id @default(uuid())
   hcId                  String           @unique
   hc                    HistoriaClinica  @relation(fields: [hcId], references: [id])
+  episodioId            String?           @unique
+  episodio              Episodio?        @relation(fields: [episodioId], references: [id])
   diagIngreso           String?
   diagEgreso            String?
   codigosCIE            String[]

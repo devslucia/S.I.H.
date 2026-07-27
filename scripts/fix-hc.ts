@@ -49,6 +49,8 @@ async function main() {
   console.log(`\n2. Creando anamnesis para ${hcsSinAnamnesis.length} HC sin anamnesis...\n`)
 
   for (const hc of hcsSinAnamnesis) {
+    if (!hc.internacion) continue;
+
     await prisma.anamnesis.create({
       data: {
         hcId: hc.id,

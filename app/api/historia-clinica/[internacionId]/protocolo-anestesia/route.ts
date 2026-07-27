@@ -33,14 +33,14 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
 
   return NextResponse.json({
     protocolo: hc.protocoloAnestesia ?? null,
-    paciente: hc.internacion.paciente,
-    internacion: {
+    paciente: hc.internacion?.paciente ?? null,
+    internacion: hc.internacion ? {
       id: hc.internacion.id,
       numero: hc.internacion.numero,
       fechaIngreso: hc.internacion.fechaIngreso,
       cama: hc.internacion.cama,
       obraSocial: hc.internacion.obraSocial,
-    },
+    } : null,
   });
 }
 
