@@ -42,12 +42,23 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
     return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
   }
 
+  const episodio = await prisma.episodio.findFirst({
+    where: { internacionId: params.internacionId },
+  });
+
+  if (!episodio) {
+    return NextResponse.json(
+      { error: "No se encontró el episodio clínico para esta internación" },
+      { status: 404 }
+    );
+  }
+
   const body = await req.json();
 
   const preanestesia = await prisma.valoracionPreanestesia.upsert({
     where: { hcId: hc.id },
     update: body,
-    create: { hcId: hc.id, ...body },
+    create: { hcId: hc.id, episodioId: episodio.id, ...body },
   });
 
   return NextResponse.json(preanestesia);

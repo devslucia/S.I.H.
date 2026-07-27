@@ -47,10 +47,22 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
     return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
   }
 
+  const episodio = await prisma.episodio.findFirst({
+    where: { internacionId: params.internacionId },
+  });
+
+  if (!episodio) {
+    return NextResponse.json(
+      { error: "No se encontró el episodio clínico para esta internación" },
+      { status: 404 }
+    );
+  }
+
   const body = await req.json();
   const evolucion = await prisma.evolucion.create({
     data: {
       hcId: hc.id,
+      episodioId: episodio.id,
       contenido: body.contenido,
       usuarioId: (session.user as any).id,
     },
