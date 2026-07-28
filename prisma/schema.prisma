@@ -17,6 +17,7 @@ enum Rol {
   ADMISION
   FACTURACION
   FARMACIA
+  SECRETARIA
 }
 
 enum Sexo {
@@ -161,6 +162,25 @@ enum EstadoEpisodio {
   CANCELADO
 }
 
+enum EstadoTurno {
+  PENDIENTE
+  CONFIRMADO
+  EN_CONSULTA
+  COMPLETADO
+  CANCELADO
+  NO_ASISTIO
+}
+
+enum DiaSemana {
+  LUNES
+  MARTES
+  MIERCOLES
+  JUEVES
+  VIERNES
+  SABADO
+  DOMINGO
+}
+
 model Usuario {
   id                String               @id @default(uuid())
   nombre            String
@@ -180,6 +200,11 @@ model Usuario {
   internacionesTratadas InternacionMedicoTratante[]
   cirugiasInstrumentadas Cirugia[]    @relation("InstrumentadorCirugia")
   cirugiasCirculante     Cirugia[]    @relation("CirculanteCirugia")
+  secretariasAsignadas   SecretariaMedico[] @relation("MedicoSecretarias")
+  medicosAsignados       SecretariaMedico[] @relation("SecretariaMedicos")
+  horariosConsultorio    HorarioMedicoConsultorio[]
+  turnosComoMedico       TurnoConsultorio[] @relation("MedicoTurnos")
+  turnosComoSecretaria   TurnoConsultorio[] @relation("SecretariaTurnos")
 }
 
 model Paciente {
@@ -200,6 +225,7 @@ model Paciente {
   alergias    Alergia[]
   internaciones Internacion[]
   historiasClinicas HistoriaClinica[]
+  turnosConsultorio TurnoConsultorio[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -222,6 +248,7 @@ model ObraSocial {
   activa       Boolean       @default(true)
   convenios    Convenio[]
   internaciones Internacion[]
+  turnosConsultorio TurnoConsultorio[]
 }
 
 model Convenio {
@@ -348,9 +375,63 @@ model Episodio {
   valoracionPreanestesia ValoracionPreanestesia?
   protocoloAnestesia ProtocoloAnestesia?
   epicrisis         Epicrisis?
+  turnoConsultorio  TurnoConsultorio?
 
   @@index([hcId, fechaInicio])
   @@index([tipo])
+}
+
+model HorarioMedicoConsultorio {
+  id              String    @id @default(uuid())
+  medicoId        String
+  medico          Usuario   @relation(fields: [medicoId], references: [id], onDelete: Cascade)
+  dia             DiaSemana
+  horaInicio      String
+  horaFin         String
+  intervaloMin    Int       @default(30)
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  @@unique([medicoId, dia, horaInicio])
+  @@index([medicoId])
+}
+
+model SecretariaMedico {
+  id              String    @id @default(uuid())
+  secretariaId    String
+  secretaria      Usuario   @relation("SecretariaMedicos", fields: [secretariaId], references: [id], onDelete: Cascade)
+  medicoId        String
+  medico          Usuario   @relation("MedicoSecretarias", fields: [medicoId], references: [id], onDelete: Cascade)
+  fechaAsignacion DateTime  @default(now())
+
+  @@unique([secretariaId, medicoId])
+  @@index([secretariaId])
+  @@index([medicoId])
+}
+
+model TurnoConsultorio {
+  id              String       @id @default(uuid())
+  medicoId        String
+  medico          Usuario      @relation("MedicoTurnos", fields: [medicoId], references: [id])
+  pacienteId      String
+  paciente        Paciente     @relation(fields: [pacienteId], references: [id])
+  secretariaId    String?
+  secretaria      Usuario?     @relation("SecretariaTurnos", fields: [secretariaId], references: [id])
+  obraSocialId    String?
+  obraSocial      ObraSocial?  @relation(fields: [obraSocialId], references: [id])
+  fecha           DateTime
+  hora            String
+  motivo          String?
+  estado          EstadoTurno  @default(PENDIENTE)
+  asistio         Boolean?
+  episodioId      String?      @unique
+  episodio        Episodio?    @relation(fields: [episodioId], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([medicoId, fecha])
+  @@index([pacienteId])
+  @@index([fecha, estado])
 }
 
 model Anamnesis {
