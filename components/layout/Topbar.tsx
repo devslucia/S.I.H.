@@ -15,6 +15,7 @@ const moduleNames: Record<string, string> = {
   "/historia-clinica/nueva": "Nueva Historia Clínica",
   "/enfermeria": "Enfermería",
   "/quirofano": "Quirófano",
+  "/consultorio": "Consultorio",
   "/farmacia": "Farmacia",
   "/facturacion": "Facturación",
   "/configuracion": "Configuración",
