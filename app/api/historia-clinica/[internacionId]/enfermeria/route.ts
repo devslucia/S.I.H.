@@ -60,6 +60,13 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
     );
   }
 
+  if (episodio.tipo !== "INTERNACION") {
+    return NextResponse.json(
+      { error: "Los controles de enfermería solo están disponibles para episodios de tipo INTERNACION" },
+      { status: 400 }
+    );
+  }
+
   const body = await req.json();
 
   const result = await prisma.$transaction(async (tx) => {

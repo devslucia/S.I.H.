@@ -56,6 +56,13 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
     );
   }
 
+  if (episodio.tipo !== "INTERNACION") {
+    return NextResponse.json(
+      { error: "La valoración preanestésica solo está disponible para episodios de tipo INTERNACION" },
+      { status: 400 }
+    );
+  }
+
   const body = await req.json();
 
   const preanestesia = await prisma.valoracionPreanestesia.upsert({
