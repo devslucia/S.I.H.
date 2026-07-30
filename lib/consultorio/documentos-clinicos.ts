@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { verificarAlergia } from "@/lib/utils/alertas-alergia";
 
 export async function crearAnamnesis(episodioId: string, data: any) {
   const episodio = await prisma.episodio.findUnique({ where: { id: episodioId } });
@@ -34,6 +35,25 @@ export async function crearEvolucion(episodioId: string, data: any, usuarioId: s
 export async function crearPrescripcion(episodioId: string, data: any, usuarioId: string) {
   const episodio = await prisma.episodio.findUnique({ where: { id: episodioId } });
   if (!episodio) throw new Error("EPISODIO_NO_ENCONTRADO");
+
+  if (data.droga) {
+    const hc = await prisma.historiaClinica.findUnique({ where: { id: episodio.hcId } });
+    if (hc?.pacienteId) {
+      const { bloqueada, alergia } = await verificarAlergia(hc.pacienteId, data.droga);
+      if (bloqueada) {
+        return prisma.prescripcion.create({
+          data: {
+            hcId: episodio.hcId,
+            episodioId,
+            ...data,
+            usuarioId,
+            estado: "BLOQUEADA_ALERGIA",
+            bloqueadaAlergia: true,
+          },
+        });
+      }
+    }
+  }
 
   return prisma.prescripcion.create({
     data: { hcId: episodio.hcId, episodioId, ...data, usuarioId },
