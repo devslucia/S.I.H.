@@ -75,6 +75,13 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
     );
   }
 
+  if (episodio.tipo !== "INTERNACION") {
+    return NextResponse.json(
+      { error: "El protocolo de anestesia solo está disponible para episodios de tipo INTERNACION" },
+      { status: 400 }
+    );
+  }
+
   const existente = await prisma.protocoloAnestesia.findUnique({
     where: { episodioId: episodio.id },
     select: { firmado: true },

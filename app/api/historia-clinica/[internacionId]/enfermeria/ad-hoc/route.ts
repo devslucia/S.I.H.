@@ -83,6 +83,18 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
     return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
   }
 
+  const episodioAdHoc = await prisma.episodio.findFirst({
+    where: { internacionId: params.internacionId },
+    select: { tipo: true },
+  });
+
+  if (!episodioAdHoc || episodioAdHoc.tipo !== "INTERNACION") {
+    return NextResponse.json(
+      { error: "La medicación ad-hoc solo está disponible para episodios de tipo INTERNACION" },
+      { status: 400 }
+    );
+  }
+
   const hcData = { id: hc.id, internacionId: hc.internacionId };
 
   const internacion = await prisma.internacion.findUnique({
