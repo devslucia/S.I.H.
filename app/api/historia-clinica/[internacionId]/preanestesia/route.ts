@@ -14,16 +14,19 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
     return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
 
-  const hc = await prisma.historiaClinica.findUnique({
+  const episodio = await prisma.episodio.findFirst({
     where: { internacionId: params.internacionId },
-    include: { valoracionPreanestesia: true },
   });
 
-  if (!hc) {
-    return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
+  if (!episodio) {
+    return NextResponse.json({ error: "No se encontró el episodio clínico para esta internación" }, { status: 404 });
   }
 
-  return NextResponse.json(hc.valoracionPreanestesia ?? {});
+  const preanestesia = await prisma.valoracionPreanestesia.findUnique({
+    where: { episodioId: episodio.id },
+  });
+
+  return NextResponse.json(preanestesia ?? {});
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { internacionId: string } }) {
@@ -56,7 +59,7 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
   const body = await req.json();
 
   const preanestesia = await prisma.valoracionPreanestesia.upsert({
-    where: { hcId: hc.id },
+    where: { episodioId: episodio.id },
     update: body,
     create: { hcId: hc.id, episodioId: episodio.id, ...body },
   });

@@ -49,5 +49,22 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
 
+  // HC relations are now 1:N (one HC per patient, many episodes)
+  // Filter to only the documents for this internacion's episodio
+  const hc = internacion.histClinica;
+  if (hc) {
+    const episodio = await prisma.episodio.findFirst({
+      where: { internacionId: params.id },
+    });
+
+    (internacion as any).histClinica = {
+      ...hc,
+      anamnesis: episodio ? hc.anamnesis.find((a) => a.episodioId === episodio.id) ?? null : null,
+      valoracionPreanestesia: episodio ? hc.valoracionPreanestesia.find((v) => v.episodioId === episodio.id) ?? null : null,
+      protocoloAnestesia: episodio ? hc.protocoloAnestesia.find((p) => p.episodioId === episodio.id) ?? null : null,
+      epicrisis: episodio ? hc.epicrisis.find((e) => e.episodioId === episodio.id) ?? null : null,
+    };
+  }
+
   return NextResponse.json(internacion);
 }

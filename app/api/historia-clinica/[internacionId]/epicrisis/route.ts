@@ -21,9 +21,13 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
     return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
   }
 
-  const epicrisis = await prisma.epicrisis.findUnique({
-    where: { hcId: hc.id },
+  const episodio = await prisma.episodio.findFirst({
+    where: { internacionId: params.internacionId },
   });
+
+  const epicrisis = episodio
+    ? await prisma.epicrisis.findUnique({ where: { episodioId: episodio.id } })
+    : null;
 
   return NextResponse.json(epicrisis ?? {});
 }
@@ -58,7 +62,7 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
   const body = await req.json();
 
   const epicrisis = await prisma.epicrisis.upsert({
-    where: { hcId: hc.id },
+    where: { episodioId: episodio.id },
     update: {
       diagIngreso: body.diagIngreso,
       diagEgreso: body.diagEgreso,

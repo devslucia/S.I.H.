@@ -339,14 +339,14 @@ model HistoriaClinica {
   internacion           Internacion?              @relation(fields: [internacionId], references: [id])
   pacienteId            String?
   paciente              Paciente?                 @relation(fields: [pacienteId], references: [id])
-  anamnesis             Anamnesis?
+  anamnesis             Anamnesis[]
   evoluciones           Evolucion[]
   prescripciones        Prescripcion[]
   controlesEnfermeria   ControlEnfermeria[]
   hojaEnfermeria        HojaEnfermeria[]
-  valoracionPreanestesia ValoracionPreanestesia?
-  protocoloAnestesia    ProtocoloAnestesia?
-  epicrisis             Epicrisis?
+  valoracionPreanestesia ValoracionPreanestesia[]
+  protocoloAnestesia    ProtocoloAnestesia[]
+  epicrisis             Epicrisis[]
   episodios             Episodio[]
   createdAt             DateTime                  @default(now())
 }
@@ -436,9 +436,9 @@ model TurnoConsultorio {
 
 model Anamnesis {
   id                String   @id @default(uuid())
-  hcId              String   @unique
+  hcId              String
   hc                HistoriaClinica @relation(fields: [hcId], references: [id])
-  episodioId        String?
+  episodioId        String?  @unique
   episodio          Episodio? @relation(fields: [episodioId], references: [id])
   motivoConsulta    String?
   enfermedadActual  String?
@@ -571,7 +571,7 @@ model RangoVital {
 
 model ValoracionPreanestesia {
   id                  String   @id @default(uuid())
-  hcId                String   @unique
+  hcId                String
   hc                  HistoriaClinica @relation(fields: [hcId], references: [id])
   episodioId          String?   @unique
   episodio            Episodio? @relation(fields: [episodioId], references: [id])
@@ -597,7 +597,7 @@ model ValoracionPreanestesia {
 
 model ProtocoloAnestesia {
   id                    String   @id @default(uuid())
-  hcId                  String   @unique
+  hcId                  String
   hc                    HistoriaClinica @relation(fields: [hcId], references: [id])
   episodioId            String?   @unique
   episodio              Episodio? @relation(fields: [episodioId], references: [id])
@@ -709,7 +709,7 @@ model DrogaAnestesia {
 
 model Epicrisis {
   id                    String           @id @default(uuid())
-  hcId                  String           @unique
+  hcId                  String
   hc                    HistoriaClinica  @relation(fields: [hcId], references: [id])
   episodioId            String?           @unique
   episodio              Episodio?        @relation(fields: [episodioId], references: [id])
