@@ -13,10 +13,9 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
     return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
 
-  const hc = await prisma.historiaClinica.findUnique({
+  const episodio = await prisma.episodio.findFirst({
     where: { internacionId: params.internacionId },
     include: {
-      protocoloAnestesia: { include: { drogas: true } },
       internacion: {
         include: {
           paciente: { include: { alergias: true } },
@@ -27,19 +26,24 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
     },
   });
 
-  if (!hc) {
-    return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
+  if (!episodio) {
+    return NextResponse.json({ error: "No se encontró el episodio clínico para esta internación" }, { status: 404 });
   }
 
+  const protocolo = await prisma.protocoloAnestesia.findUnique({
+    where: { episodioId: episodio.id },
+    include: { drogas: true },
+  });
+
   return NextResponse.json({
-    protocolo: hc.protocoloAnestesia ?? null,
-    paciente: hc.internacion?.paciente ?? null,
-    internacion: hc.internacion ? {
-      id: hc.internacion.id,
-      numero: hc.internacion.numero,
-      fechaIngreso: hc.internacion.fechaIngreso,
-      cama: hc.internacion.cama,
-      obraSocial: hc.internacion.obraSocial,
+    protocolo: protocolo ?? null,
+    paciente: episodio.internacion?.paciente ?? null,
+    internacion: episodio.internacion ? {
+      id: episodio.internacion.id,
+      numero: episodio.internacion.numero,
+      fechaIngreso: episodio.internacion.fechaIngreso,
+      cama: episodio.internacion.cama,
+      obraSocial: episodio.internacion.obraSocial,
     } : null,
   });
 }
@@ -54,15 +58,10 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
 
   const hc = await prisma.historiaClinica.findUnique({
     where: { internacionId: params.internacionId },
-    include: { protocoloAnestesia: { select: { firmado: true } } },
   });
 
   if (!hc) {
     return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
-  }
-
-  if (hc.protocoloAnestesia?.firmado) {
-    return NextResponse.json({ error: "El protocolo está firmado y no puede modificarse" }, { status: 403 });
   }
 
   const episodio = await prisma.episodio.findFirst({
@@ -76,12 +75,21 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
     );
   }
 
+  const existente = await prisma.protocoloAnestesia.findUnique({
+    where: { episodioId: episodio.id },
+    select: { firmado: true },
+  });
+
+  if (existente?.firmado) {
+    return NextResponse.json({ error: "El protocolo está firmado y no puede modificarse" }, { status: 403 });
+  }
+
   const body = await req.json();
   const { drogas, cirugiaId, ...campos } = body;
 
   const protocolo = await prisma.$transaction(async (tx) => {
     const result = await tx.protocoloAnestesia.upsert({
-      where: { hcId: hc.id },
+      where: { episodioId: episodio.id },
       update: { ...campos, cirugiaId: cirugiaId || undefined },
       create: { hcId: hc.id, episodioId: episodio.id, cirugiaId: cirugiaId || null, ...campos },
     });
