@@ -59,11 +59,13 @@ const fields: { key: keyof AnamnesisData; label: string; section: string }[] = [
 const sections = ["Subjetivo", "Examen Físico", "Diagnóstico y Plan"];
 
 interface AnamnesisFormProps {
-  internacionId: string;
+  internacionId?: string;
+  apiBase?: string;
   onSaved?: () => void;
 }
 
-export function AnamnesisForm({ internacionId, onSaved }: AnamnesisFormProps) {
+export function AnamnesisForm({ internacionId, apiBase, onSaved }: AnamnesisFormProps) {
+  const baseUrl = apiBase || `/api/historia-clinica/${internacionId}`;
   const [data, setData] = useState<AnamnesisData>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -73,7 +75,7 @@ export function AnamnesisForm({ internacionId, onSaved }: AnamnesisFormProps) {
     const fetchAnamnesis = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/historia-clinica/${internacionId}/anamnesis`);
+        const res = await fetch(`${baseUrl}/anamnesis`);
         if (res.ok) {
           const d = await res.json();
           if (d && d.id) setData(d);
@@ -85,7 +87,7 @@ export function AnamnesisForm({ internacionId, onSaved }: AnamnesisFormProps) {
       }
     };
     fetchAnamnesis();
-  }, [internacionId]);
+  }, [baseUrl]);
 
   const handleChange = (key: keyof AnamnesisData, value: string) => {
     setData((prev) => ({ ...prev, [key]: value }));
@@ -94,7 +96,7 @@ export function AnamnesisForm({ internacionId, onSaved }: AnamnesisFormProps) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/historia-clinica/${internacionId}/anamnesis`, {
+      const res = await fetch(`${baseUrl}/anamnesis`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
