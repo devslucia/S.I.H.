@@ -64,5 +64,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const body = await req.json();
   const prescripcion = await crearPrescripcion(turno.episodioId, body, session.user.id);
 
+  if (prescripcion.bloqueadaAlergia) {
+    return NextResponse.json(
+      { error: "Alergia detectada", fechaAlta: prescripcion.fecha?.toISOString() || "" },
+      { status: 409 }
+    );
+  }
+
   return NextResponse.json(prescripcion, { status: 201 });
 }
