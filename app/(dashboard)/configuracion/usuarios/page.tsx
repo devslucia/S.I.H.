@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Users, Plus, Pencil, X, CheckCircle, AlertTriangle } from "lucide-react";
 import { formatUserName } from "@/lib/utils";
 
-const ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ADMISION", "FACTURACION", "FARMACIA"] as const;
+const ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ADMISION", "FACTURACION", "FARMACIA", "SECRETARIA"] as const;
 
 interface Usuario {
   id: string;
