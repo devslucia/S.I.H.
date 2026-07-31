@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Plus, Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { BuscarPaciente } from "@/components/consultorio/BuscarPaciente";
 import { AgendaDia } from "@/components/consultorio/AgendaDia";
 import { NuevoTurnoModal } from "@/components/consultorio/NuevoTurnoModal";
+import { HorariosMedico } from "@/components/consultorio/HorariosMedico";
 
 interface Turno {
   id: string;
@@ -51,6 +52,7 @@ export default function ConsultorioPage() {
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [showNuevoTurno, setShowNuevoTurno] = useState(false);
   const [medicos, setMedicos] = useState<Medico[]>([]);
+  const [activeTab, setActiveTab] = useState<"agenda" | "horarios">("agenda");
 
   const fetchTurnos = useCallback(async () => {
     setLoading(true);
@@ -177,15 +179,46 @@ export default function ConsultorioPage() {
       )}
 
       {!isSecretaria && (
-        <AgendaDia
-          turnos={turnos}
-          loading={loading}
-          viewMode={viewMode}
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-          onStart={handleStart}
-          onClick={handleClick}
-        />
+        <>
+          <div className="flex gap-1 border-b border-border">
+            <button
+              onClick={() => setActiveTab("agenda")}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "agenda"
+                  ? "border-accent text-accent"
+                  : "border-transparent text-muted hover:text-text"
+              }`}
+            >
+              <Calendar size={16} /> Mi Agenda
+            </button>
+            <button
+              onClick={() => setActiveTab("horarios")}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "horarios"
+                  ? "border-accent text-accent"
+                  : "border-transparent text-muted hover:text-text"
+              }`}
+            >
+              <Clock size={16} /> Mis Horarios
+            </button>
+          </div>
+
+          {activeTab === "agenda" && (
+            <AgendaDia
+              turnos={turnos}
+              loading={loading}
+              viewMode={viewMode}
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
+              onStart={handleStart}
+              onClick={handleClick}
+            />
+          )}
+
+          {activeTab === "horarios" && (
+            <HorariosMedico medicoId={userRol === "MEDICO" ? userId : undefined} />
+          )}
+        </>
       )}
 
       <NuevoTurnoModal

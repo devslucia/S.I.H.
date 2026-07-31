@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings, UserCheck, Users, Wrench } from "lucide-react";
+import { Settings, UserCheck, Users, Wrench, ClipboardList } from "lucide-react";
 import Link from "next/link";
 
 const adminModules = [
@@ -24,6 +24,13 @@ const adminModules = [
     description: "Crear, editar y administrar usuarios del sistema",
     icon: Users,
     href: "/configuracion/usuarios",
+  },
+  {
+    id: 3,
+    name: "Asignar Secretaria a Médico",
+    description: "Configurar qué secretarias pueden agendar turnos para cada médico",
+    icon: ClipboardList,
+    href: "/configuracion/asignar-secretaria-consultorio",
   },
 ];
 

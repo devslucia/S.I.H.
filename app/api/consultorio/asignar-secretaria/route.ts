@@ -11,6 +11,21 @@ const assignSchema = z.object({
   medicoId: z.string().uuid(),
 });
 
+export async function GET() {
+  const { session, error } = await requireRole(...ASIGNAR_ROLES);
+  if (error) return error;
+
+  const asignaciones = await prisma.secretariaMedico.findMany({
+    include: {
+      secretaria: { select: { id: true, nombre: true, apellido: true, email: true } },
+      medico: { select: { id: true, nombre: true, apellido: true, especialidad: true } },
+    },
+    orderBy: { fechaAsignacion: "desc" },
+  });
+
+  return NextResponse.json(asignaciones);
+}
+
 export async function POST(req: NextRequest) {
   const { session, error } = await requireRole(...ASIGNAR_ROLES);
   if (error) return error;
