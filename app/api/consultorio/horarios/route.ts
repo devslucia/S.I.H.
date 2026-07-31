@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatZodError } from "@/lib/validations/format-zod-error";
 
+const HORARIOS_READ_ROLES = ["ADMIN", "MEDICO", "SECRETARIA"];
 const HORARIOS_WRITE_ROLES = ["ADMIN", "MEDICO"];
 
 const createHorarioSchema = z.object({
@@ -14,6 +15,57 @@ const createHorarioSchema = z.object({
   intervaloMin: z.number().int().min(5).max(120).default(30),
   activo: z.boolean().default(true),
 });
+
+export async function GET(req: NextRequest) {
+  const { session, error } = await requireRole(...HORARIOS_READ_ROLES);
+  if (error) return error;
+
+  const rol = (session.user as any).rol as string;
+  const userId = session.user.id as string;
+
+  const where: any = {};
+  if (rol === "MEDICO") {
+    where.medicoId = userId;
+  } else {
+    const { searchParams } = new URL(req.url);
+    const medicoId = searchParams.get("medicoId");
+    if (medicoId) where.medicoId = medicoId;
+  }
+
+  const horarios = await prisma.horarioMedicoConsultorio.findMany({
+    where,
+    include: {
+      medico: { select: { id: true, nombre: true, apellido: true, especialidad: true } },
+    },
+    orderBy: [{ medicoId: "asc" }, { dia: "asc" }, { horaInicio: "asc" }],
+  });
+
+  return NextResponse.json(horarios);
+}
+
+export async function DELETE(req: NextRequest) {
+  const { session, error } = await requireRole(...HORARIOS_WRITE_ROLES);
+  if (error) return error;
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) {
+    return NextResponse.json({ error: "id requerido" }, { status: 400 });
+  }
+
+  const horario = await prisma.horarioMedicoConsultorio.findUnique({ where: { id } });
+  if (!horario) {
+    return NextResponse.json({ error: "Horario no encontrado" }, { status: 404 });
+  }
+
+  const rol = (session.user as any).rol as string;
+  if (rol === "MEDICO" && horario.medicoId !== session.user.id) {
+    return NextResponse.json({ error: "Solo puede eliminar sus propios horarios" }, { status: 403 });
+  }
+
+  await prisma.horarioMedicoConsultorio.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
+}
 
 export async function POST(req: NextRequest) {
   const { session, error } = await requireRole(...HORARIOS_WRITE_ROLES);
