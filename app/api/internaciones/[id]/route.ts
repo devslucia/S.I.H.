@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getVisibleInternacionesWhere } from "@/lib/internaciones-visibility";
 import { updateInternacionSchema } from "@/lib/validations/internacion.schema";
 import { NextRequest, NextResponse } from "next/server";
+import { formatZodError } from "@/lib/validations/format-zod-error";
 
 const INTERNACIONES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION"];
 
@@ -42,7 +43,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const body = await req.json();
   const parsed = updateInternacionSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+    return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
   }
 
   const internacion = await prisma.internacion.update({

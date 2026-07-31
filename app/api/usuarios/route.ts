@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { createUsuarioSchema } from "@/lib/validations/usuario.schema";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { formatZodError } from "@/lib/validations/format-zod-error";
 
 export async function GET() {
   const { session, error } = await requireRole("ADMIN");
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const parsed = createUsuarioSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+    return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
   }
 
   const existing = await prisma.usuario.findUnique({ where: { email: parsed.data.email } });

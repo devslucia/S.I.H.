@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { updateUsuarioSchema } from "@/lib/validations/usuario.schema";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { formatZodError } from "@/lib/validations/format-zod-error";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { session, error } = await requireRole("ADMIN");
@@ -12,7 +13,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const body = await req.json();
   const parsed = updateUsuarioSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+    return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
   }
 
   const existing = await prisma.usuario.findUnique({ where: { id } });

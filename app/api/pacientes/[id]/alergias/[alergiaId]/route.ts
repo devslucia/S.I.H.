@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { formatZodError } from "@/lib/validations/format-zod-error";
 
 const alergiaUpdateSchema = z.object({
   sustancia: z.string().min(1).optional(),
@@ -16,7 +17,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string; 
   const body = await req.json();
   const parsed = alergiaUpdateSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+    return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
   }
 
   const alergia = await prisma.alergia.findUnique({ where: { id: params.alergiaId } });
