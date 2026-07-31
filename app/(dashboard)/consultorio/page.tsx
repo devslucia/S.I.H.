@@ -77,26 +77,10 @@ export default function ConsultorioPage() {
   useEffect(() => { fetchTurnos(); }, [fetchTurnos]);
 
   useEffect(() => {
-    const rol = userRol;
-    if (rol === "ADMIN" || rol === "MEDICO") {
-      fetch("/api/usuarios/medicos")
-        .then((r) => r.json())
-        .then((d) => setMedicos(Array.isArray(d) ? d : []))
-        .catch(() => {});
-    } else {
-      fetch("/api/consultorio/horarios")
-        .then((r) => r.json())
-        .then((data) => {
-          const medicosUnicos = new Map<string, Medico>();
-          (Array.isArray(data) ? data : []).forEach((h: any) => {
-            if (h.medico && !medicosUnicos.has(h.medico.id)) {
-              medicosUnicos.set(h.medico.id, h.medico);
-            }
-          });
-          setMedicos(Array.from(medicosUnicos.values()));
-        })
-        .catch(() => {});
-    }
+    fetch("/api/consultorio/mis-medicos")
+      .then((r) => r.json())
+      .then((d) => setMedicos(Array.isArray(d) ? d : []))
+      .catch(() => {});
   }, [userRol]);
 
   const handleConfirm = async (turno: Turno) => {

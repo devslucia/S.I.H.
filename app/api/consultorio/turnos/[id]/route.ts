@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatZodError } from "@/lib/validations/format-zod-error";
 
+const TURNOS_READ_ROLES = ["ADMIN", "SECRETARIA", "MEDICO"];
 const TURNOS_UPDATE_ROLES = ["ADMIN", "SECRETARIA", "MEDICO"];
 
 const updateTurnoSchema = z.object({
@@ -15,6 +16,43 @@ const updateTurnoSchema = z.object({
   hora: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   motivoCancelacion: z.string().optional(),
 });
+
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const { session, error } = await requireRole(...TURNOS_READ_ROLES);
+  if (error) return error;
+
+  const turno = await prisma.turnoConsultorio.findUnique({
+    where: { id: params.id },
+    include: {
+      medico: { select: { id: true, nombre: true, apellido: true, especialidad: true } },
+      paciente: { select: { id: true, nombre: true, apellido: true, dni: true } },
+      obraSocial: { select: { id: true, nombre: true, sigla: true } },
+      episodio: { select: { id: true, numero: true } },
+    },
+  });
+
+  if (!turno) {
+    return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
+  }
+
+  const rol = (session.user as any).rol as string;
+  const userId = session.user.id as string;
+
+  if (rol === "MEDICO" && turno.medicoId !== userId) {
+    return NextResponse.json({ error: "No tiene acceso a este turno" }, { status: 403 });
+  }
+
+  if (rol === "SECRETARIA") {
+    const asignacion = await prisma.secretariaMedico.findUnique({
+      where: { secretariaId_medicoId: { secretariaId: userId, medicoId: turno.medicoId } },
+    });
+    if (!asignacion) {
+      return NextResponse.json({ error: "No tiene acceso a este turno" }, { status: 403 });
+    }
+  }
+
+  return NextResponse.json(turno);
+}
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const { session, error } = await requireRole(...TURNOS_UPDATE_ROLES);
