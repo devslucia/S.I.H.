@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { formatZodError } from "@/lib/validations/format-zod-error";
 
 const addMedicoSchema = z.object({
   medicoId: z.string().uuid(),
@@ -18,7 +19,7 @@ export async function POST(
   const parsed = addMedicoSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.flatten().fieldErrors },
+      { error: formatZodError(parsed.error) },
       { status: 400 }
     );
   }

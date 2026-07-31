@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { updatePacienteSchema } from "@/lib/validations/paciente.schema";
 import { NextRequest, NextResponse } from "next/server";
+import { formatZodError } from "@/lib/validations/format-zod-error";
 
 const PACIENTES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION"];
 
@@ -37,7 +38,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const body = await req.json();
   const parsed = updatePacienteSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+    return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
   }
 
   const paciente = await prisma.paciente.update({
