@@ -4,7 +4,7 @@ import { updatePacienteSchema } from "@/lib/validations/paciente.schema";
 import { NextRequest, NextResponse } from "next/server";
 import { formatZodError } from "@/lib/validations/format-zod-error";
 
-const PACIENTES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION"];
+const PACIENTES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION", "SECRETARIA"];
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const { session, error } = await requireRole(...PACIENTES_READ_ROLES);
