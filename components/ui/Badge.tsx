@@ -31,11 +31,20 @@ function Badge({ variant = "default", children, className, dot }: BadgeProps) {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium font-mono uppercase tracking-wider",
+        "transition-colors duration-150",
         variantStyles[variant],
         className
       )}
     >
-      {dot && <span className={cn("w-1.5 h-1.5 rounded-full", dotColors[variant])} />}
+      {dot && (
+        <span
+          className={cn(
+            "w-1.5 h-1.5 rounded-full",
+            dotColors[variant],
+            variant === "success" && "animate-pulse"
+          )}
+        />
+      )}
       {children}
     </span>
   );

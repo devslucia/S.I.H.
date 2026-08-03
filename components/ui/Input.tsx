@@ -15,7 +15,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label htmlFor={inputId} className="text-[13px] font-medium text-text-secondary">
+          <label
+            htmlFor={inputId}
+            className="text-[13px] font-medium text-text-secondary"
+          >
             {label}
           </label>
         )}
@@ -28,13 +31,17 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             "focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-background",
             error
               ? "border-error focus:border-error focus:ring-error/20"
-              : "border-border focus:border-accent focus:ring-accent/20",
+              : "border-border focus:border-accent focus:ring-accent/20 hover:border-border-hover",
             className
           )}
           {...props}
         />
-        {error && <span className="text-xs text-error">{error}</span>}
-        {hint && !error && <span className="text-xs text-muted">{hint}</span>}
+        {error && (
+          <span className="text-xs text-error animate-fade-in">{error}</span>
+        )}
+        {hint && !error && (
+          <span className="text-xs text-muted">{hint}</span>
+        )}
       </div>
     );
   }

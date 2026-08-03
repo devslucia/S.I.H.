@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { Activity, User, Bed, Stethoscope, Syringe, Package, Receipt, ChevronRight, LayoutDashboard, X, Settings, PanelLeftClose, PanelLeftOpen, ClipboardList } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { usePrefersReducedMotion } from "@/lib/hooks";
 
 const modules = [
   { id: 1, name: "Dashboard", icon: LayoutDashboard, href: "/", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR","ADMISION","FACTURACION","FARMACIA"] },
@@ -31,6 +33,7 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
   const pathname = usePathname();
   const session = useSession();
   const userRol = session?.data?.user?.rol;
+  const prefersReduced = usePrefersReducedMotion();
 
   const visibleModules = modules.filter((m) => !userRol || m.roles.includes(userRol));
 
@@ -41,21 +44,28 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
 
   return (
     <>
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden animate-fade-in"
-          onClick={onClose}
-        />
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="fixed inset-0 bg-scrim/60 backdrop-blur-sm z-40 md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={prefersReduced ? { duration: 0.1 } : { duration: 0.2 }}
+            onClick={onClose}
+          />
+        )}
+      </AnimatePresence>
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 bg-surface border-r border-border flex flex-col no-print",
+          "fixed inset-y-0 left-0 z-50 bg-surface border-r border-border flex flex-col no-print sidebar-material",
           "transition-all duration-300 ease-in-out",
           "md:relative md:z-auto",
           collapsed ? "md:w-[68px]" : "md:w-64",
           open ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0"
         )}
+        data-sidebar
       >
         {/* Monitor glow — signature element */}
         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-accent shadow-monitor-glow" />
@@ -105,11 +115,12 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
                 onClick={onClose}
                 title={collapsed ? mod.name : undefined}
                 className={cn(
-                  "w-full flex items-center gap-3 rounded-lg transition-all duration-150 group relative",
+                  "w-full flex items-center gap-3 rounded-lg group relative",
                   collapsed ? "px-2 py-2.5 justify-center" : "px-3 py-2.5",
                   active
                     ? "bg-accent/10 text-accent nav-active-glow"
-                    : "text-muted hover:bg-surface-hover hover:text-text border border-transparent"
+                    : "text-muted hover:bg-surface-hover hover:text-text border border-transparent active:scale-[0.98]",
+                  !active && "transition-all duration-150"
                 )}
               >
                 <Icon className={cn("w-[18px] h-[18px] shrink-0", active && "text-accent")} />
