@@ -5,6 +5,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { AnamnesisForm } from "@/components/historia-clinica/AnamnesisForm";
 import { EvolucionForm } from "./EvolucionForm";
 import { ConsultaPrescripciones } from "./ConsultaPrescripciones";
+import { HistorialPaciente } from "./HistorialPaciente";
 
 interface ConsultaShellProps {
   turnoId: string;
@@ -22,6 +23,7 @@ export function ConsultaShell({ turnoId, apiBase }: ConsultaShellProps) {
 
   return (
     <div className="space-y-4">
+      <HistorialPaciente turnoId={turnoId} />
       <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
       {activeTab === "anamnesis" && <AnamnesisForm apiBase={`${apiBase}/anamnesis`.replace(/\/anamnesis$/, "")} />}
       {activeTab === "evolucion" && <EvolucionForm apiBase={`${apiBase}/evoluciones`.replace(/\/evoluciones$/, "")} />}
