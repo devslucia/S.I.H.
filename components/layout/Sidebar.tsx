@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { Activity, User, Bed, Stethoscope, Syringe, Package, Receipt, ChevronRight, LayoutDashboard, X, Settings, PanelLeftClose, PanelLeftOpen, ClipboardList } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { usePrefersReducedMotion } from "@/lib/hooks";
 
 const modules = [
   { id: 1, name: "Dashboard", icon: LayoutDashboard, href: "/", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR","ADMISION","FACTURACION","FARMACIA"] },
@@ -31,6 +33,7 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
   const pathname = usePathname();
   const session = useSession();
   const userRol = session?.data?.user?.rol;
+  const prefersReduced = usePrefersReducedMotion();
 
   const visibleModules = modules.filter((m) => !userRol || m.roles.includes(userRol));
 
@@ -41,12 +44,18 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
 
   return (
     <>
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden animate-fade-in"
-          onClick={onClose}
-        />
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="fixed inset-0 bg-scrim/60 backdrop-blur-sm z-40 md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={prefersReduced ? { duration: 0.1 } : { duration: 0.2 }}
+            onClick={onClose}
+          />
+        )}
+      </AnimatePresence>
 
       <aside
         className={cn(

@@ -52,7 +52,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           "disabled:pointer-events-none disabled:opacity-40",
           "active:scale-[0.97]",
           "min-h-[44px] md:min-h-0",
-          "transition-transform duration-100 ease-out",
+          "transition-[transform] duration-100 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
           variantStyles[variant],
           sizeStyles[size],
           className

@@ -6,6 +6,8 @@ import { LogOut, Menu, ChevronDown, Sun, Moon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
+import { motion, AnimatePresence } from "framer-motion";
+import { usePrefersReducedMotion } from "@/lib/hooks";
 
 const moduleNames: Record<string, string> = {
   "/": "Dashboard",
@@ -34,6 +36,7 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { theme, toggle } = useTheme();
+  const prefersReduced = usePrefersReducedMotion();
 
   const basePath = "/" + (pathname.split("/")[1] || "");
   const title = moduleNames[pathname] || moduleNames[basePath] || "S.I.H.";
@@ -113,22 +116,46 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
             <ChevronDown size={13} className={cn("text-muted transition-transform duration-200", userMenuOpen && "rotate-180")} />
           </button>
 
-          {userMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-surface border border-border rounded-xl shadow-elevated py-1 animate-scale-in z-50">
-              <div className="px-4 py-3 border-b border-border">
-                <div className="text-sm font-medium text-text">{user?.name || "Usuario"}</div>
-                <div className="text-xs text-muted font-mono">{user?.email || ""}</div>
-                <div className="text-[11px] text-accent font-mono uppercase tracking-wider mt-0.5">{user?.rol || "—"}</div>
-              </div>
-              <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error/10 transition-colors duration-150"
+          <AnimatePresence>
+            {userMenuOpen && (
+              <motion.div
+                className="absolute right-0 top-full mt-2 w-56 bg-surface border border-border rounded-xl shadow-elevated py-1 z-50"
+                initial={
+                  prefersReduced
+                    ? { opacity: 0 }
+                    : { opacity: 0, scale: 0.95, y: -4 }
+                }
+                animate={
+                  prefersReduced
+                    ? { opacity: 1 }
+                    : { opacity: 1, scale: 1, y: 0 }
+                }
+                exit={
+                  prefersReduced
+                    ? { opacity: 0 }
+                    : { opacity: 0, scale: 0.95, y: -4 }
+                }
+                transition={
+                  prefersReduced
+                    ? { duration: 0.1 }
+                    : { type: "spring", bounce: 0, duration: 0.3 }
+                }
               >
-                <LogOut size={15} />
-                Cerrar sesión
-              </button>
-            </div>
-          )}
+                <div className="px-4 py-3 border-b border-border">
+                  <div className="text-sm font-medium text-text">{user?.name || "Usuario"}</div>
+                  <div className="text-xs text-muted font-mono">{user?.email || ""}</div>
+                  <div className="text-[11px] text-accent font-mono uppercase tracking-wider mt-0.5">{user?.rol || "—"}</div>
+                </div>
+                <button
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error/10 transition-colors duration-150"
+                >
+                  <LogOut size={15} />
+                  Cerrar sesión
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </header>
