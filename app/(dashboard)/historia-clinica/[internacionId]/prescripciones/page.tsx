@@ -165,16 +165,16 @@ export default function PrescripcionesPage() {
         <p className="text-muted text-sm">Sin prescripciones registradas.</p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-sm text-gray-300">
+          <table className="w-full text-sm text-text">
             <thead className="bg-surface">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Fecha</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Tipo</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Droga</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Dosis</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Frecuencia</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Vía</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Estado</th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">Fecha</th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">Tipo</th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">Droga</th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">Dosis</th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">Frecuencia</th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">Vía</th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">Estado</th>
               </tr>
             </thead>
             <tbody>
@@ -205,7 +205,7 @@ export default function PrescripcionesPage() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nueva Prescripción" size="xl">
         <div className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-400">Tipo</label>
+            <label className="text-sm text-text-secondary">Tipo</label>
             <select name="tipo" value={form.tipo} onChange={handleChange} className="select-field">
               <option value="MEDICACION">Medicación</option>
               <option value="DIETA">Dieta</option>

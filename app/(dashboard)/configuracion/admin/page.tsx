@@ -96,7 +96,7 @@ export default function ConfigPage() {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-              tab === t.id ? "bg-accent/20 text-accent border border-accent/30" : "bg-black/20 text-muted border border-border hover:bg-border/30"
+              tab === t.id ? "bg-accent/20 text-accent border border-accent/30" : "bg-surface-hover text-muted border border-border hover:bg-border/30"
             }`}
           >
             <t.icon size={14} /> {t.label}
@@ -157,13 +157,13 @@ function SectoresTab({ sectores, onRefresh }: { sectores: Sector[]; onRefresh: (
         <thead><tr className="text-muted border-b border-border"><th className="text-left py-2">Nombre</th><th className="text-left py-2">Código</th><th className="text-left py-2">Camas</th><th className="text-left py-2">Acciones</th></tr></thead>
         <tbody>
           {sectores.map((s) => (
-            <tr key={s.id} className="border-b border-border/30">
+            <tr key={s.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
               <td className="py-2 text-text">{s.nombre}</td>
               <td className="py-2 text-muted">{s.codigo}</td>
               <td className="py-2 text-muted">{s._count?.camas || 0}</td>
               <td className="py-2 flex gap-2">
                 <button onClick={() => { setEditing(s.id); setForm({ nombre: s.nombre, codigo: s.codigo }); }} className="text-xs text-accent">Editar</button>
-                <button onClick={() => handleDelete(s.id)} className="text-xs text-red"><Trash2 size={12} /></button>
+                <button onClick={() => handleDelete(s.id)} className="text-xs text-error"><Trash2 size={12} /></button>
               </td>
             </tr>
           ))}
@@ -218,7 +218,7 @@ function CamasTab({ camas, sectores, onRefresh }: { camas: Cama[]; sectores: Sec
           <thead><tr className="text-muted border-b border-border"><th className="text-left py-2">N°</th><th className="text-left py-2">Sector</th><th className="text-left py-2">Tipo</th><th className="text-left py-2">Estado</th><th className="text-left py-2">Acciones</th></tr></thead>
           <tbody>
             {camas.map((c) => (
-              <tr key={c.id} className="border-b border-border/30">
+              <tr key={c.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
                 <td className="py-2 text-text">{c.numero}</td>
                 <td className="py-2 text-muted">{c.sector.nombre}</td>
                 <td className="py-2 text-muted">{c.tipo || "—"}</td>
@@ -228,7 +228,7 @@ function CamasTab({ camas, sectores, onRefresh }: { camas: Cama[]; sectores: Sec
                   </select>
                 </td>
                 <td className="py-2">
-                  <button onClick={() => handleDelete(c.id)} className="text-xs text-red"><Trash2 size={12} /></button>
+                  <button onClick={() => handleDelete(c.id)} className="text-xs text-error"><Trash2 size={12} /></button>
                 </td>
               </tr>
             ))}
@@ -277,14 +277,14 @@ function ObrasTab({ obras, onRefresh }: { obras: ObraSocial[]; onRefresh: () => 
         <thead><tr className="text-muted border-b border-border"><th className="text-left py-2">Código</th><th className="text-left py-2">Nombre</th><th className="text-left py-2">Sigla</th><th className="text-left py-2">Estado</th><th className="text-left py-2">Acciones</th></tr></thead>
         <tbody>
           {obras.map((o) => (
-            <tr key={o.id} className="border-b border-border/30">
+            <tr key={o.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
               <td className="py-2 text-muted">{o.codigo}</td>
               <td className="py-2 text-text">{o.nombre}</td>
               <td className="py-2 text-muted">{o.sigla}</td>
               <td className="py-2"><Badge variant={o.activa ? "success" : "default"}>{o.activa ? "Activa" : "Inactiva"}</Badge></td>
               <td className="py-2 flex gap-2">
                 <button onClick={() => { setEditing(o.id); setForm({ codigo: o.codigo, nombre: o.nombre, sigla: o.sigla }); }} className="text-xs text-accent">Editar</button>
-                <button onClick={() => handleToggle(o.id, o.activa)} className="text-xs text-amber">{o.activa ? "Desactivar" : "Activar"}</button>
+                <button onClick={() => handleToggle(o.id, o.activa)} className="text-xs text-warning">{o.activa ? "Desactivar" : "Activar"}</button>
               </td>
             </tr>
           ))}
@@ -338,15 +338,15 @@ function QuirofanosTab({ quirofanos, onRefresh }: { quirofanos: Quirofano[]; onR
         <thead><tr className="text-muted border-b border-border"><th className="text-left py-2">N°</th><th className="text-left py-2">Nombre</th><th className="text-left py-2">Piso</th><th className="text-left py-2">Disponible</th><th className="text-left py-2">Acciones</th></tr></thead>
         <tbody>
           {quirofanos.map((q) => (
-            <tr key={q.id} className="border-b border-border/30">
+            <tr key={q.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
               <td className="py-2 text-muted">{q.numero}</td>
               <td className="py-2 text-text">{q.nombre}</td>
               <td className="py-2 text-muted">{q.piso || "—"}</td>
               <td className="py-2"><Badge variant={q.disponible ? "success" : "default"}>{q.disponible ? "Sí" : "No"}</Badge></td>
               <td className="py-2 flex gap-2">
                 <button onClick={() => { setEditing(q.id); setForm({ numero: q.numero, nombre: q.nombre, piso: q.piso || "" }); }} className="text-xs text-accent">Editar</button>
-                <button onClick={() => handleToggle(q.id, q.disponible)} className="text-xs text-amber">{q.disponible ? "Deshabilitar" : "Habilitar"}</button>
-                <button onClick={() => handleDelete(q.id)} className="text-xs text-red"><Trash2 size={12} /></button>
+                <button onClick={() => handleToggle(q.id, q.disponible)} className="text-xs text-warning">{q.disponible ? "Deshabilitar" : "Habilitar"}</button>
+                <button onClick={() => handleDelete(q.id)} className="text-xs text-error"><Trash2 size={12} /></button>
               </td>
             </tr>
           ))}
@@ -396,14 +396,14 @@ function RangosTab({ rangos, onRefresh }: { rangos: RangoVital[]; onRefresh: () 
         <thead><tr className="text-muted border-b border-border"><th className="text-left py-2">Parámetro</th><th className="text-left py-2">Mínimo</th><th className="text-left py-2">Máximo</th><th className="text-left py-2">Unidad</th><th className="text-left py-2">Acciones</th></tr></thead>
         <tbody>
           {rangos.map((r) => (
-            <tr key={r.id} className="border-b border-border/30">
+            <tr key={r.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
               <td className="py-2 text-text">{r.parametro}</td>
               <td className="py-2 text-muted">{r.minimo}</td>
               <td className="py-2 text-muted">{r.maximo}</td>
               <td className="py-2 text-muted">{r.unidad}</td>
               <td className="py-2 flex gap-2">
                 <button onClick={() => { setEditing(r.id); setForm({ parametro: r.parametro, minimo: r.minimo, maximo: r.maximo, unidad: r.unidad }); }} className="text-xs text-accent">Editar</button>
-                <button onClick={() => handleDelete(r.id)} className="text-xs text-red"><Trash2 size={12} /></button>
+                <button onClick={() => handleDelete(r.id)} className="text-xs text-error"><Trash2 size={12} /></button>
               </td>
             </tr>
           ))}

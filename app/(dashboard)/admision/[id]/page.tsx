@@ -56,10 +56,10 @@ const estadoBadge: Record<string, { variant: "success" | "warning" | "error" | "
 };
 
 const severidadColors: Record<string, string> = {
-  LEVE: "badge-green",
-  MODERADA: "badge-yellow",
-  SEVERA: "badge-orange",
-  ANAFILAXIA: "badge-red",
+  LEVE: "bg-success/10 text-success border border-success/20",
+  MODERADA: "bg-warning/10 text-warning border border-warning/20",
+  SEVERA: "bg-error/10 text-error border border-error/20",
+  ANAFILAXIA: "bg-error/20 text-error border border-error/30",
 };
 
 const initialAlergiaForm = { sustancia: "", severidad: "MODERADA", observacion: "" };
@@ -180,7 +180,7 @@ export default function PacienteDetailPage() {
 
   return (
     <div className="space-y-6">
-      <button onClick={() => router.back()} className="flex items-center gap-2 text-muted hover:text-white transition-colors text-sm">
+      <button onClick={() => router.back()} className="flex items-center gap-2 text-muted hover:text-text transition-colors text-sm">
         <ArrowLeft size={16} /> Volver
       </button>
 
@@ -192,7 +192,7 @@ export default function PacienteDetailPage() {
               {paciente.nombre[0]}{paciente.apellido[0]}
             </div>
             <div>
-              <h2 className="text-xl font-medium text-white">{paciente.apellido}, {paciente.nombre}</h2>
+              <h2 className="text-xl font-medium text-text">{paciente.apellido}, {paciente.nombre}</h2>
               <p className="text-muted text-sm">
                 DNI: {paciente.dni} | {paciente.sexo} | {paciente.telefono || "—"}
               </p>
@@ -224,14 +224,14 @@ export default function PacienteDetailPage() {
             {paciente.alergias.map((a) => (
               <div key={a.id} className="flex items-center justify-between bg-background rounded-lg px-4 py-2">
                 <div className="flex items-center gap-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${severidadColors[a.severidad || "MODERADA"] || "badge-gray"}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${severidadColors[a.severidad || "MODERADA"]}`}>
                     {a.severidad || "—"}
                   </span>
-                  <span className="text-white text-sm font-medium">{a.sustancia}</span>
+                  <span className="text-text text-sm font-medium">{a.sustancia}</span>
                   {a.observacion && <span className="text-muted text-xs">— {a.observacion}</span>}
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => openEditAlergia(a)} className="p-1 text-muted hover:text-white transition-colors"><Edit size={14} /></button>
+                  <button onClick={() => openEditAlergia(a)} className="p-1 text-muted hover:text-text transition-colors"><Edit size={14} /></button>
                   <button onClick={() => handleDeleteAlergia(a.id)} className="p-1 text-muted hover:text-error transition-colors"><Trash2 size={14} /></button>
                 </div>
               </div>
@@ -245,7 +245,7 @@ export default function PacienteDetailPage() {
         <form onSubmit={handleSaveAlergia} className="space-y-4">
           <Input label="Sustancia" name="sustancia" value={alergiaForm.sustancia} onChange={(e) => setAlergiaForm((p) => ({ ...p, sustancia: e.target.value }))} required />
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-400">Severidad</label>
+            <label className="text-sm text-text-secondary">Severidad</label>
             <select value={alergiaForm.severidad} onChange={(e) => setAlergiaForm((p) => ({ ...p, severidad: e.target.value }))} className="select-field">
               <option value="LEVE">Leve</option>
               <option value="MODERADA">Moderada</option>
@@ -263,7 +263,7 @@ export default function PacienteDetailPage() {
 
       {/* Internaciones Section */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-white">Internaciones</h3>
+        <h3 className="text-lg font-medium text-text">Internaciones</h3>
         <Button onClick={() => setNuevaInternacionOpen(true)}>
           <Plus size={16} /> Nueva Internación
         </Button>
@@ -282,11 +282,11 @@ export default function PacienteDetailPage() {
                 className="card p-4 flex items-center justify-between cursor-pointer hover:border-accent/30 transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                  <div className="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center text-info">
                     <Calendar size={18} />
                   </div>
                   <div>
-                    <p className="text-white font-medium">Internación #{i.numero}</p>
+                    <p className="text-text font-medium">Internación #{i.numero}</p>
                     <p className="text-muted text-xs">
                       Ingreso: {formatDateTime(i.fechaIngreso)}
                       {i.fechaEgreso ? ` | Egreso: ${formatDateTime(i.fechaEgreso)}` : ""}
@@ -306,7 +306,7 @@ export default function PacienteDetailPage() {
       {!activeInternacion && (
         <div className="card p-5 text-center">
           <Activity size={32} className="mx-auto text-accent mb-2" />
-          <p className="text-white font-medium mb-1">No hay internación activa</p>
+          <p className="text-text font-medium mb-1">No hay internación activa</p>
           <p className="text-muted text-sm mb-3">Este paciente no tiene una internación activa actualmente.</p>
           <Button onClick={() => setNuevaInternacionOpen(true)}>
             <Plus size={16} /> Nueva Internación
@@ -319,14 +319,14 @@ export default function PacienteDetailPage() {
         <form onSubmit={handleCreateInternacion} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-gray-400">Cama</label>
+              <label className="text-sm text-text-secondary">Cama</label>
               <select value={form.camaId} onChange={(e) => setForm((p) => ({ ...p, camaId: e.target.value }))} className="select-field">
                 <option value="">Sin cama asignada</option>
                 {camasLibres.map((c) => <option key={c.id} value={c.id}>{c.numero} — {c.sector.nombre}</option>)}
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-gray-400">Obra Social</label>
+              <label className="text-sm text-text-secondary">Obra Social</label>
               <select value={form.obraSocialId} onChange={(e) => setForm((p) => ({ ...p, obraSocialId: e.target.value }))} className="select-field">
                 <option value="">Sin obra social</option>
                 {obrasSociales.map((os) => <option key={os.id} value={os.id}>{os.nombre} ({os.sigla})</option>)}
@@ -334,14 +334,14 @@ export default function PacienteDetailPage() {
             </div>
             <Input label="N° Afiliado" name="nroAfiliado" value={form.nroAfiliado} onChange={(e) => setForm((p) => ({ ...p, nroAfiliado: e.target.value }))} />
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-gray-400">Tipo Beneficiario</label>
+              <label className="text-sm text-text-secondary">Tipo Beneficiario</label>
               <select value={form.tipoBeneficiario} onChange={(e) => setForm((p) => ({ ...p, tipoBeneficiario: e.target.value }))} className="select-field">
                 <option value="TITULAR">Titular</option>
                 <option value="FAMILIAR">Familiar</option>
               </select>
             </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-gray-400">Médico(s) Tratante(s)</label>
+                <label className="text-sm text-text-secondary">Médico(s) Tratante(s)</label>
                 <SearchableMultiSelect
                   items={medicos.map((m) => ({ id: m.id, label: m.nombre, sublabel: m.matricula || undefined }))}
                   selectedIds={form.medicoTratanteIds}
@@ -350,7 +350,7 @@ export default function PacienteDetailPage() {
                 />
               </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-gray-400">Tipo de Ingreso</label>
+              <label className="text-sm text-text-secondary">Tipo de Ingreso</label>
               <select name="tipoIngreso" value={form.tipoIngreso} onChange={(e) => setForm((p) => ({ ...p, tipoIngreso: e.target.value }))} className="select-field">
                 <option value="PROGRAMADO">Programado</option>
                 <option value="URGENCIA">Urgencia</option>

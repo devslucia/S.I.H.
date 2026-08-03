@@ -59,7 +59,7 @@ export default function FacturacionPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Receipt className="w-6 h-6 text-accent" />
-        <h2 className="text-xl font-medium text-white">Auditoría y Facturación</h2>
+        <h2 className="text-xl font-medium text-text">Auditoría y Facturación</h2>
       </div>
 
       {loading ? (
@@ -79,7 +79,7 @@ export default function FacturacionPage() {
                   <div className="flex items-center gap-3">
                     {isExpanded ? <ChevronDown size={16} className="text-muted" /> : <ChevronRight size={16} className="text-muted" />}
                     <div>
-                      <p className="text-white font-medium">
+                      <p className="text-text font-medium">
                         {liq.internacion?.paciente ? `${liq.internacion.paciente.apellido}, ${liq.internacion.paciente.nombre}` : "—"}
                       </p>
                       <p className="text-muted text-xs">
@@ -89,7 +89,7 @@ export default function FacturacionPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-white font-medium text-base md:text-sm">${liq.totalCargos.toFixed(2)}</p>
+                    <p className="text-text font-medium text-base md:text-sm">${liq.totalCargos.toFixed(2)}</p>
                     <p className="text-muted text-xs">{liq.cargos.length} cargo(s)</p>
                   </div>
                 </button>
@@ -97,7 +97,7 @@ export default function FacturacionPage() {
                 {isExpanded && (
                   <div className="border-t border-border">
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm text-gray-300">
+                      <table className="w-full text-sm text-text">
                         <thead className="bg-background">
                           <tr>
                             <th className="px-4 py-2.5 text-left font-medium text-muted">Concepto</th>

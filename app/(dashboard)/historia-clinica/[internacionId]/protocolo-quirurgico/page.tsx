@@ -115,7 +115,7 @@ export default function ProtocoloQuirurgicoPage() {
         <div className="card p-5">
           <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Implantes</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-gray-300">
+            <table className="w-full text-sm text-text">
               <thead className="bg-background">
                 <tr>
                   <th className="px-3 py-2 text-left text-muted font-medium">Código</th>
@@ -145,7 +145,7 @@ export default function ProtocoloQuirurgicoPage() {
         <div className="card p-5">
           <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Medicamentos</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-gray-300">
+            <table className="w-full text-sm text-text">
               <thead className="bg-background">
                 <tr>
                   <th className="px-3 py-2 text-left text-muted font-medium">Nombre</th>
@@ -173,7 +173,7 @@ export default function ProtocoloQuirurgicoPage() {
         <div className="card p-5">
           <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Prácticas</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-gray-300">
+            <table className="w-full text-sm text-text">
               <thead className="bg-background">
                 <tr>
                   <th className="px-3 py-2 text-left text-muted font-medium">Fecha</th>
