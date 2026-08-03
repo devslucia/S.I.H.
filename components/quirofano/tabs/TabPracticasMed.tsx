@@ -94,14 +94,14 @@ export function TabPracticasMed({ data, formData, update, isReadOnly, effectiveR
             <tbody>
               {data?.practicas?.length === 0 && <tr><td colSpan={7} className="px-3 py-4 text-center text-muted">Sin prácticas registradas</td></tr>}
               {data?.practicas?.map((p: any) => (
-                <tr key={p.id} className="border-t border-border">
+                <tr key={p.id} className="border-t border-border hover:bg-surface-hover transition-colors">
                   <td className="px-3 py-2">{formatDateTime(p.fecha)}</td>
                   <td className="px-3 py-2">{p.hora}</td>
                   <td className="px-3 py-2">{p.practica}</td>
                   <td className="px-3 py-2">{p.laboratorio || "—"}</td>
                   <td className="px-3 py-2">{p.cargoPor || "—"}</td>
                   <td className="px-3 py-2">{p.actoQuirurgico || "—"}</td>
-                  {canAddPracticas && <td className="px-3 py-2"><button onClick={() => deletePractica(p.id)} className="text-red hover:text-red/80"><Trash2 size={14} /></button></td>}
+                   {canAddPracticas && <td className="px-3 py-2"><button onClick={() => deletePractica(p.id)} className="text-error hover:text-error/80"><Trash2 size={14} /></button></td>}
                 </tr>
               ))}
             </tbody>
@@ -128,14 +128,14 @@ export function TabPracticasMed({ data, formData, update, isReadOnly, effectiveR
             <tbody>
               {data?.medicamentos?.length === 0 && <tr><td colSpan={7} className="px-3 py-4 text-center text-muted">Sin medicamentos registrados</td></tr>}
               {data?.medicamentos?.map((m: any) => (
-                <tr key={m.id} className="border-t border-border">
+                <tr key={m.id} className="border-t border-border hover:bg-surface-hover transition-colors">
                   <td className="px-3 py-2">{m.nombre}</td>
                   <td className="px-3 py-2">{m.presentacion || "—"}</td>
                   <td className="px-3 py-2">{String(m.cantidad)}</td>
                   <td className="px-3 py-2">{m.via || "—"}</td>
                   <td className="px-3 py-2">{m.horaAplicacion || "—"}</td>
                   <td className="px-3 py-2">{m.observacion || "—"}</td>
-                  {canAddMedicamentos && <td className="px-3 py-2"><button onClick={() => deleteMedicamento(m.id)} className="text-red hover:text-red/80"><Trash2 size={14} /></button></td>}
+                   {canAddMedicamentos && <td className="px-3 py-2"><button onClick={() => deleteMedicamento(m.id)} className="text-error hover:text-error/80"><Trash2 size={14} /></button></td>}
                 </tr>
               ))}
             </tbody>

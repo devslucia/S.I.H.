@@ -57,7 +57,7 @@ export function TabReprogramaciones({ data, isReadOnly, effectiveRole, cirugiaId
             <tbody>
               {data?.reprogramaciones?.length === 0 && <tr><td colSpan={6} className="px-3 py-4 text-center text-muted">Sin reprogramaciones</td></tr>}
               {data?.reprogramaciones?.map((r: any, idx: number) => (
-                <tr key={r.id} className="border-t border-border">
+                <tr key={r.id} className="border-t border-border hover:bg-surface-hover transition-colors">
                   <td className="px-3 py-2">{idx + 1}</td>
                   <td className="px-3 py-2">{formatDateTime(r.fechaOriginal)}</td>
                   <td className="px-3 py-2">{formatDateTime(r.nuevaFecha)}</td>

@@ -129,7 +129,7 @@ export default function FarmaciaPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Package className="w-6 h-6 text-accent" />
-          <h2 className="text-xl font-medium text-white">Stock de Farmacia</h2>
+          <h2 className="text-xl font-medium text-text">Stock de Farmacia</h2>
         </div>
         {userRole === "ADMIN" && (
           <Button onClick={() => setCreateModal(true)}>
@@ -142,29 +142,29 @@ export default function FarmaciaPage() {
         <p className="text-muted text-sm">Cargando stock...</p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-sm text-gray-300">
+          <table className="w-full text-sm text-text">
             <thead className="bg-surface">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Nombre</th>
-                <th className="hidden md:table-cell px-4 py-3 text-left font-medium text-gray-400">Presentación</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Stock Actual</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Stock Mínimo</th>
-                <th className="hidden lg:table-cell px-4 py-3 text-left font-medium text-gray-400">Lote</th>
-                <th className="hidden lg:table-cell px-4 py-3 text-left font-medium text-gray-400">Vencimiento</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-400">Acción</th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">Nombre</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left font-medium text-text-secondary">Presentación</th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">Stock Actual</th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">Stock Mínimo</th>
+                <th className="hidden lg:table-cell px-4 py-3 text-left font-medium text-text-secondary">Lote</th>
+                <th className="hidden lg:table-cell px-4 py-3 text-left font-medium text-text-secondary">Vencimiento</th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary">Acción</th>
               </tr>
             </thead>
             <tbody>
               {stock.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-gray-500">Sin datos</td>
+                  <td colSpan={7} className="px-4 py-12 text-center text-muted">Sin datos</td>
                 </tr>
               ) : (
                 stock.map((item) => {
                   const isLow = item.stockActual <= item.stockMinimo;
                   return (
                     <tr key={item.id}
-                      className={`border-t border-border transition-colors ${isLow ? "bg-red-900/10" : ""} hover:bg-border/30`}>
+                      className={`border-t border-border transition-colors ${isLow ? "bg-error/10" : ""} hover:bg-border/30`}>
                       <td className="px-4 py-3">
                         <span className="flex items-center gap-1">
                           {item.nombre}
@@ -172,7 +172,7 @@ export default function FarmaciaPage() {
                         </span>
                       </td>
                       <td className="hidden md:table-cell px-4 py-3">{item.presentacion || "—"}</td>
-                      <td className={`px-4 py-3 font-medium ${isLow ? "text-error" : "text-white"}`}>
+                      <td className={`px-4 py-3 font-medium ${isLow ? "text-error" : "text-text"}`}>
                         {item.stockActual}
                         {isLow && <Badge variant="error" className="ml-2">Stock bajo</Badge>}
                       </td>
@@ -203,7 +203,7 @@ export default function FarmaciaPage() {
       <Modal open={movementModal} onClose={() => setMovementModal(false)} title={`Movimiento - ${selectedItem?.nombre || ""}`}>
         <form onSubmit={handleMovement} className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-400">Tipo</label>
+            <label className="text-sm text-text-secondary">Tipo</label>
             <select value={movForm.tipo} onChange={(e) => setMovForm((p) => ({ ...p, tipo: e.target.value }))} className="select-field">
               <option value="INGRESO">Ingreso</option>
               <option value="EGRESO">Egreso</option>
@@ -229,7 +229,7 @@ export default function FarmaciaPage() {
           <Input label="Presentación" name="presentacion" value={createForm.presentacion}
             onChange={(e) => setCreateForm((p) => ({ ...p, presentacion: e.target.value }))} />
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-400">Unidad *</label>
+            <label className="text-sm text-text-secondary">Unidad *</label>
             <select value={createForm.unidad} onChange={(e) => setCreateForm((p) => ({ ...p, unidad: e.target.value }))} className="select-field" required>
               <option value="unidades">Unidades</option>
               <option value="mg">mg</option>

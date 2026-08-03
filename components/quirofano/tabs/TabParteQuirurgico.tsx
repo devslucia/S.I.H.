@@ -98,7 +98,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
                   <th className="px-3 py-2">Cirugía realizada</th>
                 </tr></thead>
                 <tbody>
-                  <tr className="border-t border-border">
+                  <tr className="border-t border-border hover:bg-surface-hover transition-colors">
                     <td className="px-3 py-2">1</td>
                     <td className="px-3 py-2">{data?.fechaProgramada ? formatDateTime(data.fechaProgramada) : "—"}</td>
                     <td className="px-3 py-2">{data?.horaInicio || "—"}</td>
@@ -136,7 +136,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
                 <tbody>
                   {data?.implantes?.length === 0 && <tr><td colSpan={5} className="px-3 py-4 text-center text-muted">Sin implantes registrados</td></tr>}
                   {data?.implantes?.map((imp: any) => (
-                    <tr key={imp.id} className="border-t border-border">
+                    <tr key={imp.id} className="border-t border-border hover:bg-surface-hover transition-colors">
                       <td className="px-3 py-2">{imp.codigo}</td><td className="px-3 py-2">{imp.nombre}</td>
                       <td className="px-3 py-2">{imp.lote || "—"}</td><td className="px-3 py-2">{imp.modelo || "—"}</td>
                       <td className="px-3 py-2">{imp.lado || "—"}</td>
@@ -185,7 +185,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
                   <tr><td colSpan={6} className="px-3 py-4 text-center text-muted">Sin indicaciones registradas</td></tr>
                 )}
                 {(formData?.indicacionesPostoperatorias || []).map((ind: any, idx: number) => (
-                  <tr key={idx} className="border-t border-border">
+                  <tr key={idx} className="border-t border-border hover:bg-surface-hover transition-colors">
                     <td className="px-3 py-1"><input type="text" value={ind.indicacion} disabled={disabledIndicaciones}
                       onChange={e => { const arr = [...formData.indicacionesPostoperatorias]; arr[idx].indicacion = e.target.value; update("indicacionesPostoperatorias", arr); }}
                       className="bg-transparent border-none text-sm text-foreground w-full focus:outline-none" /></td>
@@ -204,7 +204,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
                     {!disabledIndicaciones && <td className="px-3 py-1"><button onClick={() => {
                       const arr = formData.indicacionesPostoperatorias.filter((_: any, i: number) => i !== idx);
                       update("indicacionesPostoperatorias", arr);
-                    }} className="text-red hover:text-red/80"><Trash2 size={14} /></button></td>}
+                    }} className="text-error hover:text-error/80"><Trash2 size={14} /></button></td>}
                   </tr>
                 ))}
               </tbody>

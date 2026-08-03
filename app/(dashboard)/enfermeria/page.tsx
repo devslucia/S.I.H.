@@ -704,7 +704,7 @@ function MedicacionAdHoc({ internacionId, onApplied }: { internacionId: string; 
       </button>
 
       {showModal && (
-        <div className="fixed inset-0 z-60 bg-black/60 flex items-center justify-center" onClick={() => setShowModal(false)}>
+        <div className="fixed inset-0 z-60 bg-scrim/60 flex items-center justify-center" onClick={() => setShowModal(false)}>
           <div className="bg-surface border border-border rounded-lg p-5 w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-sm font-medium text-text">Medicación ad-hoc (sin prescripción)</h3>

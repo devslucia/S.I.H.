@@ -56,7 +56,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
               </tr></thead>
               <tbody>
                 {(formData?.balanceIngresos || []).map((i: any, idx: number) => (
-                  <tr key={idx} className="border-t border-border">
+                  <tr key={idx} className="border-t border-border hover:bg-surface-hover transition-colors">
                     <td className="px-2 py-1"><select value={i.tipo} disabled={disabledBalance}
                       onChange={e => { const arr = [...formData.balanceIngresos]; arr[idx].tipo = e.target.value; update("balanceIngresos", arr); }}
                       className="bg-transparent border border-border rounded text-xs text-foreground w-full"><option value="SF">SF</option><option value="Plasma">Plasma</option><option value="Sangre">Sangre</option><option value="Medicación IV">Medicación IV</option><option value="Otro">Otro</option></select></td>
@@ -68,7 +68,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                       className="bg-transparent border-none text-sm text-foreground w-20" /></td>
                     {!disabledBalance && <td className="px-2 py-1"><button onClick={() => {
                       const arr = formData.balanceIngresos.filter((_: any, j: number) => j !== idx); update("balanceIngresos", arr);
-                    }} className="text-red"><Trash2 size={12} /></button></td>}
+                    }} className="text-error"><Trash2 size={12} /></button></td>}
                   </tr>
                 ))}
               </tbody>
@@ -90,7 +90,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
               </tr></thead>
               <tbody>
                 {(formData?.balanceEgresos || []).map((e: any, idx: number) => (
-                  <tr key={idx} className="border-t border-border">
+                  <tr key={idx} className="border-t border-border hover:bg-surface-hover transition-colors">
                     <td className="px-2 py-1"><select value={e.tipo} disabled={disabledBalance}
                       onChange={ev => { const arr = [...formData.balanceEgresos]; arr[idx].tipo = ev.target.value; update("balanceEgresos", arr); }}
                       className="bg-transparent border border-border rounded text-xs text-foreground w-full"><option value="Diuresis">Diuresis</option><option value="Drenaje">Drenaje</option><option value="Pérdida estimada">Pérdida estimada</option></select></td>
@@ -102,7 +102,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                       className="bg-transparent border-none text-sm text-foreground w-20" /></td>
                     {!disabledBalance && <td className="px-2 py-1"><button onClick={() => {
                       const arr = formData.balanceEgresos.filter((_: any, j: number) => j !== idx); update("balanceEgresos", arr);
-                    }} className="text-red"><Trash2 size={12} /></button></td>}
+                    }} className="text-error"><Trash2 size={12} /></button></td>}
                   </tr>
                 ))}
               </tbody>
@@ -110,7 +110,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
             <p className="text-xs text-accent mt-2">Total egresos: {totalEgresos} ml</p>
           </div>
         </div>
-        <div className={`mt-3 p-3 rounded text-sm font-medium ${balanceTotal >= 0 ? "bg-accent/10 text-accent" : "bg-red/10 text-red"}`}>
+        <div className={`mt-3 p-3 rounded text-sm font-medium ${balanceTotal >= 0 ? "bg-accent/10 text-accent" : "bg-error/10 text-error"}`}>
           Balance total: {balanceTotal >= 0 ? "+" : ""}{balanceTotal} ml
         </div>
       </div>
@@ -152,7 +152,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                     className="bg-transparent border-none text-sm text-foreground w-28" /></td>
                   {!disabledVitals && <td className="px-3 py-1"><button onClick={() => {
                     const arr = formData.signosVitalesIntraop.filter((_: any, j: number) => j !== idx); update("signosVitalesIntraop", arr);
-                  }} className="text-red"><Trash2 size={12} /></button></td>}
+                  }} className="text-error"><Trash2 size={12} /></button></td>}
                 </tr>
               ))}
             </tbody>

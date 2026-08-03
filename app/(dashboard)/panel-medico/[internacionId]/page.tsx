@@ -234,7 +234,7 @@ export default function PanelMedicoPage() {
       <div className="card p-5">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-xl font-medium text-white">
+            <h2 className="text-xl font-medium text-text">
               {internacion.paciente.apellido}, {internacion.paciente.nombre}
             </h2>
             <p className="text-muted text-sm">
@@ -306,7 +306,7 @@ export default function PanelMedicoPage() {
                 <div key={p.id} className="card p-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-white font-medium">
+                      <p className="text-text font-medium">
                         {p.droga || p.tipo}{p.dosis ? ` — ${p.dosis}${p.unidad ? ` ${p.unidad}` : ""}` : ""}
                       </p>
                       <p className="text-muted text-xs">
@@ -416,13 +416,13 @@ export default function PanelMedicoPage() {
           ) : (
             indicacionesPostOp.map((cirugia) => (
               <div key={cirugia.id} className="card p-4">
-                <p className="text-white font-medium text-sm mb-2">
+                <p className="text-text font-medium text-sm mb-2">
                   Cirugía: {cirugia.procedimiento || "—"} ({new Date(cirugia.fechaProgramada).toLocaleDateString("es-AR")})
                 </p>
                 <div className="space-y-1">
                   {cirugia.indicacionesPostoperatorias?.map((ind, idx) => (
                     <div key={idx} className="bg-background rounded px-3 py-2 text-xs">
-                      <span className="text-white font-medium">{ind.indicacion}</span>
+                      <span className="text-text font-medium">{ind.indicacion}</span>
                       {ind.dosis && <span className="text-muted"> — {ind.dosis}</span>}
                       {ind.via && <span className="text-muted"> | Vía: {ind.via}</span>}
                       {ind.frecuencia && <span className="text-muted"> | Frec: {ind.frecuencia}</span>}
@@ -454,7 +454,7 @@ export default function PanelMedicoPage() {
       <Modal open={showPrescripcionModal} onClose={() => setShowPrescripcionModal(false)} title="Nueva Indicación (Destino PISO)" size="xl">
         <div className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-400">Tipo</label>
+            <label className="text-sm text-text-secondary">Tipo</label>
             <select value={prescripcionForm.tipo} onChange={(e) => setPrescripcionForm((p) => ({ ...p, tipo: e.target.value }))} className="select-field">
               <option value="MEDICACION">Medicación</option>
               <option value="DIETA">Dieta</option>
