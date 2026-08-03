@@ -50,12 +50,13 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 bg-surface border-r border-border flex flex-col no-print",
+          "fixed inset-y-0 left-0 z-50 bg-surface border-r border-border flex flex-col no-print sidebar-material",
           "transition-all duration-300 ease-in-out",
           "md:relative md:z-auto",
           collapsed ? "md:w-[68px]" : "md:w-64",
           open ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0"
         )}
+        data-sidebar
       >
         {/* Monitor glow — signature element */}
         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-accent shadow-monitor-glow" />
@@ -105,11 +106,12 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
                 onClick={onClose}
                 title={collapsed ? mod.name : undefined}
                 className={cn(
-                  "w-full flex items-center gap-3 rounded-lg transition-all duration-150 group relative",
+                  "w-full flex items-center gap-3 rounded-lg group relative",
                   collapsed ? "px-2 py-2.5 justify-center" : "px-3 py-2.5",
                   active
                     ? "bg-accent/10 text-accent nav-active-glow"
-                    : "text-muted hover:bg-surface-hover hover:text-text border border-transparent"
+                    : "text-muted hover:bg-surface-hover hover:text-text border border-transparent active:scale-[0.98]",
+                  !active && "transition-all duration-150"
                 )}
               >
                 <Icon className={cn("w-[18px] h-[18px] shrink-0", active && "text-accent")} />

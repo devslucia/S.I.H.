@@ -24,6 +24,7 @@
     --color-warning: 255 183 40;
     --color-error: 230 72 72;
     --color-info: 80 160 255;
+    --color-scrim: 0 0 0; /* dark backdrop */
   }
 
   /* ── Light mode ── */
@@ -45,11 +46,19 @@
     --color-warning: 148 72 8;
     --color-error: 175 28 28;
     --color-info: 20 72 180;
+    --color-scrim: 0 0 0; /* light backdrop */
+  }
+
+  html {
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    @apply bg-background text-text font-sans antialiased;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    @apply bg-background text-text font-sans;
+    transition: background-color 0.35s ease, color 0.2s ease;
   }
 
   * {
@@ -60,6 +69,15 @@
   .font-mono {
     font-variant-numeric: tabular-nums;
   }
+
+  /* ── Typography: optical sizing, size-specific tracking ── */
+  h1, h2, h3 {
+    font-optical-sizing: auto;
+    text-wrap: balance;
+  }
+  h1 { letter-spacing: -0.025em; line-height: 1.1; }
+  h2 { letter-spacing: -0.02em; line-height: 1.15; }
+  h3 { letter-spacing: -0.015em; line-height: 1.2; }
 }
 
 @layer components {
@@ -67,22 +85,39 @@
     @apply bg-surface border border-border rounded-xl shadow-card;
   }
   .card-hover {
-    @apply card hover:border-accent/30 hover:shadow-card-hover transition-all duration-200;
+    @apply card hover:border-accent/30 hover:shadow-card-hover;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .card-hover:active {
+    transform: scale(0.995);
   }
   .input-field {
-    @apply w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder-muted focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-150;
+    @apply w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder-muted focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   .select-field {
     @apply input-field appearance-none cursor-pointer;
   }
   .btn-primary {
-    @apply bg-accent-button text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 hover:shadow-glow active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2;
+    @apply bg-accent-button text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 hover:shadow-glow flex items-center justify-center gap-2;
+    transition: transform 0.12s ease-out, opacity 0.12s ease-out, box-shadow 0.2s ease;
+  }
+  .btn-primary:active {
+    transform: scale(0.97);
   }
   .btn-secondary {
-    @apply bg-surface-hover text-text px-4 py-2.5 rounded-lg text-sm font-medium border border-border hover:border-border-hover hover:bg-surface-active active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2;
+    @apply bg-surface-hover text-text px-4 py-2.5 rounded-lg text-sm font-medium border border-border hover:border-border-hover hover:bg-surface-active flex items-center justify-center gap-2;
+    transition: transform 0.12s ease-out, border-color 0.15s ease, background-color 0.15s ease;
+  }
+  .btn-secondary:active {
+    transform: scale(0.97);
   }
   .btn-danger {
-    @apply bg-error/10 text-error px-4 py-2.5 rounded-lg text-sm font-medium border border-error/20 hover:bg-error/20 hover:border-error/30 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2;
+    @apply bg-error/10 text-error px-4 py-2.5 rounded-lg text-sm font-medium border border-error/20 hover:bg-error/20 hover:border-error/30 flex items-center justify-center gap-2;
+    transition: transform 0.12s ease-out, background-color 0.15s ease;
+  }
+  .btn-danger:active {
+    transform: scale(0.97);
   }
   .badge-success {
     @apply bg-success/10 text-success border border-success/20 px-2.5 py-0.5 rounded-full text-xs font-medium;
@@ -103,7 +138,8 @@
     @apply text-accent border-b-2 border-accent font-medium;
   }
   .tab-inactive {
-    @apply text-muted hover:text-text border-b-2 border-transparent transition-colors;
+    @apply text-muted hover:text-text border-b-2 border-transparent;
+    transition: color 0.15s ease;
   }
 
   /* Monitor glow — signature element */
@@ -141,6 +177,40 @@
   background: linear-gradient(90deg, rgb(var(--color-surface-hover)) 25%, rgb(var(--color-surface-active)) 50%, rgb(var(--color-surface-hover)) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .sidebar-glow, .nav-active-glow { box-shadow: none; }
+  .status-pulse { animation: none; }
+  .skeleton { animation: none; }
+}
+
+/* ── Reduced transparency ── */
+@media (prefers-reduced-transparency: reduce) {
+  .topbar-material,
+  [data-topbar] {
+    background: rgb(var(--color-surface)) !important;
+    backdrop-filter: none !important;
+  }
+  .sidebar-material,
+  [data-sidebar] {
+    background: rgb(var(--color-surface)) !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* ── High contrast ── */
+@media (prefers-contrast: more) {
+  .card, .card-hover {
+    border-width: 2px;
+  }
 }
 
 @media print {

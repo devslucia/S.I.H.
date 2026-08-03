@@ -40,38 +40,40 @@ function Modal({ open, onClose, title, children, size = "md" }: ModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      {/* Scrim — dim to focus */}
       <div
         ref={overlayRef}
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 bg-scrim/60 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
       />
+      {/* Surface — elevated, material */}
       <div
         className={cn(
           "relative z-10 w-full max-h-[90vh] overflow-y-auto",
-          "bg-surface border border-border rounded-xl shadow-2xl",
+          "bg-surface border border-border rounded-2xl shadow-elevated",
           "animate-scale-in",
           sizeStyles[size],
           "max-w-[calc(100vw-2rem)]"
         )}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3.5 border-b border-border bg-surface/95 backdrop-blur-sm rounded-t-xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3.5 border-b border-border/60 bg-surface/90 backdrop-blur-md rounded-t-2xl">
           {title && (
-            <h2 className="text-base font-display font-semibold text-text">{title}</h2>
+            <h2 className="text-base font-display font-semibold text-text tracking-tight">
+              {title}
+            </h2>
           )}
           <button
             onClick={onClose}
             className={cn(
-              "rounded-lg p-1.5 text-muted hover:text-text hover:bg-surface-hover transition-colors",
+              "rounded-lg p-1.5 text-muted hover:text-text hover:bg-surface-hover transition-colors duration-150 active:scale-95",
               !title && "ml-auto"
             )}
           >
             <X size={16} />
           </button>
         </div>
-        <div className="p-5">
-          {children}
-        </div>
+        <div className="p-5">{children}</div>
       </div>
     </div>
   );
