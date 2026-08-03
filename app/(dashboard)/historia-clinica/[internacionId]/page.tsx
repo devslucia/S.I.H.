@@ -52,9 +52,15 @@ const tabs = [
   { id: "epicrisis", label: "Epicrisis", icon: BookOpen },
 ];
 
-function generarHTMLCarpeta(data: any): string {
+function generarHTMLCarpeta(data: any, usuarios: Usuario[]): string {
   const paciente = data.paciente
   const hc = data.histClinica
+
+  const resolveUser = (id: string | null | undefined): string => {
+    if (!id) return '—'
+    const u = usuarios.find((u) => u.id === id)
+    return u ? u.nombre : id
+  }
 
   const membrete = `
     <div style="display:flex;align-items:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:16px">
@@ -89,7 +95,7 @@ function generarHTMLCarpeta(data: any): string {
 <style>
   body { font-family: Arial, sans-serif; font-size: 11pt; color: #000; background: #fff; margin: 0; padding: 0; }
   @page { margin: 1.5cm 2cm; size: A4 portrait; }
-  @media print { body { -webkit-print-color-adjust: exact; } }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
   table { width: 100%; border-collapse: collapse; }
   th, td { border: 1px solid #000; padding: 4px 6px; font-size: 9pt; }
   th { background: #f0f0f0; font-weight: bold; }
@@ -97,6 +103,7 @@ function generarHTMLCarpeta(data: any): string {
   .section { margin-bottom: 12px; font-size: 9pt; }
   .field { margin-bottom: 6px; }
   .field strong { display: inline-block; min-width: 180px; }
+  .no-break { page-break-inside: avoid; }
 </style>
 </head>
 <body>
@@ -129,6 +136,21 @@ function generarHTMLCarpeta(data: any): string {
         <div class="field"><strong>Obra Social:</strong> ${data.obraSocial?.nombre ?? 'Particular'}</div>
         <div class="field"><strong>Estado:</strong> ${data.estado}</div>
       </div>
+      ${data.pases?.length > 0 ? `
+        <div class="section" style="margin-top:12px">
+          <strong>PASES INTERNOS</strong>
+          <table style="margin-top:6px">
+            <thead><tr><th>Fecha</th><th>Origen</th><th>Destino</th><th>Médico</th><th>Observación</th></tr></thead>
+            <tbody>${data.pases.map((p: any) => `<tr>
+              <td>${new Date(p.fecha).toLocaleDateString('es-AR')}</td>
+              <td>${p.origen ?? '—'}</td>
+              <td>${p.destino ?? '—'}</td>
+              <td>${p.medico ?? '—'}</td>
+              <td>${p.observacion ?? ''}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>
+      ` : ''}
     </div>
     ${pageBreak}
   `
@@ -165,7 +187,7 @@ function generarHTMLCarpeta(data: any): string {
           <tbody>
             ${[
               ['Estado General', a.estadoGeneral],
-              ['Signos Vitales Ingreso', a.signosVitalesIngreso ? JSON.stringify(a.signosVitalesIngreso) : null],
+              ['Signos Vitales Ingreso', a.signosVitalesIngreso ? (typeof a.signosVitalesIngreso === 'object' ? Object.entries(a.signosVitalesIngreso).map(([k,v]) => `${k}: ${v}`).join(' | ') : a.signosVitalesIngreso) : null],
               ['Piel y Faneras', a.pielFaneras],
               ['Cabeza y Cuello', a.cabezaCuello],
               ['Tórax', a.torax],
@@ -256,14 +278,18 @@ function generarHTMLCarpeta(data: any): string {
     `
   }
 
-  // HOJA 5 — Hoja de Enfermería (Controles)
-  if (hc?.controlesEnfermeria?.length > 0) {
+  // HOJA 5 — Hoja de Enfermería (Controles + Medicación)
+  if (hc?.controlesEnfermeria?.length > 0 || hc?.hojaEnfermeria?.length > 0) {
     html += `
       <div>
         ${membrete}
         ${headerPaciente}
         <h2>HOJA DE ENFERMERÍA</h2>
-        <table>
+    `
+    if (hc?.controlesEnfermeria?.length > 0) {
+      html += `
+        <strong style="font-size:9pt">CONTROLES DE ENFERMERÍA</strong>
+        <table style="margin-top:6px">
           <thead>
             <tr><th>FECHA</th><th>HORA</th><th>T/A</th><th>P</th><th>R</th><th>T°</th><th>SatO2</th><th>INGRESOS</th><th>EGRESOS</th><th>OBSERVACIONES</th><th>FIRMA</th></tr>
           </thead>
@@ -278,31 +304,191 @@ function generarHTMLCarpeta(data: any): string {
                 <td>${d.FR ?? d.fr ?? ''}</td>
                 <td>${d.Temp ?? d.temp ?? ''}</td>
                 <td>${d.SatO2 ?? d.sato2 ?? ''}</td>
-                <td></td><td></td>
+                <td>${d.ingresos ?? ''}</td>
+                <td>${d.egresos ?? ''}</td>
                 <td style="font-size:8pt">${ctrl.observacion ?? ''}</td>
                 <td></td>
               </tr>`
             }).join('')}
           </tbody>
         </table>
+      `
+    }
+    if (hc?.hojaEnfermeria?.length > 0) {
+      html += `
+        <div style="margin-top:16px">
+          <strong style="font-size:9pt">APLICACIONES DE MEDICACIÓN</strong>
+          <table style="margin-top:6px">
+            <thead><tr><th>FECHA</th><th>SECCIÓN</th><th>ITEM</th><th>DOSIS</th><th>VÍA</th><th>MARCAS HORARIAS</th><th>FIRMA</th></tr></thead>
+            <tbody>
+              ${hc.hojaEnfermeria.map((h: any) => `<tr>
+                <td>${new Date(h.fecha).toLocaleDateString('es-AR')}</td>
+                <td>${h.seccion ?? ''}</td>
+                <td>${h.stockItem?.nombre ?? h.item ?? ''}</td>
+                <td>${h.dosis ?? ''}</td>
+                <td>${h.via ?? ''}</td>
+                <td>${h.marcasHorarias ?? ''}</td>
+                <td></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      `
+    }
+    html += `</div>${pageBreak}`
+  }
+
+  // HOJA 6 — Valoración Preanestésica
+  if (hc?.valoracionPreanestesia) {
+    const vp = hc.valoracionPreanestesia
+    html += `
+      <div>
+        ${membrete}
+        ${headerPaciente}
+        <h2>VALORACIÓN PREANESTÉSICA</h2>
+        <div class="section" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9pt">
+          <div class="field"><strong>Antec. Quirúrgicos:</strong><div style="white-space:pre-wrap;border-bottom:1px solid #000;padding:2px">${vp.antecQuirurgicos ?? '—'}</div></div>
+          <div class="field"><strong>Enfermedades en Tratamiento:</strong><div style="white-space:pre-wrap;border-bottom:1px solid #000;padding:2px">${vp.enfermedadesTratamiento ?? '—'}</div></div>
+          <div class="field"><strong>Laboratorio:</strong><div style="white-space:pre-wrap;border-bottom:1px solid #000;padding:2px">${vp.laboratorio ?? '—'}</div></div>
+          <div class="field"><strong>Score ASA:</strong> ${vp.scoreASA ?? '—'}</div>
+          <div class="field"><strong>Anestesia Sugerida:</strong> ${vp.anestesiaSugerida ?? '—'}</div>
+          <div class="field" style="grid-column:span 2"><strong>Comentarios:</strong><div style="white-space:pre-wrap;border-bottom:1px solid #000;padding:2px">${vp.comentarios ?? '—'}</div></div>
+        </div>
+        <div style="margin-top:24px;display:flex;justify-content:flex-end">
+          <div style="text-align:center;width:200px;border-top:1px solid #000;padding-top:4px;font-size:9pt">Firma del Anestesiólogo</div>
+        </div>
       </div>
       ${pageBreak}
     `
   }
 
-  // HOJA 6 — Protocolo Quirúrgico
+  // HOJA 7 — Protocolo de Anestesia
+  if (hc?.protocoloAnestesia) {
+    const pa = hc.protocoloAnestesia
+    const drogas = pa.drogas || []
+    html += `
+      <div>
+        ${membrete}
+        ${headerPaciente}
+        <h2>PROTOCOLO DE ANESTESIA</h2>
+        <div class="section" style="font-size:9pt">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+            <div class="field"><strong>Anestesiólogo:</strong> ${pa.anestesiologo ?? '—'} ${pa.matriculaAnestesiologo ? '(' + pa.matriculaAnestesiologo + ')' : ''}</div>
+            <div class="field"><strong>Cirujano:</strong> ${pa.cirujano ?? '—'} ${pa.matriculaCirujano ? '(' + pa.matriculaCirujano + ')' : ''}</div>
+            <div class="field"><strong>Ayudantes:</strong> ${pa.ayudantes ?? '—'}</div>
+            <div class="field"><strong>Fecha Cirugía:</strong> ${pa.fechaCirugia ? new Date(pa.fechaCirugia).toLocaleDateString('es-AR') : '—'}</div>
+          </div>
+
+          <strong>EVALUACIÓN PREANESTÉSICA</strong>
+          <div style="border:1px solid #000;padding:8px;margin:6px 0">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+              <div><strong>Alergias:</strong> ${pa.alergiaDetalle ?? '—'}</div>
+              <div><strong>Clasificación ASA:</strong> ${pa.clasificacionASA ?? '—'}</div>
+              <div><strong>Ayuno sólidos:</strong> ${pa.ayunoSolidos ?? '—'}</div>
+              <div><strong>Ayuno líquidos:</strong> ${pa.ayunoLiquidos ?? '—'}</div>
+              <div><strong>Estado psíquico:</strong> ${pa.estadoPsiquico ?? '—'}</div>
+              <div><strong>Mallampati:</strong> ${pa.mallampati ?? '—'}</div>
+              <div><strong>Dist. Tiromentoniana:</strong> ${pa.distTiromentoniana ?? '—'}</div>
+              <div><strong>Apertura bucal:</strong> ${pa.aperturaBucal ?? '—'}</div>
+              <div><strong>Peso:</strong> ${pa.peso ?? '—'} kg</div>
+              <div><strong>Talla:</strong> ${pa.talla ?? '—'} cm</div>
+            </div>
+            ${pa.premedicacion?.length > 0 ? `
+              <div style="margin-top:8px"><strong>Premedicación:</strong>
+                <table style="margin-top:4px">
+                  <thead><tr><th>Droga</th><th>Dosis</th><th>Vía</th><th>Hora</th></tr></thead>
+                  <tbody>${pa.premedicacion.map((m: any) => `<tr><td>${m.droga}</td><td>${m.dosis}</td><td>${m.via}</td><td>${m.hora}</td></tr>`).join('')}</tbody>
+                </table>
+              </div>
+            ` : ''}
+            ${pa.signosVitaPreop ? `
+              <div style="margin-top:6px"><strong>Signos Vitales Preoperatorios:</strong> PA: ${pa.signosVitaPreop.PAS ?? ''}/${pa.signosVitaPreop.PAD ?? ''} | FC: ${pa.signosVitaPreop.FC ?? ''} | FR: ${pa.signosVitaPreop.FR ?? ''} | Temp: ${pa.signosVitaPreop.Temp ?? ''}</div>
+            ` : ''}
+          </div>
+
+          <strong style="margin-top:8px;display:block">TÉCNICA ANESTÉSICA</strong>
+          <div style="border:1px solid #000;padding:8px;margin:6px 0">
+            <div><strong>Técnica:</strong> ${Array.isArray(pa.tecnicaAnestesia) ? pa.tecnicaAnestesia.join(', ') : (pa.tecnicaAnestesia ?? '—')}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px">
+              <div><strong>Vía de inducción:</strong> ${pa.viaInduccion ?? '—'}</div>
+              <div><strong>Manejo vía aérea:</strong> ${pa.manejoViaAerea ?? '—'}</div>
+              <div><strong>N° tubo:</strong> ${pa.nroTubo ?? '—'}</div>
+              <div><strong>Modalidad ventilatoria:</strong> ${pa.modalidadVentilatoria ?? '—'}</div>
+              <div><strong>FiO2:</strong> ${pa.FiO2 ?? '—'}</div>
+              ${pa.dificultadViaAerea ? `<div><strong>Dificultad vía aérea:</strong> ${pa.dificultadViaAerea}${pa.detalleViaAerea ? ' — ' + pa.detalleViaAerea : ''}</div>` : ''}
+            </div>
+          </div>
+
+          ${drogas.length > 0 ? `
+            <strong style="margin-top:8px;display:block">DROGAS UTILIZADAS</strong>
+            <table style="margin-top:6px">
+              <thead><tr><th>Categoría</th><th>Nombre</th><th>Dosis</th><th>Vía</th><th>Hora</th></tr></thead>
+              <tbody>${drogas.map((d: any) => `<tr><td>${d.categoria ?? ''}</td><td>${d.nombre}</td><td>${d.dosis} ${d.unidad ?? ''}</td><td>${d.via ?? ''}</td><td>${d.horaAdministracion ?? ''}</td></tr>`).join('')}</tbody>
+            </table>
+          ` : ''}
+
+          ${pa.signosVitales?.registros?.length > 0 ? `
+            <strong style="margin-top:10px;display:block">SIGNOS VITALES INTRAOPERATORIOS</strong>
+            <table style="margin-top:6px">
+              <thead><tr><th>Hora</th><th>PA</th><th>FC</th><th>FR</th><th>T°</th><th>SpO2</th><th>EtCO2</th></tr></thead>
+              <tbody>${pa.signosVitales.registros.map((r: any) => `<tr><td>${r.hora ?? ''}</td><td>${r.PA ?? ''}</td><td>${r.FC ?? ''}</td><td>${r.FR ?? ''}</td><td>${r.T ?? ''}</td><td>${r.SpO2 ?? ''}</td><td>${r.EtCO2 ?? ''}</td></tr>`).join('')}</tbody>
+            </table>
+          ` : ''}
+
+          <strong style="margin-top:10px;display:block">BALANCE DE LÍQUIDOS</strong>
+          <div style="border:1px solid #000;padding:8px;margin:6px 0">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+              <div><strong>Posición operatoria:</strong> ${pa.posicionOperatoria ?? '—'}</div>
+              <div><strong>Diuresis:</strong> ${pa.diuresis ?? '—'} ml</div>
+              <div><strong>Pérdida sanguínea:</strong> ${pa.perdidaSanguinea ?? '—'} ${pa.perdidaSanguineaML ? '(' + pa.perdidaSanguineaML + ' ml)' : ''}</div>
+              <div><strong>Otros egresos:</strong> ${pa.otrosEgresos ?? '—'}</div>
+              <div><strong>Sonda NG:</strong> ${pa.sondas?.NG ? 'Sí' : 'No'}</div>
+              <div><strong>Sonda vesical:</strong> ${pa.sondas?.vesical ? 'Sí' : 'No'}</div>
+              <div><strong>Tipo cirugía:</strong> ${pa.tipoCirugia ?? '—'}</div>
+            </div>
+            ${pa.liquidosIngresados?.length > 0 ? `
+              <div style="margin-top:6px"><strong>Líquidos Ingresados:</strong>
+                <table style="margin-top:4px">
+                  <thead><tr><th>Tipo</th><th>Volumen (ml)</th><th>Lote</th></tr></thead>
+                  <tbody>${pa.liquidosIngresados.map((l: any) => `<tr><td>${l.tipo}</td><td>${l.volumen ?? ''}</td><td>${l.lote ?? ''}</td></tr>`).join('')}</tbody>
+                </table>
+              </div>
+            ` : ''}
+          </div>
+
+          <strong style="margin-top:10px;display:block">RECUPERACIÓN</strong>
+          <div style="border:1px solid #000;padding:8px;margin:6px 0">
+            <div><strong>Estado al egreso:</strong> ${Array.isArray(pa.estadoEgreso) ? pa.estadoEgreso.join(', ') : (pa.estadoEgreso ?? '—')}</div>
+            <div><strong>Destino paciente:</strong> ${pa.destinoPaciente ?? '—'}</div>
+            ${pa.observaciones ? `<div style="margin-top:4px"><strong>Observaciones:</strong> ${pa.observaciones}</div>` : ''}
+          </div>
+        </div>
+        <div style="margin-top:24px;display:flex;justify-content:flex-end">
+          <div style="text-align:center;width:200px;border-top:1px solid #000;padding-top:4px;font-size:9pt">Firma del Anestesiólogo</div>
+        </div>
+      </div>
+      ${pageBreak}
+    `
+  }
+
+  // HOJA 8 — Protocolo Quirúrgico (COMPLETO)
   if (data.cirugias?.length > 0) {
     for (const cir of data.cirugias) {
+      const implantes = cir.implantes || []
+      const medicamentos = cir.medicamentos || []
+      const practicas = cir.practicas || []
       html += `
         <div>
           ${membrete}
           ${headerPaciente}
           <h2>PROTOCOLO QUIRÚRGICO</h2>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9pt;margin-bottom:12px">
-            <div><strong>Cirujano:</strong> ${cir.cirujanoId ?? '—'}</div>
-            <div><strong>Anestesiólogo:</strong> ${cir.anestesiologoId ?? '—'}</div>
-            <div><strong>Instrumentador:</strong> ${cir.instrumentadorId ?? '—'}</div>
+            <div><strong>Cirujano:</strong> ${resolveUser(cir.cirujanoId)}</div>
+            <div><strong>Anestesiólogo:</strong> ${resolveUser(cir.anestesiologoId)}</div>
+            <div><strong>Instrumentador:</strong> ${resolveUser(cir.instrumentadorId)}</div>
             <div><strong>Circulante:</strong> ${cir.circulante ?? '—'}</div>
+            <div><strong>Quirófano:</strong> ${cir.quirofano?.nombre ?? '—'}</div>
+            <div><strong>Estado:</strong> ${cir.estado}</div>
           </div>
           <table style="margin-bottom:12px">
             <tr><th>Fecha</th><th>Inicio</th><th>Fin</th><th>Tipo</th></tr>
@@ -319,6 +505,37 @@ function generarHTMLCarpeta(data: any): string {
           <div style="font-size:9pt;margin-top:12px"><strong>Hallazgos:</strong>
             <div style="border:1px solid #000;min-height:180px;padding:8px;margin-top:4px;white-space:pre-wrap;line-height:1.8;font-size:10pt">${cir.hallazgos ?? ''}</div>
           </div>
+
+          ${implantes.length > 0 ? `
+            <div style="margin-top:12px" class="no-break">
+              <strong style="font-size:9pt">IMPLANTES</strong>
+              <table style="margin-top:4px">
+                <thead><tr><th>Nombre</th><th>Código</th><th>Lado</th><th>Lote</th><th>Cód. CE</th></tr></thead>
+                <tbody>${implantes.map((im: any) => `<tr><td>${im.nombre}</td><td>${im.codigo ?? '—'}</td><td>${im.lado ?? '—'}</td><td>${im.lote ?? '—'}</td><td>${im.codigoCE ?? '—'}</td></tr>`).join('')}</tbody>
+              </table>
+            </div>
+          ` : ''}
+
+          ${medicamentos.length > 0 ? `
+            <div style="margin-top:10px" class="no-break">
+              <strong style="font-size:9pt">MEDICAMENTOS</strong>
+              <table style="margin-top:4px">
+                <thead><tr><th>Nombre</th><th>Cantidad</th><th>Vía</th><th>Hora Aplicación</th></tr></thead>
+                <tbody>${medicamentos.map((m: any) => `<tr><td>${m.nombre}</td><td>${m.cantidad ?? '—'}</td><td>${m.via ?? '—'}</td><td>${m.horaAplicacion ?? '—'}</td></tr>`).join('')}</tbody>
+              </table>
+            </div>
+          ` : ''}
+
+          ${practicas.length > 0 ? `
+            <div style="margin-top:10px" class="no-break">
+              <strong style="font-size:9pt">PRÁCTICAS</strong>
+              <table style="margin-top:4px">
+                <thead><tr><th>Nombre</th><th>Código</th><th>Cantidad</th></tr></thead>
+                <tbody>${practicas.map((pr: any) => `<tr><td>${pr.nombre}</td><td>${pr.codigo ?? '—'}</td><td>${pr.cantidad ?? '—'}</td></tr>`).join('')}</tbody>
+              </table>
+            </div>
+          ` : ''}
+
           <div style="margin-top:24px;display:flex;justify-content:flex-end">
             <div style="text-align:center;width:200px;border-top:1px solid #000;padding-top:4px;font-size:9pt">Firma del Cirujano</div>
           </div>
@@ -328,7 +545,7 @@ function generarHTMLCarpeta(data: any): string {
     }
   }
 
-  // HOJA 7 — Epicrisis (última, sin pageBreak)
+  // HOJA 9 — Epicrisis (última, sin pageBreak)
   if (hc?.epicrisis) {
     const ep = hc.epicrisis
     html += `
@@ -339,6 +556,7 @@ function generarHTMLCarpeta(data: any): string {
         <div style="font-size:9pt;display:flex;flex-direction:column;gap:10px">
           <div><strong>Diagnóstico de Ingreso:</strong><div style="border-bottom:1px solid #000;padding:4px;min-height:24px">${ep.diagIngreso ?? '—'}</div></div>
           <div><strong>Diagnóstico de Egreso:</strong><div style="border-bottom:1px solid #000;padding:4px;min-height:24px">${ep.diagEgreso ?? '—'}</div></div>
+          ${ep.codigosCIE ? `<div><strong>Códigos CIE:</strong><div style="border-bottom:1px solid #000;padding:4px">${ep.codigosCIE}</div></div>` : ''}
           <div><strong>Resumen Clínico:</strong><div style="border:1px solid #000;min-height:80px;padding:6px;white-space:pre-wrap;line-height:1.6">${ep.resumenClinico ?? ''}</div></div>
           <div><strong>Estudios Realizados:</strong><div style="border-bottom:1px solid #000;padding:4px;min-height:40px">${ep.estudiosRealizados ?? ''}</div></div>
           <div><strong>Tratamientos Realizados:</strong><div style="border-bottom:1px solid #000;padding:4px;min-height:40px">${ep.tratamientosRealizados ?? ''}</div></div>
@@ -347,7 +565,7 @@ function generarHTMLCarpeta(data: any): string {
             <div><strong>Lugar:</strong><div style="border-bottom:1px solid #000;padding:4px">${ep.proximoControlLugar ?? '—'}</div></div>
             <div><strong>Médico:</strong><div style="border-bottom:1px solid #000;padding:4px">${ep.proximoControlMedico ?? '—'}</div></div>
           </div>
-          <div><strong>Pendiente:</strong><div style="border-bottom:1px solid #000;padding:4px;min-height:24px">${ep.pendiente ?? ''}</div></div>
+          ${ep.pendiente ? `<div><strong>Pendiente:</strong><div style="border-bottom:1px solid #000;padding:4px;min-height:24px">${ep.pendiente}</div></div>` : ''}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <div><strong>Condición al egreso:</strong> ${ep.condicionEgreso ?? '—'}</div>
             <div><strong>Destino:</strong> ${ep.destino ?? '—'}</div>
@@ -469,7 +687,7 @@ export default function HistoriaClinicaPage() {
       const res = await fetch(`/api/internaciones/${params.internacionId}/carpeta-completa`);
       if (!res.ok) { console.error('Error fetching carpeta:', res.status); return; }
       const data = await res.json();
-      const html = generarHTMLCarpeta(data);
+      const html = generarHTMLCarpeta(data, usuarios);
       const ventana = window.open('', '_blank', 'width=800,height=600');
       if (!ventana) { alert('Permitir ventanas emergentes para imprimir'); return; }
       ventana.document.write(html);
