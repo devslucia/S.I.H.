@@ -194,7 +194,7 @@ function generarHTMLCarpeta(data: any, usuarios: Usuario[]): string {
               ['Ap. Respiratorio', a.apRespiratorio],
               ['Ap. Cardiovascular', a.apCardiovascular],
               ['Abdomen', a.abdomen],
-              ['Sistema Nervioso', a.sNervioso],
+              ['Sistema Nervioso', a.snervioso],
               ['Extremidades', a.extremidades],
             ].map(([label, val]) => `
               <tr>
@@ -402,7 +402,7 @@ function generarHTMLCarpeta(data: any, usuarios: Usuario[]): string {
               </div>
             ` : ''}
             ${pa.signosVitaPreop ? `
-              <div style="margin-top:6px"><strong>Signos Vitales Preoperatorios:</strong> PA: ${pa.signosVitaPreop.PAS ?? ''}/${pa.signosVitaPreop.PAD ?? ''} | FC: ${pa.signosVitaPreop.FC ?? ''} | FR: ${pa.signosVitaPreop.FR ?? ''} | Temp: ${pa.signosVitaPreop.Temp ?? ''}</div>
+              <div style="margin-top:6px"><strong>Signos Vitales Preoperatorios:</strong> PA: ${pa.signosVitaPreop.pas ?? ''}/${pa.signosVitaPreop.pad ?? ''} | FC: ${pa.signosVitaPreop.fc ?? ''} | FR: ${pa.signosVitaPreop.fr ?? ''} | Temp: ${pa.signosVitaPreop.temp ?? ''}</div>
             ` : ''}
           </div>
 
@@ -414,7 +414,7 @@ function generarHTMLCarpeta(data: any, usuarios: Usuario[]): string {
               <div><strong>Manejo vía aérea:</strong> ${pa.manejoViaAerea ?? '—'}</div>
               <div><strong>N° tubo:</strong> ${pa.nroTubo ?? '—'}</div>
               <div><strong>Modalidad ventilatoria:</strong> ${pa.modalidadVentilatoria ?? '—'}</div>
-              <div><strong>FiO2:</strong> ${pa.FiO2 ?? '—'}</div>
+              <div><strong>FiO2:</strong> ${pa.fio2 ?? '—'}</div>
               ${pa.dificultadViaAerea ? `<div><strong>Dificultad vía aérea:</strong> ${pa.dificultadViaAerea}${pa.detalleViaAerea ? ' — ' + pa.detalleViaAerea : ''}</div>` : ''}
             </div>
           </div>
@@ -427,11 +427,11 @@ function generarHTMLCarpeta(data: any, usuarios: Usuario[]): string {
             </table>
           ` : ''}
 
-          ${pa.signosVitales?.registros?.length > 0 ? `
+          ${Array.isArray(pa.signosVitales) && pa.signosVitales.length > 0 ? `
             <strong style="margin-top:10px;display:block">SIGNOS VITALES INTRAOPERATORIOS</strong>
             <table style="margin-top:6px">
-              <thead><tr><th>Hora</th><th>PA</th><th>FC</th><th>FR</th><th>T°</th><th>SpO2</th><th>EtCO2</th></tr></thead>
-              <tbody>${pa.signosVitales.registros.map((r: any) => `<tr><td>${r.hora ?? ''}</td><td>${r.PA ?? ''}</td><td>${r.FC ?? ''}</td><td>${r.FR ?? ''}</td><td>${r.T ?? ''}</td><td>${r.SpO2 ?? ''}</td><td>${r.EtCO2 ?? ''}</td></tr>`).join('')}</tbody>
+              <thead><tr><th>Min</th><th>PA</th><th>FC</th><th>FR</th><th>T°</th><th>SpO2</th><th>EtCO2</th></tr></thead>
+              <tbody>${pa.signosVitales.map((r: any) => `<tr><td>${r.minuto ?? ''}</td><td>${r.pas ?? ''}/${r.pad ?? ''}</td><td>${r.fc ?? ''}</td><td>${r.fr ?? ''}</td><td>${r.temp ?? ''}</td><td>${r.spo2 ?? ''}</td><td>${r.etco2 ?? ''}</td></tr>`).join('')}</tbody>
             </table>
           ` : ''}
 
@@ -442,15 +442,15 @@ function generarHTMLCarpeta(data: any, usuarios: Usuario[]): string {
               <div><strong>Diuresis:</strong> ${pa.diuresis ?? '—'} ml</div>
               <div><strong>Pérdida sanguínea:</strong> ${pa.perdidaSanguinea ?? '—'} ${pa.perdidaSanguineaML ? '(' + pa.perdidaSanguineaML + ' ml)' : ''}</div>
               <div><strong>Otros egresos:</strong> ${pa.otrosEgresos ?? '—'}</div>
-              <div><strong>Sonda NG:</strong> ${pa.sondas?.NG ? 'Sí' : 'No'}</div>
-              <div><strong>Sonda vesical:</strong> ${pa.sondas?.vesical ? 'Sí' : 'No'}</div>
+              <div><strong>Sonda NG:</strong> ${pa.sondaNasogastrica ? 'Sí' : 'No'}</div>
+              <div><strong>Sonda vesical:</strong> ${pa.sondaVesical ? 'Sí' : 'No'}</div>
               <div><strong>Tipo cirugía:</strong> ${pa.tipoCirugia ?? '—'}</div>
             </div>
             ${pa.liquidosIngresados?.length > 0 ? `
               <div style="margin-top:6px"><strong>Líquidos Ingresados:</strong>
                 <table style="margin-top:4px">
                   <thead><tr><th>Tipo</th><th>Volumen (ml)</th><th>Lote</th></tr></thead>
-                  <tbody>${pa.liquidosIngresados.map((l: any) => `<tr><td>${l.tipo}</td><td>${l.volumen ?? ''}</td><td>${l.lote ?? ''}</td></tr>`).join('')}</tbody>
+                  <tbody>${pa.liquidosIngresados.map((l: any) => `<tr><td>${l.tipo}</td><td>${l.volumen ?? l.ml ?? ''}</td><td>${l.lote ?? ''}</td></tr>`).join('')}</tbody>
                 </table>
               </div>
             ` : ''}
