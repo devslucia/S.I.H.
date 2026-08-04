@@ -26,7 +26,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     where: {
       hc: { pacienteId: turno.pacienteId },
       id: { not: turno.episodioId || "" },
-      estado: "FINALIZADO",
+      estado: { not: "CANCELADO" },
     },
     include: {
       anamnesis: {
