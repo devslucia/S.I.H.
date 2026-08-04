@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 interface EpisodioHistorial {
   id: string;
   tipo: string;
+  estado?: string;
   fechaInicio: string;
   fechaFin?: string | null;
   motivoIngreso?: string | null;
@@ -35,6 +36,7 @@ function formatDate(iso: string) {
 function EpisodioCard({ ep }: { ep: EpisodioHistorial }) {
   const [expanded, setExpanded] = useState(false);
   const isInternacion = ep.tipo === "INTERNACION";
+  const isEnCurso = ep.estado === "EN_CURSO";
   const hasCirugia = ep.internacion?.cirugias && ep.internacion.cirugias.length > 0;
 
   const motivo = isInternacion
@@ -44,6 +46,10 @@ function EpisodioCard({ ep }: { ep: EpisodioHistorial }) {
   const diagnostico = isInternacion
     ? ep.epicrisis?.diagEgreso || ep.diagnostico
     : ep.anamnesis?.diagPresuntivo || ep.diagnostico;
+
+  const hasExpandedContent = isInternacion
+    ? (ep.anamnesis?.enfermedadActual || ep.epicrisis || hasCirugia)
+    : (ep.anamnesis?.diagPresuntivo || (ep.evoluciones && ep.evoluciones.length > 0));
 
   return (
     <div className="card overflow-hidden">
@@ -56,11 +62,11 @@ function EpisodioCard({ ep }: { ep: EpisodioHistorial }) {
         ) : (
           <ChevronRight size={16} className="text-muted flex-shrink-0" />
         )}
-        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isInternacion ? "bg-warning" : "bg-success"}`} />
+        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isEnCurso ? "bg-info animate-pulse" : isInternacion ? "bg-warning" : "bg-success"}`} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant={isInternacion ? "warning" : "success"}>
-              {isInternacion ? "Internación" : "Consulta"}
+            <Badge variant={isEnCurso ? "info" : isInternacion ? "warning" : "success"}>
+              {isEnCurso ? "En curso" : isInternacion ? "Internación" : "Consulta"}
             </Badge>
             <span className="text-xs text-muted">{formatDate(ep.fechaInicio)}</span>
             {hasCirugia && (
@@ -130,6 +136,10 @@ function EpisodioCard({ ep }: { ep: EpisodioHistorial }) {
               <p className="text-xs font-semibold text-muted mb-1">Evolución</p>
               <p className="text-xs text-text whitespace-pre-wrap">{ep.evoluciones[0].contenido}</p>
             </div>
+          )}
+
+          {!hasExpandedContent && (
+            <p className="text-xs text-muted italic">Sin datos clínicos registrados en este episodio.</p>
           )}
 
           {ep.fechaFin && (
