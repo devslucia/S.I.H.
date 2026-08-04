@@ -205,6 +205,7 @@ model Usuario {
   horariosConsultorio    HorarioMedicoConsultorio[]
   turnosComoMedico       TurnoConsultorio[] @relation("MedicoTurnos")
   turnosComoSecretaria   TurnoConsultorio[] @relation("SecretariaTurnos")
+  plantillasProtocolo    PlantillaProtocoloQuirurgico[]
 }
 
 model Paciente {
@@ -938,4 +939,16 @@ model FirmaDocumento {
   usuario   Usuario  @relation(fields: [usuarioId], references: [id])
   hash      String
   timestamp DateTime @default(now())
+}
+
+model PlantillaProtocoloQuirurgico {
+  id          String   @id @default(uuid())
+  nombre      String
+  descripcion String?
+  medicoId    String
+  medico      Usuario  @relation(fields: [medicoId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([medicoId, nombre])
 }

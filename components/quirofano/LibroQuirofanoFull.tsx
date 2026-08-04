@@ -87,6 +87,24 @@ export default function LibroQuirofanoFull() {
         setData(updated);
         setFormData({ ...updated });
         setPendingItems(getPendingItems(updated));
+
+        // Auto-creación de plantilla (solo para roles médicos y si hay procedimiento)
+        const rol = (session?.user?.rol ?? "") as string;
+        const procedimiento = formData?.procedimiento?.trim();
+        if (["MEDICO", "ANESTESIOLOGO", "ADMIN"].includes(rol) && procedimiento) {
+          try {
+            await fetch("/api/quirofano/plantillas-protocolo", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                nombre: procedimiento,
+                descripcion: formData?.hallazgos?.trim() || null,
+              }),
+            });
+          } catch {
+            // fallo silencioso: no bloquea el guardado del protocolo
+          }
+        }
       } else if (res.status === 403) {
         const err = await res.json();
         alert(`Sin permiso para modificar: ${err.fields?.join(", ") || "campos no autorizados"}`);
