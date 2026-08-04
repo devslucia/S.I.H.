@@ -1,13 +1,27 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { BookMarked, Download, Save } from "lucide-react";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatUserName } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
 
 type UsuarioData = { id: string; nombre: string; email: string; rol: string; matricula?: string; especialidad?: string };
 
 const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent";
 const labelClass = "text-xs text-muted font-medium mb-1 block";
+const btnClass = "px-3 py-1.5 text-xs rounded font-medium transition-colors inline-flex items-center gap-1";
+const btnTeal = `${btnClass} bg-accent text-black hover:bg-accent/90`;
+const btnOutline = `${btnClass} border border-border text-muted hover:text-foreground hover:border-muted`;
+
+interface Plantilla {
+  id: string;
+  nombre: string;
+  descripcion?: string | null;
+}
+
+const PLANTILLA_ROLES = ["MEDICO", "ANESTESIOLOGO", "ADMIN"];
 
 interface TabCirugiaProps {
   formData: any;
@@ -20,9 +34,105 @@ interface TabCirugiaProps {
 
 export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdit, usuarios }: TabCirugiaProps) {
   const disabled = (field: string) => isReadOnly || !canEdit(field);
+  const { toast } = useToast();
+  const [plantillas, setPlantillas] = useState<Plantilla[]>([]);
+  const [plantillaId, setPlantillaId] = useState("");
+  const [guardandoPlantilla, setGuardandoPlantilla] = useState(false);
+  const puedePlantillas = PLANTILLA_ROLES.includes(effectiveRole);
+
+  useEffect(() => {
+    if (!puedePlantillas) return;
+    fetch("/api/quirofano/plantillas-protocolo")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => {
+        setPlantillas(Array.isArray(d) ? d : []);
+        if (Array.isArray(d) && d.length > 0) setPlantillaId(d[0].id);
+      })
+      .catch(() => {});
+  }, [puedePlantillas]);
+
+  const cargarPlantilla = () => {
+    const p = plantillas.find((t) => t.id === plantillaId);
+    if (!p) return;
+    update("procedimiento", p.nombre);
+    update("hallazgos", p.descripcion || "");
+    toast("success", `Plantilla "${p.nombre}" cargada`);
+  };
+
+  const guardarComoPlantilla = async () => {
+    const nombre = formData?.procedimiento?.trim();
+    if (!nombre) {
+      toast("warning", "Complete el procedimiento quirúrgico antes de guardar la plantilla");
+      return;
+    }
+    setGuardandoPlantilla(true);
+    try {
+      const res = await fetch("/api/quirofano/plantillas-protocolo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre,
+          descripcion: formData?.hallazgos?.trim() || null,
+        }),
+      });
+      if (res.ok) {
+        const creada = await res.json();
+        toast("success", `Plantilla "${creada.nombre}" guardada`);
+        setPlantillas((prev) => {
+          const sin = prev.filter((t) => t.id !== creada.id);
+          const next = [...sin, creada].sort((a, b) => a.nombre.localeCompare(b.nombre));
+          if (!next.some((t) => t.id === creada.id)) next.push(creada);
+          return next;
+        });
+        setPlantillaId(creada.id);
+      } else {
+        const err = await res.json();
+        toast("error", err.error || "Error al guardar la plantilla");
+      }
+    } catch {
+      toast("error", "Error de conexión");
+    } finally {
+      setGuardandoPlantilla(false);
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-7xl">
+      {/* Plantillas de Protocolo */}
+      {puedePlantillas && (
+        <div className="card p-5">
+          <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide flex items-center gap-2">
+            <BookMarked size={14} /> Plantillas de Protocolo
+          </h3>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[220px]">
+              <label className={labelClass}>Plantilla guardada</label>
+              <select value={plantillaId} onChange={(e) => setPlantillaId(e.target.value)} className={inputClass}>
+                <option value="">
+                  {plantillas.length === 0 ? "Sin plantillas guardadas" : "Seleccionar plantilla..."}
+                </option>
+                {plantillas.map((p) => (
+                  <option key={p.id} value={p.id}>{p.nombre}</option>
+                ))}
+              </select>
+            </div>
+            <button onClick={cargarPlantilla} disabled={!plantillaId || isReadOnly}
+              className={`${btnOutline} ${(!plantillaId || isReadOnly) ? "opacity-50 cursor-not-allowed" : ""}`}>
+              <Download size={14} /> Cargar
+            </button>
+            <button onClick={guardarComoPlantilla} disabled={guardandoPlantilla || isReadOnly}
+              className={`${btnTeal} ${(guardandoPlantilla || isReadOnly) ? "opacity-50 cursor-not-allowed" : ""}`}>
+              <Save size={14} /> {guardandoPlantilla ? "Guardando..." : "Guardar como plantilla"}
+            </button>
+          </div>
+          {formData?.procedimiento && (
+            <p className="text-xs text-muted mt-2">
+              Se guardará como: <span className="text-text">{formData.procedimiento}</span>
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Sección 1: Datos Generales */}
       <div className="card p-5">
         <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Datos Generales</h3>

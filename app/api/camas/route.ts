@@ -9,7 +9,14 @@ export async function GET(req: NextRequest) {
   if (error) return error;
 
   const camas = await prisma.cama.findMany({
-    include: { sector: true },
+    include: {
+      sector: true,
+      internaciones: {
+        include: { paciente: true },
+        orderBy: { fechaIngreso: "desc" },
+        take: 1,
+      },
+    },
     orderBy: { sector: { nombre: "asc" } },
   });
 
@@ -39,7 +46,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN", "ADMISION", "ENFERMERO");
+  const { session, error } = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
   const body = await req.json();
@@ -49,17 +56,20 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "id y estado son requeridos" }, { status: 400 });
   }
 
-  if (session!.user.rol === "ENFERMERO") {
-    const internacionActiva = await prisma.internacion.findFirst({
-      where: { camaId: id, estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] } },
-    });
+  const estadoValido = ["LIBRE", "OCUPADA", "EN_LIMPIEZA", "FUERA_DE_SERVICIO"];
+  if (!estadoValido.includes(estado)) {
+    return NextResponse.json({ error: "Estado inválido" }, { status: 400 });
+  }
 
-    if (internacionActiva) {
-      return NextResponse.json(
-        { error: "Esta cama tiene una internación activa, no se puede cambiar el estado directamente" },
-        { status: 409 }
-      );
-    }
+  const internacionActiva = await prisma.internacion.findFirst({
+    where: { camaId: id, estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] } },
+  });
+
+  if (internacionActiva) {
+    return NextResponse.json(
+      { error: "Esta cama tiene una internación activa, no se puede cambiar el estado directamente" },
+      { status: 409 }
+    );
   }
 
   const cama = await prisma.cama.update({
