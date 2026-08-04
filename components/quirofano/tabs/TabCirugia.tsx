@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookMarked, Download, Save } from "lucide-react";
+import { BookMarked, Download, FolderOpen, Save } from "lucide-react";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatUserName } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { PlantillasModal } from "@/components/quirofano/PlantillasModal";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
 
 type UsuarioData = { id: string; nombre: string; email: string; rol: string; matricula?: string; especialidad?: string };
@@ -38,17 +39,23 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
   const [plantillas, setPlantillas] = useState<Plantilla[]>([]);
   const [plantillaId, setPlantillaId] = useState("");
   const [guardandoPlantilla, setGuardandoPlantilla] = useState(false);
+  const [modalPlantillasOpen, setModalPlantillasOpen] = useState(false);
   const puedePlantillas = PLANTILLA_ROLES.includes(effectiveRole);
 
-  useEffect(() => {
+  const loadPlantillas = () => {
     if (!puedePlantillas) return;
     fetch("/api/quirofano/plantillas-protocolo")
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => {
-        setPlantillas(Array.isArray(d) ? d : []);
-        if (Array.isArray(d) && d.length > 0) setPlantillaId(d[0].id);
+        const lista = Array.isArray(d) ? d : [];
+        setPlantillas(lista);
+        if (lista.length > 0 && !lista.some((t: Plantilla) => t.id === plantillaId)) setPlantillaId(lista[0].id);
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    if (puedePlantillas) loadPlantillas();
   }, [puedePlantillas]);
 
   const cargarPlantilla = () => {
@@ -123,6 +130,9 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
             <button onClick={guardarComoPlantilla} disabled={guardandoPlantilla || isReadOnly}
               className={`${btnTeal} ${(guardandoPlantilla || isReadOnly) ? "opacity-50 cursor-not-allowed" : ""}`}>
               <Save size={14} /> {guardandoPlantilla ? "Guardando..." : "Guardar como plantilla"}
+            </button>
+            <button onClick={() => setModalPlantillasOpen(true)} className={btnOutline}>
+              <FolderOpen size={14} /> Mis Plantillas
             </button>
           </div>
           {formData?.procedimiento && (
@@ -284,6 +294,17 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
           onChange={(v) => update("observaciones", v)} disabled={disabled("observaciones")} rows={4}
           placeholder="Observaciones del quirófano..." />
       </div>
+
+      <PlantillasModal
+        open={modalPlantillasOpen}
+        onClose={() => setModalPlantillasOpen(false)}
+        onUsar={(nombre, descripcion) => {
+          update("procedimiento", nombre);
+          update("hallazgos", descripcion);
+          toast("success", `Plantilla "${nombre}" cargada`);
+        }}
+        onListChanged={loadPlantillas}
+      />
     </div>
   );
 }
