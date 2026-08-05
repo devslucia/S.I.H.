@@ -162,6 +162,12 @@ enum EstadoEpisodio {
   CANCELADO
 }
 
+enum EstadoInterconsulta {
+  SOLICITADA
+  RESPONDIDA
+  CANCELADA
+}
+
 enum EstadoTurno {
   PENDIENTE
   CONFIRMADO
@@ -206,6 +212,8 @@ model Usuario {
   turnosComoMedico       TurnoConsultorio[] @relation("MedicoTurnos")
   turnosComoSecretaria   TurnoConsultorio[] @relation("SecretariaTurnos")
   plantillasProtocolo    PlantillaProtocoloQuirurgico[]
+  solicitudesInterconsulta Interconsulta[] @relation("SolicitanteInterconsultas")
+  interconsultasAsignadas   Interconsulta[] @relation("EspecialistaInterconsultas")
 }
 
 model Paciente {
@@ -377,9 +385,28 @@ model Episodio {
   protocoloAnestesia ProtocoloAnestesia?
   epicrisis         Epicrisis?
   turnoConsultorio  TurnoConsultorio?
+  interconsultas    Interconsulta[]
 
   @@index([hcId, fechaInicio])
   @@index([tipo])
+}
+
+model Interconsulta {
+  id                  String               @id @default(uuid())
+  episodioId          String
+  episodio            Episodio             @relation(fields: [episodioId], references: [id], onDelete: Cascade)
+  medicoSolicitanteId String
+  medicoSolicitante   Usuario              @relation("SolicitanteInterconsultas", fields: [medicoSolicitanteId], references: [id])
+  especialidad        String
+  especialistaId      String?
+  especialista        Usuario?             @relation("EspecialistaInterconsultas", fields: [especialistaId], references: [id])
+  motivo              String
+  estado              EstadoInterconsulta  @default(SOLICITADA)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@index([episodioId])
+  @@index([especialistaId])
 }
 
 model HorarioMedicoConsultorio {

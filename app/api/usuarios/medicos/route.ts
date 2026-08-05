@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
-  const { session, error } = await requireRole("ADMIN");
+  const { session, error } = await requireRole("ADMIN", "MEDICO");
   if (error) return error;
 
   const medicos = await prisma.usuario.findMany({
