@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Plus, Send, CheckCircle, Clock, Pill, Activity,
-  Syringe, AlertTriangle, FileText, Trash2, Edit
+  Syringe, AlertTriangle, FileText, Trash2, Edit, UserPlus
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -14,6 +14,7 @@ import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
 import { AnamnesisForm } from "@/components/historia-clinica/AnamnesisForm";
 import { EpicrisisForm } from "@/components/historia-clinica/EpicrisisForm";
+import { SeccionInterconsultas } from "@/components/episodios/SeccionInterconsultas";
 import { formatDateTime, formatUserName } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
@@ -21,6 +22,7 @@ interface Internacion {
   id: string; numero: number; estado: string; fechaIngreso: string;
   paciente: { id: string; nombre: string; apellido: string; dni: string; alergias?: { sustancia: string }[] };
   cama?: { numero: string; sector: { nombre: string } } | null;
+  episodio?: { id: string; numero: number } | null;
   medicosTratantesInternacion?: { medico: { id: string; nombre: string } }[];
 }
 
@@ -73,7 +75,7 @@ export default function PanelMedicoPage() {
   const [indicacionesPostOp, setIndicacionesPostOp] = useState<CirugiaConIndicaciones[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [activeTab, setActiveTab] = useState<"indicaciones" | "evolucion" | "signos" | "postop" | "anamnesis" | "epicrisis">("indicaciones");
+  const [activeTab, setActiveTab] = useState<"indicaciones" | "evolucion" | "signos" | "postop" | "anamnesis" | "epicrisis" | "interconsultas">("indicaciones");
 
   const [showPrescripcionModal, setShowPrescripcionModal] = useState(false);
   const [prescripcionForm, setPrescripcionForm] = useState({
@@ -222,6 +224,7 @@ export default function PanelMedicoPage() {
     { id: "postop" as const, label: "Postoperatorio", icon: FileText, count: indicacionesPostOp.reduce((acc, c) => acc + (c.indicacionesPostoperatorias?.length || 0), 0) },
     { id: "anamnesis" as const, label: "Anamnesis", icon: FileText },
     { id: "epicrisis" as const, label: "Epicrisis", icon: FileText },
+    { id: "interconsultas" as const, label: "Interconsultas", icon: UserPlus },
   ];
 
   return (
@@ -448,6 +451,15 @@ export default function PanelMedicoPage() {
           readOnly={session.data?.user?.rol === "ENFERMERO"}
           onSigned={() => fetchData()}
         />
+      )}
+
+      {/* Tab: Interconsultas */}
+      {activeTab === "interconsultas" && (
+        internacion.episodio?.id ? (
+          <SeccionInterconsultas episodioId={internacion.episodio.id} />
+        ) : (
+          <p className="text-muted text-sm">Este episodio no tiene una historia clínica asociada.</p>
+        )
       )}
 
       {/* Modal: Nueva Prescripción */}

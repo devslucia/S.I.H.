@@ -101,7 +101,7 @@ export default function ConsultaPage() {
       )}
 
       {turno.estado === "EN_CONSULTA" ? (
-        <ConsultaShell turnoId={turnoId} apiBase={apiBase} />
+        <ConsultaShell turnoId={turnoId} apiBase={apiBase} episodioId={turno.episodio?.id} />
       ) : turno.estado === "COMPLETADO" ? (
         <div className="card p-6 text-center space-y-4">
           <CheckCircle className="w-12 h-12 text-success mx-auto" />

@@ -23,6 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       obraSocial: true,
       pases: true,
       histClinica: true,
+      episodio: { select: { id: true, numero: true } },
       medicosTratantesInternacion: {
         include: { medico: { select: { id: true, nombre: true } } },
       },
