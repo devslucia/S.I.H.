@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { History, ChevronDown, ChevronRight, Bed, Stethoscope, Scissors } from "lucide-react";
+import {History, ChevronDown, ChevronRight, Scissors} from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 
 interface EpisodioHistorial {

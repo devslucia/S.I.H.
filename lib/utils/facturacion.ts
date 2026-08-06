@@ -1,10 +1,5 @@
-import type { PrismaClient } from "@prisma/client";
 import type { OrigenCargo } from "@prisma/client";
-
-type Tx = Omit<
-  PrismaClient,
-  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
->;
+import type { Tx } from "@/lib/utils/stock";
 
 /**
  * Busca el precio de un ítem en la tabla Convenio según la obra social de la internación.

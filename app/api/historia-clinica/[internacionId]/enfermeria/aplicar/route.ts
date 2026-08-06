@@ -1,9 +1,10 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
-import { descontarStock } from "@/lib/utils/stock";
+import { descontarStock, type Tx } from "@/lib/utils/stock";
 import { generarCargo } from "@/lib/utils/facturacion";
 import { NextRequest, NextResponse } from "next/server";
+import {errorMessage} from "@/lib/errors";
 
 const APLICAR_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
 const APLICAR_WRITE_ROLES = ["ADMIN", "ENFERMERO", "MEDICO", "ANESTESIOLOGO"];
@@ -39,9 +40,18 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
   return NextResponse.json(aplicaciones);
 }
 
+interface AplicacionItem {
+  prescripcionId: string;
+  hora: string;
+  stockItemId?: string;
+  cantidad?: string | number;
+  droga?: string;
+  nombre?: string;
+}
+
 async function processOneAplicacion(
-  tx: any,
-  item: any,
+  tx: Tx,
+  item: AplicacionItem,
   hcId: string,
   internacionId: string,
   userId: string
@@ -127,11 +137,11 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
 
     try {
       const result = await prisma.$transaction(async (tx) => {
-        return processOneAplicacion(tx, item, hc.id, params.internacionId, (session.user as any).id);
+        return processOneAplicacion(tx, item, hc.id, params.internacionId, session.user.id);
       });
       results.push(result);
-    } catch (e: any) {
-      results.push({ ok: false, nombre: item.nombre || item.prescripcionId || "desconocido", error: e.message || "Error interno" });
+    } catch (e: unknown) {
+      results.push({ ok: false, nombre: item.nombre || item.prescripcionId || "desconocido", error: errorMessage(e) || "Error interno" });
     }
   }
 

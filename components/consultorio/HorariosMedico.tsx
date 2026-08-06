@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Clock, Plus, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { formatUserName } from "@/lib/utils";
+
 
 interface Horario {
   id: string;
@@ -62,7 +62,7 @@ export function HorariosMedico({ medicoId }: HorariosMedicoProps) {
     setError(null);
     setSuccess(null);
     try {
-      const body: Record<string, any> = {
+      const body: Record<string, string | number> = {
         medicoId: medicoId || "",
         dia: form.dia,
         horaInicio: form.horaInicio,

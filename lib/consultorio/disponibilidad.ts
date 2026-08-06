@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { type DiaSemana } from "@prisma/client";
 
 const DIA_SEMANA_MAP: Record<number, string> = {
   0: "DOMINGO",
@@ -32,7 +33,7 @@ export async function obtenerDisponibilidad(medicoId: string, fecha: Date) {
   const diaSemana = DIA_SEMANA_MAP[fecha.getDay()];
 
   const horarios = await prisma.horarioMedicoConsultorio.findMany({
-    where: { medicoId, dia: diaSemana as any, activo: true },
+    where: { medicoId, dia: diaSemana as DiaSemana, activo: true },
   });
 
   if (horarios.length === 0) return [];

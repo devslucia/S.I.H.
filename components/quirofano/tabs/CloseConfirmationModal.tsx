@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, X } from "lucide-react";
+import {AlertTriangle} from "lucide-react";
 import type { PendingItem } from "@/lib/quirofano-rbac";
 
 interface CloseConfirmationModalProps {

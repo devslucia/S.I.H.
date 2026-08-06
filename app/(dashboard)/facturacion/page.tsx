@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Receipt, ChevronDown, ChevronRight, DollarSign, Hash } from "lucide-react";
+import {Receipt, ChevronDown, ChevronRight} from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDateTime } from "@/lib/utils";
 

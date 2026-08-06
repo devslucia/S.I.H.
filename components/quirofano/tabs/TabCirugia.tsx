@@ -7,6 +7,7 @@ import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatUserName } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
+import type { CirugiaFormData, UpdateField } from "./types";
 
 type UsuarioData = { id: string; nombre: string; email: string; rol: string; matricula?: string; especialidad?: string };
 
@@ -24,8 +25,8 @@ interface Plantilla {
 const PLANTILLA_ROLES = ["MEDICO", "ANESTESIOLOGO", "ADMIN"];
 
 interface TabCirugiaProps {
-  formData: any;
-  update: (field: string, value: any) => void;
+  formData: CirugiaFormData;
+  update: UpdateField;
   isReadOnly: boolean;
   effectiveRole: EffectiveRole;
   canEdit: (field: string) => boolean;
@@ -178,7 +179,7 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
           ].map(({ label, field }) => (
             <div key={field}>
               <label className={labelClass}>{label}</label>
-              <select value={formData?.[field] || ""} onChange={e => update(field, e.target.value || null)}
+              <select value={String(formData?.[field] || "")} onChange={e => update(field, e.target.value || null)}
                 disabled={disabled(field)} className={inputClass}>
                 <option value="">Seleccionar</option>
                 {usuarios.map(u => <option key={u.id} value={u.id}>{formatUserName(u)} ({u.rol})</option>)}
@@ -187,7 +188,7 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
           ))}
           <div>
             <label className={labelClass}>Circulante</label>
-            <select value={formData?.circulanteId || ""} onChange={e => update("circulanteId", e.target.value || null)}
+            <select value={String(formData?.circulanteId || "")} onChange={e => update("circulanteId", e.target.value || null)}
               disabled={disabled("circulanteId")} className={inputClass}>
               <option value="">Seleccionar</option>
               {usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre} ({u.rol})</option>)}

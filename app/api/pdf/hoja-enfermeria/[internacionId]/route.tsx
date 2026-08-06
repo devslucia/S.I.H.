@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/rbac";
 import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
+import type { Prisma } from "@prisma/client";
 import {
   Document,
   Page,
@@ -28,8 +29,34 @@ const styles = StyleSheet.create({
   obsText: { fontSize: 8, color: "#444", marginTop: 2, marginLeft: 10 },
 });
 
-function HojaPDF({ internacion, controles, hojas }: { internacion: any; controles: any[]; hojas: any[] }) {
+interface HojaControl {
+  hora: string;
+  datos: Prisma.JsonValue;
+  observacion: string | null;
+}
+
+interface HojaItem {
+  fecha: string | Date;
+  seccion: string;
+  item: string;
+  dosis: string | null;
+  via: string | null;
+}
+
+interface HojaPDFProps {
+  internacion: {
+    numero: number;
+    paciente: { apellido: string; nombre: string; dni: string };
+    cama: { numero: string; sector: { nombre: string } } | null;
+  };
+  controles: HojaControl[];
+  hojas: HojaItem[];
+}
+
+function HojaPDF({ internacion, controles, hojas }: HojaPDFProps) {
   const p = internacion.paciente;
+  const signsVit = (c: HojaControl): Record<string, string | undefined> =>
+    typeof c.datos === "object" && c.datos !== null ? (c.datos as Record<string, string | undefined>) : {};
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -48,17 +75,20 @@ function HojaPDF({ internacion, controles, hojas }: { internacion: any; controle
           <Text style={[styles.cellSmall, styles.cellBold]}>SatO2</Text>
           <Text style={[styles.cellWide, styles.cellBold]}>Obs</Text>
         </View>
-        {controles.map((c, idx) => (
-          <View key={idx} style={styles.row}>
-            <Text style={styles.cellSmall}>{c.hora}</Text>
-            <Text style={styles.cell}>{c.datos?.PA || "—"}</Text>
-            <Text style={styles.cellSmall}>{c.datos?.FC || "—"}</Text>
-            <Text style={styles.cellSmall}>{c.datos?.FR || "—"}</Text>
-            <Text style={styles.cellSmall}>{c.datos?.["T°"] || "—"}</Text>
-            <Text style={styles.cellSmall}>{c.datos?.SatO2 || "—"}</Text>
-            <Text style={styles.cellWide}>{c.observacion || "—"}</Text>
-          </View>
-        ))}
+        {controles.map((c, idx) => {
+          const sv = signsVit(c);
+          return (
+            <View key={idx} style={styles.row}>
+              <Text style={styles.cellSmall}>{c.hora}</Text>
+              <Text style={styles.cell}>{sv.PA || "—"}</Text>
+              <Text style={styles.cellSmall}>{sv.FC || "—"}</Text>
+              <Text style={styles.cellSmall}>{sv.FR || "—"}</Text>
+              <Text style={styles.cellSmall}>{sv["T°"] || "—"}</Text>
+              <Text style={styles.cellSmall}>{sv.SatO2 || "—"}</Text>
+              <Text style={styles.cellWide}>{c.observacion || "—"}</Text>
+            </View>
+          );
+        })}
 
         {hojas.length > 0 && (
           <>

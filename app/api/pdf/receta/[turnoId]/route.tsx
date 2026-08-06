@@ -80,7 +80,7 @@ export async function GET(req: NextRequest, { params }: { params: { turnoId: str
     return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
   }
 
-  const rol = (session.user as any).rol as string;
+  const rol = session.user.rol as string;
   if (rol === "MEDICO" && turno.medicoId !== session.user.id) {
     return NextResponse.json({ error: "No tiene acceso a este turno" }, { status: 403 });
   }
@@ -108,7 +108,7 @@ export async function GET(req: NextRequest, { params }: { params: { turnoId: str
             React.createElement(Text, { style: [styles.medVia, { fontWeight: "bold" }] }, "Vía"),
             React.createElement(Text, { style: [styles.medFrecuencia, { fontWeight: "bold" }] }, "Frecuencia"),
           ),
-          ...prescripciones.map((p: any) =>
+          ...prescripciones.map((p) =>
             React.createElement(View, { key: p.id, style: styles.medRow },
               React.createElement(Text, { style: styles.medNombre }, p.droga || p.descripcion || "—"),
               React.createElement(Text, { style: styles.medDosis }, p.dosis || "—"),

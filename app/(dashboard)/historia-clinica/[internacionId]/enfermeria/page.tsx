@@ -13,9 +13,9 @@ interface ControlEnfermeria {
   fecha: string;
   hora: string;
   tipo: string;
-  datos: any;
+  datos?: Record<string, unknown>;
   observacion?: string;
-  alertas?: any;
+  alertas?: string[];
   usuario: { id: string; nombre: string };
 }
 
@@ -103,7 +103,7 @@ export default function EnfermeriaPage() {
 
   const applyParsedVitals = () => {
     if (!parsedVitals) return;
-    const newDatos: any = {};
+    const newDatos: Record<string, string> = {};
     try { Object.assign(newDatos, JSON.parse(datos)); } catch {}
 
     if (parsedVitals.pas && parsedVitals.pad) newDatos.PA = `${parsedVitals.pas}/${parsedVitals.pad}`;

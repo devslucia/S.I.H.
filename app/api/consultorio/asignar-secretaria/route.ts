@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatZodError } from "@/lib/validations/format-zod-error";
+import { errorMessage, prismaErrorCode } from "@/lib/errors";
 
 const ASIGNAR_ROLES = ["ADMIN"];
 
@@ -12,7 +13,7 @@ const assignSchema = z.object({
 });
 
 export async function GET() {
-  const { session, error } = await requireRole(...ASIGNAR_ROLES);
+  const {error} = await requireRole(...ASIGNAR_ROLES);
   if (error) return error;
 
   const asignaciones = await prisma.secretariaMedico.findMany({
@@ -27,7 +28,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await requireRole(...ASIGNAR_ROLES);
+  const {error} = await requireRole(...ASIGNAR_ROLES);
   if (error) return error;
 
   const body = await req.json();
@@ -60,19 +61,19 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(asignacion, { status: 201 });
-  } catch (e: any) {
-    if (e.code === "P2002") {
+  } catch (e: unknown) {
+    if (prismaErrorCode(e) === "P2002") {
       return NextResponse.json(
         { error: "Esta secretaria ya está asignada a este médico" },
         { status: 409 }
       );
     }
-    return NextResponse.json({ error: e.message || "Error interno" }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(e) || "Error interno" }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest) {
-  const { session, error } = await requireRole(...ASIGNAR_ROLES);
+  const {error} = await requireRole(...ASIGNAR_ROLES);
   if (error) return error;
 
   const { searchParams } = new URL(req.url);

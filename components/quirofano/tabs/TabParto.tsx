@@ -2,19 +2,20 @@
 
 import { Baby } from "lucide-react";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
+import type { CirugiaFormData, UpdateField } from "./types";
 
 const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent";
 const labelClass = "text-xs text-muted font-medium mb-1 block";
 
 interface TabPartoProps {
-  formData: any;
-  update: (field: string, value: any) => void;
+  formData: CirugiaFormData;
+  update: UpdateField;
   isReadOnly: boolean;
   effectiveRole: EffectiveRole;
   canEdit: (field: string) => boolean;
 }
 
-export function TabParto({ formData, update, isReadOnly, effectiveRole, canEdit }: TabPartoProps) {
+export function TabParto({ formData, update, isReadOnly, canEdit }: TabPartoProps) {
   const esParto = formData?.procedimiento?.toLowerCase().includes("parto") ||
     formData?.procedimiento?.toLowerCase().includes("cesárea") ||
     formData?.procedimiento?.toLowerCase().includes("cesarea");
@@ -27,7 +28,7 @@ export function TabParto({ formData, update, isReadOnly, effectiveRole, canEdit 
         <div className="card p-8 text-center">
           <Baby size={48} className="mx-auto text-muted mb-3" />
           <p className="text-muted text-sm">No aplica para este procedimiento</p>
-          <p className="text-xs text-muted mt-1">Este módulo solo está disponible para procedimientos que contengan "parto" o "cesárea".</p>
+          <p className="text-xs text-muted mt-1">Este módulo solo está disponible para procedimientos que contengan &quot;parto&quot; o &quot;cesárea&quot;.</p>
         </div>
       </div>
     );

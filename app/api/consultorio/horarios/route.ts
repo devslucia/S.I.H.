@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatZodError } from "@/lib/validations/format-zod-error";
+import { errorMessage, prismaErrorCode } from "@/lib/errors";
+import { Prisma } from "@prisma/client";
 
 const HORARIOS_READ_ROLES = ["ADMIN", "MEDICO", "SECRETARIA"];
 const HORARIOS_WRITE_ROLES = ["ADMIN", "MEDICO"];
@@ -20,10 +22,10 @@ export async function GET(req: NextRequest) {
   const { session, error } = await requireRole(...HORARIOS_READ_ROLES);
   if (error) return error;
 
-  const rol = (session.user as any).rol as string;
+  const rol = session.user.rol as string;
   const userId = session.user.id as string;
 
-  const where: any = {};
+  const where: Prisma.HorarioMedicoConsultorioWhereInput = {};
   if (rol === "MEDICO") {
     where.medicoId = userId;
   } else {
@@ -58,7 +60,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Horario no encontrado" }, { status: 404 });
   }
 
-  const rol = (session.user as any).rol as string;
+  const rol = session.user.rol as string;
   if (rol === "MEDICO" && horario.medicoId !== session.user.id) {
     return NextResponse.json({ error: "Solo puede eliminar sus propios horarios" }, { status: 403 });
   }
@@ -78,7 +80,7 @@ export async function POST(req: NextRequest) {
   }
 
   const data = parsed.data;
-  const rol = (session.user as any).rol as string;
+  const rol = session.user.rol as string;
   const userId = session.user.id as string;
 
   // MEDICO: solo puede crear horarios para sí mismo
@@ -107,13 +109,13 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(horario, { status: 201 });
-  } catch (e: any) {
-    if (e.code === "P2002") {
+  } catch (e: unknown) {
+    if (prismaErrorCode(e) === "P2002") {
       return NextResponse.json(
         { error: "Ya existe un horario para ese médico en ese día y hora de inicio" },
         { status: 409 }
       );
     }
-    return NextResponse.json({ error: e.message || "Error interno" }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(e) || "Error interno" }, { status: 500 });
   }
 }

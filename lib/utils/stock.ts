@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
-import type { Prisma } from "@prisma/client";
 
-type Tx = Omit<
+
+export type Tx = Omit<
   PrismaClient,
   "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
 >;

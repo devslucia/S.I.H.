@@ -2,8 +2,8 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN", "FACTURACION");
+export async function GET(_req: NextRequest) {
+  const {error} = await requireRole("ADMIN", "FACTURACION");
   if (error) return error;
 
   const cargos = await prisma.cargoFacturacion.findMany({
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     orderBy: { fecha: "desc" },
   });
 
-  const grouped = cargos.reduce<Record<string, { internacion: any; cargos: any[]; totalCargos: number }>>(
+  const grouped = cargos.reduce<Record<string, { internacion: (typeof cargos)[number]["internacion"]; cargos: (typeof cargos)[number][]; totalCargos: number }>>(
     (acc, cargo) => {
       const key = cargo.internacionId;
       if (!acc[key]) {

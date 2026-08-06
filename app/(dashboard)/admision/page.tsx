@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, X, AlertTriangle, Activity, Clock, ArrowLeft, User, Bed } from "lucide-react";
-import { Modal } from "@/components/ui/Modal";
+import {Search, Plus, AlertTriangle, Activity, Clock, ArrowLeft} from "lucide-react";
+
 import { SearchableMultiSelect } from "@/components/ui/SearchableMultiSelect";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { formatDate, formatDateTime, formatUserName } from "@/lib/utils";
+import {formatDateTime, formatUserName} from "@/lib/utils";
 
 interface Paciente {
   id: string;
@@ -52,6 +52,39 @@ interface Medico {
   id: string;
   nombre: string;
   matricula?: string | null;
+}
+
+interface AdmisionBody {
+  dni: string;
+  apellido: string;
+  nombre: string;
+  sexo: string;
+  fechaNac: string;
+  cuil: string;
+  domicilio: string;
+  localidad: string;
+  provincia: string;
+  telefono: string;
+  obraSocialId: string;
+  nroAfiliado: string;
+  tipoBeneficiario: string;
+  camaId: string;
+  tipoIngreso: string;
+  motivoIngreso: string;
+  estadoCivil?: string;
+  medicoTratanteIds?: string[];
+  peso?: string | number;
+  diagnosticoCirugia?: string;
+}
+
+interface InternacionBody {
+  pacienteId: string;
+  tipoIngreso: string;
+  motivoIngreso?: string;
+  camaId?: string;
+  medicoTratanteIds?: string[];
+  peso?: number;
+  diagnosticoCirugia?: string;
 }
 
 type ViewMode = "search" | "new-patient" | "existing-patient";
@@ -219,10 +252,10 @@ export default function AdmisionPage() {
     setSaving(true);
     setError(null);
     try {
-      const body: any = { ...newPatientForm };
+      const body: AdmisionBody = { ...newPatientForm };
       if (body.medicoTratanteIds?.length === 0) delete body.medicoTratanteIds;
       if (!body.estadoCivil) delete body.estadoCivil;
-      if (body.peso) body.peso = parseFloat(body.peso);
+      if (body.peso) body.peso = parseFloat(String(body.peso));
       else delete body.peso;
       if (!body.diagnosticoCirugia) delete body.diagnosticoCirugia;
       const res = await fetch("/api/admision/admitir", {
@@ -239,7 +272,7 @@ export default function AdmisionPage() {
         const data = await res.json();
         setError(data.error || "Error al crear admisión");
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Error de conexión");
     } finally {
       setSaving(false);
@@ -252,7 +285,7 @@ export default function AdmisionPage() {
     setSaving(true);
     setError(null);
     try {
-      const body: any = {
+      const body: InternacionBody = {
         pacienteId: selectedPaciente.id,
         tipoIngreso: internacionForm.tipoIngreso,
         motivoIngreso: internacionForm.motivoIngreso || undefined,
@@ -278,7 +311,7 @@ export default function AdmisionPage() {
         const data = await res.json();
         setError(data.error || "Error al crear internación");
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Error de conexión");
     } finally {
       setSaving(false);

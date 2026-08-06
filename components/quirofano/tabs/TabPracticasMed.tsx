@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
+
 import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
 import { formatDateTime } from "@/lib/utils";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
+import type { CirugiaFormData, CirugiaFull, UpdateField } from "./types";
 
-type StockItemData = { id: string; nombre: string; presentacion?: string; stockActual: number; principioActivo?: string };
+type _StockItemData = { id: string; nombre: string; presentacion?: string; stockActual: number; principioActivo?: string };
 
 const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent";
 const labelClass = "text-xs text-muted font-medium mb-1 block";
@@ -16,9 +17,9 @@ const btnTeal = `${btnClass} bg-accent text-black hover:bg-accent/90`;
 const btnOutline = `${btnClass} border border-border text-muted hover:text-foreground hover:border-muted`;
 
 interface TabPracticasMedProps {
-  data: any;
-  formData: any;
-  update: (field: string, value: any) => void;
+  data: CirugiaFull;
+  formData: CirugiaFormData;
+  update: UpdateField;
   isReadOnly: boolean;
   effectiveRole: EffectiveRole;
   canEdit: (field: string) => boolean;
@@ -26,7 +27,7 @@ interface TabPracticasMedProps {
   onRefresh: () => void;
 }
 
-export function TabPracticasMed({ data, formData, update, isReadOnly, effectiveRole, canEdit, cirugiaId, onRefresh }: TabPracticasMedProps) {
+export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, onRefresh }: TabPracticasMedProps) {
   const [showStockModal, setShowStockModal] = useState(false);
   const [showPracticaModal, setShowPracticaModal] = useState(false);
   const [practicaForm, setPracticaForm] = useState({ fecha: "", hora: "", practica: "", laboratorio: "", cargoPor: "", actoQuirurgico: "" });
@@ -93,7 +94,7 @@ export function TabPracticasMed({ data, formData, update, isReadOnly, effectiveR
             </tr></thead>
             <tbody>
               {data?.practicas?.length === 0 && <tr><td colSpan={7} className="px-3 py-4 text-center text-muted">Sin prácticas registradas</td></tr>}
-              {data?.practicas?.map((p: any) => (
+              {data?.practicas?.map((p) => (
                 <tr key={p.id} className="border-t border-border hover:bg-surface-hover transition-colors">
                   <td className="px-3 py-2">{formatDateTime(p.fecha)}</td>
                   <td className="px-3 py-2">{p.hora}</td>
@@ -127,7 +128,7 @@ export function TabPracticasMed({ data, formData, update, isReadOnly, effectiveR
             </tr></thead>
             <tbody>
               {data?.medicamentos?.length === 0 && <tr><td colSpan={7} className="px-3 py-4 text-center text-muted">Sin medicamentos registrados</td></tr>}
-              {data?.medicamentos?.map((m: any) => (
+              {data?.medicamentos?.map((m) => (
                 <tr key={m.id} className="border-t border-border hover:bg-surface-hover transition-colors">
                   <td className="px-3 py-2">{m.nombre}</td>
                   <td className="px-3 py-2">{m.presentacion || "—"}</td>

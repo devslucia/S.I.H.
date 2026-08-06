@@ -3,6 +3,7 @@
 import { Plus, Trash2 } from "lucide-react";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
+import type { CirugiaFormData, UpdateField } from "./types";
 
 const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent";
 const labelClass = "text-xs text-muted font-medium mb-1 block";
@@ -13,21 +14,21 @@ const POSICIONES = ["Decúbito dorsal", "Decúbito ventral", "Decúbito lateral"
 const SANGRE_PERDIDA = ["No", "Sí - Leve", "Sí - Moderada", "Sí - Grave"];
 
 interface TabIngresosEgresosProps {
-  formData: any;
-  update: (field: string, value: any) => void;
+  formData: CirugiaFormData;
+  update: UpdateField;
   isReadOnly: boolean;
   effectiveRole: EffectiveRole;
   canEdit: (field: string) => boolean;
 }
 
-export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole, canEdit }: TabIngresosEgresosProps) {
+export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole }: TabIngresosEgresosProps) {
   const isInstrumentador = effectiveRole === "INSTRUMENTADOR" || effectiveRole === "CIRCULANTE" || effectiveRole === "ADMIN";
   const isAnestesiologo = effectiveRole === "ANESTESIOLOGO" || effectiveRole === "ADMIN";
   // MEDICO also can edit vitals (confirmed exception)
   const canEditVitals = isAnestesiologo || effectiveRole === "MEDICO";
 
-  const totalIngresos = formData?.balanceIngresos?.reduce((s: number, i: any) => s + Number(i.volumen || 0), 0) || 0;
-  const totalEgresos = formData?.balanceEgresos?.reduce((s: number, i: any) => s + Number(i.volumen || 0), 0) || 0;
+  const totalIngresos = formData?.balanceIngresos?.reduce((s, i) => s + Number(i.volumen || 0), 0) || 0;
+  const totalEgresos = formData?.balanceEgresos?.reduce((s, i) => s + Number(i.volumen || 0), 0) || 0;
   const balanceTotal = totalIngresos - totalEgresos;
 
   const disabledBalance = isReadOnly || !isInstrumentador;
@@ -55,7 +56,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                 {!disabledBalance && <th className="px-2 py-1"></th>}
               </tr></thead>
               <tbody>
-                {(formData?.balanceIngresos || []).map((i: any, idx: number) => (
+                {(formData?.balanceIngresos || []).map((i, idx) => (
                   <tr key={idx} className="border-t border-border hover:bg-surface-hover transition-colors">
                     <td className="px-2 py-1"><select value={i.tipo} disabled={disabledBalance}
                       onChange={e => { const arr = [...formData.balanceIngresos]; arr[idx].tipo = e.target.value; update("balanceIngresos", arr); }}
@@ -67,7 +68,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                       onChange={e => { const arr = [...formData.balanceIngresos]; arr[idx].hora = e.target.value; update("balanceIngresos", arr); }}
                       className="bg-transparent border-none text-sm text-foreground w-20" /></td>
                     {!disabledBalance && <td className="px-2 py-1"><button onClick={() => {
-                      const arr = formData.balanceIngresos.filter((_: any, j: number) => j !== idx); update("balanceIngresos", arr);
+                      const arr = formData.balanceIngresos.filter((_, j) => j !== idx); update("balanceIngresos", arr);
                     }} className="text-error"><Trash2 size={12} /></button></td>}
                   </tr>
                 ))}
@@ -89,7 +90,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                 {!disabledBalance && <th className="px-2 py-1"></th>}
               </tr></thead>
               <tbody>
-                {(formData?.balanceEgresos || []).map((e: any, idx: number) => (
+                {(formData?.balanceEgresos || []).map((e, idx) => (
                   <tr key={idx} className="border-t border-border hover:bg-surface-hover transition-colors">
                     <td className="px-2 py-1"><select value={e.tipo} disabled={disabledBalance}
                       onChange={ev => { const arr = [...formData.balanceEgresos]; arr[idx].tipo = ev.target.value; update("balanceEgresos", arr); }}
@@ -101,7 +102,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                       onChange={ev => { const arr = [...formData.balanceEgresos]; arr[idx].hora = ev.target.value; update("balanceEgresos", arr); }}
                       className="bg-transparent border-none text-sm text-foreground w-20" /></td>
                     {!disabledBalance && <td className="px-2 py-1"><button onClick={() => {
-                      const arr = formData.balanceEgresos.filter((_: any, j: number) => j !== idx); update("balanceEgresos", arr);
+                      const arr = formData.balanceEgresos.filter((_, j) => j !== idx); update("balanceEgresos", arr);
                     }} className="text-error"><Trash2 size={12} /></button></td>}
                   </tr>
                 ))}
@@ -127,7 +128,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
               {!disabledVitals && <th className="px-3 py-2"></th>}
             </tr></thead>
             <tbody>
-              {(formData?.signosVitalesIntraop || []).map((sv: any, idx: number) => (
+              {(formData?.signosVitalesIntraop || []).map((sv, idx) => (
                 <tr key={idx} className="border-t border-border">
                   <td className="px-3 py-1"><input type="time" value={sv.hora || ""} disabled={disabledVitals}
                     onChange={e => { const arr = [...formData.signosVitalesIntraop]; arr[idx].hora = e.target.value; update("signosVitalesIntraop", arr); }}
@@ -151,7 +152,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                     onChange={e => { const arr = [...formData.signosVitalesIntraop]; arr[idx].observacion = e.target.value; update("signosVitalesIntraop", arr); }}
                     className="bg-transparent border-none text-sm text-foreground w-28" /></td>
                   {!disabledVitals && <td className="px-3 py-1"><button onClick={() => {
-                    const arr = formData.signosVitalesIntraop.filter((_: any, j: number) => j !== idx); update("signosVitalesIntraop", arr);
+                    const arr = formData.signosVitalesIntraop.filter((_, j) => j !== idx); update("signosVitalesIntraop", arr);
                   }} className="text-error"><Trash2 size={12} /></button></td>}
                 </tr>
               ))}

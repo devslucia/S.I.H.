@@ -75,7 +75,15 @@ export default function UsuariosPage() {
     setSuccess(null);
     setError(null);
 
-    const payload: Record<string, any> = {
+    const payload: {
+      nombre: string;
+      apellido: string | null;
+      email: string;
+      rol: string;
+      matricula: string | null;
+      especialidad: string | null;
+      password?: string;
+    } = {
       nombre: form.nombre,
       apellido: form.apellido || null,
       email: form.email,

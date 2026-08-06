@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, User, CheckCircle, XCircle, Play, ChevronRight } from "lucide-react";
+import {CheckCircle, XCircle, Play, ChevronRight} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 

@@ -38,7 +38,7 @@ export async function POST(
     );
   }
 
-  const rol = (session!.user as any).rol as string;
+  const rol = session.user.rol as string;
   const userId = session!.user.id as string;
 
   if (rol === "MEDICO") {
@@ -102,7 +102,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { session, error } = await requireRole(
+  const {error} = await requireRole(
     "ADMIN",
     "MEDICO",
     "ENFERMERO",

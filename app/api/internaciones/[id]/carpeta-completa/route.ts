@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const { session, error } = await requireRole(...CARPETA_ROLES);
   if (error) return error;
 
-  const rol = (session!.user as any).rol as string;
+  const rol = session.user.rol as string;
   const userId = session!.user.id as string;
   const visFilter = getVisibleInternacionesWhere(userId, rol);
 
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       where: { internacionId: params.id },
     });
 
-    (internacion as any).histClinica = {
+    (internacion as unknown as { histClinica: Record<string, unknown> }).histClinica = {
       ...hc,
       anamnesis: episodio ? hc.anamnesis.find((a) => a.episodioId === episodio.id) ?? null : null,
       valoracionPreanestesia: episodio ? hc.valoracionPreanestesia.find((v) => v.episodioId === episodio.id) ?? null : null,

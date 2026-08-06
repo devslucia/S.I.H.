@@ -105,7 +105,15 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
       await tx.drogaAnestesia.deleteMany({ where: { protocoloId: result.id } });
       if (drogas.length > 0) {
         await tx.drogaAnestesia.createMany({
-          data: drogas.map((d: any) => ({
+          data: drogas.map((d: {
+            categoria: string;
+            nombre: string;
+            dosis?: number;
+            unidad?: string;
+            via?: string;
+            horaAdministracion?: string;
+            observaciones?: string;
+          }) => ({
             protocoloId: result.id,
             categoria: d.categoria,
             nombre: d.nombre,

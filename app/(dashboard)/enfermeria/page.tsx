@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Syringe, HeartPulse, CheckCircle, AlertTriangle, Activity, Clock, ChevronDown, ChevronUp, User, FileText, Pill } from "lucide-react";
+import {Syringe, HeartPulse, CheckCircle, AlertTriangle, Activity, ChevronDown, ChevronUp, FileText, Pill} from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { VoiceInput } from "@/components/ui/VoiceInput";
-import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
+
 import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
-import { formatDateTime, formatUserName } from "@/lib/utils";
+import {formatUserName} from "@/lib/utils";
 
 interface Prescripcion {
   id: string;
@@ -80,7 +80,7 @@ interface ControlRecord {
   fecha: string;
   hora: string;
   tipo: string;
-  datos: any;
+  datos?: { PA?: string; FC?: string; FR?: string; "T°"?: string; SatO2?: string } | null;
   observacion?: string;
   alertas?: string[];
   usuario: { nombre: string };
@@ -284,7 +284,7 @@ function AplicarPrescripcion({
   );
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [selectedStockId, setSelectedStockId] = useState<string>("");
-  const [stockSearch, setStockSearch] = useState("");
+  const [, setStockSearch] = useState("");
   const [cantidad, setCantidad] = useState(1);
   const [aplicaciones, setAplicaciones] = useState<Aplicacion[]>([]);
   const [loadingApps, setLoadingApps] = useState(false);

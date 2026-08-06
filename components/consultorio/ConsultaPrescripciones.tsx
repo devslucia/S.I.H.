@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { AlertaBloqueada } from "@/components/ui/AlertaBloqueada";
-import { formatDateTime } from "@/lib/utils";
+
 
 interface Prescripcion {
   id: string;

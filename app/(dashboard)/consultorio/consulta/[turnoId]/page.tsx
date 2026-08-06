@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { ArrowLeft, CheckCircle, FileText, Printer } from "lucide-react";
+
+import {ArrowLeft, CheckCircle, Printer} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ConsultaShell } from "@/components/consultorio/ConsultaShell";

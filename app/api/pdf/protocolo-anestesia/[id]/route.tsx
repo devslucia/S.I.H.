@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import React from "react";
+import type { DrogaAnestesia } from "@prisma/client";
+import type { ModalidadVentFranja, PremedicacionItem, SignoVitalPreop } from "@/types";
 import {
   Document,
   Page,
@@ -62,8 +64,75 @@ function SectionTitle({ children }: { children: string }) {
   return <Text style={styles.sectionTitle}>{children}</Text>;
 }
 
-function ProtocoloPDF({ protocolo, paciente, internacion }: any) {
+interface ProtocoloPdfData {
+  anestesiologo: string | null;
+  matriculaAnestesiologo: string | null;
+  cirujano: string | null;
+  matriculaCirujano: string | null;
+  ayudantes: string | null;
+  fechaCirugia: string | Date | null;
+  alergiaDetalle: string | null;
+  clasificacionASA: string | null;
+  esEmergencia: boolean;
+  ayunoSolidos: number | null;
+  ayunoLiquidos: number | null;
+  ultimaIngesta: string | null;
+  estadoPsiquico: string | null;
+  premedicacion: unknown;
+  signosVitaPreop: unknown;
+  mallampati: string | null;
+  distTiromentoniana: number | null;
+  aperturaBucal: number | null;
+  tecnicaAnestesia: string[];
+  tipoConductiva: string | null;
+  posicionPuncion: string | null;
+  sitioPuncion: string | null;
+  agujaDetalle: string | null;
+  cateter: boolean | null;
+  farmacoConductiva: string | null;
+  viaInduccion: string | null;
+  manejoViaAerea: string | null;
+  intubacionSubtipo: string | null;
+  canulaFaringealTipo: string | null;
+  nroTubo: string | null;
+  fio2: number | null;
+  oxigenoFlujo: number | null;
+  modalidadVentilatoria: string | null;
+  modalidadVentFranja: unknown;
+  drogas: DrogaAnestesia[];
+  peso: number | null;
+  talla: number | null;
+  diuresis: number | null;
+  perdidaSanguinea: string | null;
+  perdidaSanguineaML: number | null;
+  posicionOperatoria: string | null;
+  sondaNasogastrica: boolean;
+  sondaVesical: boolean;
+  tipoCirugia: string | null;
+  estadoEgreso: string[];
+  destinoPaciente: string | null;
+  aldreteActividad: number | null;
+  aldreteRespiracion: number | null;
+  aldreteCirculacion: number | null;
+  aldreteConciencia: number | null;
+  aldreteSpo2: number | null;
+  firmado: boolean;
+  nombreFirmante: string | null;
+  matriculaFirmante: string | null;
+  firmadoEn: string | Date | null;
+}
+
+interface ProtocoloPDFProps {
+  protocolo: ProtocoloPdfData;
+  paciente: { apellido: string; nombre: string; dni: string; grupoSangre?: string | null };
+  internacion: { numero: number };
+}
+
+function ProtocoloPDF({ protocolo, paciente, internacion }: ProtocoloPDFProps) {
   const p = protocolo;
+  const premedicacion = (p.premedicacion as PremedicacionItem[] | null) ?? null;
+  const signosVitaPreop = (p.signosVitaPreop as SignoVitalPreop | null) ?? null;
+  const modalidadVentFranja = (p.modalidadVentFranja as ModalidadVentFranja[] | null) ?? null;
   const ald = (p.aldreteActividad ?? 0) + (p.aldreteRespiracion ?? 0) + (p.aldreteCirculacion ?? 0) + (p.aldreteConciencia ?? 0) + (p.aldreteSpo2 ?? 0);
 
   return (
@@ -100,11 +169,11 @@ function ProtocoloPDF({ protocolo, paciente, internacion }: any) {
         <Field label="Ayuno líquidos" value={p.ayunoLiquidos != null ? `${p.ayunoLiquidos}h` : "—"} />
         <Field label="Última ingesta" value={p.ultimaIngesta} />
         <Field label="Estado psíquico" value={p.estadoPsiquico} />
-        {p.premedicacion && p.premedicacion.length > 0 && (
-          <Field label="Premedicación" value={p.premedicacion.map((pm: any) => `${pm.droga}${pm.dosis ? ` ${pm.dosis}` : ""} ${pm.via}${pm.hora ? ` (${pm.hora})` : ""}`).join("; ")} />
+        {premedicacion && premedicacion.length > 0 && (
+          <Field label="Premedicación" value={premedicacion.map((pm) => `${pm.droga}${pm.dosis ? ` ${pm.dosis}` : ""} ${pm.via}${pm.hora ? ` (${pm.hora})` : ""}`).join("; ")} />
         )}
-        {p.signosVitaPreop && (
-          <Field label="SV Preoperatorios" value={`PAS: ${p.signosVitaPreop.pas ?? "—"} | PAD: ${p.signosVitaPreop.pad ?? "—"} | FC: ${p.signosVitaPreop.fc ?? "—"} | FR: ${p.signosVitaPreop.fr ?? "—"} | T: ${p.signosVitaPreop.temp ?? "—"}°C`} />
+        {signosVitaPreop && (
+          <Field label="SV Preoperatorios" value={`PAS: ${signosVitaPreop.pas ?? "—"} | PAD: ${signosVitaPreop.pad ?? "—"} | FC: ${signosVitaPreop.fc ?? "—"} | FR: ${signosVitaPreop.fr ?? "—"} | T: ${signosVitaPreop.temp ?? "—"}°C`} />
         )}
         <Field label="Mallampati" value={p.mallampati} />
         <Field label="Dist. tiromentoniana" value={p.distTiromentoniana != null ? `${p.distTiromentoniana} cm` : "—"} />
@@ -132,8 +201,8 @@ function ProtocoloPDF({ protocolo, paciente, internacion }: any) {
             <Field label="FiO₂" value={p.fio2 != null ? `${p.fio2}%` : "—"} />
             <Field label="Oxígeno flujo" value={p.oxigenoFlujo != null ? `${p.oxigenoFlujo} L/min` : "—"} />
             <Field label="Modalidad ventilatoria" value={p.modalidadVentilatoria} />
-            {p.modalidadVentFranja && p.modalidadVentFranja.length > 0 && (
-              <Field label="Vent. por franja" value={p.modalidadVentFranja.map((f: any) => `${f.desde}'-${f.hasta}': ${f.modalidad}`).join("; ")} />
+            {modalidadVentFranja && modalidadVentFranja.length > 0 && (
+              <Field label="Vent. por franja" value={modalidadVentFranja.map((f) => `${f.desde}'-${f.hasta}': ${f.modalidad}`).join("; ")} />
             )}
           </>
         )}
@@ -150,7 +219,7 @@ function ProtocoloPDF({ protocolo, paciente, internacion }: any) {
                 <Text style={styles.tableCell}>Vía</Text>
                 <Text style={styles.tableCell}>Hora</Text>
               </View>
-              {p.drogas.map((d: any, i: number) => (
+              {p.drogas.map((d, i: number) => (
                 <View key={i} style={styles.tableRow}>
                   <Text style={[styles.tableCell, { flex: 2 }]}>{d.categoria}</Text>
                   <Text style={[styles.tableCell, { flex: 2 }]}>{d.nombre}</Text>
@@ -217,22 +286,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: "Protocolo no encontrado" }, { status: 404 });
   }
 
-  const internacion = (protocolo as any).hc.internacion;
-  if (!(await isInternacionVisibleForUser(internacion.id, session!.user.id, session!.user.rol))) {
+  const internacion = protocolo.hc.internacion;
+  if (!internacion || !(await isInternacionVisibleForUser(internacion.id, session!.user.id, session!.user.rol))) {
     return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
 
   const paciente = internacion.paciente;
 
   const buffer = await renderToBuffer(
-    React.createElement(ProtocoloPDF, {
-      protocolo: {
-        ...protocolo,
-        drogas: (protocolo as any).drogas,
-      },
-      paciente,
-      internacion,
-    })
+    <ProtocoloPDF protocolo={protocolo} paciente={paciente} internacion={internacion} />
   );
 
   return new Response(new Uint8Array(buffer), {

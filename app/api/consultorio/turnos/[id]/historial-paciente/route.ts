@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
   }
 
-  const rol = (session.user as any).rol as string;
+  const rol = session.user.rol as string;
   if (rol === "MEDICO" && turno.medicoId !== session.user.id) {
     return NextResponse.json({ error: "No tiene acceso a este turno" }, { status: 403 });
   }

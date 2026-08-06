@@ -47,7 +47,7 @@ const ROLES_GESTION = ["ADMISION", "ADMIN"];
 const btnClass = "px-3 py-2 text-xs rounded-lg font-medium transition-colors inline-flex items-center gap-1.5";
 const btnConfirm = `${btnClass} bg-accent text-black hover:bg-accent/90`;
 const btnCancel = `${btnClass} border border-border text-muted hover:text-foreground hover:border-muted`;
-const btnDanger = `${btnClass} border border-error/40 text-error hover:bg-error/10`;
+
 
 export default function CamasPage() {
   const { data: session } = useSession();

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatZodError } from "@/lib/validations/format-zod-error";
+import {errorMessage} from "@/lib/errors";
 
 const admitirSchema = z.object({
   dni: z.string().min(7).max(11),
@@ -28,7 +29,7 @@ const admitirSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN", "ADMISION");
+  const {error} = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
   const body = await req.json();
@@ -132,14 +133,15 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(internacion, { status: 201 });
-  } catch (e: any) {
-    if (e.message === "CAMA_NOT_FOUND") {
+  } catch (e: unknown) {
+    if (errorMessage(e) === "CAMA_NOT_FOUND") {
       return NextResponse.json({ error: "Cama no encontrada" }, { status: 404 });
     }
-    if (e.message?.startsWith("CAMA_NOT_AVAILABLE")) {
-      const estado = e.message.split(":")[1];
+    const msg = errorMessage(e);
+    if (msg?.startsWith("CAMA_NOT_AVAILABLE")) {
+      const estado = msg.split(":")[1] as string;
       return NextResponse.json({ error: `La cama no está disponible (estado: ${estado})` }, { status: 409 });
     }
-    return NextResponse.json({ error: e.message || "Error interno" }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(e) || "Error interno" }, { status: 500 });
   }
 }

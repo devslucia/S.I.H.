@@ -10,6 +10,51 @@ interface VoiceInputProps {
   status?: "idle" | "listening" | "processing" | "ready";
 }
 
+interface SpeechRecognitionResult {
+  transcript: string;
+}
+
+interface SpeechRecognitionEvent {
+  results: SpeechRecognitionResult[][];
+}
+
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onend: () => void;
+  onerror: () => void;
+  start: () => void;
+  stop: () => void;
+}
+
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+
+type SpeechRecognitionWindow = typeof window & {
+  SpeechRecognition?: SpeechRecognitionCtor;
+  webkitSpeechRecognition?: SpeechRecognitionCtor;
+};
+
+function getSpeechRecognition(): SpeechRecognitionCtor | undefined {
+  const w = window as SpeechRecognitionWindow;
+  return w.SpeechRecognition || w.webkitSpeechRecognition;
+}
+
+const statusStyles: Record<string, string> = {
+  idle: "bg-border text-muted hover:text-accent hover:bg-accent/10 border border-border",
+  listening: "bg-error/20 text-error animate-pulse border border-error/50",
+  processing: "bg-warning/20 text-warning animate-spin border border-warning/50",
+  ready: "bg-success/20 text-success border border-success/50",
+};
+
+const titles: Record<string, string> = {
+  idle: "Dictar por voz",
+  listening: "Detener dictado",
+  processing: "Procesando con IA...",
+  ready: "Resultado listo",
+};
+
 export function VoiceInput({
   onTranscript,
   language = "es-AR",
@@ -18,26 +63,22 @@ export function VoiceInput({
 }: VoiceInputProps) {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   useEffect(() => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-    setIsSupported(!!SpeechRecognition);
+    setIsSupported(!!getSpeechRecognition());
   }, []);
 
   const startListening = () => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = getSpeechRecognition();
+    if (!SpeechRecognition) return;
 
     const recognition = new SpeechRecognition();
     recognition.lang = language;
     recognition.continuous = continuous;
     recognition.interimResults = false;
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       const transcript =
         event.results[event.results.length - 1][0].transcript;
       onTranscript(transcript);
@@ -59,20 +100,6 @@ export function VoiceInput({
   if (!isSupported) return null;
 
   const effectiveStatus = externalStatus || (isListening ? "listening" : "idle");
-
-  const statusStyles: Record<string, string> = {
-    idle: "bg-border text-muted hover:text-accent hover:bg-accent/10 border border-border",
-    listening: "bg-error/20 text-error animate-pulse border border-error/50",
-    processing: "bg-warning/20 text-warning animate-spin border border-warning/50",
-    ready: "bg-success/20 text-success border border-success/50",
-  };
-
-  const titles: Record<string, string> = {
-    idle: "Dictar por voz",
-    listening: "Detener dictado",
-    processing: "Procesando con IA...",
-    ready: "Resultado listo",
-  };
 
   return (
     <button

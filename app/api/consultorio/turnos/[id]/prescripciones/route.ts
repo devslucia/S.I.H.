@@ -18,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
   }
 
-  const rol = (session.user as any).rol as string;
+  const rol = session.user.rol as string;
   if (rol === "MEDICO" && turno.medicoId !== session.user.id) {
     return NextResponse.json({ error: "No tiene acceso a este turno" }, { status: 403 });
   }
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
   }
 
-  if (turno.medicoId !== session.user.id && (session.user as any).rol !== "ADMIN") {
+  if (turno.medicoId !== session.user.id && session.user.rol !== "ADMIN") {
     return NextResponse.json({ error: "No puede modificar turnos de otro médico" }, { status: 403 });
   }
 

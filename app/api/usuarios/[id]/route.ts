@@ -4,6 +4,7 @@ import { updateUsuarioSchema } from "@/lib/validations/usuario.schema";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { formatZodError } from "@/lib/validations/format-zod-error";
+import { Prisma } from "@prisma/client";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { session, error } = await requireRole("ADMIN");
@@ -32,7 +33,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "No podés cambiarte el rol a vos mismo" }, { status: 400 });
   }
 
-  const updateData: Record<string, any> = {};
+  const updateData: Prisma.UsuarioUpdateInput = {};
   if (parsed.data.nombre !== undefined) updateData.nombre = parsed.data.nombre.toLowerCase();
   if (parsed.data.apellido !== undefined) updateData.apellido = parsed.data.apellido?.toLowerCase() || null;
   if (parsed.data.email !== undefined) updateData.email = parsed.data.email;

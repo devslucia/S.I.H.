@@ -18,7 +18,7 @@ interface EpicrisisData {
   condicionEgreso?: string;
   destino?: string;
   indicacionesAlta?: string;
-  proximoControlFecha?: string;
+  proximoControlFecha?: string | null;
   proximoControlLugar?: string;
   proximoControlMedico?: string;
   pendiente?: string;
@@ -57,7 +57,7 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
     fetchData();
   }, [internacionId]);
 
-  const handleChange = (key: keyof EpicrisisData, value: any) => {
+  const handleChange = <K extends keyof EpicrisisData>(key: K, value: EpicrisisData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }));
   };
 

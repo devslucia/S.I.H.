@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Users, Clock, Microscope, Syringe, Activity, Stethoscope } from "lucide-react";
+import {ArrowLeft} from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 
 interface CirugiaProtocolo {

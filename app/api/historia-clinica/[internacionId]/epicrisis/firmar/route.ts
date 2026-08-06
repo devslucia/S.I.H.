@@ -56,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
       data: {
         tipoDoc: "EPICRISIS",
         docId: epicrisisId,
-        usuarioId: (session.user as any).id,
+        usuarioId: session.user.id,
         hash: `firma-${Date.now()}`,
       },
     });

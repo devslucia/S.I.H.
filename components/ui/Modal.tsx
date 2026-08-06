@@ -24,7 +24,7 @@ const sizeStyles: Record<ModalSize, string> = {
 
 /* ── Spring configs (Apple Design: damping + response) ── */
 const SPRING_ENTER = { type: "spring" as const, bounce: 0, duration: 0.35 };
-const SPRING_EXIT = { type: "spring" as const, bounce: 0, duration: 0.25 };
+
 
 const REDUCED_MOTION_TRANSITION = { duration: 0.15 };
 

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getVisibleInternacionesWhere } from "@/lib/internaciones-visibility";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   const { session, error } = await requireRole("ADMIN", "MEDICO", "INSTRUMENTADOR", "ANESTESIOLOGO");
   if (error) return error;
 
