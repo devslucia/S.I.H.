@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
   }
 
-  const rol = (session.user as any).rol as string;
+  const rol = session.user.rol as string;
   const userId = session.user.id as string;
 
   // MEDICO: solo puede finalizar sus propios turnos

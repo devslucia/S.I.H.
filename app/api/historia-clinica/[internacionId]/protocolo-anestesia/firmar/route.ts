@@ -41,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
       data: {
         firmado: true,
         firmadoEn: new Date(),
-        firmadoPor: (session.user as any).id,
+        firmadoPor: session.user.id,
         nombreFirmante,
         matriculaFirmante: matriculaFirmante ?? null,
       },
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
       data: {
         tipoDoc: "PROTOCOLO_ANESTESIA",
         docId: protocoloId,
-        usuarioId: (session.user as any).id,
+        usuarioId: session.user.id,
         hash: `firma-${Date.now()}`,
       },
     });

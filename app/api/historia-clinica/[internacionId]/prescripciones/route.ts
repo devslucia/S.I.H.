@@ -4,6 +4,7 @@ import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
 import { createPrescripcionSchema } from "@/lib/validations/prescripcion.schema";
 import { verificarAlergia } from "@/lib/utils/alertas-alergia";
 import { NextRequest, NextResponse } from "next/server";
+import {errorMessage} from "@/lib/errors";
 
 const PRESCRIPCIONES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
 const PRESCRIPCIONES_WRITE_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO"];
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
   const body = await req.json();
   const items = Array.isArray(body.items) ? body.items : [body];
 
-  const results: { ok: boolean; nombre: string; error?: string; prescripcion?: any }[] = [];
+  const results: { ok: boolean; nombre: string; error?: string; prescripcion?: object }[] = [];
 
   for (const item of items) {
     const parsed = createPrescripcionSchema.safeParse(item);
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
             ...data,
             hcId: hc.id,
             episodioId: episodio.id,
-            usuarioId: (session.user as any).id,
+            usuarioId: session.user.id,
             estado: "BLOQUEADA_ALERGIA",
             bloqueadaAlergia: true,
           },
@@ -104,12 +105,12 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
           ...data,
           hcId: hc.id,
           episodioId: episodio.id,
-          usuarioId: (session.user as any).id,
+          usuarioId: session.user.id,
         },
       });
       results.push({ ok: true, nombre: data.droga || data.tipo, prescripcion });
-    } catch (e: any) {
-      results.push({ ok: false, nombre: data.droga || data.tipo, error: e.message || "Error al crear" });
+    } catch (e: unknown) {
+      results.push({ ok: false, nombre: data.droga || data.tipo, error: errorMessage(e) || "Error al crear" });
     }
   }
 

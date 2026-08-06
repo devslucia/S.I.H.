@@ -33,10 +33,10 @@ export function ExamenFisicoForm({ value, onChange, patientSex, disabled }: Exam
     onChange({ ...value, [field]: val });
   };
 
-  const updateCabezaCuello = (field: string, val: any) => {
+  const updateCabezaCuello = (field: keyof ExamenFisico["cabezaCuello"], val: boolean | string) => {
     onChange({
       ...value,
-      cabezaCuello: { ...value.cabezaCuello, [field]: val },
+      cabezaCuello: { ...value.cabezaCuello, [field]: val } as ExamenFisico["cabezaCuello"],
     });
   };
 

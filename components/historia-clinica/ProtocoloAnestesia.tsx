@@ -3,10 +3,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  ArrowLeft, Save, CheckCircle, AlertCircle, ChevronDown, ChevronRight,
-  Printer, PenLine, AlertTriangle, Clock, Trash2,
-} from "lucide-react";
+import {ArrowLeft, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Printer, PenLine, AlertTriangle, Clock, Trash2} from "lucide-react";
+
+
+
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -15,7 +15,7 @@ import { formatDateTime } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
 import { protocoloAnestesiaSchema } from "@/lib/validations/protocolo-anestesia";
 import type { ProtocoloAnestesiaFormData } from "@/lib/validations/protocolo-anestesia";
-import type { SignoVitalRegistro, PremedicacionItem } from "@/types";
+import type { SignoVitalRegistro, PremedicacionItem, AlergiaData, PacienteData, InternacionData } from "@/types";
 import { EscalaAldrete } from "./anestesia/EscalaAldrete";
 import { PanelDrogas } from "./anestesia/PanelDrogas";
 import { GraficoSignosVitales } from "./anestesia/GraficoSignosVitales";
@@ -51,9 +51,9 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
   const [protocoloId, setProtocoloId] = useState<string | null>(null);
   const [firmado, setFirmado] = useState(false);
   const [firmadoData, setFirmadoData] = useState<{ nombre: string; fecha: string } | null>(null);
-  const [alergiasPaciente, setAlergiasPaciente] = useState<any[]>([]);
-  const [pacienteData, setPacienteData] = useState<any>(null);
-  const [internacionData, setInternacionData] = useState<any>(null);
+  const [alergiasPaciente, setAlergiasPaciente] = useState<AlergiaData[]>([]);
+  const [pacienteData, setPacienteData] = useState<PacienteData | null>(null);
+  const [internacionData, setInternacionData] = useState<InternacionData | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
@@ -387,7 +387,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
           <div>
             <span className="text-sm font-medium text-error">ALERTA: Alergias del paciente: </span>
             <span className="text-sm text-error">
-              {alergiasPaciente.map((a: any) => a.sustancia).join(", ")}
+              {alergiasPaciente.map((a) => a.sustancia).join(", ")}
             </span>
           </div>
         </div>
@@ -591,7 +591,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                           <Button type="button" variant="danger" size="sm" disabled={firmado}
                             onClick={() => {
                               const prev = form.getValues("premedicacion") || [];
-                              form.setValue("premedicacion", prev.filter((_: any, i: number) => i !== idx), { shouldDirty: true });
+                              form.setValue("premedicacion", prev.filter((_, i) => i !== idx), { shouldDirty: true });
                             }}><Trash2 size={12} /></Button>
                         </div>
                       </div>
@@ -782,7 +782,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
               {sec.key === "balance" && (
                 <>
                   {/* Fluidos */}
-                  <BalanceLiquidos control={form.control} register={form.register} disabled={firmado} />
+                  <BalanceLiquidos disabled={firmado} />
 
                   {/* Egresos */}
                   <div className="space-y-3">
@@ -945,7 +945,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 }
 
 // Sub-componente de balance de líquidos inline
-function BalanceLiquidos({ control, register, disabled }: { control: any; register: any; disabled: boolean }) {
+function BalanceLiquidos({ disabled }: { disabled: boolean }) {
   const [liquidos, setLiquidos] = useState<{ tipo: string; volumen: number; lote?: string }[]>([
     { tipo: "Solución Fisiológica (NaCl 0.9%)", volumen: 0 },
     { tipo: "Ringer Lactato", volumen: 0 },
@@ -956,10 +956,14 @@ function BalanceLiquidos({ control, register, disabled }: { control: any; regist
     { tipo: "Otro", volumen: 0 },
   ]);
 
-  const handleChange = (idx: number, field: string, value: any) => {
+  const handleChange = (idx: number, field: "volumen" | "lote", value: string) => {
     setLiquidos((prev) => {
       const updated = [...prev];
-      (updated[idx] as any)[field] = field === "volumen" ? (parseFloat(value) || 0) : value;
+      if (field === "volumen") {
+        updated[idx].volumen = parseFloat(value) || 0;
+      } else {
+        updated[idx].lote = value;
+      }
       return updated;
     });
   };

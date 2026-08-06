@@ -4,8 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 const CAMAS_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION"];
 
-export async function GET(req: NextRequest) {
-  const { session, error } = await requireRole(...CAMAS_READ_ROLES);
+export async function GET(_req: NextRequest) {
+  const {error} = await requireRole(...CAMAS_READ_ROLES);
   if (error) return error;
 
   const camas = await prisma.cama.findMany({
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN", "ADMISION");
+  const {error} = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
   const body = await req.json();
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN", "ADMISION");
+  const {error} = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
   const body = await req.json();
@@ -81,7 +81,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN");
+  const {error} = await requireRole("ADMIN");
   if (error) return error;
 
   const { searchParams } = new URL(req.url);

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Calendar } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
+import type { CirugiaFull } from "./types";
 
 const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent";
 const labelClass = "text-xs text-muted font-medium mb-1 block";
@@ -14,7 +15,7 @@ const btnOutline = `${btnClass} border border-border text-muted hover:text-foreg
 const MOTIVOS_REPROG = ["Falta de insumos", "Emergencia", "Paciente no apto", "Cirujano no disponible", "Falta de cama UTI", "Otro"];
 
 interface TabReprogramacionesProps {
-  data: any;
+  data: CirugiaFull;
   isReadOnly: boolean;
   effectiveRole: EffectiveRole;
   cirugiaId: string;
@@ -56,7 +57,7 @@ export function TabReprogramaciones({ data, isReadOnly, effectiveRole, cirugiaId
             </tr></thead>
             <tbody>
               {data?.reprogramaciones?.length === 0 && <tr><td colSpan={6} className="px-3 py-4 text-center text-muted">Sin reprogramaciones</td></tr>}
-              {data?.reprogramaciones?.map((r: any, idx: number) => (
+              {data?.reprogramaciones?.map((r, idx) => (
                 <tr key={r.id} className="border-t border-border hover:bg-surface-hover transition-colors">
                   <td className="px-3 py-2">{idx + 1}</td>
                   <td className="px-3 py-2">{formatDateTime(r.fechaOriginal)}</td>

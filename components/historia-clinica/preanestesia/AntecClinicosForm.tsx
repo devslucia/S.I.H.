@@ -154,9 +154,9 @@ const CATEGORIES: CategoryConfig[] = [
   { id: "otros", label: "13. Otros generales", type: "text" },
 ];
 
-function countChecked(obj: any): number {
+function countChecked(obj: unknown): number {
   if (!obj || typeof obj !== "object") return 0;
-  return Object.values(obj).filter((v) => v === true).length;
+  return Object.values(obj as Record<string, unknown>).filter((v) => v === true).length;
 }
 
 function CategoryCheckboxes({
@@ -166,14 +166,14 @@ function CategoryCheckboxes({
   disabled,
 }: {
   category: CategoryConfig;
-  data: any;
-  onChange: (key: string, val: any) => void;
+  data: Record<string, boolean | string>;
+  onChange: (key: string, val: boolean | string) => void;
   disabled: boolean;
 }) {
   if (!category.checkboxes) return null;
 
-  const total = category.checkboxes.length;
-  const checked = countChecked(data);
+
+
 
   return (
     <div className="space-y-3">
@@ -194,7 +194,7 @@ function CategoryCheckboxes({
       {data.otros !== undefined && (
         <VoiceTextarea
           label="Otros"
-          value={data.otros || ""}
+          value={(data.otros as string) || ""}
           onChange={(val) => onChange("otros", val)}
           placeholder="Especificar otros..."
           rows={2}
@@ -212,22 +212,18 @@ export function AntecClinicosForm({ value, onChange, disabled }: AntecClinicosFo
     setExpanded((prev) => (prev === id ? null : id));
   };
 
-  const updateCategory = <K extends keyof AntecClinicos>(
-    categoryId: K,
-    field: string,
-    val: any
-  ) => {
+  const updateCategory = (categoryId: keyof AntecClinicos, field: string, val: boolean | string) => {
     const current = value[categoryId];
     if (typeof current === "object" && current !== null) {
       onChange({
         ...value,
-        [categoryId]: { ...(current as any), [field]: val },
-      });
+        [categoryId]: { ...current, [field]: val },
+      } as AntecClinicos);
     } else {
       onChange({
         ...value,
         [categoryId]: val,
-      });
+      } as AntecClinicos);
     }
   };
 
@@ -298,7 +294,7 @@ export function AntecClinicosForm({ value, onChange, disabled }: AntecClinicosFo
                   {cat.type === "checkboxes" ? (
                     <CategoryCheckboxes
                       category={cat}
-                      data={catData}
+                      data={catData as unknown as Record<string, boolean | string>}
                       onChange={(field, val) => updateCategory(cat.id, field, val)}
                       disabled={disabled || false}
                     />

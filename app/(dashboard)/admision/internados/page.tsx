@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Search, Bed, Activity } from "lucide-react";
+import {ArrowLeft, Bed, Activity} from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+
 import { formatDateTime } from "@/lib/utils";
 
 interface Internacion {
@@ -19,8 +19,8 @@ interface Internacion {
   obraSocial?: { nombre: string; sigla: string } | null;
 }
 
-interface Sector { nombre: string }
-interface Medico { id: string; nombre: string }
+interface _Sector { nombre: string }
+interface _Medico { id: string; nombre: string }
 
 export default function InternadosPage() {
   const router = useRouter();

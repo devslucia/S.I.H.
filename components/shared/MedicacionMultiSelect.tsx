@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Search, X, Plus, AlertTriangle, CheckCircle } from "lucide-react";
+import {Search, X, AlertTriangle, CheckCircle} from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+
 
 interface StockItem {
   id: string;
   nombre: string;
   presentacion?: string | null;
-  stockActual: any;
+  stockActual: number;
   principioActivo?: string | null;
 }
 
@@ -18,14 +18,14 @@ export interface ExtraField {
   label: string;
   type: "number" | "text" | "select";
   options?: { value: string; label: string }[];
-  defaultValue?: any;
+  defaultValue?: string | number;
   required?: boolean;
   placeholder?: string;
 }
 
 export interface SelectedItem {
   stockItem: StockItem;
-  values: Record<string, any>;
+  values: Record<string, string | number>;
 }
 
 interface BatchResult {
@@ -40,12 +40,12 @@ interface MedicacionMultiSelectProps {
   onSubmit: (items: SelectedItem[]) => Promise<BatchResult>;
 }
 
-function debounce<T extends (...args: any[]) => any>(fn: T, ms: number): T {
+function debounce<T extends (...args: never[]) => void>(fn: T, ms: number): T {
   let timer: ReturnType<typeof setTimeout>;
-  return ((...args: any[]) => {
+  return ((...args: Parameters<T>) => {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), ms);
-  }) as any;
+  }) as T;
 }
 
 export function MedicacionMultiSelect({
@@ -79,7 +79,7 @@ export function MedicacionMultiSelect({
 
   const addItem = (item: StockItem) => {
     if (selected.some((s) => s.stockItem.id === item.id)) return;
-    const defaults: Record<string, any> = {};
+    const defaults: Record<string, string | number> = {};
     extraFields.forEach((f) => { defaults[f.key] = f.defaultValue ?? ""; });
     setSelected((prev) => [...prev, { stockItem: item, values: defaults }]);
     setQuery("");
@@ -91,7 +91,7 @@ export function MedicacionMultiSelect({
     setSelected((prev) => prev.filter((s) => s.stockItem.id !== id));
   };
 
-  const updateValue = (id: string, key: string, value: any) => {
+  const updateValue = (id: string, key: string, value: string | number) => {
     setSelected((prev) =>
       prev.map((s) =>
         s.stockItem.id === id ? { ...s, values: { ...s.values, [key]: value } } : s
@@ -121,11 +121,11 @@ export function MedicacionMultiSelect({
     }
   };
 
-  const getDefaultsForItem = (item: StockItem): Record<string, any> => {
-    const defaults: Record<string, any> = {};
-    extraFields.forEach((f) => { defaults[f.key] = f.defaultValue ?? ""; });
-    return defaults;
-  };
+
+
+
+
+
 
   return (
     <div className="space-y-3">
@@ -176,7 +176,7 @@ export function MedicacionMultiSelect({
       {selected.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs text-muted">{selected.length} seleccionado(s)</p>
-          {selected.map((sel, idx) => (
+          {selected.map((sel, _idx) => (
             <div key={sel.stockItem.id} className="card p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-text">

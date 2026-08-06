@@ -4,10 +4,11 @@ import { updatePacienteSchema } from "@/lib/validations/paciente.schema";
 import { NextRequest, NextResponse } from "next/server";
 import { formatZodError } from "@/lib/validations/format-zod-error";
 
+
 const PACIENTES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION", "SECRETARIA"];
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const { session, error } = await requireRole(...PACIENTES_READ_ROLES);
+  const {error} = await requireRole(...PACIENTES_READ_ROLES);
   if (error) return error;
 
   const paciente = await prisma.paciente.findUnique({
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const { session, error } = await requireRole("ADMIN", "ADMISION");
+  const {error} = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
   const body = await req.json();
@@ -50,7 +51,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const { session, error } = await requireRole("ADMIN", "ADMISION");
+  const {error} = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
   const internacionesNoEliminables = await prisma.internacion.count({

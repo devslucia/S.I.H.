@@ -16,9 +16,9 @@ import { TabIngresosEgresos } from "./tabs/TabIngresosEgresos";
 import { TabReprogramaciones } from "./tabs/TabReprogramaciones";
 import { PendingChecklist } from "./tabs/PendingChecklist";
 import { CloseConfirmationModal } from "./tabs/CloseConfirmationModal";
+import type { CirugiaFormData, CirugiaFull } from "./tabs/types";
 import type { PendingItem } from "@/lib/quirofano-rbac";
 
-type CirugiaData = any;
 type UsuarioData = { id: string; nombre: string; email: string; rol: string; matricula?: string; especialidad?: string };
 
 const TABS = ["Cirugía", "Prácticas/Med", "Parto/Cesárea", "Parte Quirúrgico", "Ingresos/Egresos", "Reprogramaciones", "Protocolo Anestesia"];
@@ -33,11 +33,11 @@ export default function LibroQuirofanoFull() {
   const cirugiaId = params.cirugiaId as string;
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState(0);
-  const [data, setData] = useState<CirugiaData | null>(null);
+  const [data, setData] = useState<CirugiaFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [usuarios, setUsuarios] = useState<UsuarioData[]>([]);
-  const [formData, setFormData] = useState<CirugiaData>({});
+  const [formData, setFormData] = useState<CirugiaFormData>({} as CirugiaFormData);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
 
@@ -176,15 +176,15 @@ export default function LibroQuirofanoFull() {
       ${data?.circulante ? `<tr><td>Circulante</td><td>${formatUserName(data.circulante)}</td></tr>` : ""}
       </table></div>
       <div class="section"><h3>Operación y Hallazgos</h3><p>${data?.hallazgos || "—"}</p></div>
-      ${data?.implantes?.length ? `<div class="section"><h3>Implantes</h3><table><tr><th>Código</th><th>Nombre</th><th>Lote</th><th>Lado</th></tr>${data.implantes.map((i: any) => `<tr><td>${i.codigo}</td><td>${i.nombre}</td><td>${i.lote || "—"}</td><td>${i.lado || "—"}</td></tr>`).join("")}</table></div>` : ""}
-      ${data?.medicamentos?.length ? `<div class="section"><h3>Medicamentos</h3><table><tr><th>Nombre</th><th>Cant</th><th>Vía</th><th>Hora</th></tr>${data.medicamentos.map((m: any) => `<tr><td>${m.nombre}</td><td>${m.cantidad}</td><td>${m.via || "—"}</td><td>${m.horaAplicacion || "—"}</td></tr>`).join("")}</table></div>` : ""}
+      ${data?.implantes?.length ? `<div class="section"><h3>Implantes</h3><table><tr><th>Código</th><th>Nombre</th><th>Lote</th><th>Lado</th></tr>${data.implantes.map((i) => `<tr><td>${i.codigo}</td><td>${i.nombre}</td><td>${i.lote || "—"}</td><td>${i.lado || "—"}</td></tr>`).join("")}</table></div>` : ""}
+      ${data?.medicamentos?.length ? `<div class="section"><h3>Medicamentos</h3><table><tr><th>Nombre</th><th>Cant</th><th>Vía</th><th>Hora</th></tr>${data.medicamentos.map((m) => `<tr><td>${m.nombre}</td><td>${m.cantidad}</td><td>${m.via || "—"}</td><td>${m.horaAplicacion || "—"}</td></tr>`).join("")}</table></div>` : ""}
       <script>window.print();window.close();</script>
       </body></html>
     `);
     w.document.close();
   };
 
-  const update = (field: string, value: any) => setFormData((prev: any) => ({ ...prev, [field]: value }));
+  const update = (field: string, value: unknown) => setFormData((prev: CirugiaFormData) => ({ ...prev, [field]: value }));
 
   if (loading) return <div className="flex items-center justify-center h-64"><p className="text-muted">Cargando libro de quirófano...</p></div>;
   if (!data) return <div className="flex items-center justify-center h-64"><p className="text-muted">Cirugía no encontrada.</p></div>;

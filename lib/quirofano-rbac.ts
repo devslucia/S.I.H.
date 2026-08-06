@@ -77,7 +77,7 @@ const FIELDS_ANESTESIOLOGO = [
 const FIELDS_SHARED = ["observaciones"] as const;
 
 // Campos de MEDICO que también puede editar ANESTESIOLOGO (excepción confirmada)
-const ANESTESIOLOGO_EXCEPTIONS = ["signosVitalesIntraop"] as const;
+
 
 // Protocolo Anestesia — campos del componente que NO están en el PATCH principal
 // pero que se manejan vía API separada. Marcados como referencia.
@@ -119,11 +119,11 @@ export function canEditField(role: EffectiveRole, field: string): boolean {
  *   y rejected es un array de campos rechazados (si hay, devuelve status 403).
  */
 export function validatePatchBody(
-  body: Record<string, any>,
+  body: Record<string, unknown>,
   role: EffectiveRole,
-  cirugia: CirugiaAsignacion
-): { allowedBody: Record<string, any>; rejected?: { status: 403; fields: string[] } } {
-  const allowedBody: Record<string, any> = {};
+  _cirugia: CirugiaAsignacion
+): { allowedBody: Record<string, unknown>; rejected?: { status: 403; fields: string[] } } {
+  const allowedBody: Record<string, unknown> = {};
   const rejectedFields: string[] = [];
 
   // Campos estrictos de Parte Quirúrgico — solo MEDICO
@@ -185,7 +185,22 @@ export type PendingItem = {
  * Calcula los ítems pendientes de carga para una cirugía.
  * Solo considera campos relevantes (no todos los 40+ campos).
  */
-export function getPendingItems(cirugia: any): PendingItem[] {
+type CirugiaEstado = {
+  anestesiologoId?: string | null;
+  cirujanoId?: string | null;
+  horaInicio?: string | null;
+  horaFin?: string | null;
+  hallazgos?: string | null;
+  evolucionPostInt?: string | null;
+  indicacionesPostoperatorias?: unknown[] | null;
+  medicamentos?: unknown[] | null;
+  practicas?: unknown[] | null;
+  balanceIngresos?: unknown[] | null;
+  balanceEgresos?: unknown[] | null;
+  signosVitalesIntraop?: unknown[] | null;
+};
+
+export function getPendingItems(cirugia: CirugiaEstado): PendingItem[] {
   return [
     {
       id: "equipo",
@@ -219,38 +234,35 @@ export function getPendingItems(cirugia: any): PendingItem[] {
       id: "indicaciones",
       label: "Indicaciones postoperatorias",
       role: "MEDICO",
-      done: !!(cirugia.indicacionesPostoperatorias?.length > 0),
+      done: !!((cirugia.indicacionesPostoperatorias?.length ?? 0) > 0),
       tab: 3,
     },
     {
       id: "medicamentos",
       label: "Medicamentos / descartables",
       role: "INSTRUMENTADOR",
-      done: !!(cirugia.medicamentos?.length > 0),
+      done: !!((cirugia.medicamentos?.length ?? 0) > 0),
       tab: 1,
     },
     {
       id: "practicas",
       label: "Prácticas asociadas",
       role: "INSTRUMENTADOR",
-      done: !!(cirugia.practicas?.length > 0),
+      done: !!((cirugia.practicas?.length ?? 0) > 0),
       tab: 1,
     },
     {
       id: "balance",
       label: "Balance de líquidos",
       role: "INSTRUMENTADOR",
-      done: !!(
-        (cirugia.balanceIngresos?.length > 0) ||
-        (cirugia.balanceEgresos?.length > 0)
-      ),
+      done: !!(((cirugia.balanceIngresos?.length ?? 0) > 0) || ((cirugia.balanceEgresos?.length ?? 0) > 0)),
       tab: 4,
     },
     {
       id: "sv",
       label: "Signos vitales intraoperatorios",
       role: "ANESTESIOLOGO",
-      done: !!(cirugia.signosVitalesIntraop?.length > 0),
+      done: !!((cirugia.signosVitalesIntraop?.length ?? 0) > 0),
       tab: 4,
     },
     {

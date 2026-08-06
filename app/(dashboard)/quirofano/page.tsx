@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Activity, Clock, User, Calendar, ChevronLeft, ChevronRight, Plus, Search, AlertTriangle, Eye } from "lucide-react";
-import { formatDateTime, formatDate, formatUserName } from "@/lib/utils";
+import {formatDateTime, formatUserName} from "@/lib/utils";
 import { Modal } from "@/components/ui/Modal";
 
 interface Cirugia {
@@ -76,6 +76,13 @@ function formatFechaLarga(dateStr: string) {
   return d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
+function formatMedicosTratantes(
+  medicos: { medico: { id: string; nombre: string } }[]
+): string {
+  const dr = medicos.length > 1 ? "Dres." : "Dr.";
+  return `${dr} ${medicos.map((mt) => formatUserName(mt.medico)).join(", ")}`;
+}
+
 function calcularEdad(fechaNac?: string): string | null {
   if (!fechaNac) return null;
   const nac = new Date(fechaNac);
@@ -116,7 +123,7 @@ export default function QuirofanoPage() {
     fechaProgramada: getTodayStr(),
     horaProgramada: "08:00",
     quirofanoId: "",
-    tipo: "PROGRAMADA" as const,
+    tipo: "PROGRAMADA" as "PROGRAMADA" | "URGENCIA" | "EMERGENCIA",
     cirujanoId: "",
     anestesiologoId: "",
     procedimiento: "",
@@ -206,7 +213,7 @@ export default function QuirofanoPage() {
           fechaProgramada: getTodayStr(),
           horaProgramada: "08:00",
           quirofanoId: "",
-          tipo: "PROGRAMADA" as const,
+          tipo: "PROGRAMADA" as "PROGRAMADA" | "URGENCIA" | "EMERGENCIA",
           cirujanoId: "",
           anestesiologoId: "",
           procedimiento: "",
@@ -387,8 +394,7 @@ export default function QuirofanoPage() {
                       )}
                       {internacion.medicosTratantesInternacion && internacion.medicosTratantesInternacion.length > 0 && (
                         <p className="text-muted text-xs">
-                          Dr.{internacion.medicosTratantesInternacion.length > 1 ? "s" : ""}{" "}
-                          {internacion.medicosTratantesInternacion.map((mt) => formatUserName(mt.medico)).join(", ")}
+                          {formatMedicosTratantes(internacion.medicosTratantesInternacion)}
                         </p>
                       )}
                     </div>
@@ -466,8 +472,7 @@ export default function QuirofanoPage() {
                       )}
                       {internacion.medicosTratantesInternacion && internacion.medicosTratantesInternacion.length > 0 && (
                         <p className="text-muted text-xs">
-                          Dr.{internacion.medicosTratantesInternacion.length > 1 ? "s" : ""}{" "}
-                          {internacion.medicosTratantesInternacion.map((mt) => formatUserName(mt.medico)).join(", ")}
+                          {formatMedicosTratantes(internacion.medicosTratantesInternacion)}
                         </p>
                       )}
                     </div>
@@ -548,7 +553,7 @@ export default function QuirofanoPage() {
                 <label className="block text-xs text-muted mb-1">Tipo</label>
                 <select
                   value={cirugiaForm.tipo}
-                  onChange={(e) => setCirugiaForm({ ...cirugiaForm, tipo: e.target.value as any })}
+                  onChange={(e) => setCirugiaForm({ ...cirugiaForm, tipo: e.target.value as "PROGRAMADA" | "URGENCIA" | "EMERGENCIA" })}
                   className="input-field text-sm w-full"
                 >
                   <option value="PROGRAMADA">Programada</option>

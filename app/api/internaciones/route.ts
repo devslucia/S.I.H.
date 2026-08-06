@@ -4,6 +4,8 @@ import { getVisibleInternacionesWhere } from "@/lib/internaciones-visibility";
 import { createInternacionSchema } from "@/lib/validations/internacion.schema";
 import { NextRequest, NextResponse } from "next/server";
 import { formatZodError } from "@/lib/validations/format-zod-error";
+import {errorMessage} from "@/lib/errors";
+import { Prisma, type EstadoInternacion } from "@prisma/client";
 
 const INTERNACIONES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION"];
 
@@ -14,18 +16,18 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const estado = searchParams.get("estado");
 
-  const rol = (session.user as any).rol as string;
+  const rol = session.user.rol as string;
   const userId = session.user.id as string;
 
-  const where: any = {
+  const where: Prisma.InternacionWhereInput = {
     ...getVisibleInternacionesWhere(userId, rol),
   };
 
   if (estado) {
     if (estado.includes(",")) {
-      where.estado = { in: estado.split(",") };
+      where.estado = { in: estado.split(",") as EstadoInternacion[] };
     } else {
-      where.estado = estado;
+      where.estado = estado as EstadoInternacion;
     }
   }
 
@@ -46,7 +48,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN", "ADMISION");
+  const {error} = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
   const body = await req.json();
@@ -129,21 +131,22 @@ export async function POST(req: NextRequest) {
 
       return internacion;
     });
-  } catch (e: any) {
-    if (e.message === "PACIENTE_YA_ACTIVO") {
+  } catch (e: unknown) {
+    if (errorMessage(e) === "PACIENTE_YA_ACTIVO") {
       return NextResponse.json(
         { error: "El paciente ya tiene una internación activa" },
         { status: 409 }
       );
     }
-    if (e.message === "CAMA_NOT_FOUND") {
+    if (errorMessage(e) === "CAMA_NOT_FOUND") {
       return NextResponse.json({ error: "Cama no encontrada" }, { status: 404 });
     }
-    if (e.message?.startsWith("CAMA_NOT_AVAILABLE")) {
-      const estado = e.message.split(":")[1];
+    const msg = errorMessage(e);
+    if (msg?.startsWith("CAMA_NOT_AVAILABLE")) {
+      const estado = msg.split(":")[1] as string;
       return NextResponse.json({ error: `La cama no está disponible (estado: ${estado})` }, { status: 409 });
     }
-    return NextResponse.json({ error: e.message || "Error interno" }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(e) || "Error interno" }, { status: 500 });
   }
 
   const internacion = await prisma.internacion.findUnique({

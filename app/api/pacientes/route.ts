@@ -3,18 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { createPacienteSchema } from "@/lib/validations/paciente.schema";
 import { NextRequest, NextResponse } from "next/server";
 import { formatZodError } from "@/lib/validations/format-zod-error";
+import { Prisma } from "@prisma/client";
 
 const PACIENTES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION", "SECRETARIA"];
 
 export async function GET(req: NextRequest) {
-  const { session, error } = await requireRole(...PACIENTES_READ_ROLES);
+  const {error} = await requireRole(...PACIENTES_READ_ROLES);
   if (error) return error;
 
   const { searchParams } = new URL(req.url);
   const dni = searchParams.get("dni");
   const q = searchParams.get("q");
 
-  const where: any = {};
+  const where: Prisma.PacienteWhereInput = {};
   if (dni) where.dni = { contains: dni };
   if (q) {
     where.OR = [
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN", "ADMISION", "SECRETARIA");
+  const {error} = await requireRole("ADMIN", "ADMISION", "SECRETARIA");
   if (error) return error;
 
   const body = await req.json();

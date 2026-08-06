@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserCheck, Search, CheckCircle, AlertTriangle } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
+import {UserCheck, CheckCircle, AlertTriangle} from "lucide-react";
+
 import { formatUserName } from "@/lib/utils";
 
 interface Internacion {
@@ -65,7 +65,7 @@ export default function AsignarTratantePage() {
         const data = await res.json();
         setError(data.error || "Error al asignar");
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Error de conexión");
     } finally {
       setSavingId(null);

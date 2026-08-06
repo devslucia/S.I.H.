@@ -12,7 +12,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Plus, Clock } from "lucide-react";
-import { Input } from "@/components/ui/Input";
+
 import { Button } from "@/components/ui/Button";
 import type { SignoVitalRegistro } from "@/types";
 
@@ -48,6 +48,20 @@ const PARAM_LABELS: Record<string, string> = {
   oxigenoFlujo: "O₂ Flujo (L/min)",
 };
 
+interface PuntoGrafico {
+  minuto: number;
+  label: string;
+  pas?: number | null;
+  pad?: number | null;
+  pam?: number | null;
+  fc?: number | null;
+  spo2?: number | null;
+  fr?: number | null;
+  etco2?: number | null;
+  temp?: number | null;
+  eventos?: string[];
+}
+
 const EVENTOS_PREDEFINIDOS = [
   { key: "inicio_anestesia", label: "Inicio anestesia", color: "#c47a5a" },
   { key: "inicio_cirugia", label: "Inicio cirugía", color: "#f97316" },
@@ -80,7 +94,7 @@ function GraficoSignosVitales({
 
   const chartData = useMemo(() => {
     const maxMin = Math.max(240, minutoActual + 30, ...signosVitales.map((s) => s.minuto));
-    const points: any[] = [];
+    const points: PuntoGrafico[] = [];
 
     for (let m = 0; m <= maxMin; m += 5) {
       const registro = signosVitales.find((s) => s.minuto === m);

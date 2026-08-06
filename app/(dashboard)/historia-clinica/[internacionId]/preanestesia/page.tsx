@@ -57,7 +57,7 @@ export default function PreanestesiaPage() {
 
   useEffect(() => { fetchData(); }, [params.internacionId]);
 
-  const handleChange = (key: keyof PreanestesiaData, value: any) => {
+  const handleChange = <K extends keyof PreanestesiaData>(key: K, value: PreanestesiaData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }));
   };
 

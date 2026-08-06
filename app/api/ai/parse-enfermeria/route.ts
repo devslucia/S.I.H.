@@ -34,7 +34,7 @@ Formato:
 }`;
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN", "ENFERMERO");
+  const {error} = await requireRole("ADMIN", "ENFERMERO");
   if (error) return error;
 
   try {
@@ -84,8 +84,8 @@ export async function POST(req: NextRequest) {
 
     const resultado = JSON.parse(jsonMatch[0]);
     return NextResponse.json({ resultado });
-  } catch (err: any) {
-    if (err.name === "AbortError") {
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
       return NextResponse.json({ error: "Timeout: la IA tardó demasiado" }, { status: 504 });
     }
     console.error("Parse error:", err);

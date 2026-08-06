@@ -1,20 +1,30 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
-import { descontarStock } from "@/lib/utils/stock";
+import { descontarStock, type Tx } from "@/lib/utils/stock";
 import { generarCargo } from "@/lib/utils/facturacion";
 import { verificarAlergia } from "@/lib/utils/alertas-alergia";
 import { NextRequest, NextResponse } from "next/server";
+import {errorMessage} from "@/lib/errors";
 
 const ADHOC_WRITE_ROLES = ["ADMIN", "ENFERMERO", "MEDICO", "ANESTESIOLOGO"];
 
+interface AdHocItem {
+  stockItemId: string;
+  cantidad?: string | number;
+  via?: string;
+  hora?: string;
+  motivo: string;
+  nombre?: string;
+}
+
 async function processOneAdHoc(
-  tx: any,
-  item: any,
+  tx: Tx,
+  item: AdHocItem,
   hc: { id: string; internacionId: string },
   userId: string
 ): Promise<{ ok: boolean; nombre: string; error?: string }> {
-  const { stockItemId, cantidad, via, hora, motivo, nombre } = item;
+  const {stockItemId, cantidad, hora, motivo, nombre} = item;
 
   if (!motivo || motivo.trim().length < 3) {
     return { ok: false, nombre: nombre || "desconocido", error: "Motivo requerido (mínimo 3 caracteres)" };
@@ -120,11 +130,11 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
 
     try {
       const result = await prisma.$transaction(async (tx) => {
-        return processOneAdHoc(tx, item, hcData, (session.user as any).id);
+        return processOneAdHoc(tx, item, hcData, session.user.id);
       });
       results.push(result);
-    } catch (e: any) {
-      results.push({ ok: false, nombre: item.nombre || "desconocido", error: e.message || "Error interno" });
+    } catch (e: unknown) {
+      results.push({ ok: false, nombre: item.nombre || "desconocido", error: errorMessage(e) || "Error interno" });
     }
   }
 

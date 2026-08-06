@@ -52,7 +52,38 @@ function SectionTitle({ children }: { children: string }) {
   return <Text style={styles.sectionTitle}>{children}</Text>;
 }
 
-function InformePDF({ paciente, internacion, alergias }: any) {
+interface InformePDFProps {
+  paciente: {
+    apellido: string;
+    nombre: string;
+    dni: string;
+    sexo: string;
+    fechaNac: string | Date;
+    estadoCivil: string | null;
+    cuil: string | null;
+    domicilio: string | null;
+    localidad: string | null;
+    telefono: string | null;
+  };
+  internacion: {
+    numero: number;
+    fechaIngreso: string | Date;
+    fechaEgreso: string | Date | null;
+    tipoIngreso: string | null;
+    motivoIngreso: string | null;
+    peso: number | null;
+    diagnosticoCirugia: string | null;
+    diagnosticoCIE: string | null;
+    medicoSolicitante: string | null;
+    obraSocial: { nombre: string; sigla: string } | null;
+    nroAfiliado: string | null;
+    tipoBeneficiario: string | null;
+    cama: { numero: string; sector: { nombre: string } | null } | null;
+  };
+  alergias: { sustancia: string; severidad: string | null; observacion: string | null }[];
+}
+
+function InformePDF({ paciente, internacion, alergias }: InformePDFProps) {
   const fechaIngreso = internacion.fechaIngreso ? new Date(internacion.fechaIngreso).toLocaleDateString("es-AR") : "—";
   const fechaEgreso = internacion.fechaEgreso ? new Date(internacion.fechaEgreso).toLocaleDateString("es-AR") : null;
 
@@ -109,7 +140,7 @@ function InformePDF({ paciente, internacion, alergias }: any) {
         {alergias && alergias.length > 0 && (
           <>
             <SectionTitle>Alergias Conocidas</SectionTitle>
-            {alergias.map((a: any, idx: number) => (
+            {alergias.map((a, idx: number) => (
               <Text key={idx} style={{ marginBottom: 2, fontSize: 9 }}>
                 • {a.sustancia}{a.severidad ? ` (${a.severidad})` : ""}{a.observacion ? ` — ${a.observacion}` : ""}
               </Text>

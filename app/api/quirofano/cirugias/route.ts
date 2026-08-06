@@ -1,21 +1,22 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma, type EstadoCirugia } from "@prisma/client";
 
 const Q_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
 
 export async function GET(req: NextRequest) {
-  const { session, error } = await requireRole(...Q_READ_ROLES);
+  const {error} = await requireRole(...Q_READ_ROLES);
   if (error) return error;
 
   const { searchParams } = new URL(req.url);
   const estado = searchParams.get("estado");
   const fecha = searchParams.get("fecha");
 
-  const where: any = {};
+  const where: Prisma.CirugiaWhereInput = {};
 
   if (estado) {
-    where.estado = estado;
+    where.estado = estado as EstadoCirugia;
   }
 
   if (fecha) {

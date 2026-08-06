@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bed, Building2, Heart, Activity, Trash2, Plus, Save, X } from "lucide-react";
+import {Bed, Building2, Heart, Activity, Trash2, X, type LucideIcon} from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 
 type Tab = "sectores" | "camas" | "obras-sociales" | "quirofanos" | "rangos-vitales";
@@ -78,7 +78,7 @@ export default function ConfigPage() {
 
   useEffect(() => { fetchAll(); }, []);
 
-  const tabs: { id: Tab; label: string; icon: any }[] = [
+  const tabs: { id: Tab; label: string; icon: LucideIcon }[] = [
     { id: "sectores", label: "Sectores", icon: Building2 },
     { id: "camas", label: "Camas", icon: Bed },
     { id: "obras-sociales", label: "Obras Sociales", icon: Heart },

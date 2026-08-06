@@ -11,7 +11,7 @@ const alergiaUpdateSchema = z.object({
 });
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string; alergiaId: string } }) {
-  const { session, error } = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO");
+  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO");
   if (error) return error;
 
   const body = await req.json();
@@ -38,7 +38,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string; 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string; alergiaId: string } }) {
-  const { session, error } = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO");
+  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO");
   if (error) return error;
 
   const alergia = await prisma.alergia.findUnique({ where: { id: params.alergiaId } });

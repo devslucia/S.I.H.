@@ -1,29 +1,30 @@
 import { prisma } from "@/lib/prisma";
 import { verificarAlergia } from "@/lib/utils/alertas-alergia";
+import { Prisma } from "@prisma/client";
 
-export async function crearAnamnesis(episodioId: string, data: any) {
+export async function crearAnamnesis(episodioId: string, data: Prisma.AnamnesisUncheckedCreateInput) {
   const episodio = await prisma.episodio.findUnique({ where: { id: episodioId } });
   if (!episodio) throw new Error("EPISODIO_NO_ENCONTRADO");
 
   return prisma.anamnesis.upsert({
     where: { episodioId },
     update: data,
-    create: { hcId: episodio.hcId, episodioId, ...data },
+    create: { ...data, hcId: episodio.hcId, episodioId },
   });
 }
 
-export async function actualizarAnamnesis(episodioId: string, data: any) {
+export async function actualizarAnamnesis(episodioId: string, data: Prisma.AnamnesisUncheckedCreateInput) {
   const episodio = await prisma.episodio.findUnique({ where: { id: episodioId } });
   if (!episodio) throw new Error("EPISODIO_NO_ENCONTRADO");
 
   return prisma.anamnesis.upsert({
     where: { episodioId },
     update: data,
-    create: { hcId: episodio.hcId, episodioId, ...data },
+    create: { ...data, hcId: episodio.hcId, episodioId },
   });
 }
 
-export async function crearEvolucion(episodioId: string, data: any, usuarioId: string) {
+export async function crearEvolucion(episodioId: string, data: Prisma.EvolucionUncheckedCreateInput, usuarioId: string) {
   const episodio = await prisma.episodio.findUnique({ where: { id: episodioId } });
   if (!episodio) throw new Error("EPISODIO_NO_ENCONTRADO");
 
@@ -32,20 +33,20 @@ export async function crearEvolucion(episodioId: string, data: any, usuarioId: s
   });
 }
 
-export async function crearPrescripcion(episodioId: string, data: any, usuarioId: string) {
+export async function crearPrescripcion(episodioId: string, data: Prisma.PrescripcionUncheckedCreateInput, usuarioId: string) {
   const episodio = await prisma.episodio.findUnique({ where: { id: episodioId } });
   if (!episodio) throw new Error("EPISODIO_NO_ENCONTRADO");
 
   if (data.droga) {
     const hc = await prisma.historiaClinica.findUnique({ where: { id: episodio.hcId } });
     if (hc?.pacienteId) {
-      const { bloqueada, alergia } = await verificarAlergia(hc.pacienteId, data.droga);
+      const {bloqueada} = await verificarAlergia(hc.pacienteId, data.droga);
       if (bloqueada) {
         return prisma.prescripcion.create({
           data: {
+            ...data,
             hcId: episodio.hcId,
             episodioId,
-            ...data,
             usuarioId,
             estado: "BLOQUEADA_ALERGIA",
             bloqueadaAlergia: true,
@@ -56,7 +57,7 @@ export async function crearPrescripcion(episodioId: string, data: any, usuarioId
   }
 
   return prisma.prescripcion.create({
-    data: { hcId: episodio.hcId, episodioId, ...data, usuarioId },
+    data: { ...data, hcId: episodio.hcId, episodioId, usuarioId },
   });
 }
 

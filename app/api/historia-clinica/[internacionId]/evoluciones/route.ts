@@ -64,7 +64,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
       hcId: hc.id,
       episodioId: episodio.id,
       contenido: body.contenido,
-      usuarioId: (session.user as any).id,
+      usuarioId: session.user.id,
     },
   });
 

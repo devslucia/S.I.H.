@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, AlertTriangle, Calendar, Bed, Activity, Trash2, Edit, X } from "lucide-react";
+import {ArrowLeft, Plus, AlertTriangle, Calendar, Activity, Trash2, Edit} from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { SearchableMultiSelect } from "@/components/ui/SearchableMultiSelect";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import {formatDateTime} from "@/lib/utils";
 
 interface Alergia {
   id: string;
@@ -109,8 +109,19 @@ export default function PacienteDetailPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const body: any = {
-        pacienteId: params.id,
+      const body: {
+        pacienteId: string;
+        tipoIngreso: string;
+        motivoIngreso?: string;
+        camaId?: string;
+        obraSocialId?: string;
+        medicoTratanteIds?: string[];
+        nroAfiliado?: string;
+        tipoBeneficiario?: string;
+        peso?: number;
+        diagnosticoCirugia?: string;
+      } = {
+        pacienteId: Array.isArray(params.id) ? params.id[0] : params.id,
         tipoIngreso: form.tipoIngreso,
         motivoIngreso: form.motivoIngreso || undefined,
       };

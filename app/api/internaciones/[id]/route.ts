@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const { session, error } = await requireRole(...INTERNACIONES_READ_ROLES);
   if (error) return error;
 
-  const rol = (session!.user as any).rol as string;
+  const rol = session.user.rol as string;
   const userId = session!.user.id as string;
   const visFilter = getVisibleInternacionesWhere(userId, rol);
 
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const { session, error } = await requireRole("ADMIN", "ADMISION");
+  const {error} = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
   const body = await req.json();

@@ -263,10 +263,35 @@ function renderExamenFisico(ef: ExamenFisico | null | undefined, sexo: string) {
   );
 }
 
-function PreanestesiaPDF({ preanestesia, paciente, internacion }: any) {
+interface PreanestesiaPdfData {
+  createdAt: string | Date;
+  peso: number | null;
+  talla: number | null;
+  diagnosticoPreoperatorio: string | null;
+  cirugiaPropuestaTipo: string | null;
+  cirugiaPropuestaDesc: string | null;
+  antecQuirurgicos: string | null;
+  antecClinicos: unknown;
+  enfermedadesTratamiento: string | null;
+  examenFisico: unknown;
+  laboratorio: string | null;
+  laboratorioFecha: string | Date | null;
+  scoreASA: number | null;
+  anestesiaSugerida: string | null;
+  comentarios: string | null;
+  firmadaAt: string | Date | null;
+}
+
+interface PreanestesiaPDFProps {
+  preanestesia: PreanestesiaPdfData;
+  paciente: { apellido: string; nombre: string; dni: string; sexo: string };
+  internacion: { numero: number };
+}
+
+function PreanestesiaPDF({ preanestesia, paciente, internacion }: PreanestesiaPDFProps) {
   const p = preanestesia;
-  const ac = p.antecClinicos as AntecClinicos | null;
-  const ef = p.examenFisico as ExamenFisico | null;
+  const ac = (p.antecClinicos as AntecClinicos | null) ?? null;
+  const ef = (p.examenFisico as ExamenFisico | null) ?? null;
 
   return (
     <Document>
@@ -345,19 +370,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: "Valoración preanestésica no encontrada" }, { status: 404 });
   }
 
-  const internacion = (preanestesia as any).hc.internacion;
-  if (!(await isInternacionVisibleForUser(internacion.id, session!.user.id, session!.user.rol))) {
+  const internacion = preanestesia.hc.internacion;
+  if (!internacion || !(await isInternacionVisibleForUser(internacion.id, session!.user.id, session!.user.rol))) {
     return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
 
   const paciente = internacion.paciente;
 
   const buffer = await renderToBuffer(
-    React.createElement(PreanestesiaPDF, {
-      preanestesia,
-      paciente,
-      internacion,
-    })
+    <PreanestesiaPDF preanestesia={preanestesia} paciente={paciente} internacion={internacion} />
   );
 
   return new Response(new Uint8Array(buffer), {

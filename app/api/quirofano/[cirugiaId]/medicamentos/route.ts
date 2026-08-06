@@ -1,6 +1,8 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import {type Tx} from "@/lib/utils/stock";
+import {errorMessage} from "@/lib/errors";
 
 async function checkAssignment(userId: string, cirugiaId: string) {
   const cirugia = await prisma.cirugia.findUnique({
@@ -12,9 +14,19 @@ async function checkAssignment(userId: string, cirugiaId: string) {
   return NextResponse.json({ error: "No asignado a esta cirugía" }, { status: 403 });
 }
 
+interface MaterialItem {
+  stockItemId: string;
+  cantidad?: string | number;
+  nombre?: string;
+  via?: string;
+  fechaAplicacion?: string;
+  horaAplicacion?: string;
+  observacion?: string;
+}
+
 async function processOneItem(
-  tx: any,
-  item: any,
+  tx: Tx,
+  item: MaterialItem,
   cirugiaId: string,
   userId: string
 ): Promise<{ ok: boolean; nombre: string; error?: string }> {
@@ -93,8 +105,8 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
         return processOneItem(tx, item, params.cirugiaId, session.user.id);
       });
       results.push(result);
-    } catch (e: any) {
-      results.push({ ok: false, nombre: item.stockItemId, error: e.message || "Error interno" });
+    } catch (e: unknown) {
+      results.push({ ok: false, nombre: item.stockItemId, error: errorMessage(e) || "Error interno" });
     }
   }
 

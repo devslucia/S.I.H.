@@ -8,7 +8,7 @@ export async function GET() {
   const { session, error } = await requireRole(...MIS_MEDICOS_ROLES);
   if (error) return error;
 
-  const rol = (session.user as any).rol as string;
+  const rol = session.user.rol as string;
   const userId = session.user.id as string;
 
   if (rol === "SECRETARIA") {

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN", "FARMACIA");
+  const {error} = await requireRole("ADMIN", "FARMACIA");
   if (error) return error;
 
   const { searchParams } = new URL(req.url);
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
         tipo,
         cantidad: Number(cantidad),
         motivo: motivo || `Movimiento de stock: ${tipo}`,
-        usuarioId: (session.user as any).id,
+        usuarioId: session.user.id,
       },
       include: { stockItem: true },
     });

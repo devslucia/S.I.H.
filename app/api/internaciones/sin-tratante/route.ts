@@ -2,8 +2,8 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN");
+export async function GET(_req: NextRequest) {
+  const {error} = await requireRole("ADMIN");
   if (error) return error;
 
   const internaciones = await prisma.internacion.findMany({

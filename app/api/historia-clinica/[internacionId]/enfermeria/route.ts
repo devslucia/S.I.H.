@@ -1,7 +1,7 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
-import { descontarStock } from "@/lib/utils/stock";
+import { descontarStock, type Tx } from "@/lib/utils/stock";
 import { generarCargo } from "@/lib/utils/facturacion";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
   const body = await req.json();
 
   const result = await prisma.$transaction(async (tx) => {
-    let alertas: string[] = [];
+    const alertas: string[] = [];
 
     if (body.tipo === "SIGNOS_VITALES" && body.datos) {
       const rangos = await tx.rangoVital.findMany();
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
         datos: body.datos ?? {},
         observacion: body.observacion,
         alertas: alertas.length > 0 ? alertas : undefined,
-        usuarioId: (session.user as any).id,
+        usuarioId: session.user.id,
       },
     });
 
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
           );
         }
 
-        await generarCargo(tx as any, {
+        await generarCargo(tx as Tx, {
           internacionId: hc.internacion?.id ?? "",
           concepto: `${hoja.seccion} - ${hoja.item}`,
           cantidad: hoja.cantidad ?? 1,

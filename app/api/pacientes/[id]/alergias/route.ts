@@ -13,7 +13,7 @@ const alergiaSchema = z.object({
 });
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const { session, error } = await requireRole(...ROLES);
+  const {error} = await requireRole(...ROLES);
   if (error) return error;
 
   const alergias = await prisma.alergia.findMany({
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { session, error } = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO");
+  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO");
   if (error) return error;
 
   const body = await req.json();

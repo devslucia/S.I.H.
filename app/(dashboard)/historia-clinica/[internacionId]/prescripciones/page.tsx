@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Pill, AlertTriangle } from "lucide-react";
+import {ArrowLeft, Plus, AlertTriangle} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -94,17 +94,20 @@ export default function PrescripcionesPage() {
         body: JSON.stringify(form),
       });
       if (res.status === 409) {
-        const data = await res.json();
+        const data = (await res.json()) as { alergia?: { sustancia?: string; createdAt?: string } };
         setAlerta({ droga: data.alergia?.sustancia || form.droga, fechaAlta: formatDateTime(data.alergia?.createdAt || new Date().toISOString()) });
       } else if (res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as {
+          ok: boolean;
+          items?: { ok: boolean; nombre: string; error?: string }[];
+        };
         if (data.ok) {
           setModalOpen(false);
           setForm(initialForm);
           fetchPrescripciones();
         } else {
-          const fallidos = data.items?.filter((i: any) => !i.ok) || [];
-          const mensajes = fallidos.map((i: any) => `${i.nombre}: ${i.error}`).join("\n");
+          const fallidos = data.items?.filter((i) => !i.ok) || [];
+          const mensajes = fallidos.map((i) => `${i.nombre}: ${i.error}`).join("\n");
           alert(`Algunos ítems no se guardaron:\n${mensajes}`);
         }
       }

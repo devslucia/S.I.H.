@@ -2,9 +2,10 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 const ROLES_SIN_FILTRO = ["ADMIN", "ENFERMERO", "INSTRUMENTADOR", "ADMISION", "FACTURACION", "FARMACIA"] as const;
+type RolSinFiltro = (typeof ROLES_SIN_FILTRO)[number];
 
 export function getVisibleInternacionesWhere(userId: string, rol: string): Prisma.InternacionWhereInput {
-  if (ROLES_SIN_FILTRO.includes(rol as any)) {
+  if (ROLES_SIN_FILTRO.includes(rol as RolSinFiltro)) {
     return {};
   }
 
@@ -28,7 +29,7 @@ export async function isInternacionVisibleForUser(
   userId: string,
   rol: string
 ): Promise<boolean> {
-  if (ROLES_SIN_FILTRO.includes(rol as any)) {
+  if (ROLES_SIN_FILTRO.includes(rol as RolSinFiltro)) {
     return true;
   }
 

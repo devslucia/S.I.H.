@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  ArrowLeft, Plus, Send, CheckCircle, Clock, Pill, Activity,
-  Syringe, AlertTriangle, FileText, Trash2, Edit, UserPlus
-} from "lucide-react";
+import {ArrowLeft, Plus, Send, CheckCircle, Clock, Pill, Activity, Syringe, AlertTriangle, FileText, UserPlus} from "lucide-react";
+
+
+
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -40,7 +40,19 @@ interface Prescripcion {
 
 interface ControlEnfermeria {
   id: string; fecha: string; hora: string; tipo: string;
-  datos: any; observacion?: string; usuario: { id: string; nombre: string };
+  datos: { PA?: string; FC?: string; FR?: string; "T°"?: string; SatO2?: string; Peso?: string } | null;
+  observacion?: string; usuario: { id: string; nombre: string };
+}
+
+interface ItemResultado {
+  ok: boolean;
+  nombre: string;
+  error?: string;
+}
+
+interface PrescripcionBatchResp {
+  ok?: boolean;
+  items?: ItemResultado[];
 }
 
 interface IndicacionPostOp {
@@ -52,11 +64,11 @@ interface CirugiaConIndicaciones {
   indicacionesPostoperatorias?: IndicacionPostOp[];
 }
 
-const tipoLabels: Record<string, string> = {
-  SIGNOS_VITALES: "Signos Vitales", BALANCE_LIQUIDOS: "Balance Líq.",
-  GLUCEMIA: "Glucemia", PESO: "Peso", MONITOREO_RESP: "Monit. Resp.",
-  CURACION: "Curación", NOTA_LIBRE: "Nota Libre",
-};
+
+
+
+
+
 
 const estadoPrescColors: Record<string, "success" | "warning" | "error" | "default"> = {
   ACTIVA: "success", SUSPENDIDA: "warning", COMPLETADA: "default", BLOQUEADA_ALERGIA: "error",
@@ -148,8 +160,8 @@ export default function PanelMedicoPage() {
         setPrescripcionForm({ tipo: "MEDICACION", droga: "", dosis: "", unidad: "", frecuencia: "", via: "", descripcion: "", destino: "PISO" });
         fetchData();
       } else {
-        const fallidos = data.items?.filter((i: any) => !i.ok) || [];
-        const mensajes = fallidos.map((i: any) => `${i.nombre}: ${i.error}`).join("\n");
+        const fallidos = (data as PrescripcionBatchResp).items?.filter((i) => !i.ok) || [];
+        const mensajes = fallidos.map((i) => `${i.nombre}: ${i.error}`).join("\n");
         alert(`Algunos ítems no se guardaron:\n${mensajes}`);
       }
     } catch (err) { console.error(err); }

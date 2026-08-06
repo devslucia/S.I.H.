@@ -47,19 +47,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        const extra = user as unknown as {
+          rol: string;
+          matricula?: string | null;
+          apellido?: string | null;
+        };
         token.id = user.id;
-        token.rol = (user as any).rol;
-        token.matricula = (user as any).matricula;
-        token.apellido = (user as any).apellido;
+        token.rol = extra.rol ?? "";
+        token.matricula = extra.matricula ?? null;
+        token.apellido = extra.apellido ?? null;
       }
       return token;
     },
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
-        (session.user as any).rol = token.rol as string;
-        (session.user as any).matricula = token.matricula as string;
-        (session.user as any).apellido = token.apellido as string;
+        session.user.rol = token.rol as string;
+        session.user = {
+          ...session.user,
+          matricula: (token.matricula as string | null) ?? "",
+          apellido: (token.apellido as string | null) ?? "",
+        };
       }
       return session;
     },

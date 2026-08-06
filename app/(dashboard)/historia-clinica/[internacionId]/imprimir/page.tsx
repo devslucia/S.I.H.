@@ -6,6 +6,26 @@ import { Printer, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Membrete } from "@/components/print/Membrete";
 import { formatDate, formatDateTime } from "@/lib/utils";
+import type { DrogaAnestesiaData } from "@/types";
+
+interface SignosVitalesIntraop {
+  registros: {
+    tiempo: string;
+    PA?: string | number;
+    FC?: number;
+    FR?: number;
+    T?: number;
+    SpO2?: number;
+    EtCO2?: number;
+  }[];
+}
+
+interface MedicacionAlta {
+  droga?: string | null;
+  dosis?: string | null;
+  frecuencia?: string | null;
+  duracion?: string | null;
+}
 
 interface CarpetaCompleta {
   id: string;
@@ -33,15 +53,15 @@ interface CarpetaCompleta {
       antecPatologicos: string | null; antecFamiliares: string | null;
       habitosToxicos: string | null; factoresRiesgoCV: string | null;
       otros: string | null; estadoGeneral: string | null;
-      signosVitalesIngreso: any; abdomen: string | null;
+      signosVitalesIngreso: string | Record<string, string | number> | null; abdomen: string | null;
       diagPresuntivo: string | null; diagDiferencial: string | null;
       planEvaluacion: string | null; planTerapeutico: string | null;
       firmadoAt: string | null; firmadoPor: string | null;
     } | null;
     evoluciones: { fecha: string; contenido: string; usuario: { nombre: string; rol: string }; firmada: boolean }[];
     prescripciones: { fecha: string; tipo: string; droga: string | null; dosis: string | null; frecuencia: string | null; via: string | null; descripcion: string | null; estado: string; usuario: { nombre: string } }[];
-    controlesEnfermeria: { fecha: string; hora: string; tipo: string; datos: any; observacion: string | null; usuario: { nombre: string } }[];
-    hojaEnfermeria: { fecha: string; seccion: string; item: string; dosis: string | null; via: string | null; marcasHorarias: any }[];
+    controlesEnfermeria: { fecha: string; hora: string; tipo: string; datos: Record<string, string | number> | null; observacion: string | null; usuario: { nombre: string } }[];
+    hojaEnfermeria: { fecha: string; seccion: string; item: string; dosis: string | null; via: string | null; marcasHorarias: Record<string, boolean> | null }[];
     valoracionPreanestesia: {
       antecQuirurgicos: string | null; enfermedadesTratamiento: string | null;
       laboratorio: string | null; scoreASA: number | null;
@@ -62,8 +82,8 @@ interface CarpetaCompleta {
       nroTubo: string | null; dificultadViaAerea: boolean | null;
       modalidadVentilatoria: string | null; fio2: number | null;
       peso: number | null; talla: number | null;
-      signosVitales: any; drogas: any[];
-      liquidosIngresados: any; diuresis: number | null;
+      signosVitales: SignosVitalesIntraop | null; drogas: DrogaAnestesiaData[];
+      liquidosIngresados: { tipo: string; volumen: number; lote?: string }[] | null; diuresis: number | null;
       perdidaSanguinea: string | null; perdidaSanguineaML: number | null;
       otrosEgresos: string | null;
       posicionOperatoria: string | null;
@@ -81,7 +101,7 @@ interface CarpetaCompleta {
       codigosCIE: string[]; resumenClinico: string | null;
       estudiosRealizados: string | null; tratamientosRealizados: string | null;
       condicionEgreso: string | null; destino: string | null;
-      medicacionAlta: any[]; indicacionesAlta: string | null;
+      medicacionAlta: MedicacionAlta[]; indicacionesAlta: string | null;
       proximoControlFecha: string | null; proximoControlLugar: string | null;
       firmadaAt: string | null;
     } | null;
@@ -153,34 +173,15 @@ export default function ImprimirCarpetaPage() {
 
       try {
         const res = await fetch(`/api/internaciones/${params.internacionId}/carpeta-completa`);
-        console.log('[IMPRIMIR] Status:', res.status);
 
         if (!res.ok) {
-          const text = await res.text();
-          console.error('[IMPRIMIR] Error:', text);
           if (!cancelled) setError(`Error ${res.status}: ${res.statusText}`);
           return;
         }
 
         const json = await res.json();
-        console.log('[IMPRIMIR] Data keys:', Object.keys(json));
-        console.log('[IMPRIMIR] histClinica:', !!json.histClinica);
-        console.log('[IMPRIMIR] cirugias:', Array.isArray(json.cirugias) ? `${json.cirugias.length} items` : typeof json.cirugias);
-        if (json.histClinica) {
-          console.log('[IMPRIMIR] HC keys:', Object.keys(json.histClinica));
-          console.log('[IMPRIMIR] anamnesis:', !!json.histClinica.anamnesis);
-          console.log('[IMPRIMIR] evoluciones:', Array.isArray(json.histClinica.evoluciones) ? json.histClinica.evoluciones.length : 0);
-          console.log('[IMPRIMIR] prescripciones:', Array.isArray(json.histClinica.prescripciones) ? json.histClinica.prescripciones.length : 0);
-          console.log('[IMPRIMIR] hojaEnfermeria:', Array.isArray(json.histClinica.hojaEnfermeria) ? json.histClinica.hojaEnfermeria.length : 0);
-          console.log('[IMPRIMIR] controlesEnfermeria:', Array.isArray(json.histClinica.controlesEnfermeria) ? json.histClinica.controlesEnfermeria.length : 0);
-          console.log('[IMPRIMIR] valoracionPreanestesia:', !!json.histClinica.valoracionPreanestesia);
-          console.log('[IMPRIMIR] protocoloAnestesia:', !!json.histClinica.protocoloAnestesia);
-          console.log('[IMPRIMIR] epicrisis:', !!json.histClinica.epicrisis);
-        }
-
         if (!cancelled) setData(json);
       } catch (err) {
-        console.error('[IMPRIMIR] Fetch error:', err);
         if (!cancelled) setError(String(err));
       } finally {
         if (!cancelled) setLoading(false);
@@ -416,7 +417,7 @@ export default function ImprimirCarpetaPage() {
                         <td style={{ border: '1px solid #000', padding: '3px' }}>{h.dosis || '—'}</td>
                         <td style={{ border: '1px solid #000', padding: '3px' }}>{h.via || '—'}</td>
                         <td style={{ border: '1px solid #000', padding: '3px' }}>
-                          {h.marcasHorarias ? Object.entries(h.marcasHorarias as Record<string, boolean>).filter(([, v]) => v).map(([k]) => k).join(', ') : '—'}
+                          {h.marcasHorarias ? Object.entries(h.marcasHorarias).filter(([, v]) => v).map(([k]) => k).join(', ') : '—'}
                         </td>
                       </tr>
                     ))}
@@ -505,7 +506,7 @@ export default function ImprimirCarpetaPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {hc.protocoloAnestesia.drogas.map((d: any, i: number) => (
+                      {hc.protocoloAnestesia.drogas.map((d, i) => (
                         <tr key={i}>
                           <td style={{ border: '1px solid #000', padding: '3px' }}>{d.categoria}</td>
                           <td style={{ border: '1px solid #000', padding: '3px' }}>{d.nombre}</td>
@@ -535,7 +536,7 @@ export default function ImprimirCarpetaPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {hc.protocoloAnestesia.signosVitales.registros.map((r: any, i: number) => (
+                      {hc.protocoloAnestesia.signosVitales.registros.map((r, i) => (
                         <tr key={i}>
                           <td style={{ border: '1px solid #000', padding: '3px' }}>{r.tiempo}</td>
                           <td style={{ border: '1px solid #000', padding: '3px' }}>{r.PA}</td>

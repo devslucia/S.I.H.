@@ -187,9 +187,9 @@ export default function AsignarSecretariaConsultorioPage() {
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {meds.map((m) => {
-                    const asig = asignaciones.find(
-                      (a) => a.secretariaId === secretaria.id && a.medicoId === m.id
-                    );
+
+
+
                     return (
                       <div
                         key={m.id}

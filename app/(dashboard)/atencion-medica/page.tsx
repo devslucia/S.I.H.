@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Stethoscope, Bed, Activity } from "lucide-react";
+import {Stethoscope, Activity} from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDateTime, formatUserName } from "@/lib/utils";
 

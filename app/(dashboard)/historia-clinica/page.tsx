@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, Search, User, Calendar, BedDouble, Building2 } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
-import { formatDateTime } from "@/lib/utils";
+
+
 
 interface Internacion {
   id: string;

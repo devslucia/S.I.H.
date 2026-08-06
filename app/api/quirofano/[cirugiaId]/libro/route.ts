@@ -1,7 +1,8 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { getEffectiveRole, validatePatchBody, type EffectiveRole } from "@/lib/quirofano-rbac";
+import { getEffectiveRole, validatePatchBody } from "@/lib/quirofano-rbac";
+import { Prisma, type EstadoInternacion } from "@prisma/client";
 
 const LIBRO_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ENFERMERO"];
 
@@ -101,12 +102,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
   }
 
   // Construir el data update solo con campos permitidos
-  const dataUpdate: Record<string, any> = {};
+  const dataUpdate: Prisma.CirugiaUpdateInput = {};
 
   // Mapear campos del body a columnas de Prisma
-  const fieldMap: Record<string, (v: any) => any> = {
+  const fieldMap: Record<string, (v: unknown) => unknown> = {
     quirofanoId: (v) => v,
-    fechaProgramada: (v) => v ? new Date(v) : undefined,
+    fechaProgramada: (v) => (v as string) ? new Date(v as string) : undefined,
     horaProgramada: (v) => v,
     tipo: (v) => v,
     estado: (v) => v,
@@ -154,7 +155,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
 
   for (const [key, value] of Object.entries(allowedBody)) {
     if (key in fieldMap) {
-      dataUpdate[key] = fieldMap[key](value);
+      (dataUpdate as Record<string, unknown>)[key] = fieldMap[key](value);
     }
   }
 
@@ -175,7 +176,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
       if (nuevoEstadoInternacion) {
         await tx.internacion.update({
           where: { id: updated.internacionId },
-          data: { estado: nuevoEstadoInternacion as any },
+          data: { estado: nuevoEstadoInternacion as EstadoInternacion },
         });
       }
     }

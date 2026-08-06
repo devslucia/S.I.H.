@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
+
 async function checkAssignment(userId: string, cirugiaId: string) {
   const cirugia = await prisma.cirugia.findUnique({
     where: { id: cirugiaId },

@@ -42,8 +42,8 @@ interface Medico {
 export default function ConsultorioPage() {
   const router = useRouter();
   const session = useSession();
-  const userRol = (session?.data?.user as any)?.rol as string;
-  const userId = (session?.data?.user as any)?.id as string;
+  const userRol = (session?.data?.user as { rol?: string } | undefined)?.rol;
+  const userId = (session?.data?.user as { id?: string } | undefined)?.id;
   const isSecretaria = userRol === "SECRETARIA";
 
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -105,7 +105,7 @@ export default function ConsultorioPage() {
   const handleStart = async (turno: Turno) => {
     const res = await fetch(`/api/consultorio/turnos/${turno.id}/iniciar`, { method: "POST" });
     if (res.ok) {
-      const data = await res.json();
+
       router.push(`/consultorio/consulta/${turno.id}`);
     }
   };

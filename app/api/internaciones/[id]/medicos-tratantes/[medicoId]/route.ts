@@ -23,7 +23,7 @@ export async function DELETE(
     );
   }
 
-  const rol = (session!.user as any).rol as string;
+  const rol = session.user.rol as string;
   const userId = session!.user.id as string;
 
   if (rol === "MEDICO") {

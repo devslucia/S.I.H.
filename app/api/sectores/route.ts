@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
-  const { session, error } = await requireRole("ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION");
+  const {error} = await requireRole("ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION");
   if (error) return error;
 
   const sectores = await prisma.sector.findMany({
@@ -15,7 +15,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN");
+  const {error} = await requireRole("ADMIN");
   if (error) return error;
 
   const body = await req.json();
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN");
+  const {error} = await requireRole("ADMIN");
   if (error) return error;
 
   const body = await req.json();
@@ -56,7 +56,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const { session, error } = await requireRole("ADMIN");
+  const {error} = await requireRole("ADMIN");
   if (error) return error;
 
   const { searchParams } = new URL(req.url);

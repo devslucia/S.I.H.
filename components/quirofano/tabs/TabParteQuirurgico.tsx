@@ -5,6 +5,7 @@ import { Plus, Trash2, Printer } from "lucide-react";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatDateTime, formatUserName } from "@/lib/utils";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
+import type { CirugiaFormData, CirugiaFull, UpdateField } from "./types";
 
 const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent";
 const labelClass = "text-xs text-muted font-medium mb-1 block";
@@ -15,9 +16,9 @@ const btnOutline = `${btnClass} border border-border text-muted hover:text-foreg
 const SUB_TABS = ["Parte Quirúrgico", "Evolución Post Int.", "Indicaciones Postop."];
 
 interface TabParteQuirurgicoProps {
-  data: any;
-  formData: any;
-  update: (field: string, value: any) => void;
+  data: CirugiaFull;
+  formData: CirugiaFormData;
+  update: UpdateField;
   isReadOnly: boolean;
   effectiveRole: EffectiveRole;
   canEdit: (field: string) => boolean;
@@ -26,7 +27,7 @@ interface TabParteQuirurgicoProps {
   onRefresh: () => void;
 }
 
-export function TabParteQuirurgico({ data, formData, update, isReadOnly, effectiveRole, canEdit, onImprimir, cirugiaId, onRefresh }: TabParteQuirurgicoProps) {
+export function TabParteQuirurgico({ data, formData, update, isReadOnly, effectiveRole, onImprimir, cirugiaId, onRefresh }: TabParteQuirurgicoProps) {
   const [subTab, setSubTab] = useState(0);
   const [showImplanteModal, setShowImplanteModal] = useState(false);
   const [showPracticaModal, setShowPracticaModal] = useState(false);
@@ -135,7 +136,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
                 </tr></thead>
                 <tbody>
                   {data?.implantes?.length === 0 && <tr><td colSpan={5} className="px-3 py-4 text-center text-muted">Sin implantes registrados</td></tr>}
-                  {data?.implantes?.map((imp: any) => (
+                  {data?.implantes?.map((imp) => (
                     <tr key={imp.id} className="border-t border-border hover:bg-surface-hover transition-colors">
                       <td className="px-3 py-2">{imp.codigo}</td><td className="px-3 py-2">{imp.nombre}</td>
                       <td className="px-3 py-2">{imp.lote || "—"}</td><td className="px-3 py-2">{imp.modelo || "—"}</td>
@@ -184,7 +185,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
                 {(!formData?.indicacionesPostoperatorias || formData.indicacionesPostoperatorias.length === 0) && (
                   <tr><td colSpan={6} className="px-3 py-4 text-center text-muted">Sin indicaciones registradas</td></tr>
                 )}
-                {(formData?.indicacionesPostoperatorias || []).map((ind: any, idx: number) => (
+                {(formData?.indicacionesPostoperatorias || []).map((ind, idx) => (
                   <tr key={idx} className="border-t border-border hover:bg-surface-hover transition-colors">
                     <td className="px-3 py-1"><input type="text" value={ind.indicacion} disabled={disabledIndicaciones}
                       onChange={e => { const arr = [...formData.indicacionesPostoperatorias]; arr[idx].indicacion = e.target.value; update("indicacionesPostoperatorias", arr); }}
@@ -202,7 +203,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
                       onChange={e => { const arr = [...formData.indicacionesPostoperatorias]; arr[idx].observaciones = e.target.value; update("indicacionesPostoperatorias", arr); }}
                       className="bg-transparent border-none text-sm text-foreground w-full focus:outline-none" /></td>
                     {!disabledIndicaciones && <td className="px-3 py-1"><button onClick={() => {
-                      const arr = formData.indicacionesPostoperatorias.filter((_: any, i: number) => i !== idx);
+                      const arr = formData.indicacionesPostoperatorias.filter((_, i) => i !== idx);
                       update("indicacionesPostoperatorias", arr);
                     }} className="text-error hover:text-error/80"><Trash2 size={14} /></button></td>}
                   </tr>
