@@ -1,12 +1,33 @@
 import type { Metadata } from "next";
+import { IBM_Plex_Mono, IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/layout/AuthProvider";
-import ThemeProvider from "@/components/layout/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "S.I.H. - Sistema Informático Hospitalario",
-  description: "Sanatorio SIMES - Posadas, Misiones",
+  title: "SIH — Sistema Informático Hospitalario",
+  description: "Plataforma operativa hospitalaria.",
 };
+
+const plexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const serif = Source_Serif_4({
+  subsets: ["latin"],
+  weight: ["400", "600"],
+  variable: "--font-serif",
+  display: "swap",
+});
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export default function RootLayout({
   children,
@@ -14,11 +35,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className="dark" suppressHydrationWarning>
+    <html
+      lang="es"
+      suppressHydrationWarning
+      className={`${plexSans.variable} ${serif.variable} ${plexMono.variable}`}
+    >
       <body className="antialiased">
-        <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </ThemeProvider>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

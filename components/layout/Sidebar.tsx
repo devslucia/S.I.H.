@@ -2,11 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, User, Bed, Stethoscope, Syringe, Package, Receipt, ChevronRight, LayoutDashboard, X, Settings, PanelLeftClose, PanelLeftOpen, ClipboardList, BookMarked } from "lucide-react";
+import { User, Bed, Stethoscope, Syringe, Package, Receipt, X, Settings, PanelLeftClose, PanelLeftOpen, ClipboardList, BookMarked, Activity, LayoutDashboard } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import { usePrefersReducedMotion } from "@/lib/hooks";
 
 const modules = [
   { id: 1, name: "Dashboard", icon: LayoutDashboard, href: "/", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR","ADMISION","FACTURACION","FARMACIA"] },
@@ -34,7 +32,6 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
   const pathname = usePathname();
   const session = useSession();
   const userRol = session?.data?.user?.rol;
-  const prefersReduced = usePrefersReducedMotion();
 
   const visibleModules = modules.filter((m) => !userRol || m.roles.includes(userRol));
 
@@ -45,45 +42,34 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
 
   return (
     <>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            className="fixed inset-0 bg-scrim/60 backdrop-blur-sm z-40 md:hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={prefersReduced ? { duration: 0.1 } : { duration: 0.2 }}
-            onClick={onClose}
-          />
-        )}
-      </AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 bg-scrim/40 z-40 md:hidden" onClick={onClose} />
+      )}
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 bg-surface border-r border-border flex flex-col no-print sidebar-material",
-          "transition-all duration-300 ease-in-out",
+          "fixed inset-y-0 left-0 z-50 bg-surface border-r border-border flex flex-col no-print",
+          "transition-transform duration-200 ease-out md:transition-none",
           "md:relative md:z-auto",
-          collapsed ? "md:w-[68px]" : "md:w-64",
-          open ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0"
+          collapsed ? "md:w-[64px]" : "md:w-60",
+          open ? "translate-x-0 w-60" : "-translate-x-full md:translate-x-0"
         )}
         data-sidebar
       >
-        {/* Monitor glow — signature element */}
-        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-accent shadow-monitor-glow" />
-
-        {/* Logo */}
         <div className={cn(
           "h-14 border-b border-border flex items-center shrink-0",
           collapsed ? "justify-center px-2" : "px-4 justify-between"
         )}>
-          <Link href="/" className="flex items-center gap-2.5" onClick={onClose}>
-            <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center shrink-0">
-              <Activity className="w-4.5 h-4.5 text-accent" />
+          <Link href="/" className={cn("flex items-center gap-2.5", collapsed && "justify-center")} onClick={onClose}>
+            <div className="w-[26px] h-[26px] rounded-md bg-brand flex items-center justify-center shrink-0">
+              <span className="text-white font-semibold tracking-tight" style={{ fontSize: "13px", lineHeight: 1 }}>
+                SI
+              </span>
             </div>
             {!collapsed && (
               <div className="flex flex-col">
-                <span className="text-accent font-display font-semibold text-sm tracking-wide leading-none">S.I.H.</span>
-                <span className="text-muted text-[10px] font-mono leading-none mt-0.5">Sanatorio SIMES</span>
+                <span className="text-text font-semibold text-sm leading-none tracking-tight">SIH</span>
+                <span className="text-muted text-[10px] font-mono leading-none mt-1 uppercase tracking-widest">Hospital</span>
               </div>
             )}
           </Link>
@@ -98,12 +84,11 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
               </button>
             )}
             <button onClick={onClose} className="md:hidden p-1.5 text-muted hover:text-text rounded-lg">
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 p-2 overflow-auto space-y-0.5">
           {visibleModules.map((mod) => {
             const Icon = mod.icon;
@@ -116,30 +101,22 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
                 onClick={onClose}
                 title={collapsed ? mod.name : undefined}
                 className={cn(
-                  "w-full flex items-center gap-3 rounded-lg group relative",
-                  collapsed ? "px-2 py-2.5 justify-center" : "px-3 py-2.5",
+                  "w-full flex items-center gap-3 rounded-md group relative",
+                  collapsed ? "px-2 py-2.5 justify-center" : "px-3 py-2",
                   active
-                    ? "bg-accent/10 text-accent nav-active-glow"
-                    : "text-muted hover:bg-surface-hover hover:text-text border border-transparent active:scale-[0.98]",
-                  !active && "transition-all duration-150"
+                    ? "bg-brand-soft text-brand font-medium"
+                    : "text-muted hover:bg-surface-hover hover:text-text border border-transparent"
                 )}
               >
-                <Icon className={cn("w-[18px] h-[18px] shrink-0", active && "text-accent")} />
+                <Icon className={cn("w-4 h-4 shrink-0", active && "text-brand")} strokeWidth={active ? 2 : 1.75} />
                 {!collapsed && (
-                  <>
-                    <span className="text-[13px] font-medium flex-1">{mod.name}</span>
-                    {active && <ChevronRight className="w-3.5 h-3.5 text-accent/50" />}
-                  </>
-                )}
-                {collapsed && active && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-accent rounded-r-full status-pulse" />
+                  <span className="text-[13px] flex-1">{mod.name}</span>
                 )}
               </Link>
             );
           })}
         </nav>
 
-        {/* User footer */}
         <div className={cn(
           "border-t border-border shrink-0",
           collapsed ? "p-2" : "p-3"
@@ -148,7 +125,7 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
             "flex items-center",
             collapsed ? "justify-center" : "gap-3"
           )}>
-            <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center text-accent font-medium text-xs shrink-0">
+            <div className="w-8 h-8 rounded-md bg-brand-soft flex items-center justify-center text-brand font-medium text-xs shrink-0">
               {session?.data?.user?.name?.[0] || "U"}
             </div>
             {!collapsed && (
