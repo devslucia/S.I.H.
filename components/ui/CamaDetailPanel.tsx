@@ -149,7 +149,7 @@ export function CamaDetailPanel({
                 className={cn(
                   "px-3 py-1.5 rounded-md text-[12px] font-mono uppercase tracking-wide border transition-colors",
                   confirmando === e
-                    ? "border-brand bg-brand text-white"
+                    ? "border-accent-button bg-accent-button text-white"
                     : "border-border bg-surface text-text hover:border-brand/40 hover:text-brand"
                 )}
               >

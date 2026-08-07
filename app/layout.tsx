@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/layout/AuthProvider";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "SIH — Sistema Informático Hospitalario",
@@ -40,8 +41,17 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${plexSans.variable} ${serif.variable} ${plexMono.variable}`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var s=localStorage.getItem("sih-theme");if(s!=="dark"&&s!=="light"){s=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.setAttribute("data-theme",s)}catch(e){document.documentElement.setAttribute("data-theme","light")}})();`,
+          }}
+        />
+      </head>
       <body className="antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

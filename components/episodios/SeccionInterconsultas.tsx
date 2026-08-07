@@ -13,7 +13,7 @@ const ACCESO_ROLES = ["MEDICO", "ADMIN"];
 const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:border-brand";
 const labelClass = "text-xs text-muted font-medium mb-1 block";
 const btnClass = "px-3 py-1.5 text-xs rounded font-medium transition-colors inline-flex items-center gap-1";
-const btnTeal = `${btnClass} bg-accent text-black hover:bg-brand/90`;
+const btnTeal = `${btnClass} bg-accent-button text-white hover:bg-accent-dark`;
 const btnOutline = `${btnClass} border border-border text-muted hover:text-text hover:border-muted`;
 
 interface UsuarioBasico {

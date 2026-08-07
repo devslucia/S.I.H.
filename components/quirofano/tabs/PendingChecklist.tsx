@@ -20,11 +20,11 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  ADMIN: "text-purple-400",
-  MEDICO: "text-blue-400",
-  ANESTESIOLOGO: "text-green-400",
-  INSTRUMENTADOR: "text-orange-400",
-  CIRCULANTE: "text-yellow-400",
+  ADMIN: "text-role-admin",
+  MEDICO: "text-role-medico",
+  ANESTESIOLOGO: "text-role-anestesiologo",
+  INSTRUMENTADOR: "text-role-instrumentador",
+  CIRCULANTE: "text-role-circulante",
 };
 
 const STORAGE_KEY_PREFIX = "checklist-expanded-";
@@ -70,12 +70,12 @@ export function PendingChecklist({ items, effectiveRole, onNavigate, cirugiaId }
         </div>
         <div className="flex items-center gap-3">
           {myPending.length > 0 && (
-            <span className="text-xs text-amber-400 font-medium">
+            <span className="text-xs text-warning font-medium">
               {myPending.length} pendiente{myPending.length > 1 ? "s" : ""} para ti
             </span>
           )}
           {totalDone === totalItems && totalItems > 0 && (
-            <span className="text-xs text-green-400 font-medium">Completo</span>
+            <span className="text-xs text-success font-medium">Completo</span>
           )}
         </div>
       </button>
@@ -89,10 +89,10 @@ export function PendingChecklist({ items, effectiveRole, onNavigate, cirugiaId }
                 onClick={() => onNavigate(item.tab)}
                 className={`flex items-center gap-2 p-2 rounded text-left text-xs transition-colors hover:bg-surface/80 ${
                   item.done ? "opacity-60" : ""
-                } ${item.role === effectiveRole && !item.done ? "ring-1 ring-amber-400/30" : ""}`}
+                } ${item.role === effectiveRole && !item.done ? "ring-1 ring-warning/30" : ""}`}
               >
                 {item.done ? (
-                  <CheckCircle size={14} className="text-green-400 shrink-0" />
+                  <CheckCircle size={14} className="text-success shrink-0" />
                 ) : (
                   <Circle size={14} className="text-muted shrink-0" />
                 )}

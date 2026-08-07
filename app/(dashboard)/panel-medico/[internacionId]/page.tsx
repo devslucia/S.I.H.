@@ -382,7 +382,7 @@ className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-c
                     </div>
                     {e.firmada && <Badge variant="success" className="flex items-center gap-1"><CheckCircle size={10} /> Firmada</Badge>}
                   </div>
-                  <p className="text-white text-sm whitespace-pre-wrap">{e.contenido}</p>
+                  <p className="text-text text-sm whitespace-pre-wrap">{e.contenido}</p>
                   <p className="text-muted text-xs mt-2">— {formatUserName(e.usuario)} ({e.usuario.rol})</p>
                 </div>
               ))}
@@ -405,9 +405,9 @@ className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-c
                     <div className="flex items-center gap-2 text-xs text-muted">
                       <Clock size={12} /> {formatDateTime(sv.fecha)} — {sv.hora}
                     </div>
-                    <span className="badge-green text-[10px]">Signos Vitales</span>
+                    <span className="badge-success text-[10px]">Signos Vitales</span>
                   </div>
-                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs text-white">
+                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs text-text">
                     {sv.datos?.PA && <div>PA: <strong>{sv.datos.PA}</strong></div>}
                     {sv.datos?.FC && <div>FC: <strong>{sv.datos.FC}</strong></div>}
                     {sv.datos?.FR && <div>FR: <strong>{sv.datos.FR}</strong></div>}
@@ -533,8 +533,8 @@ className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-c
       <Modal open={showAltaModal} onClose={() => setShowAltaModal(false)} title="Confirmar Alta Médica" size="md">
         <div className="space-y-4">
           <p className="text-muted text-sm">
-            Se registrará el alta médica del paciente <strong className="text-white">{internacion.paciente.apellido}, {internacion.paciente.nombre}</strong>.
-            {internacion.cama && <> La cama <strong className="text-white">{internacion.cama.numero}</strong> quedará libre.</>}
+            Se registrará el alta médica del paciente <strong className="text-text">{internacion.paciente.apellido}, {internacion.paciente.nombre}</strong>.
+            {internacion.cama && <> La cama <strong className="text-text">{internacion.cama.numero}</strong> quedará libre.</>}
           </p>
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setShowAltaModal(false)}>Cancelar</Button>

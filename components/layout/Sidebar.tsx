@@ -61,7 +61,7 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
           collapsed ? "justify-center px-2" : "px-4 justify-between"
         )}>
           <Link href="/" className={cn("flex items-center gap-2.5", collapsed && "justify-center")} onClick={onClose}>
-            <div className="w-[26px] h-[26px] rounded-md bg-brand flex items-center justify-center shrink-0">
+            <div className="w-[26px] h-[26px] rounded-md bg-accent-button flex items-center justify-center shrink-0">
               <span className="text-white font-semibold tracking-tight" style={{ fontSize: "13px", lineHeight: 1 }}>
                 SI
               </span>

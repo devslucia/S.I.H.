@@ -30,7 +30,7 @@ const ESTADOS: { key: BedMapEstado; label: string; tone: "success" | "info" | "w
 ];
 
 const tileStyles: Record<BedMapEstado, string> = {
-  LIBRE: "border-border-hover bg-white hover:border-brand/40",
+  LIBRE: "border-border-hover bg-surface hover:border-brand/40",
   OCUPADA: "border-brand/25 bg-brand-soft/60 hover:border-brand/50",
   EN_LIMPIEZA: "border-warning/30 bg-warning/10 hover:border-warning/50",
   FUERA_DE_SERVICIO: "border-border bg-muted/5 hover:border-border-hover",
@@ -84,7 +84,7 @@ export function BedMap({ camas, onSelect, selectedId, className }: BedMapProps) 
           className={cn(
             "px-2.5 py-1 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors",
             filter === "TODOS"
-              ? "bg-brand text-white border-brand"
+              ? "bg-accent-button text-white border-accent-button"
               : "bg-surface text-muted border-border hover:border-border-hover hover:text-text"
           )}
         >
@@ -98,7 +98,7 @@ export function BedMap({ camas, onSelect, selectedId, className }: BedMapProps) 
             className={cn(
               "px-2.5 py-1 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors",
               filter === e.key
-                ? "bg-brand text-white border-brand"
+                ? "bg-accent-button text-white border-accent-button"
                 : "bg-surface text-muted border-border hover:border-border-hover hover:text-text"
             )}
           >

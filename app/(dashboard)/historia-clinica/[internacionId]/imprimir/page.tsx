@@ -207,8 +207,8 @@ export default function ImprimirCarpetaPage() {
         <AlertCircle className="w-5 h-5 text-error mt-0.5 shrink-0" />
         <div>
           <p className="text-error font-medium mb-1">Error al cargar la carpeta completa</p>
-          <p className="text-red-300/70 text-sm">{error}</p>
-          <button onClick={() => window.location.reload()} className="mt-3 text-sm text-error underline hover:text-red-300">
+          <p className="text-error/80 text-sm">{error}</p>
+          <button onClick={() => window.location.reload()} className="mt-3 text-sm text-error underline hover:text-error">
             Reintentar
           </button>
         </div>

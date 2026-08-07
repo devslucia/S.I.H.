@@ -482,7 +482,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                           onClick={() => form.setValue("clasificacionASA", asa, { shouldDirty: true })}
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                             form.watch("clasificacionASA") === asa
-                              ? "bg-accent text-black"
+                              ? "bg-accent/15 text-accent"
                               : "bg-border text-text-secondary hover:bg-surface-active"
                           }`}
                         >
@@ -514,7 +514,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                           onClick={() => form.setValue("estadoPsiquico", ep, { shouldDirty: true })}
                           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                             form.watch("estadoPsiquico") === ep
-                              ? "bg-accent text-black"
+                              ? "bg-accent/15 text-accent"
                               : "bg-border text-text-secondary hover:bg-surface-active"
                           }`}
                         >
@@ -537,7 +537,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                           onClick={() => form.setValue("mallampati", m, { shouldDirty: true })}
                           className={`px-3 py-1 rounded-lg text-sm ${
                             form.watch("mallampati") === m
-                              ? "bg-accent text-black"
+                              ? "bg-accent/15 text-accent"
                               : "bg-border text-text-secondary hover:bg-surface-active"
                           }`}
                         >
@@ -646,7 +646,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                               onClick={() => form.setValue("tipoConductiva", tc, { shouldDirty: true })}
                               className={`px-3 py-1 rounded-lg text-xs ${
                                 form.watch("tipoConductiva") === tc
-                                  ? "bg-accent text-black"
+                                  ? "bg-accent/15 text-accent"
                                   : "bg-border text-text-secondary hover:bg-surface-active"
                               }`}>{tc}</button>
                           ))}
@@ -677,7 +677,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                               onClick={() => form.setValue("viaInduccion", v, { shouldDirty: true })}
                               className={`px-3 py-1 rounded-lg text-xs ${
                                 form.watch("viaInduccion") === v
-                                  ? "bg-accent text-black"
+                                  ? "bg-accent/15 text-accent"
                                   : "bg-border text-text-secondary hover:bg-surface-active"
                               }`}>{v}</button>
                           ))}
@@ -691,7 +691,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                               onClick={() => form.setValue("manejoViaAerea", va, { shouldDirty: true })}
                               className={`px-3 py-1 rounded-lg text-xs ${
                                 form.watch("manejoViaAerea") === va
-                                  ? "bg-accent text-black"
+                                  ? "bg-accent/15 text-accent"
                                   : "bg-border text-text-secondary hover:bg-surface-active"
                               }`}>{va}</button>
                           ))}
@@ -706,7 +706,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                                 onClick={() => form.setValue("intubacionSubtipo", ist, { shouldDirty: true })}
                                 className={`px-3 py-1 rounded-lg text-xs ${
                                   form.watch("intubacionSubtipo") === ist
-                                    ? "bg-accent text-black"
+                                    ? "bg-accent/15 text-accent"
                                     : "bg-border text-text-secondary hover:bg-surface-active"
                                 }`}>{ist}</button>
                             ))}
@@ -722,7 +722,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                                 onClick={() => form.setValue("canulaFaringealTipo", cf, { shouldDirty: true })}
                                 className={`px-3 py-1 rounded-lg text-xs ${
                                   form.watch("canulaFaringealTipo") === cf
-                                    ? "bg-accent text-black"
+                                    ? "bg-accent/15 text-accent"
                                     : "bg-border text-text-secondary hover:bg-surface-active"
                                 }`}>{cf}</button>
                             ))}
@@ -754,7 +754,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                                 onClick={() => form.setValue("modalidadVentilatoria", mv, { shouldDirty: true })}
                                 className={`px-3 py-1 rounded-lg text-xs ${
                                   form.watch("modalidadVentilatoria") === mv
-                                    ? "bg-accent text-black"
+                                    ? "bg-accent/15 text-accent"
                                     : "bg-border text-text-secondary hover:bg-surface-active"
                                 }`}>{mv}</button>
                             ))}
@@ -802,7 +802,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                             onClick={() => form.setValue("perdidaSanguinea", opt.val, { shouldDirty: true })}
                             className={`px-3 py-1 rounded-lg text-xs ${
                               form.watch("perdidaSanguinea") === opt.val
-                                ? "bg-accent text-black"
+                                ? "bg-accent/15 text-accent"
                                 : "bg-border text-text-secondary hover:bg-surface-active"
                             }`}>{opt.label}</button>
                         ))}
@@ -824,7 +824,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                             onClick={() => form.setValue("posicionOperatoria", p, { shouldDirty: true })}
                             className={`px-3 py-1 rounded-lg text-xs ${
                               form.watch("posicionOperatoria") === p
-                                ? "bg-accent text-black"
+                                ? "bg-accent/15 text-accent"
                                 : "bg-border text-text-secondary hover:bg-surface-active"
                             }`}>{p}</button>
                         ))}
@@ -845,14 +845,14 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                         onClick={() => form.setValue("tipoCirugia", "programada", { shouldDirty: true })}
                         className={`px-3 py-1 rounded-lg text-xs ${
                           form.watch("tipoCirugia") === "programada"
-                            ? "bg-accent text-black"
+                            ? "bg-accent/15 text-accent"
                             : "bg-border text-text-secondary hover:bg-surface-active"
                         }`}>Programada</button>
                       <button type="button" disabled={firmado}
                         onClick={() => form.setValue("tipoCirugia", "urgencia", { shouldDirty: true })}
                         className={`px-3 py-1 rounded-lg text-xs ${
                           form.watch("tipoCirugia") === "urgencia"
-                            ? "bg-error text-black"
+                            ? "bg-error/15 text-error"
                             : "bg-border text-text-secondary hover:bg-surface-active"
                         }`}>Urgencia</button>
                     </div>
@@ -903,7 +903,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                           onClick={() => form.setValue("destinoPaciente", d, { shouldDirty: true })}
                           className={`px-3 py-1.5 rounded-lg text-sm ${
                             form.watch("destinoPaciente") === d
-                              ? "bg-accent text-black"
+                              ? "bg-accent/15 text-accent"
                               : "bg-border text-text-secondary hover:bg-surface-active"
                           }`}>{d}</button>
                       ))}
@@ -1004,7 +1004,7 @@ function BalanceLiquidos({ disabled }: { disabled: boolean }) {
                       className="w-full rounded border border-border bg-background px-2 py-1 text-xs text-text focus:outline-none focus:border-brand"
                     />
                   ) : (
-                    <span className="text-gray-600">—</span>
+                    <span className="text-muted">—</span>
                   )}
                 </td>
               </tr>

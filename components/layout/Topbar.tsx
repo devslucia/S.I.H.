@@ -2,10 +2,11 @@
 
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { LogOut, Menu, ChevronDown } from "lucide-react";
+import { LogOut, Menu, ChevronDown, Sun, Moon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 const moduleNames: Record<string, string> = {
   "/": "Tablero",
@@ -31,6 +32,7 @@ interface TopbarProps {
 export default function Topbar({ onMenuToggle }: TopbarProps) {
   const pathname = usePathname();
   const session = useSession();
+  const { theme, toggleTheme } = useTheme();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -82,6 +84,15 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
           <span className="w-1 h-1 rounded-full bg-success" />
           {today}
         </div>
+
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-lg text-muted hover:text-text hover:bg-surface-hover transition-colors duration-150 no-print"
+          title={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+          aria-label={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+        >
+          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
 
         <div className="h-5 w-px bg-border hidden md:block" />
 

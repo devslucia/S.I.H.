@@ -195,7 +195,7 @@ export function MedicacionMultiSelect({
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {extraFields.map((field) => (
                     <div key={field.key} className="flex flex-col gap-1">
-                      <label className="text-xs text-gray-400">{field.label}{field.required && " *"}</label>
+                      <label className="text-xs text-muted">{field.label}{field.required && " *"}</label>
                       {field.type === "select" ? (
                         <select
                           value={sel.values[field.key] || ""}
@@ -230,15 +230,15 @@ export function MedicacionMultiSelect({
 
       {/* Batch result */}
       {batchResult && (
-        <div className={`rounded-lg p-3 text-sm ${batchResult.ok ? "bg-green-500/10 border border-green-500/20" : "bg-yellow-500/10 border border-yellow-500/20"}`}>
+        <div className={`rounded-lg p-3 text-sm ${batchResult.ok ? "bg-success/10 border border-success/20" : "bg-warning/10 border border-warning/20"}`}>
           <div className="flex items-center gap-2 mb-1">
-            {batchResult.ok ? <CheckCircle size={14} className="text-green-400" /> : <AlertTriangle size={14} className="text-yellow-400" />}
+            {batchResult.ok ? <CheckCircle size={14} className="text-success" /> : <AlertTriangle size={14} className="text-warning" />}
             <span className="font-medium text-text">
               {batchResult.items.filter((r) => r.ok).length} de {batchResult.items.length} cargado(s)
             </span>
           </div>
           {batchResult.items.filter((r) => !r.ok).map((r, i) => (
-            <p key={i} className="text-xs text-yellow-400 ml-5">
+            <p key={i} className="text-xs text-warning ml-5">
               Falló: {r.nombre} — {r.error}
             </p>
           ))}
