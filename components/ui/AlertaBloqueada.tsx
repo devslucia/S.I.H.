@@ -28,7 +28,7 @@ function AlertaBloqueada({ droga, fechaAlta, onClose }: AlertaBloqueadaProps) {
           onClick={onClose}
         />
         <motion.div
-          className="relative z-10 w-full max-w-md rounded-2xl border border-error/30 bg-surface p-6 shadow-elevated"
+          className="relative z-10 w-full max-w-md rounded-lg border border-error/30 bg-surface p-6 shadow-card"
           initial={
             prefersReduced
               ? { opacity: 0 }

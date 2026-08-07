@@ -64,7 +64,7 @@
     transition: border-color 0.15s ease, background-color 0.15s ease;
   }
   .input-field {
-    @apply w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder:text-muted focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/15;
+    @apply w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder:text-muted focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
   .select-field {
@@ -103,7 +103,7 @@
     @apply bg-muted/10 text-muted border border-muted/20 px-2.5 py-0.5 rounded-md text-xs font-medium;
   }
   .tab-active {
-    @apply text-accent border-b-2 border-accent font-medium;
+    @apply text-brand border-b-2 border-brand font-medium;
   }
   .tab-inactive {
     @apply text-muted hover:text-text border-b-2 border-transparent;

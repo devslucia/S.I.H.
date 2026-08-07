@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { formatDateTime } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
 import { protocoloAnestesiaSchema } from "@/lib/validations/protocolo-anestesia";
@@ -345,7 +346,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
         </div>
         <div className="flex items-center gap-3">
           {saving && <span className="text-xs text-muted flex items-center gap-1"><Clock size={12} /> Guardando…</span>}
-          {saved && <span className="text-xs text-accent flex items-center gap-1"><CheckCircle size={12} /> Guardado</span>}
+          {saved && <span className="text-xs text-brand flex items-center gap-1"><CheckCircle size={12} /> Guardado</span>}
           {saveError && <span className="text-xs text-error flex items-center gap-1"><AlertCircle size={12} /> Error al guardar</span>}
 
           {firmado ? (
@@ -419,7 +420,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
             onClick={() => toggleSeccion(sec.key)}
             className="w-full flex items-center justify-between px-5 py-3 text-left hover:bg-border/30 transition-colors"
           >
-            <span className="text-sm font-medium text-accent uppercase tracking-wide">{sec.label}</span>
+            <span className="text-sm font-medium text-brand uppercase tracking-wide">{sec.label}</span>
             {secciones[sec.key] ? <ChevronDown size={16} className="text-muted" /> : <ChevronRight size={16} className="text-muted" />}
           </button>
 
@@ -925,21 +926,18 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
       ))}
 
       {/* Modal firmar */}
-      {showFirmarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="card p-6 w-full max-w-md space-y-4">
-            <h3 className="text-lg font-medium text-text">Firmar Protocolo</h3>
-            <Input label="Nombre y apellido del anestesiólogo" value={firmarNombre} onChange={(e) => setFirmarNombre(e.target.value)} />
-            <Input label="Matrícula" value={firmarMatricula} onChange={(e) => setFirmarMatricula(e.target.value)} />
-            <div className="flex justify-end gap-3">
-              <Button variant="secondary" onClick={() => setShowFirmarModal(false)}>Cancelar</Button>
-              <Button onClick={handleFirmar} disabled={!firmarNombre.trim()}>
-                <PenLine size={14} /> Firmar
-              </Button>
-            </div>
+      <Modal open={showFirmarModal} onClose={() => setShowFirmarModal(false)} title="Firmar Protocolo" size="md">
+        <div className="space-y-4">
+          <Input label="Nombre y apellido del anestesiólogo" value={firmarNombre} onChange={(e) => setFirmarNombre(e.target.value)} />
+          <Input label="Matrícula" value={firmarMatricula} onChange={(e) => setFirmarMatricula(e.target.value)} />
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setShowFirmarModal(false)}>Cancelar</Button>
+            <Button onClick={handleFirmar} disabled={!firmarNombre.trim()}>
+              <PenLine size={14} /> Firmar
+            </Button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }
@@ -993,7 +991,7 @@ function BalanceLiquidos({ disabled }: { disabled: boolean }) {
                     value={l.volumen || ""}
                     onChange={(e) => handleChange(idx, "volumen", e.target.value)}
                     disabled={disabled}
-                    className="w-full text-right rounded border border-border bg-background px-2 py-1 text-xs text-text focus:outline-none focus:border-accent"
+                    className="w-full text-right rounded border border-border bg-background px-2 py-1 text-xs text-text focus:outline-none focus:border-brand"
                   />
                 </td>
                 <td className="py-1.5 px-2">
@@ -1003,7 +1001,7 @@ function BalanceLiquidos({ disabled }: { disabled: boolean }) {
                       value={l.lote}
                       onChange={(e) => handleChange(idx, "lote", e.target.value)}
                       disabled={disabled}
-                      className="w-full rounded border border-border bg-background px-2 py-1 text-xs text-text focus:outline-none focus:border-accent"
+                      className="w-full rounded border border-border bg-background px-2 py-1 text-xs text-text focus:outline-none focus:border-brand"
                     />
                   ) : (
                     <span className="text-gray-600">—</span>
@@ -1012,8 +1010,8 @@ function BalanceLiquidos({ disabled }: { disabled: boolean }) {
               </tr>
             ))}
             <tr className="font-bold">
-              <td className="py-1.5 px-2 text-accent">TOTAL</td>
-              <td className="py-1.5 px-2 text-right text-accent">{totalIngresos} ml</td>
+              <td className="py-1.5 px-2 text-brand">TOTAL</td>
+              <td className="py-1.5 px-2 text-right text-brand">{totalIngresos} ml</td>
               <td></td>
             </tr>
           </tbody>

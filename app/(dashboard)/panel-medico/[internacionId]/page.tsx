@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {ArrowLeft, Plus, Send, CheckCircle, Clock, Pill, Activity, Syringe, AlertTriangle, FileText, UserPlus} from "lucide-react";
+import {ArrowLeft, Plus, Send, CheckCircle, Clock, Pill, Activity, Syringe, AlertTriangle, AlertCircle, FileText, UserPlus} from "lucide-react";
 
 
 
@@ -86,6 +86,7 @@ export default function PanelMedicoPage() {
   const [controlesEnfermeria, setControlesEnfermeria] = useState<ControlEnfermeria[]>([]);
   const [indicacionesPostOp, setIndicacionesPostOp] = useState<CirugiaConIndicaciones[]>([]);
   const [loading, setLoading] = useState(true);
+  const [prescripcionError, setPrescripcionError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<"indicaciones" | "evolucion" | "signos" | "postop" | "anamnesis" | "epicrisis" | "interconsultas">("indicaciones");
 
@@ -156,13 +157,14 @@ export default function PanelMedicoPage() {
       });
       const data = await res.json();
       if (data.ok) {
+        setPrescripcionError(null);
         setShowPrescripcionModal(false);
         setPrescripcionForm({ tipo: "MEDICACION", droga: "", dosis: "", unidad: "", frecuencia: "", via: "", descripcion: "", destino: "PISO" });
         fetchData();
       } else {
         const fallidos = (data as PrescripcionBatchResp).items?.filter((i) => !i.ok) || [];
         const mensajes = fallidos.map((i) => `${i.nombre}: ${i.error}`).join("\n");
-        alert(`Algunos ítems no se guardaron:\n${mensajes}`);
+        setPrescripcionError(`Algunos ítems no se guardaron: ${mensajes}`);
       }
     } catch (err) { console.error(err); }
     finally { setSavingPrescripcion(false); }
@@ -241,7 +243,7 @@ export default function PanelMedicoPage() {
 
   return (
     <div className="space-y-6">
-      <button onClick={() => router.back()} className="flex items-center gap-2 text-muted hover:text-white transition-colors text-sm">
+      <button onClick={() => router.back()} className="flex items-center gap-2 text-muted hover:text-text transition-colors text-sm">
         <ArrowLeft size={16} /> Volver
       </button>
 
@@ -287,10 +289,10 @@ export default function PanelMedicoPage() {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
+className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
                 activeTab === t.id
-                  ? "border-accent text-accent"
-                  : "border-transparent text-muted hover:text-white"
+                  ? "border-brand text-brand"
+                  : "border-transparent text-muted hover:text-text"
               }`}
             >
               <Icon size={16} /> {t.label}
@@ -306,7 +308,7 @@ export default function PanelMedicoPage() {
       {activeTab === "indicaciones" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Indicaciones con Destino PISO</h3>
+            <h3 className="text-sm font-medium text-brand uppercase tracking-wide">Indicaciones con Destino PISO</h3>
             {isActive && (
               <Button size="sm" onClick={() => setShowPrescripcionModal(true)}>
                 <Plus size={14} /> Nueva Indicación
@@ -343,7 +345,7 @@ export default function PanelMedicoPage() {
       {activeTab === "evolucion" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Evolución Diaria</h3>
+            <h3 className="text-sm font-medium text-brand uppercase tracking-wide">Evolución Diaria</h3>
             {isActive && (
               <Button size="sm" onClick={() => setShowEvolucionEditor(true)}>
                 <Plus size={14} /> Nueva Nota
@@ -392,7 +394,7 @@ export default function PanelMedicoPage() {
       {/* Tab: Signos Vitales */}
       {activeTab === "signos" && (
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Signos Vitales (cargados por Enfermería)</h3>
+          <h3 className="text-sm font-medium text-brand uppercase tracking-wide">Signos Vitales (cargados por Enfermería)</h3>
           {signosVitales.length === 0 ? (
             <p className="text-muted text-sm">Sin registros de signos vitales.</p>
           ) : (
@@ -425,7 +427,7 @@ export default function PanelMedicoPage() {
       {/* Tab: Indicaciones Postoperatorias */}
       {activeTab === "postop" && (
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Indicaciones Postoperatorias (de Quirófano)</h3>
+          <h3 className="text-sm font-medium text-brand uppercase tracking-wide">Indicaciones Postoperatorias (de Quirófano)</h3>
           {indicacionesPostOp.length === 0 ? (
             <p className="text-muted text-sm">Sin indicaciones postoperatorias registradas.</p>
           ) : (
@@ -477,6 +479,12 @@ export default function PanelMedicoPage() {
       {/* Modal: Nueva Prescripción */}
       <Modal open={showPrescripcionModal} onClose={() => setShowPrescripcionModal(false)} title="Nueva Indicación (Destino PISO)" size="xl">
         <div className="space-y-4">
+          {prescripcionError && (
+            <div className="flex items-start gap-2 text-[13px] text-error border border-error/30 bg-error/10 rounded-md px-3 py-2">
+              <AlertCircle size={14} className="mt-0.5 shrink-0" />
+              <span className="whitespace-pre-line">{prescripcionError}</span>
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-text-secondary">Tipo</label>
             <select value={prescripcionForm.tipo} onChange={(e) => setPrescripcionForm((p) => ({ ...p, tipo: e.target.value }))} className="select-field">

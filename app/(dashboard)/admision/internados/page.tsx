@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import {ArrowLeft, Bed, Activity} from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
-
+import { Bed, ChevronRight, Filter } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { OpsStat } from "@/components/ui/OpsStat";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDateTime } from "@/lib/utils";
 
 interface Internacion {
@@ -19,8 +20,13 @@ interface Internacion {
   obraSocial?: { nombre: string; sigla: string } | null;
 }
 
-interface _Sector { nombre: string }
-interface _Medico { id: string; nombre: string }
+const estadoConfig: Record<string, { tone: "success" | "warning" | "info" | "neutral"; label: string; dot?: boolean; pulse?: boolean }> = {
+  ACTIVA: { tone: "success", label: "Activa", dot: true },
+  EN_QUIROFANO: { tone: "warning", label: "En quirófano", dot: true, pulse: true },
+  POSTQUIRURGICO: { tone: "info", label: "Postquirúrgico", dot: true },
+};
+
+const label = "text-[11px] font-mono uppercase tracking-widest text-muted";
 
 export default function InternadosPage() {
   const router = useRouter();
@@ -58,46 +64,47 @@ export default function InternadosPage() {
     return true;
   });
 
-  const estadoColors: Record<string, "success" | "warning" | "info"> = {
-    ACTIVA: "success",
-    EN_QUIROFANO: "warning",
-    POSTQUIRURGICO: "info",
-  };
+  const enQuirofano = internaciones.filter((i) => i.estado === "EN_QUIROFANO").length;
+  const postquirurgico = internaciones.filter((i) => i.estado === "POSTQUIRURGICO").length;
+  const hayFiltros = filtroSector || filtroOS || filtroMedico;
 
   return (
-    <div className="space-y-6">
-      <button onClick={() => router.back()} className="flex items-center gap-2 text-muted hover:text-white transition-colors text-sm">
-        <ArrowLeft size={16} /> Volver
-      </button>
+    <div className="space-y-7">
+      <PageHeader
+        eyebrow="Admisión · Internados"
+        title="Pacientes internados"
+        description="Internaciones activas con cama asignada. Filtrá por sector, obra social o médico tratante."
+      />
 
-      <div className="flex items-center gap-3">
-        <Activity className="w-7 h-7 text-accent" />
-        <div>
-          <h2 className="text-xl font-medium text-white">Pacientes Internados</h2>
-          <p className="text-muted text-sm">{filtradas.length} paciente(s) internado(s)</p>
+      <section className="grid grid-cols-2 md:grid-cols-3 gap-5">
+        <OpsStat label="Internados" value={internaciones.length} sub="Activos en el sanatorio" tone="info" />
+        <OpsStat label="En quirófano" value={enQuirofano} sub="Cirugías en curso" tone={enQuirofano > 0 ? "warning" : "neutral"} />
+        <OpsStat label="Postquirúrgico" value={postquirurgico} sub="En recuperación" tone={postquirurgico > 0 ? "info" : "neutral"} />
+      </section>
+
+      <div className="border border-border rounded-lg bg-surface p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Filter size={13} className="text-muted" />
+          <p className="text-[11px] font-mono uppercase tracking-widest text-muted">Filtros</p>
         </div>
-      </div>
-
-      {/* Filtros */}
-      <div className="card p-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-gray-400">Sector</label>
-            <select value={filtroSector} onChange={(e) => setFiltroSector(e.target.value)} className="select-field text-sm">
+          <div className="flex flex-col gap-1">
+            <label className={label}>Sector</label>
+            <select value={filtroSector} onChange={(e) => setFiltroSector(e.target.value)} className="select-field text-[13px]">
               <option value="">Todos</option>
               {sectores.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-gray-400">Obra Social</label>
-            <select value={filtroOS} onChange={(e) => setFiltroOS(e.target.value)} className="select-field text-sm">
+          <div className="flex flex-col gap-1">
+            <label className={label}>Obra social</label>
+            <select value={filtroOS} onChange={(e) => setFiltroOS(e.target.value)} className="select-field text-[13px]">
               <option value="">Todas</option>
               {obrasSociales.map((os) => <option key={os} value={os}>{os}</option>)}
             </select>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-gray-400">Médico Tratante</label>
-            <select value={filtroMedico} onChange={(e) => setFiltroMedico(e.target.value)} className="select-field text-sm">
+          <div className="flex flex-col gap-1">
+            <label className={label}>Médico tratante</label>
+            <select value={filtroMedico} onChange={(e) => setFiltroMedico(e.target.value)} className="select-field text-[13px]">
               <option value="">Todos</option>
               {medicos.map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
             </select>
@@ -106,39 +113,56 @@ export default function InternadosPage() {
       </div>
 
       {loading ? (
-        <p className="text-muted text-sm">Cargando internados...</p>
+        <div className="space-y-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-lg h-[72px] skeleton" />
+          ))}
+        </div>
       ) : filtradas.length === 0 ? (
-        <p className="text-muted text-sm">No hay pacientes internados con los filtros seleccionados.</p>
+        <div className="border border-dashed border-border rounded-lg py-12 text-center">
+          <Bed size={28} className="mx-auto text-muted mb-2" />
+          <p className="text-[13px] text-text">
+            {hayFiltros ? "Ningún paciente coincide con los filtros." : "No hay pacientes internados."}
+          </p>
+        </div>
       ) : (
         <div className="space-y-2">
-          {filtradas.map((i) => (
-            <div
-              key={i.id}
-              onClick={() => router.push(`/historia-clinica/${i.id}`)}
-              className="card p-4 flex items-center justify-between cursor-pointer hover:border-accent/30 transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent">
-                  <Bed size={18} />
+          {filtradas.map((i) => {
+            const config = estadoConfig[i.estado] || { tone: "neutral" as const, label: i.estado };
+            return (
+              <div
+                key={i.id}
+                onClick={() => router.push(`/historia-clinica/${i.id}`)}
+                className="group flex items-center gap-4 border border-border rounded-lg bg-surface px-4 py-3 cursor-pointer transition-colors hover:bg-surface-hover hover:border-border-hover"
+              >
+                <div className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center text-brand shrink-0">
+                  <Bed size={17} strokeWidth={1.75} />
                 </div>
-                <div>
-                  <p className="text-white font-medium">{i.paciente.apellido}, {i.paciente.nombre}</p>
-                  <p className="text-muted text-xs">
-                    DNI: {i.paciente.dni} | HC #{i.numero} | Ingreso: {formatDateTime(i.fechaIngreso)}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="font-serif text-[15px] text-text truncate">{i.paciente.apellido}, {i.paciente.nombre}</p>
+                    <StatusBadge tone={config.tone} label={config.label} dot={config.dot} pulse={config.pulse} />
+                  </div>
+                  <p className="text-[12px] font-mono text-muted mt-1 truncate">
+                    DNI {i.paciente.dni} · HC #{i.numero} · Ingreso {formatDateTime(i.fechaIngreso)}
+                    {i.cama && <span className="text-muted/80"> · Cama {i.cama.numero} — {i.cama.sector.nombre}</span>}
                   </p>
-                  {i.cama && <p className="text-muted text-xs">Cama: {i.cama.numero} — {i.cama.sector.nombre}</p>}
                   {i.medicosTratantesInternacion && i.medicosTratantesInternacion.length > 0 && (
-                    <p className="text-muted text-xs">
+                    <p className="text-[12px] text-muted/80 mt-0.5 truncate">
                       {"Tratante" + (i.medicosTratantesInternacion.length > 1 ? "s" : "")}:{" "}
                       {i.medicosTratantesInternacion.map((mt) => mt.medico.nombre).join(", ")}
                     </p>
                   )}
-                  {i.obraSocial && <p className="text-muted text-xs">OS: {i.obraSocial.nombre}</p>}
+                  {i.obraSocial && (
+                    <p className="text-[12px] text-muted/80 mt-0.5 truncate">
+                      OS · <span className="font-mono">{i.obraSocial.sigla || i.obraSocial.nombre}</span>
+                    </p>
+                  )}
                 </div>
+                <ChevronRight size={16} className="text-muted shrink-0 group-hover:text-brand transition-colors" />
               </div>
-              <Badge variant={estadoColors[i.estado] || "default"}>{i.estado.replace("_", " ")}</Badge>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

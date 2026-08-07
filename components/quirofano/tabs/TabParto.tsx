@@ -4,8 +4,8 @@ import { Baby } from "lucide-react";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
 import type { CirugiaFormData, UpdateField } from "./types";
 
-const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent";
-const labelClass = "text-xs text-muted font-medium mb-1 block";
+const inputClass = "input-field text-[13px]";
+const labelClass = "text-[11px] font-mono uppercase tracking-widest text-muted mb-1 block";
 
 interface TabPartoProps {
   formData: CirugiaFormData;
@@ -37,7 +37,7 @@ export function TabParto({ formData, update, isReadOnly, canEdit }: TabPartoProp
   return (
     <div className="max-w-3xl">
       <div className="card p-5">
-        <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Datos del Parto / Cesárea</h3>
+        <h3 className="text-sm font-medium text-brand mb-4 uppercase tracking-wide">Datos del Parto / Cesárea</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>Hora de nacimiento</label>

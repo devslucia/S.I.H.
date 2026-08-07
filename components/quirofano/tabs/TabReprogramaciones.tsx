@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar } from "lucide-react";
+import { Calendar, AlertTriangle } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
 import { formatDateTime } from "@/lib/utils";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
 import type { CirugiaFull } from "./types";
 
-const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent";
-const labelClass = "text-xs text-muted font-medium mb-1 block";
-const btnClass = "px-4 py-2 text-sm rounded font-medium transition-colors";
-const btnTeal = `${btnClass} bg-accent text-black hover:bg-accent/90`;
-const btnOutline = `${btnClass} border border-border text-muted hover:text-foreground hover:border-muted`;
+const inputClass = "input-field text-[13px]";
+const labelClass = "text-[11px] font-mono uppercase tracking-widest text-muted mb-1 block";
+const btnTeal = "btn-primary text-[13px]";
+const btnOutline = "btn-secondary text-[13px]";
 
 const MOTIVOS_REPROG = ["Falta de insumos", "Emergencia", "Paciente no apto", "Cirujano no disponible", "Falta de cama UTI", "Otro"];
 
@@ -25,11 +25,16 @@ interface TabReprogramacionesProps {
 export function TabReprogramaciones({ data, isReadOnly, effectiveRole, cirugiaId, onRefresh }: TabReprogramacionesProps) {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ nuevaFecha: "", motivo: "" });
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const canReprogram = effectiveRole === "ADMIN";
 
   const addReprogramacion = async () => {
-    if (!form.nuevaFecha || !form.motivo) return alert("Complete fecha y motivo");
+    if (!form.nuevaFecha || !form.motivo) {
+      setErrorMsg("Complete fecha y motivo");
+      return;
+    }
+    setErrorMsg(null);
     const res = await fetch(`/api/quirofano/${cirugiaId}/reprogramaciones`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -42,7 +47,7 @@ export function TabReprogramaciones({ data, isReadOnly, effectiveRole, cirugiaId
     <div className="max-w-4xl">
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Historial de Reprogramaciones</h3>
+          <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted">Historial de Reprogramaciones</h3>
           {!isReadOnly && canReprogram && (
             <button onClick={() => setShowModal(true)} className={`${btnTeal} flex items-center gap-1 text-xs`}>
               <Calendar size={14} /> Agregar reprogramación
@@ -72,15 +77,14 @@ export function TabReprogramaciones({ data, isReadOnly, effectiveRole, cirugiaId
         </div>
       </div>
 
-      {/* Modal: Reprogramación */}
-      {showModal && (
-        <div className="fixed inset-0 z-60 bg-black/60 flex items-center justify-center" onClick={() => setShowModal(false)}>
-          <div className="bg-surface border border-border rounded-lg p-5 w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-medium text-foreground">Reprogramar cirugía</h3>
-              <button onClick={() => setShowModal(false)} className="text-muted hover:text-foreground">X</button>
-            </div>
+{/* Modal: Reprogramación */}
+      <Modal open={showModal} onClose={() => setShowModal(false)} title="Reprogramar cirugía" size="md">
             <div className="space-y-3">
+              {errorMsg && (
+                <div className="flex items-center gap-2 text-[13px] text-error border border-error/30 bg-error/10 rounded-md px-3 py-2">
+                  <AlertTriangle size={14} /> {errorMsg}
+                </div>
+              )}
               <div><label className={labelClass}>Nueva fecha propuesta</label>
                 <input type="datetime-local" value={form.nuevaFecha} onChange={e => setForm({ ...form, nuevaFecha: e.target.value })} className={inputClass} /></div>
               <div><label className={labelClass}>Motivo</label>
@@ -94,9 +98,7 @@ export function TabReprogramaciones({ data, isReadOnly, effectiveRole, cirugiaId
               <button onClick={() => setShowModal(false)} className={btnOutline}>Cancelar</button>
               <button onClick={addReprogramacion} className={`${btnTeal} flex items-center gap-2`}><Calendar size={14} /> Confirmar reprogramación</button>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

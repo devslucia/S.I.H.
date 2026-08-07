@@ -138,7 +138,7 @@ export function MedicacionMultiSelect({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={searchPlaceholder}
-          className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-sm text-text placeholder-muted focus:outline-none focus:border-accent"
+          className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-sm text-text placeholder-muted focus:outline-none focus:border-brand"
         />
         {searching && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted">Buscando...</span>}
       </div>

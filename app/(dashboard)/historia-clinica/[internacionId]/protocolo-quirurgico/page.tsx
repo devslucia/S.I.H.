@@ -88,7 +88,7 @@ export default function ProtocoloQuirurgicoPage() {
       </div>
 
       <div className="card p-5">
-        <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Cirugía</h3>
+        <h3 className="text-sm font-medium text-brand mb-4 uppercase tracking-wide">Cirugía</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div><span className="text-muted">Procedimiento:</span> <span className="text-text">{cirugia.procedimiento || "—"}</span></div>
           <div><span className="text-muted">Quirófano:</span> <span className="text-text">{cirugia.quirofano?.nombre || "—"}</span></div>
@@ -102,7 +102,7 @@ export default function ProtocoloQuirurgicoPage() {
       </div>
 
       <div className="card p-5">
-        <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Diagnósticos</h3>
+        <h3 className="text-sm font-medium text-brand mb-4 uppercase tracking-wide">Diagnósticos</h3>
         <div className="space-y-2 text-sm">
           <div><span className="text-muted">Preoperatorio:</span> <span className="text-text">{cirugia.diagnosticoPreop || "—"}</span></div>
           <div><span className="text-muted">Postoperatorio:</span> <span className="text-text">{cirugia.diagnosticoPostop || "—"}</span></div>
@@ -113,7 +113,7 @@ export default function ProtocoloQuirurgicoPage() {
 
       {cirugia.implantes.length > 0 && (
         <div className="card p-5">
-          <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Implantes</h3>
+          <h3 className="text-sm font-medium text-brand mb-4 uppercase tracking-wide">Implantes</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-text">
               <thead className="bg-background">
@@ -143,7 +143,7 @@ export default function ProtocoloQuirurgicoPage() {
 
       {cirugia.medicamentos.length > 0 && (
         <div className="card p-5">
-          <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Medicamentos</h3>
+          <h3 className="text-sm font-medium text-brand mb-4 uppercase tracking-wide">Medicamentos</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-text">
               <thead className="bg-background">
@@ -171,7 +171,7 @@ export default function ProtocoloQuirurgicoPage() {
 
       {cirugia.practicas.length > 0 && (
         <div className="card p-5">
-          <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Prácticas</h3>
+          <h3 className="text-sm font-medium text-brand mb-4 uppercase tracking-wide">Prácticas</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-text">
               <thead className="bg-background">
@@ -198,11 +198,11 @@ export default function ProtocoloQuirurgicoPage() {
       )}
 
       <div className="card p-5">
-        <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Equipamiento</h3>
+        <h3 className="text-sm font-medium text-brand mb-4 uppercase tracking-wide">Equipamiento</h3>
         <div className="flex gap-4 text-sm">
-          <span className={`flex items-center gap-1 ${cirugia.arcoC ? "text-accent" : "text-muted"}`}>Arco C</span>
-          <span className={`flex items-center gap-1 ${cirugia.arm ? "text-accent" : "text-muted"}`}>ARM</span>
-          <span className={`flex items-center gap-1 ${cirugia.ecografo ? "text-accent" : "text-muted"}`}>Ecógrafo</span>
+          <span className={`flex items-center gap-1 ${cirugia.arcoC ? "text-brand" : "text-muted"}`}>Arco C</span>
+          <span className={`flex items-center gap-1 ${cirugia.arm ? "text-brand" : "text-muted"}`}>ARM</span>
+          <span className={`flex items-center gap-1 ${cirugia.ecografo ? "text-brand" : "text-muted"}`}>Ecógrafo</span>
         </div>
       </div>
     </div>

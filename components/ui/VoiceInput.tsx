@@ -42,7 +42,7 @@ function getSpeechRecognition(): SpeechRecognitionCtor | undefined {
 }
 
 const statusStyles: Record<string, string> = {
-  idle: "bg-border text-muted hover:text-accent hover:bg-accent/10 border border-border",
+  idle: "bg-border text-muted hover:text-brand hover:bg-brand/10 border border-border",
   listening: "bg-error/20 text-error animate-pulse border border-error/50",
   processing: "bg-warning/20 text-warning animate-spin border border-warning/50",
   ready: "bg-success/20 text-success border border-success/50",

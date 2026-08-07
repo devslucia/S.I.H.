@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {UserCheck, CheckCircle, AlertTriangle} from "lucide-react";
-
+import { Check, AlertTriangle, Stethoscope } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { OpsStat } from "@/components/ui/OpsStat";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatUserName } from "@/lib/utils";
 
 interface Internacion {
@@ -59,7 +61,7 @@ export default function AsignarTratantePage() {
         body: JSON.stringify({ medicoId }),
       });
       if (res.ok) {
-        setSuccess("Médico tratante asignado correctamente");
+        setSuccess("Médico tratante asignado correctamente.");
         setInternaciones((prev) => prev.filter((i) => i.id !== internacionId));
       } else {
         const data = await res.json();
@@ -79,75 +81,76 @@ export default function AsignarTratantePage() {
       (m.matricula && m.matricula.toLowerCase().includes(searchMedico.toLowerCase()))
   );
 
-  if (loading) return <p className="text-muted text-sm">Cargando...</p>;
+  if (loading) return <div className="space-y-2"><div className="skeleton h-24" /><div className="skeleton h-48" /></div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <UserCheck className="w-6 h-6 text-accent" />
-        <h2 className="text-xl font-medium text-white">Asignar Médico Tratante</h2>
-      </div>
+    <div className="space-y-7">
+      <PageHeader
+        eyebrow="Configuración · Tratantes"
+        title="Asignar médico tratante"
+        description="Las internaciones activas sin tratante no aparecen en la vista del médico. Asigná el responsable para que pueda seguirlas."
+      />
 
-      <p className="text-muted text-sm">
-        Asigná un médico tratante a las internaciones activas que no tienen uno asignado.
-        Las internaciones sin tratante no aparecen en la vista del médico.
-      </p>
+      <section className="grid grid-cols-2 gap-5">
+        <OpsStat label="Pendientes" value={internaciones.length} sub="Sin tratante asignado" tone={internaciones.length > 0 ? "warning" : "success"} />
+        <OpsStat label="Médicos" value={medicos.length} sub="Disponibles para asignar" tone="info" />
+      </section>
 
       {success && (
-        <div className="p-3 bg-success/10 border border-success/30 rounded-lg flex items-center gap-2 text-success text-sm">
-          <CheckCircle size={16} /> {success}
+        <div className="flex items-center gap-2 text-[13px] text-success border border-success/25 bg-success/10 rounded-md px-3 py-2">
+          <Check size={14} /> {success}
         </div>
       )}
-
       {error && (
-        <div className="p-3 bg-red/10 border border-red/30 rounded-lg flex items-center gap-2 text-red text-sm">
-          <AlertTriangle size={16} /> {error}
+        <div className="flex items-center gap-2 text-[13px] text-error border border-error/25 bg-error/10 rounded-md px-3 py-2">
+          <AlertTriangle size={14} /> {error}
         </div>
       )}
 
       {internaciones.length === 0 ? (
-        <p className="text-muted text-sm">No hay internaciones pendientes de asignación.</p>
+        <div className="border border-dashed border-border rounded-lg py-12 text-center">
+          <p className="text-[13px] text-muted">No hay internaciones pendientes de asignación.</p>
+        </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {internaciones.map((i) => (
-            <div key={i.id} className="card p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <p className="text-white font-medium">
-                    {i.paciente.apellido}, {i.paciente.nombre}
-                  </p>
-                  <p className="text-xs text-muted">
-                    DNI: {i.paciente.dni} | Internación #{i.numero} | {i.obraSocial?.sigla || "S/O"}
+            <div key={i.id} className="border border-border rounded-lg bg-surface p-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="font-serif text-[15px] text-text truncate">{i.paciente.apellido}, {i.paciente.nombre}</p>
+                  <p className="text-[12px] font-mono text-muted mt-1">
+                    DNI {i.paciente.dni} · Internación #{i.numero}
+                    {i.obraSocial && <span className="ml-2"> OS · {i.obraSocial.sigla || i.obraSocial.nombre}</span>}
                   </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 shrink-0">
                   <input
                     type="text"
-                    placeholder="Buscar médico..."
+                    placeholder="Buscar médico…"
                     value={searchMedico}
                     onChange={(e) => setSearchMedico(e.target.value)}
-                    className="input-field text-xs"
+                    className="input-field text-[13px] w-full sm:w-52"
                   />
                   <select
-                    className="input-field text-xs"
+                    className="select-field text-[13px]"
                     defaultValue=""
                     onChange={(e) => {
                       if (e.target.value) handleAsignar(i.id, e.target.value);
                     }}
                     disabled={savingId === i.id}
                   >
-                    <option value="" disabled>
-                      Seleccionar médico
-                    </option>
+                    <option value="" disabled>Seleccionar médico…</option>
                     {filteredMedicos.map((m) => (
                       <option key={m.id} value={m.id}>
-                        {formatUserName(m)} {m.matricula ? `(${m.matricula})` : ""} - {m.especialidad || "Sin especialidad"}
+                        {formatUserName(m)} {m.matricula ? `(${m.matricula})` : ""} · {m.especialidad || "Sin especialidad"}
                       </option>
                     ))}
                   </select>
                   {savingId === i.id && (
-                    <span className="text-xs text-muted">Guardando...</span>
+                    <span className="text-[12px] text-muted inline-flex items-center gap-1.5">
+                      <Stethoscope size={13} /> Guardando…
+                    </span>
                   )}
                 </div>
               </div>

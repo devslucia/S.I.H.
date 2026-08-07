@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Clock, Plus, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-
+import { useState, useEffect, useCallback } from "react";
+import { Clock, Plus, Trash2, AlertTriangle, Check } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface Horario {
   id: string;
@@ -35,14 +33,10 @@ export function HorariosMedico({ medicoId }: HorariosMedicoProps) {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    dia: "LUNES",
-    horaInicio: "08:00",
-    horaFin: "12:00",
-    intervaloMin: 30,
-  });
+  const [form, setForm] = useState({ dia: "LUNES", horaInicio: "08:00", horaFin: "12:00", intervaloMin: 30 });
+  const [pendingDelete, setPendingDelete] = useState<Horario | null>(null);
 
-  const fetchHorarios = async () => {
+  const fetchHorarios = useCallback(async () => {
     setLoading(true);
     try {
       const params = medicoId ? `?medicoId=${medicoId}` : "";
@@ -53,9 +47,9 @@ export function HorariosMedico({ medicoId }: HorariosMedicoProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [medicoId]);
 
-  useEffect(() => { fetchHorarios(); }, [medicoId]);
+  useEffect(() => { fetchHorarios(); }, [fetchHorarios]);
 
   const handleCreate = async () => {
     setSaving(true);
@@ -75,7 +69,7 @@ export function HorariosMedico({ medicoId }: HorariosMedicoProps) {
         body: JSON.stringify(body),
       });
       if (res.ok) {
-        setSuccess("Horario creado");
+        setSuccess("Horario creado.");
         setShowForm(false);
         setForm({ dia: "LUNES", horaInicio: "08:00", horaFin: "12:00", intervaloMin: 30 });
         fetchHorarios();
@@ -91,13 +85,13 @@ export function HorariosMedico({ medicoId }: HorariosMedicoProps) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar este horario?")) return;
+    setPendingDelete(null);
     setError(null);
     setSuccess(null);
     try {
       const res = await fetch(`/api/consultorio/horarios?id=${id}`, { method: "DELETE" });
       if (res.ok) {
-        setSuccess("Horario eliminado");
+        setSuccess("Horario eliminado.");
         fetchHorarios();
       } else {
         const data = await res.json();
@@ -108,100 +102,83 @@ export function HorariosMedico({ medicoId }: HorariosMedicoProps) {
     }
   };
 
-  if (loading) return <p className="text-muted text-sm">Cargando horarios...</p>;
+  if (loading) return <p className="text-[13px] text-muted py-4">Cargando horarios…</p>;
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-sm font-semibold text-text">Horarios Configurados</h3>
-        <Button size="sm" onClick={() => setShowForm(true)}>
-          <Plus size={14} /> Nuevo Horario
-        </Button>
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-mono uppercase tracking-widest text-muted">Horarios configurados</p>
+        <button onClick={() => setShowForm(true)} className="btn-secondary text-[12px] inline-flex items-center gap-1.5">
+          <Plus size={13} /> Nuevo horario
+        </button>
       </div>
 
       {success && (
-        <div className="p-3 bg-success/10 border border-success/30 rounded-lg flex items-center gap-2 text-success text-sm">
-          <CheckCircle size={16} /> {success}
+        <div className="flex items-center gap-2 text-[13px] text-success border border-success/25 bg-success/10 rounded-md px-3 py-2">
+          <Check size={14} /> {success}
         </div>
       )}
       {error && (
-        <div className="p-3 bg-red/10 border border-red/30 rounded-lg flex items-center gap-2 text-red text-sm">
-          <AlertTriangle size={16} /> {error}
+        <div className="flex items-center gap-2 text-[13px] text-error border border-error/25 bg-error/10 rounded-md px-3 py-2">
+          <AlertTriangle size={14} /> {error}
         </div>
       )}
 
       {showForm && (
-        <div className="card p-4 space-y-3">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-muted mb-1">Día</label>
-              <select
-                className="select-field"
-                value={form.dia}
-                onChange={(e) => setForm({ ...form, dia: e.target.value })}
-              >
+        <div className="border border-border rounded-lg bg-surface p-4 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Día</label>
+              <select className="select-field text-[13px]" value={form.dia} onChange={(e) => setForm({ ...form, dia: e.target.value })}>
                 {DIAS.map((d) => (
                   <option key={d} value={d}>{DIAS_LABELS[d]}</option>
                 ))}
               </select>
             </div>
-            <Input
-              label="Hora inicio"
-              type="time"
-              value={form.horaInicio}
-              onChange={(e) => setForm({ ...form, horaInicio: e.target.value })}
-            />
-            <Input
-              label="Hora fin"
-              type="time"
-              value={form.horaFin}
-              onChange={(e) => setForm({ ...form, horaFin: e.target.value })}
-            />
-            <Input
-              label="Intervalo (min)"
-              type="number"
-              value={form.intervaloMin}
-              onChange={(e) => setForm({ ...form, intervaloMin: parseInt(e.target.value) || 30 })}
-              min={5}
-              max={120}
-            />
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Inicio</label>
+              <input className="input-field text-[13px]" type="time" value={form.horaInicio} onChange={(e) => setForm({ ...form, horaInicio: e.target.value })} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Fin</label>
+              <input className="input-field text-[13px]" type="time" value={form.horaFin} onChange={(e) => setForm({ ...form, horaFin: e.target.value })} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Intervalo (min)</label>
+              <input className="input-field text-[13px]" type="number" value={form.intervaloMin} onChange={(e) => setForm({ ...form, intervaloMin: parseInt(e.target.value) || 30 })} min={5} max={120} />
+            </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" size="sm" onClick={() => { setShowForm(false); setError(null); }}>
-              Cancelar
-            </Button>
-            <Button size="sm" onClick={handleCreate} disabled={saving}>
-              {saving ? "Creando..." : "Crear"}
-            </Button>
+            <button onClick={() => { setShowForm(false); setError(null); }} className="btn-secondary text-[13px]">Cancelar</button>
+            <button onClick={handleCreate} disabled={saving} className="btn-primary text-[13px]">
+              {saving ? "Creando…" : "Crear"}
+            </button>
           </div>
         </div>
       )}
 
       {horarios.length === 0 ? (
-        <p className="text-muted text-sm">No hay horarios configurados.</p>
+        <div className="border border-dashed border-border rounded-lg py-10 text-center">
+          <p className="text-[13px] text-muted">No hay horarios configurados.</p>
+        </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {DIAS.map((dia) => {
             const diaHorarios = horarios.filter((h) => h.dia === dia);
             if (diaHorarios.length === 0) return null;
             return (
-              <div key={dia} className="card p-3">
-                <p className="text-xs font-semibold text-accent mb-2">{DIAS_LABELS[dia]}</p>
+              <div key={dia} className="border border-border rounded-lg bg-surface p-3">
+                <p className="text-[11px] font-mono uppercase tracking-widest text-brand mb-2">{DIAS_LABELS[dia]}</p>
                 <div className="flex flex-wrap gap-2">
                   {diaHorarios.map((h) => (
-                    <div
-                      key={h.id}
-                      className="flex items-center gap-2 bg-accent/5 border border-accent/20 rounded-lg px-3 py-1.5"
-                    >
-                      <Clock size={12} className="text-accent" />
-                      <span className="text-xs text-text">
-                        {h.horaInicio} — {h.horaFin} (c/{h.intervaloMin}min)
+                    <div key={h.id} className="flex items-center gap-2 border border-border rounded-md bg-background/40 px-3 py-1.5">
+                      <Clock size={13} className="text-brand shrink-0" />
+                      <span className="text-[13px] font-mono text-text tabular-nums">
+                        {h.horaInicio} — {h.horaFin}
                       </span>
-                      <button
-                        onClick={() => handleDelete(h.id)}
-                        className="text-muted hover:text-error transition-colors"
-                      >
-                        <Trash2 size={12} />
+                      <span className="text-[11px] font-mono text-muted">c/{h.intervaloMin} min</span>
+                      <button onClick={() => setPendingDelete(h)} className="text-muted hover:text-error transition-colors">
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   ))}
@@ -211,6 +188,20 @@ export function HorariosMedico({ medicoId }: HorariosMedicoProps) {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Eliminar horario"
+        message={
+          pendingDelete ? (
+            <>
+              Se eliminará el horario de <strong className="text-text">{DIAS_LABELS[pendingDelete.dia]}</strong> ({pendingDelete.horaInicio} — {pendingDelete.horaFin}).
+            </>
+          ) : ""
+        }
+        onConfirm={() => pendingDelete && handleDelete(pendingDelete.id)}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

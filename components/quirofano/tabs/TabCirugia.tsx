@@ -11,10 +11,10 @@ import type { CirugiaFormData, UpdateField } from "./types";
 
 type UsuarioData = { id: string; nombre: string; email: string; rol: string; matricula?: string; especialidad?: string };
 
-const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent";
-const labelClass = "text-xs text-muted font-medium mb-1 block";
+const inputClass = "input-field text-[13px]";
+const labelClass = "text-[11px] font-mono uppercase tracking-widest text-muted mb-1 block";
 const btnClass = "px-3 py-1.5 text-xs rounded font-medium transition-colors inline-flex items-center gap-1";
-const btnOutline = `${btnClass} border border-border text-muted hover:text-foreground hover:border-muted`;
+const btnOutline = `${btnClass} border border-border text-muted hover:text-text hover:border-muted`;
 
 interface Plantilla {
   id: string;
@@ -69,7 +69,7 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
       {/* Plantillas de Protocolo */}
       {puedePlantillas && (
         <div className="card p-5">
-          <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide flex items-center gap-2">
+          <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted mb-4 flex items-center gap-2">
             <BookMarked size={14} /> Plantillas de Protocolo
           </h3>
           <div className="flex flex-wrap items-end gap-3">
@@ -99,7 +99,7 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
 
       {/* Sección 1: Datos Generales */}
       <div className="card p-5">
-        <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Datos Generales</h3>
+        <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted mb-4">Datos Generales</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className={labelClass}>Fecha inicio</label>
@@ -168,7 +168,7 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
 
       {/* Sección 2: Equipo Interviniente */}
       <div className="card p-5">
-        <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Equipo Interviniente</h3>
+        <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted mb-4">Equipo Interviniente</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[
             { label: "Cirujano principal", field: "cirujanoId" },
@@ -199,7 +199,7 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
 
       {/* Sección 3: Equipamiento y Muestras */}
       <div className="card p-5">
-        <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Equipamiento y Muestras</h3>
+        <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted mb-4">Equipamiento y Muestras</h3>
         <div className="flex flex-wrap gap-6 mb-4">
           {[
             { label: "ARCO EN C", field: "arcoC" },
@@ -209,7 +209,7 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
             <label key={field} className="flex items-center gap-2 text-sm text-muted">
               <input type="checkbox" checked={!!formData?.[field]} onChange={e => update(field, e.target.checked)}
                 disabled={disabled(field)}
-                className="w-4 h-4 rounded border-border bg-background text-accent focus:ring-accent" />
+                className="w-4 h-4 rounded border-border bg-background text-brand focus:ring-brand" />
               {label}
             </label>
           ))}

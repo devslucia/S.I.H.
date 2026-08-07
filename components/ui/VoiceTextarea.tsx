@@ -37,7 +37,7 @@ export function VoiceTextarea({
           disabled={disabled}
           className={`w-full bg-background border border-border rounded-lg px-3 py-2 
                      text-text text-sm resize-none focus:outline-none 
-                     focus:border-accent focus:ring-1 focus:ring-accent/30
+                     focus:border-brand focus:ring-1 focus:ring-brand/30
                      pr-10 disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
         />
         {!disabled && (

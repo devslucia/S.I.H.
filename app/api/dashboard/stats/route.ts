@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const { error } = await requireRole(
+  const { session, error } = await requireRole(
     "ADMIN",
     "MEDICO",
     "ENFERMERO",
@@ -11,9 +11,13 @@ export async function GET() {
     "INSTRUMENTADOR",
     "ADMISION",
     "FACTURACION",
-    "FARMACIA"
+    "FARMACIA",
+    "SECRETARIA"
   );
   if (error) return error;
+
+  const rol = session.user.rol;
+  const userId = session.user.id;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -80,7 +84,109 @@ export async function GET() {
   const tasaOcupacion =
     totalCamas > 0 ? Math.round((camasOcupadas / totalCamas) * 100) : 0;
 
+  // ── Datos por rol ──
+  const rolData: Record<string, unknown> = {};
+
+  if (rol === "SECRETARIA") {
+    const medicosAsignados = await prisma.secretariaMedico.findMany({
+      where: { secretariaId: userId },
+      select: { medicoId: true },
+    });
+    const medicoIds = medicosAsignados.map((m) => m.medicoId);
+    const turnosConsulta = await prisma.turnoConsultorio.findMany({
+      where: {
+        fecha: { gte: today, lt: tomorrow },
+        medicoId: { in: medicoIds },
+      },
+      orderBy: { hora: "asc" },
+      select: {
+        id: true,
+        hora: true,
+        estado: true,
+        paciente: { select: { nombre: true, apellido: true } },
+        medico: { select: { nombre: true, apellido: true } },
+      },
+    });
+    rolData.agenda = turnosConsulta;
+  }
+
+  if (rol === "MEDICO") {
+    const cirugiaWhere = {
+      fechaProgramada: { gte: today, lt: tomorrow },
+      OR: [
+        { cirujanoId: userId },
+        { ayudante1Id: userId },
+        { ayudante2Id: userId },
+        { anestesiologoId: userId },
+        { instrumentadorId: userId },
+      ],
+    };
+    const [misTurnos, misCirugias, misPacientes] = await Promise.all([
+      prisma.turnoConsultorio.findMany({
+        where: { fecha: { gte: today, lt: tomorrow }, medicoId: userId },
+        orderBy: { hora: "asc" },
+        select: {
+          id: true,
+          hora: true,
+          estado: true,
+          paciente: { select: { nombre: true, apellido: true } },
+        },
+      }),
+      prisma.cirugia.count({ where: cirugiaWhere }),
+      prisma.internacion.count({
+        where: {
+          estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] },
+          medicosTratantesInternacion: { some: { medicoId: userId } },
+        },
+      }),
+    ]);
+    rolData.agenda = misTurnos;
+    rolData.cirugiasAsignadas = misCirugias;
+    rolData.pacientesMios = misPacientes;
+  }
+
+  if (rol === "ANESTESIOLOGO" || rol === "INSTRUMENTADOR") {
+    const cirugiasDeHoy = await prisma.cirugia.findMany({
+      where: { fechaProgramada: { gte: today, lt: tomorrow } },
+      select: {
+        id: true,
+        horaProgramada: true,
+        estado: true,
+        procedimiento: true,
+        anestesiologoId: true,
+        instrumentadorId: true,
+        internacion: {
+          select: { paciente: { select: { nombre: true, apellido: true } } },
+        },
+      },
+    });
+    rolData.cirugiasAsignadas = cirugiasDeHoy.filter((c) =>
+      rol === "ANESTESIOLOGO" ? c.anestesiologoId === userId : c.instrumentadorId === userId
+    ).length;
+  }
+
+  if (rol === "FARMACIA") {
+    const items = await prisma.stockItem.findMany({
+      where: { activo: true },
+      select: { stockActual: true, stockMinimo: true },
+    });
+    rolData.stockBajo = items.filter((i) => Number(i.stockActual) <= Number(i.stockMinimo)).length;
+  }
+
+  if (rol === "FACTURACION") {
+    const [cargosPendientes, totalPendiente] = await Promise.all([
+      prisma.cargoFacturacion.count({ where: { facturado: false } }),
+      prisma.cargoFacturacion.aggregate({
+        where: { facturado: false },
+        _sum: { total: true },
+      }),
+    ]);
+    rolData.cargosPendientes = cargosPendientes;
+    rolData.totalPendiente = totalPendiente._sum.total?.toString() ?? "0";
+  }
+
   return NextResponse.json({
+    rol,
     camas: {
       total: totalCamas,
       ocupadas: camasOcupadas,
@@ -109,5 +215,6 @@ export async function GET() {
       paciente: i.paciente ? `${i.paciente.apellido}, ${i.paciente.nombre}` : null,
       dni: i.paciente ? i.paciente.dni : null,
     })),
+    rolData,
   });
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import {CheckCircle, XCircle, Play, ChevronRight} from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
+import { Check, X, Play, ChevronRight, CalendarX } from "lucide-react";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { cn } from "@/lib/utils";
 
 interface Turno {
   id: string;
@@ -16,14 +16,16 @@ interface Turno {
   episodio?: { id: string; numero: number } | null;
 }
 
-const estadoConfig: Record<string, { variant: "success" | "warning" | "error" | "info" | "default"; label: string }> = {
-  PENDIENTE: { variant: "warning", label: "Pendiente" },
-  CONFIRMADO: { variant: "info", label: "Confirmado" },
-  EN_CONSULTA: { variant: "success", label: "En Consulta" },
-  COMPLETADO: { variant: "default", label: "Completado" },
-  CANCELADO: { variant: "error", label: "Cancelado" },
-  NO_ASISTIO: { variant: "error", label: "No Asistió" },
+const estadoConfig: Record<string, { tone: "success" | "warning" | "danger" | "info" | "neutral"; label: string; dot?: boolean; pulse?: boolean }> = {
+  PENDIENTE: { tone: "warning", label: "Pendiente", dot: true },
+  CONFIRMADO: { tone: "info", label: "Confirmado", dot: true },
+  EN_CONSULTA: { tone: "success", label: "En consulta", dot: true, pulse: true },
+  COMPLETADO: { tone: "neutral", label: "Completado" },
+  CANCELADO: { tone: "danger", label: "Cancelado" },
+  NO_ASISTIO: { tone: "danger", label: "No asistió" },
 };
+
+const CERRADOS = ["CANCELADO", "NO_ASISTIO"];
 
 interface TurnoCardProps {
   turno: Turno;
@@ -36,53 +38,69 @@ interface TurnoCardProps {
 
 export function TurnoCard({ turno, viewMode, onConfirm, onCancel, onStart, onClick }: TurnoCardProps) {
   const config = estadoConfig[turno.estado] || estadoConfig.PENDIENTE;
+  const cerrado = CERRADOS.includes(turno.estado);
+  const enAtencion = turno.estado === "EN_CONSULTA";
 
   return (
-    <div className="card p-3 flex items-center gap-3">
-      <div className="text-center min-w-[3rem]">
-        <p className="text-lg font-mono font-bold text-text">{turno.hora}</p>
+    <div
+      className={cn(
+        "flex items-center gap-4 border rounded-lg bg-surface px-4 py-3 transition-colors",
+        enAtencion ? "border-brand/30 bg-brand-soft/40" : "border-border hover:bg-surface-hover"
+      )}
+    >
+      <div className="w-14 shrink-0 text-center">
+        <span className="font-mono text-[15px] font-medium text-text tabular-nums">{turno.hora}</span>
+        {turno.episodio && (
+          <span className="block text-[10px] font-mono uppercase tracking-wider text-muted mt-0.5">
+            Ep. #{turno.episodio.numero}
+          </span>
+        )}
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold text-text truncate">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <p className={cn("font-serif text-[15px] text-text truncate", cerrado && "line-through text-muted")}>
             {turno.paciente.apellido}, {turno.paciente.nombre}
           </p>
-          <Badge variant={config.variant}>{config.label}</Badge>
+          <StatusBadge tone={config.tone} label={config.label} dot={config.dot} pulse={config.pulse} />
         </div>
-        <p className="text-xs text-muted mt-0.5">
+        <p className="text-[12px] font-mono text-muted mt-1 truncate">
           DNI {turno.paciente.dni}
-          {turno.motivo && ` — ${turno.motivo}`}
+          {turno.motivo && <span className="text-muted/80"> · {turno.motivo}</span>}
         </p>
         {viewMode === "secretaria" && (
-          <p className="text-xs text-muted">
-            Dr. {turno.medico.apellido}
-            {turno.obraSocial && ` — ${turno.obraSocial.sigla || turno.obraSocial.nombre}`}
+          <p className="text-[12px] text-muted truncate">
+            <span className="font-mono text-muted">Dr. {turno.medico.apellido}</span>
+            {turno.medico.especialidad && <span className="text-muted/80"> · {turno.medico.especialidad}</span>}
+            {turno.obraSocial && (
+              <span className="text-muted/80"> · {turno.obraSocial.sigla || turno.obraSocial.nombre}</span>
+            )}
           </p>
         )}
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5 shrink-0">
         {viewMode === "secretaria" && turno.estado === "PENDIENTE" && onConfirm && (
-          <Button size="sm" onClick={() => onConfirm(turno)}>
-            <CheckCircle size={14} /> Confirmar
-          </Button>
+          <button onClick={() => onConfirm(turno)} className="btn-primary text-[12px] inline-flex items-center gap-1.5">
+            <Check size={13} /> Confirmar
+          </button>
         )}
         {viewMode === "secretaria" && (turno.estado === "PENDIENTE" || turno.estado === "CONFIRMADO") && onCancel && (
-          <Button size="sm" variant="danger" onClick={() => onCancel(turno)}>
-            <XCircle size={14} /> Cancelar
-          </Button>
+          <button onClick={() => onCancel(turno)} className="btn-danger text-[12px] inline-flex items-center gap-1.5">
+            <X size={13} /> Cancelar
+          </button>
         )}
         {viewMode === "medico" && (turno.estado === "PENDIENTE" || turno.estado === "CONFIRMADO") && onStart && (
-          <Button size="sm" onClick={() => onStart(turno)}>
-            <Play size={14} /> Iniciar
-          </Button>
+          <button onClick={() => onStart(turno)} className="btn-primary text-[12px] inline-flex items-center gap-1.5">
+            <Play size={13} /> Iniciar
+          </button>
         )}
         {viewMode === "medico" && turno.estado === "EN_CONSULTA" && onClick && (
-          <Button size="sm" onClick={() => onClick(turno)}>
+          <button onClick={() => onClick(turno)} className="btn-secondary text-[12px] inline-flex items-center gap-1.5">
             <ChevronRight size={14} /> Continuar
-          </Button>
+          </button>
         )}
+        {cerrado && <CalendarX size={15} className="text-muted/60" />}
       </div>
     </div>
   );

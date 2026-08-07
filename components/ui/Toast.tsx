@@ -94,7 +94,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               }
               transition={prefersReduced ? { duration: 0.1 } : SPRING}
               className={cn(
-                "pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-sm",
+                "pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-card backdrop-blur-sm",
                 "bg-surface/95",
                 styles[t.type]
               )}

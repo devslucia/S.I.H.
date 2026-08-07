@@ -264,7 +264,7 @@ export function AntecClinicosForm({ value, onChange, disabled }: AntecClinicosFo
                 disabled={disabled}
                 className={`w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors ${
                   hasData
-                    ? "bg-accent/5 hover:bg-accent/10"
+                    ? "bg-brand/5 hover:bg-brand/10"
                     : "hover:bg-border/30"
                 }`}
               >
@@ -276,7 +276,7 @@ export function AntecClinicosForm({ value, onChange, disabled }: AntecClinicosFo
                   )}
                   <span
                     className={`text-sm font-medium ${
-                      hasData ? "text-accent" : "text-text-secondary"
+                      hasData ? "text-brand" : "text-text-secondary"
                     }`}
                   >
                     {cat.label}

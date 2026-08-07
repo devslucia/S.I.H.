@@ -63,7 +63,7 @@ export function PendingChecklist({ items, effectiveRole, onNavigate, cirugiaId }
             ? <ChevronDown size={14} className="text-muted" />
             : <ChevronRight size={14} className="text-muted" />
           }
-          <h3 className="text-sm font-medium text-foreground">Estado de carga</h3>
+          <h3 className="text-sm font-medium text-text">Estado de carga</h3>
           <span className="text-xs text-muted">
             {totalDone}/{totalItems} completos
           </span>
@@ -97,7 +97,7 @@ export function PendingChecklist({ items, effectiveRole, onNavigate, cirugiaId }
                   <Circle size={14} className="text-muted shrink-0" />
                 )}
                 <div className="min-w-0">
-                  <p className="text-foreground truncate">{item.label}</p>
+                  <p className="text-text truncate">{item.label}</p>
                   <p className={`text-[10px] ${ROLE_COLORS[item.role] || "text-muted"}`}>
                     {ROLE_LABELS[item.role] || item.role}
                   </p>
