@@ -780,14 +780,14 @@ export default function EnfermeriaPage() {
         <button
           type="button"
           onClick={() => setView("lista")}
-          className={cn("px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors", view === "lista" ? "bg-brand text-white border-brand" : "bg-surface text-muted border-border hover:border-border-hover")}
+          className={cn("px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors", view === "lista" ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:border-border-hover")}
         >
           Lista de pacientes
         </button>
         <button
           type="button"
           onClick={() => setView("mapa")}
-          className={cn("px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors", view === "mapa" ? "bg-brand text-white border-brand" : "bg-surface text-muted border-border hover:border-border-hover")}
+          className={cn("px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors", view === "mapa" ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:border-border-hover")}
         >
           Mapa de camas
         </button>

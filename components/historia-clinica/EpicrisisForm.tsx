@@ -132,7 +132,7 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
           <Input label="Diagnóstico de Egreso" name="diagEgreso" value={data.diagEgreso || ""}
             onChange={(e) => handleChange("diagEgreso", e.target.value)} disabled={readOnly} />
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-400">Condición de Egreso</label>
+            <label className="text-sm text-muted">Condición de Egreso</label>
             <select value={data.condicionEgreso || ""} onChange={(e) => handleChange("condicionEgreso", e.target.value)} className="select-field" disabled={readOnly}>
               <option value="">Seleccionar...</option>
               <option value="MEJORADO">Mejorado</option>
@@ -143,7 +143,7 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-400">Destino</label>
+            <label className="text-sm text-muted">Destino</label>
             <select value={data.destino || ""} onChange={(e) => handleChange("destino", e.target.value)} className="select-field" disabled={readOnly}>
               <option value="">Seleccionar...</option>
               <option value="DOMICILIO">Domicilio</option>
@@ -157,7 +157,7 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
         <VoiceTextarea label="Estudios Realizados" value={data.estudiosRealizados || ""} onChange={(v) => handleChange("estudiosRealizados", v)} rows={3} disabled={readOnly} />
         <VoiceTextarea label="Tratamientos Realizados" value={data.tratamientosRealizados || ""} onChange={(v) => handleChange("tratamientosRealizados", v)} rows={3} disabled={readOnly} />
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Indicaciones de Alta</label>
+          <label className="block text-sm text-muted mb-1">Indicaciones de Alta</label>
           <textarea value={data.indicacionesAlta || ""}
             onChange={(e) => handleChange("indicacionesAlta", e.target.value)}
             className="input-field min-h-[80px] resize-y" rows={3} disabled={readOnly} />

@@ -123,7 +123,7 @@ export function ExamenFisicoForm({ value, onChange, patientSex, disabled }: Exam
                           onClick={() => updateField("psiquismo", opt)}
                           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                             value.psiquismo === opt
-                              ? "bg-accent text-black"
+                              ? "bg-accent/15 text-accent"
                               : "bg-border text-text-secondary hover:bg-surface-active"
                           }`}
                         >
@@ -154,7 +154,7 @@ export function ExamenFisicoForm({ value, onChange, patientSex, disabled }: Exam
                               onClick={() => updateCabezaCuello("mallampati", m)}
                               className={`px-3 py-1 rounded-lg text-sm ${
                                 value.cabezaCuello.mallampati === m
-                                  ? "bg-accent text-black"
+                                  ? "bg-accent/15 text-accent"
                                   : "bg-border text-text-secondary hover:bg-surface-active"
                               }`}
                             >

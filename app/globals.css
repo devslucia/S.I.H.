@@ -5,6 +5,7 @@
 @layer base {
   /* ── SIH — Identidad Clínica Premium ── */
   :root {
+    color-scheme: light;
     --color-bg: 247 246 243;
     --color-surface: 255 255 255;
     --color-surface-hover: 242 240 236;
@@ -22,8 +23,48 @@
     --color-success: 63 98 18;
     --color-warning: 180 83 9;
     --color-error: 155 44 44;
+    --color-error-button: 139 38 38;
     --color-info: 35 78 104;
     --color-scrim: 28 28 26;
+    --color-role-admin: 109 40 217;
+    --color-role-medico: 29 78 216;
+    --color-role-anestesiologo: 5 150 105;
+    --color-role-instrumentador: 194 65 12;
+    --color-role-circulante: 161 98 7;
+  }
+
+  /* ── Modo oscuro clínico ── */
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --color-bg: 20 20 19;
+    --color-surface: 28 28 26;
+    --color-surface-hover: 37 36 34;
+    --color-surface-active: 45 44 41;
+    --color-border: 46 45 43;
+    --color-border-hover: 61 60 57;
+    --color-accent: 93 138 154;
+    --color-accent-dark: 22 60 70;
+    --color-accent-light: 98 158 174;
+    --color-accent-button: 30 96 118;
+    --color-brand-soft: 26 48 53;
+    --color-text: 234 233 229;
+    --color-text-secondary: 206 205 199;
+    --color-muted: 163 162 156;
+    --color-success: 143 191 90;
+    --color-warning: 224 162 74;
+    --color-error: 224 106 106;
+    --color-error-button: 132 40 40;
+    --color-info: 120 165 180;
+    --color-scrim: 6 6 6;
+    --color-role-admin: 167 139 250;
+    --color-role-medico: 96 165 250;
+    --color-role-anestesiologo: 74 222 128;
+    --color-role-instrumentador: 251 146 60;
+    --color-role-circulante: 250 204 21;
+  }
+
+  [data-theme="dark"] .select-field {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23A3A29F' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   }
 
   html {

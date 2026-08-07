@@ -31,7 +31,7 @@ const BED_ORDER: Record<BedEstado, number> = {
 };
 
 const BED_CLASSES: Record<BedEstado, BedStyle> = {
-  LIBRE: { tile: "bg-white border-border-hover", label: "Libre", text: "text-text" },
+  LIBRE: { tile: "bg-surface border-border-hover", label: "Libre", text: "text-text" },
   OCUPADA: { tile: "bg-muted/10 border-border", label: "Ocupada", text: "text-muted" },
   EN_LIMPIEZA: { tile: "bg-warning/10 border-warning/30", label: "Limpieza", text: "text-warning" },
   FUERA_DE_SERVICIO: { tile: "bg-muted/10 border-border", label: "Fuera de servicio", text: "text-muted" },
@@ -91,7 +91,7 @@ export function BedPicker({ beds, selectedId, onSelect, disabled, className }: B
             className={cn(
               "px-2 py-1 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors",
               filter === f.key
-                ? "bg-brand text-white border-brand"
+                ? "bg-accent-button text-white border-accent-button"
                 : "bg-surface text-muted border-border hover:border-border-hover hover:text-text"
             )}
           >

@@ -130,7 +130,7 @@ export default function ConsultorioPage() {
   const completados = turnos.filter((t) => t.estado === "COMPLETADO").length;
 
   const tabCls = (active: boolean) => cn("px-3 py-2 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors",
-    active ? "bg-brand text-white border-brand" : "bg-surface text-muted border-border hover:border-border-hover hover:text-text");
+    active ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:border-border-hover hover:text-text");
 
   return (
     <div className="space-y-7">

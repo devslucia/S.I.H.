@@ -9,10 +9,10 @@ const MAX_DESCRIPCION = 10000;
 const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:border-brand";
 const labelClass = "text-xs text-muted font-medium mb-1 block";
 const btnClass = "px-3 py-1.5 text-xs rounded font-medium transition-colors inline-flex items-center gap-1";
-const btnTeal = `${btnClass} bg-accent text-black hover:bg-brand/90`;
+const btnTeal = `${btnClass} bg-accent-button text-white hover:bg-accent-dark`;
 const btnOutline = `${btnClass} border border-border text-muted hover:text-text hover:border-muted`;
 const btnDanger = `${btnClass} border border-error/40 text-error hover:bg-error/10`;
-const btnDangerSolid = `${btnClass} bg-error text-white hover:bg-error/90`;
+const btnDangerSolid = `${btnClass} bg-error-button text-white hover:bg-error/90`;
 
 interface Plantilla {
   id: string;

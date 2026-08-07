@@ -162,17 +162,17 @@ export default function EnfermeriaPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-gray-400">Tipo</label>
+              <label className="text-sm text-muted">Tipo</label>
               <select value={tipo} onChange={(e) => setTipo(e.target.value)} className="select-field">
                 {tiposControl.map((t) => <option key={t} value={t}>{tipoLabels[t]}</option>)}
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-gray-400">Hora</label>
+              <label className="text-sm text-muted">Hora</label>
               <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className="input-field" required />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-gray-400">Observación</label>
+              <label className="text-sm text-muted">Observación</label>
               <div className="relative">
                 <textarea
                   value={observacion}
@@ -191,7 +191,7 @@ export default function EnfermeriaPage() {
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-400">Datos (JSON)</label>
+            <label className="text-sm text-muted">Datos (JSON)</label>
             <textarea value={datos} onChange={(e) => setDatos(e.target.value)} className="input-field min-h-[60px] resize-y font-mono text-xs" rows={2} />
           </div>
 
@@ -235,7 +235,7 @@ export default function EnfermeriaPage() {
                 <div className="flex items-center gap-2 text-xs text-muted">
                   <Clock size={12} /> {formatDateTime(c.fecha)} — {c.hora}
                 </div>
-                <span className="badge-green text-[10px]">{tipoLabels[c.tipo] || c.tipo}</span>
+                <span className="badge-success text-[10px]">{tipoLabels[c.tipo] || c.tipo}</span>
               </div>
               {c.observacion && <p className="text-text text-sm mb-1">{c.observacion}</p>}
               <div className="text-xs text-muted font-mono">{JSON.stringify(c.datos)}</div>

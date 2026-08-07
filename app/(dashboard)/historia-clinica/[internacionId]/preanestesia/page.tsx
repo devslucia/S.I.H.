@@ -144,14 +144,14 @@ export default function PreanestesiaPage() {
               onClick={() => handleChange("cirugiaPropuestaTipo", "programada")}
               className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 data.cirugiaPropuestaTipo === "programada"
-                  ? "bg-accent text-black"
+                  ? "bg-accent/15 text-accent"
                   : "bg-border text-text-secondary hover:bg-surface-active"
               }`}>Programada</button>
             <button type="button"
               onClick={() => handleChange("cirugiaPropuestaTipo", "urgencia")}
               className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 data.cirugiaPropuestaTipo === "urgencia"
-                  ? "bg-error text-black"
+                  ? "bg-error/15 text-error"
                   : "bg-border text-text-secondary hover:bg-surface-active"
               }`}>Urgencia</button>
           </div>

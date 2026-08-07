@@ -142,7 +142,7 @@ export function AnamnesisForm({ internacionId, apiBase, onSaved }: AnamnesisForm
                   <VoiceTextarea label={field.label} value={data[field.key] || ""} onChange={(v) => handleChange(field.key, v)} rows={3} />
                 ) : (
                   <>
-                    <label className="block text-sm text-gray-400 mb-1">{field.label}</label>
+                    <label className="block text-sm text-muted mb-1">{field.label}</label>
                     <textarea
                       value={data[field.key] || ""}
                       onChange={(e) => handleChange(field.key, e.target.value)}

@@ -113,7 +113,7 @@ export default function ConfigPage() {
             className={cn(
               "flex items-center gap-2 px-3 py-1.5 rounded-md text-[12px] font-mono uppercase tracking-wide border transition-colors",
               tab === t.id
-                ? "bg-brand text-white border-brand"
+                ? "bg-accent-button text-white border-accent-button"
                 : "bg-surface text-muted border-border hover:border-border-hover hover:text-text"
             )}
           >
