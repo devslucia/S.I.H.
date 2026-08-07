@@ -7,7 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 const modules = [
-  { id: 1, name: "Dashboard", icon: LayoutDashboard, href: "/", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR","ADMISION","FACTURACION","FARMACIA"] },
+  { id: 1, name: "Dashboard", icon: LayoutDashboard, href: "/", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR","ADMISION","FACTURACION","FARMACIA","SECRETARIA"] },
   { id: 2, name: "Admisión", icon: User, href: "/admision", roles: ["ADMIN","ADMISION"] },
   { id: 3, name: "Camas", icon: Bed, href: "/camas", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR","ADMISION","FACTURACION"] },
   { id: 4, name: "Historias Clínicas", icon: Stethoscope, href: "/historia-clinica", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR"] },

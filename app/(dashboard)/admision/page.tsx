@@ -468,7 +468,7 @@ export default function AdmisionPage() {
 
             <form onSubmit={handleCreateAdmission} className="space-y-6">
               <div>
-                <h4 className="text-sm font-medium text-accent uppercase tracking-wide mb-3">Datos del Paciente</h4>
+                <h4 className="text-sm font-medium text-brand uppercase tracking-wide mb-3">Datos del Paciente</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <Input label="DNI *" name="dni" value={newPatientForm.dni} onChange={handleNewPatientChange} required />
                   <Input label="Apellido *" name="apellido" value={newPatientForm.apellido} onChange={handleNewPatientChange} required />
@@ -503,7 +503,7 @@ export default function AdmisionPage() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="text-sm font-medium text-accent uppercase tracking-wide mb-3">Obra Social</h4>
+                  <h4 className="text-sm font-medium text-brand uppercase tracking-wide mb-3">Obra Social</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm text-text-secondary">Obra Social</label>
@@ -526,7 +526,7 @@ export default function AdmisionPage() {
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium text-accent uppercase tracking-wide mb-3">Datos de la Internación</h4>
+                  <h4 className="text-sm font-medium text-brand uppercase tracking-wide mb-3">Datos de la Internación</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm text-text-secondary">Cama</label>
@@ -613,7 +613,7 @@ export default function AdmisionPage() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
             <div className="lg:col-span-3 space-y-6">
               <div>
-                <h3 className="text-sm font-medium text-accent uppercase tracking-wide mb-3">Disponibilidad de camas</h3>
+                <h3 className="text-sm font-medium text-brand uppercase tracking-wide mb-3">Disponibilidad de camas</h3>
                 <BedPicker
                   beds={bedPickerBeds.filter((b) => b.estado === "LIBRE" || b.id === selectedBed)}
                   selectedId={selectedBed}

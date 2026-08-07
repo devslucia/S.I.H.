@@ -134,7 +134,7 @@ export function AnamnesisForm({ internacionId, apiBase, onSaved }: AnamnesisForm
 
       {sections.map((section) => (
         <div key={section} className="card p-5">
-          <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">{section}</h3>
+          <h3 className="text-sm font-medium text-brand mb-4 uppercase tracking-wide">{section}</h3>
           <div className="space-y-4">
             {fields.filter((f) => f.section === section).map((field) => (
               <div key={field.key}>

@@ -148,7 +148,7 @@ export function ConsultaPrescripciones({ apiBase }: ConsultaPrescripcionesProps)
         <div className="space-y-2">
           {prescripciones.map((p) => (
             <div key={p.id} className="card p-3 flex items-center gap-3">
-              <Pill size={16} className={p.bloqueadaAlergia ? "text-error" : "text-accent"} />
+              <Pill size={16} className={p.bloqueadaAlergia ? "text-error" : "text-brand"} />
               <div className="flex-1">
                 <p className="text-sm font-medium text-text">
                   {p.droga || p.descripcion || "Sin detalle"}

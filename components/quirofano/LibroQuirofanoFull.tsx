@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Badge } from "@/components/ui/Badge";
-import { Save, Printer, CheckCircle } from "lucide-react";
+import { Save, Printer, CheckCircle, ArrowLeft, AlertCircle, X } from "lucide-react";
 import { formatDateTime, formatUserName } from "@/lib/utils";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ProtocoloAnestesiaComponent } from "@/components/historia-clinica/ProtocoloAnestesia";
 import { getEffectiveRole, canEditField, canCloseSurgery, getPendingItems, type EffectiveRole } from "@/lib/quirofano-rbac";
 import { TabCirugia } from "./tabs/TabCirugia";
@@ -23,10 +23,13 @@ type UsuarioData = { id: string; nombre: string; email: string; rol: string; mat
 
 const TABS = ["Cirugía", "Prácticas/Med", "Parto/Cesárea", "Parte Quirúrgico", "Ingresos/Egresos", "Reprogramaciones", "Protocolo Anestesia"];
 
-const btnClass = "px-4 py-2 text-sm rounded font-medium transition-colors";
-const btnTeal = `${btnClass} bg-accent text-black hover:bg-accent/90`;
-const btnOutline = `${btnClass} border border-border text-muted hover:text-foreground hover:border-muted`;
-const btnDanger = `${btnClass} bg-red/20 text-red hover:bg-red/30`;
+const estadoTone = {
+  COMPLETADA: "success",
+  EN_CURSO: "warning",
+  PROGRAMADA: "info",
+  REPROGRAMADA: "warning",
+  CANCELADA: "danger",
+} as const;
 
 export default function LibroQuirofanoFull() {
   const params = useParams();
@@ -40,6 +43,7 @@ export default function LibroQuirofanoFull() {
   const [formData, setFormData] = useState<CirugiaFormData>({} as CirugiaFormData);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
+  const [inlineError, setInlineError] = useState<string | null>(null);
 
   const isReadOnly = data?.estado === "COMPLETADA" || data?.estado === "REPROGRAMADA";
 
@@ -75,6 +79,7 @@ export default function LibroQuirofanoFull() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleSave = async () => {
+    setInlineError(null);
     setSaving(true);
     try {
       const res = await fetch(`/api/quirofano/${cirugiaId}/libro`, {
@@ -107,14 +112,18 @@ export default function LibroQuirofanoFull() {
         }
       } else if (res.status === 403) {
         const err = await res.json();
-        alert(`Sin permiso para modificar: ${err.fields?.join(", ") || "campos no autorizados"}`);
+        setInlineError(`Sin permiso para modificar: ${err.fields?.join(", ") || "campos no autorizados"}`);
       }
     } catch (err) { console.error(err); }
     finally { setSaving(false); }
   };
 
   const cerrarCirugia = async () => {
-    if (!formData.horaFin) return alert("Debe cargar la hora fin antes de cerrar la cirugía.");
+    if (!formData.horaFin) {
+      setInlineError("Debe cargar la hora fin antes de cerrar la cirugía.");
+      return;
+    }
+    setInlineError(null);
     setSaving(true);
     await fetch(`/api/quirofano/${cirugiaId}/libro`, {
       method: "PATCH",
@@ -195,33 +204,38 @@ export default function LibroQuirofanoFull() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-border bg-surface shrink-0 rounded-t-xl">
-        <div className="flex items-center gap-4">
-          <div>
-            <h2 className="text-lg font-medium text-foreground">Libro de Quirófano</h2>
-            <p className="text-xs text-muted">
-              {paciente ? `${paciente.apellido}, ${paciente.nombre}` : "—"} | {data?.procedimiento || "Sin procedimiento"}
+      <div className="flex items-center justify-between px-6 py-3.5 border-b border-border bg-surface shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            className="p-1.5 rounded-md border border-border text-muted hover:text-text hover:border-border-hover transition-colors shrink-0"
+          >
+            <ArrowLeft size={15} />
+          </button>
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-text tracking-tight">Libro de quirófano</h2>
+            <p className="text-[12px] text-muted truncate">
+              {paciente ? `${paciente.apellido}, ${paciente.nombre}` : "—"} · {data?.procedimiento || "Sin procedimiento"}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge variant={data?.estado === "COMPLETADA" ? "success" : data?.estado === "EN_CURSO" ? "warning" : "info"}>
-            {data?.estado}
-          </Badge>
-          <span className="text-xs text-muted px-2 py-1 bg-background rounded">
-            Tu rol: <span className="font-medium text-foreground">{effectiveRole}</span>
+        <div className="flex items-center gap-3 shrink-0">
+          <StatusBadge tone={estadoTone[data?.estado as keyof typeof estadoTone] ?? "neutral"} dot label={(data?.estado ?? "").replace("_", " ")} />
+          <span className="text-[11px] font-mono uppercase tracking-wide text-muted px-2 py-1 bg-background border border-border rounded-md">
+            Rol: <span className="text-text font-medium">{effectiveRole}</span>
           </span>
         </div>
       </div>
 
       {/* Patient info bar */}
-      <div className="px-6 py-2 border-b border-border bg-surface/50 shrink-0">
-        <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted">
-          <span><span className="font-medium text-muted">Paciente:</span> {paciente ? `${paciente.apellido}, ${paciente.nombre}` : "—"}</span>
-          <span><span className="font-medium text-muted">N° HC:</span> {paciente?.dni || "—"}</span>
-          <span><span className="font-medium text-muted">N° Internación:</span> {internacion?.numero || "—"}</span>
-          <span><span className="font-medium text-muted">Obra Social:</span> {internacion?.obraSocial?.nombre || "—"}</span>
-          <span><span className="font-medium text-muted">Cama:</span> {internacion?.cama?.numero || "—"}</span>
+      <div className="px-6 py-2.5 border-b border-border bg-background/40 shrink-0">
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-[12px] text-muted">
+          <span><span className="text-text font-medium">Paciente:</span> {paciente ? `${paciente.apellido}, ${paciente.nombre}` : "—"}</span>
+          <span><span className="text-text font-medium">N° HC:</span> {paciente?.dni || "—"}</span>
+          <span><span className="text-text font-medium">N° Internación:</span> {internacion?.numero || "—"}</span>
+          <span><span className="text-text font-medium">Obra Social:</span> {internacion?.obraSocial?.nombre || "—"}</span>
+          <span><span className="text-text font-medium">Cama:</span> {internacion?.cama?.numero || "—"}</span>
         </div>
       </div>
 
@@ -229,8 +243,8 @@ export default function LibroQuirofanoFull() {
       <div className="flex border-b border-border bg-surface shrink-0 overflow-x-auto">
         {TABS.map((tab, i) => (
           <button key={i} onClick={() => setActiveTab(i)}
-            className={`px-5 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-              activeTab === i ? "border-accent text-accent" : "border-transparent text-muted hover:text-foreground"
+            className={`px-4 py-3 text-[13px] font-medium whitespace-nowrap border-b-2 transition-colors ${
+              activeTab === i ? "tab-active" : "tab-inactive"
             }`}
           >{tab}</button>
         ))}
@@ -238,6 +252,13 @@ export default function LibroQuirofanoFull() {
 
       {/* Tab content - scrollable */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {inlineError && (
+          <div className="flex items-start gap-2 text-[13px] text-error border border-error/30 bg-error/10 rounded-lg px-3 py-2">
+            <AlertCircle size={14} className="mt-0.5 shrink-0" />
+            <span>{inlineError}</span>
+            <button onClick={() => setInlineError(null)} className="ml-auto text-error/70 hover:text-error"><X size={13} /></button>
+          </div>
+        )}
         <PendingChecklist items={pendingItems} effectiveRole={effectiveRole} onNavigate={setActiveTab} cirugiaId={cirugiaId} />
 
         {activeTab === 0 && (
@@ -279,21 +300,21 @@ export default function LibroQuirofanoFull() {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-6 py-3 border-t border-border bg-surface shrink-0">
-        <div className="flex gap-3">
+      <div className="flex items-center justify-between px-6 py-3 border-t border-border bg-surface shrink-0 gap-3">
+        <div className="flex gap-2">
           <button onClick={handleSave} disabled={saving || isReadOnly}
-            className={`${btnTeal} flex items-center gap-2 ${(saving || isReadOnly) ? "opacity-50 cursor-not-allowed" : ""}`}>
-            <Save size={16} /> {saving ? "Guardando..." : "Guardar borrador"}
+            className={`btn-primary inline-flex items-center gap-2 ${(saving || isReadOnly) ? "opacity-50 cursor-not-allowed" : ""}`}>
+            <Save size={15} /> {saving ? "Guardando…" : "Guardar borrador"}
           </button>
-          <button onClick={handleImprimir} className={`${btnOutline} flex items-center gap-2`}>
-            <Printer size={16} /> Imprimir
+          <button onClick={handleImprimir} className="btn-secondary inline-flex items-center gap-2">
+            <Printer size={15} /> Imprimir
           </button>
         </div>
-        <div className="flex gap-3">
+        <div>
           {data?.estado === "EN_CURSO" && canCloseSurgery(effectiveRole) && (
             <button onClick={() => setShowCloseModal(true)} disabled={saving}
-              className={`${btnDanger} flex items-center gap-2 ${saving ? "opacity-50 cursor-not-allowed" : ""}`}>
-              <CheckCircle size={16} /> Cerrar cirugía
+              className={`btn-danger inline-flex items-center gap-2 ${saving ? "opacity-50 cursor-not-allowed" : ""}`}>
+              <CheckCircle size={15} /> Cerrar cirugía
             </button>
           )}
         </div>

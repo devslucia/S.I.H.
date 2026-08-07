@@ -3,12 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ClipboardList, Plus, Calendar, Clock } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { CalendarDays, Clock, UserPlus, CalendarX2, X } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { OpsStat } from "@/components/ui/OpsStat";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Modal } from "@/components/ui/Modal";
 import { BuscarPaciente } from "@/components/consultorio/BuscarPaciente";
 import { AgendaDia } from "@/components/consultorio/AgendaDia";
 import { NuevoTurnoModal } from "@/components/consultorio/NuevoTurnoModal";
 import { HorariosMedico } from "@/components/consultorio/HorariosMedico";
+import { cn } from "@/lib/utils";
 
 interface Turno {
   id: string;
@@ -44,7 +48,8 @@ export default function ConsultorioPage() {
   const session = useSession();
   const userRol = (session?.data?.user as { rol?: string } | undefined)?.rol;
   const userId = (session?.data?.user as { id?: string } | undefined)?.id;
-  const isSecretaria = userRol === "SECRETARIA";
+  const esRecepcion = userRol === "SECRETARIA" || userRol === "ADMIN";
+  const viewMode: "secretaria" | "medico" = esRecepcion ? "secretaria" : "medico";
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [turnos, setTurnos] = useState<Turno[]>([]);
@@ -53,18 +58,17 @@ export default function ConsultorioPage() {
   const [showNuevoTurno, setShowNuevoTurno] = useState(false);
   const [medicos, setMedicos] = useState<Medico[]>([]);
   const [activeTab, setActiveTab] = useState<"agenda" | "horarios">("agenda");
+  const [turnoCancelar, setTurnoCancelar] = useState<Turno | null>(null);
+  const [cambiandoEstado, setCambiandoEstado] = useState<string | null>(null);
 
   const fetchTurnos = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
       const from = new Date(selectedDate);
       from.setHours(0, 0, 0, 0);
       const to = new Date(selectedDate);
       to.setHours(23, 59, 59, 999);
-      params.set("fechaDesde", from.toISOString());
-      params.set("fechaHasta", to.toISOString());
-
+      const params = new URLSearchParams({ fechaDesde: from.toISOString(), fechaHasta: to.toISOString() });
       const res = await fetch(`/api/consultorio/turnos?${params}`);
       if (res.ok) setTurnos(await res.json());
     } catch (err) {
@@ -92,20 +96,9 @@ export default function ConsultorioPage() {
     fetchTurnos();
   };
 
-  const handleCancel = async (turno: Turno) => {
-    if (!confirm("¿Cancelar este turno?")) return;
-    await fetch(`/api/consultorio/turnos/${turno.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estado: "CANCELADO" }),
-    });
-    fetchTurnos();
-  };
-
   const handleStart = async (turno: Turno) => {
     const res = await fetch(`/api/consultorio/turnos/${turno.id}/iniciar`, { method: "POST" });
     if (res.ok) {
-
       router.push(`/consultorio/consulta/${turno.id}`);
     }
   };
@@ -114,40 +107,116 @@ export default function ConsultorioPage() {
     router.push(`/consultorio/consulta/${turno.id}`);
   };
 
-  const viewMode = isSecretaria ? "secretaria" : "medico";
+  const aplicarEstado = async (turno: Turno, estado: "CANCELADO" | "NO_ASISTIO") => {
+    setCambiandoEstado(turno.id);
+    setTurnoCancelar(null);
+    try {
+      await fetch(`/api/consultorio/turnos/${turno.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado }),
+      });
+      fetchTurnos();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCambiandoEstado(null);
+    }
+  };
+
+  const pendientes = turnos.filter((t) => t.estado === "PENDIENTE").length;
+  const porAtender = turnos.filter((t) => t.estado === "PENDIENTE" || t.estado === "CONFIRMADO").length;
+  const enConsulta = turnos.filter((t) => t.estado === "EN_CONSULTA").length;
+  const completados = turnos.filter((t) => t.estado === "COMPLETADO").length;
+
+  const tabCls = (active: boolean) => cn("px-3 py-2 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors",
+    active ? "bg-brand text-white border-brand" : "bg-surface text-muted border-border hover:border-border-hover hover:text-text");
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center">
-          <ClipboardList className="w-5 h-5 text-accent" />
-        </div>
-        <div>
-          <h2 className="text-lg font-display font-semibold text-text">Consultorio</h2>
-          <p className="text-xs text-muted">
-            {isSecretaria ? "Agenda y turnos" : "Mi agenda del día"}
-          </p>
-        </div>
-      </div>
+    <div className="space-y-7">
+      <PageHeader
+        eyebrow="Consultorio"
+        title={esRecepcion ? "Agenda de turnos" : "Mi agenda del día"}
+        description={esRecepcion
+          ? "Agenda, confirmaciones y altas de turnos sobre los médicos asignados."
+          : "Solo tu agenda. Iniciá la consulta desde un turno pendiente o continuá los que están en atención."}
+      />
 
-      {isSecretaria && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-5">
+        <OpsStat
+          label={esRecepcion ? "Turnos hoy" : "Mi agenda"}
+          value={turnos.length}
+          sub={porAtender > 0 ? `${porAtender} por atender` : "Sin turnos por atender"}
+          tone="info"
+        />
+        <OpsStat
+          label="Pendientes"
+          value={pendientes}
+          sub="Por confirmar"
+          tone={pendientes > 0 ? "warning" : "neutral"}
+        />
+        <OpsStat
+          label="En consulta"
+          value={enConsulta}
+          sub="Atención en curso"
+          tone={enConsulta > 0 ? "success" : "neutral"}
+        />
+        <OpsStat
+          label={esRecepcion ? "Cerrados" : "Completados"}
+          value={esRecepcion ? completados + turnos.filter((t) => t.estado === "CANCELADO" || t.estado === "NO_ASISTIO").length : completados}
+          sub="Finalizados en el día"
+          tone="neutral"
+        />
+      </section>
+
+      {esRecepcion ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-4">
             <BuscarPaciente onSelected={(p) => setPaciente(p)} />
+
             {paciente && (
-              <div className="card p-4">
-                <h3 className="text-sm font-semibold text-text mb-2">Paciente Seleccionado</h3>
-                <p className="text-sm text-text">{paciente.apellido}, {paciente.nombre}</p>
-                <p className="text-xs text-muted">DNI {paciente.dni}</p>
+              <div className="border border-border rounded-lg bg-surface p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center text-brand font-medium text-sm shrink-0">
+                    {paciente.nombre[0]}{paciente.apellido[0]}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-serif text-[15px] text-text truncate">{paciente.apellido}, {paciente.nombre}</p>
+                    <p className="text-[12px] font-mono text-muted mt-0.5">DNI {paciente.dni}</p>
+                  </div>
+                </div>
                 {paciente.obraSocial && (
-                  <p className="text-xs text-muted">OS: {paciente.obraSocial.sigla || paciente.obraSocial.nombre}</p>
+                  <p className="mt-2 text-[12px] text-muted">
+                    OS · <span className="font-mono text-text">{paciente.obraSocial.sigla || paciente.obraSocial.nombre}</span>
+                  </p>
                 )}
-                <Button size="sm" className="mt-3" onClick={() => setShowNuevoTurno(true)}>
-                  <Plus size={14} /> Agendar Turno
-                </Button>
+                <button onClick={() => setShowNuevoTurno(true)} className="btn-primary w-full mt-3 inline-flex items-center justify-center gap-1.5 text-[13px]">
+                  <UserPlus size={14} /> Agendar turno
+                </button>
+              </div>
+            )}
+
+            {turnos.length > 0 && (
+              <div className="border border-border rounded-lg bg-surface p-4">
+                <p className="text-[11px] font-mono uppercase tracking-widest text-muted mb-3">Resumen del día</p>
+                <ul className="space-y-2 text-[13px]">
+                  <li className="flex items-center justify-between">
+                    <span className="text-muted">Confirmados</span>
+                    <StatusBadge tone={porAtender > 0 ? "info" : "neutral"} label={String(porAtender - pendientes)} />
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span className="text-muted">En consulta</span>
+                    <StatusBadge tone={enConsulta > 0 ? "success" : "neutral"} label={String(enConsulta)} dot={enConsulta > 0} />
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span className="text-muted">Completados</span>
+                    <StatusBadge tone="neutral" label={String(completados)} />
+                  </li>
+                </ul>
               </div>
             )}
           </div>
+
           <div className="lg:col-span-2">
             <AgendaDia
               turnos={turnos}
@@ -156,38 +225,24 @@ export default function ConsultorioPage() {
               selectedDate={selectedDate}
               onDateChange={setSelectedDate}
               onConfirm={handleConfirm}
-              onCancel={handleCancel}
+              onCancel={(t) => setTurnoCancelar(t)}
+              onStart={handleStart}
+              onClick={handleClick}
             />
           </div>
         </div>
-      )}
-
-      {!isSecretaria && (
-        <>
-          <div className="flex gap-1 border-b border-border">
-            <button
-              onClick={() => setActiveTab("agenda")}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "agenda"
-                  ? "border-accent text-accent"
-                  : "border-transparent text-muted hover:text-text"
-              }`}
-            >
-              <Calendar size={16} /> Mi Agenda
+      ) : (
+        <div className="space-y-5">
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => setActiveTab("agenda")} className={tabCls(activeTab === "agenda")}>
+              <span className="inline-flex items-center gap-1.5"><CalendarDays size={13} /> Agenda</span>
             </button>
-            <button
-              onClick={() => setActiveTab("horarios")}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "horarios"
-                  ? "border-accent text-accent"
-                  : "border-transparent text-muted hover:text-text"
-              }`}
-            >
-              <Clock size={16} /> Mis Horarios
+            <button onClick={() => setActiveTab("horarios")} className={tabCls(activeTab === "horarios")}>
+              <span className="inline-flex items-center gap-1.5"><Clock size={13} /> Horarios</span>
             </button>
           </div>
 
-          {activeTab === "agenda" && (
+          {activeTab === "agenda" ? (
             <AgendaDia
               turnos={turnos}
               loading={loading}
@@ -197,12 +252,10 @@ export default function ConsultorioPage() {
               onStart={handleStart}
               onClick={handleClick}
             />
+          ) : (
+            <HorariosMedico medicoId={viewMode === "medico" ? userId : undefined} />
           )}
-
-          {activeTab === "horarios" && (
-            <HorariosMedico medicoId={userRol === "MEDICO" ? userId : undefined} />
-          )}
-        </>
+        </div>
       )}
 
       <NuevoTurnoModal
@@ -212,6 +265,39 @@ export default function ConsultorioPage() {
         paciente={paciente}
         medicos={medicos}
       />
+
+      <Modal open={turnoCancelar !== null} onClose={() => setTurnoCancelar(null)} title="Confirmar estado del turno">
+        {turnoCancelar && (
+          <div className="space-y-4">
+            <div className="border border-border rounded-lg bg-background/40 p-3.5">
+              <p className="font-serif text-[15px] text-text">{turnoCancelar.paciente.apellido}, {turnoCancelar.paciente.nombre}</p>
+              <p className="text-[12px] font-mono text-muted mt-1">
+                DNI {turnoCancelar.paciente.dni} · {turnoCancelar.hora} hs · Dr. {turnoCancelar.medico.apellido}
+              </p>
+            </div>
+            <p className="text-[13px] text-muted">Este turno pasará al estado seleccionado y quedará cerrado para este día.</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={() => aplicarEstado(turnoCancelar, "NO_ASISTIO")}
+                disabled={cambiandoEstado === turnoCancelar.id}
+                className="btn-danger flex-1 inline-flex items-center justify-center gap-1.5 text-[13px]"
+              >
+                <CalendarX2 size={14} /> No asistió
+              </button>
+              <button
+                onClick={() => aplicarEstado(turnoCancelar, "CANCELADO")}
+                disabled={cambiandoEstado === turnoCancelar.id}
+                className="btn-secondary flex-1 inline-flex items-center justify-center gap-1.5 text-[13px]"
+              >
+                <X size={14} /> Cancelar turno
+              </button>
+            </div>
+            {cambiandoEstado === turnoCancelar.id && (
+              <p className="text-[12px] text-muted text-center">Guardando…</p>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

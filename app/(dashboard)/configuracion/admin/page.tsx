@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {Bed, Building2, Heart, Activity, Trash2, X, type LucideIcon} from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
+import { Bed, Building2, Heart, Activity, Trash2, X, type LucideIcon } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { cn } from "@/lib/utils";
 
 type Tab = "sectores" | "camas" | "obras-sociales" | "quirofanos" | "rangos-vitales";
 
@@ -47,6 +50,14 @@ interface RangoVital {
 
 const ESTADOS_CAMA = ["LIBRE", "OCUPADA", "MANTENIMIENTO", "RESERVADA"];
 
+const th = "px-4 py-2.5 text-left text-[11px] font-mono uppercase tracking-widest text-muted whitespace-nowrap";
+const td = "px-4 py-2.5";
+const Empty = ({ text }: { text: string }) => (
+  <div className="border border-dashed border-border rounded-lg py-10 text-center">
+    <p className="text-[13px] text-muted">{text}</p>
+  </div>
+);
+
 export default function ConfigPage() {
   const [tab, setTab] = useState<Tab>("sectores");
   const [sectores, setSectores] = useState<Sector[]>([]);
@@ -81,23 +92,30 @@ export default function ConfigPage() {
   const tabs: { id: Tab; label: string; icon: LucideIcon }[] = [
     { id: "sectores", label: "Sectores", icon: Building2 },
     { id: "camas", label: "Camas", icon: Bed },
-    { id: "obras-sociales", label: "Obras Sociales", icon: Heart },
+    { id: "obras-sociales", label: "Obras sociales", icon: Heart },
     { id: "quirofanos", label: "Quirófanos", icon: Activity },
-    { id: "rangos-vitales", label: "Rangos Vitales", icon: Activity },
+    { id: "rangos-vitales", label: "Rangos vitales", icon: Activity },
   ];
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-medium text-text">Configuración del Sistema</h2>
+    <div className="space-y-7">
+      <PageHeader
+        eyebrow="Configuración · Sistema"
+        title="Administrar sistema"
+        description="Sectores, camas, obras sociales, quirófanos y rangos de signos vitales del sanatorio."
+      />
 
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-1.5 flex-wrap">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-              tab === t.id ? "bg-accent/20 text-accent border border-accent/30" : "bg-surface-hover text-muted border border-border hover:bg-border/30"
-            }`}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-md text-[12px] font-mono uppercase tracking-wide border transition-colors",
+              tab === t.id
+                ? "bg-brand text-white border-brand"
+                : "bg-surface text-muted border-border hover:border-border-hover hover:text-text"
+            )}
           >
             <t.icon size={14} /> {t.label}
           </button>
@@ -105,9 +123,9 @@ export default function ConfigPage() {
       </div>
 
       {loading ? (
-        <p className="text-muted text-sm">Cargando...</p>
+        <div className="space-y-2"><div className="skeleton h-24" /><div className="skeleton h-48" /></div>
       ) : (
-        <div className="card p-4">
+        <div className="border border-border rounded-lg bg-surface p-4">
           {tab === "sectores" && <SectoresTab sectores={sectores} onRefresh={fetchAll} />}
           {tab === "camas" && <CamasTab camas={camas} sectores={sectores} onRefresh={fetchAll} />}
           {tab === "obras-sociales" && <ObrasTab obras={obras} onRefresh={fetchAll} />}
@@ -123,6 +141,7 @@ function SectoresTab({ sectores, onRefresh }: { sectores: Sector[]; onRefresh: (
   const [form, setForm] = useState({ nombre: "", codigo: "" });
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Sector | null>(null);
 
   const handleSave = async () => {
     setSaving(true);
@@ -137,38 +156,60 @@ function SectoresTab({ sectores, onRefresh }: { sectores: Sector[]; onRefresh: (
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar sector?")) return;
+    setPendingDelete(null);
     await fetch(`/api/sectores?id=${id}`, { method: "DELETE" });
     onRefresh();
   };
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-text">Sectores</h3>
+      <p className="text-[13px] font-medium text-text">Sectores</p>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <input placeholder="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="input-field text-sm" />
-        <input placeholder="Código" value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} className="input-field text-sm" />
+        <input placeholder="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="input-field text-[13px]" />
+        <input placeholder="Código" value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} className="input-field text-[13px]" />
         <div className="flex gap-2">
-          <button onClick={handleSave} disabled={saving || !form.nombre || !form.codigo} className="btn-primary text-sm">{editing ? "Actualizar" : "Crear"}</button>
-          {editing && <button onClick={() => { setEditing(null); setForm({ nombre: "", codigo: "" }); }} className="btn-secondary text-sm"><X size={14} /></button>}
+          <button onClick={handleSave} disabled={saving || !form.nombre || !form.codigo} className="btn-primary text-[13px]">{editing ? "Actualizar" : "Crear"}</button>
+          {editing && <button onClick={() => { setEditing(null); setForm({ nombre: "", codigo: "" }); }} className="btn-secondary text-[13px]"><X size={14} /></button>}
         </div>
       </div>
-      <table className="w-full text-sm">
-        <thead><tr className="text-muted border-b border-border"><th className="text-left py-2">Nombre</th><th className="text-left py-2">Código</th><th className="text-left py-2">Camas</th><th className="text-left py-2">Acciones</th></tr></thead>
-        <tbody>
-          {sectores.map((s) => (
-            <tr key={s.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
-              <td className="py-2 text-text">{s.nombre}</td>
-              <td className="py-2 text-muted">{s.codigo}</td>
-              <td className="py-2 text-muted">{s._count?.camas || 0}</td>
-              <td className="py-2 flex gap-2">
-                <button onClick={() => { setEditing(s.id); setForm({ nombre: s.nombre, codigo: s.codigo }); }} className="text-xs text-accent">Editar</button>
-                <button onClick={() => handleDelete(s.id)} className="text-xs text-error"><Trash2 size={12} /></button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {sectores.length === 0 ? (
+        <Empty text="Sin sectores." />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead><tr className="border-b border-border"><th className={th}>Nombre</th><th className={th}>Código</th><th className={th}>Camas</th><th className={th}>Acciones</th></tr></thead>
+            <tbody>
+              {sectores.map((s) => (
+                <tr key={s.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
+                  <td className={td + " text-text"}>{s.nombre}</td>
+                  <td className={td + " font-mono text-muted"}>{s.codigo}</td>
+                  <td className={td + " text-muted"}>{s._count?.camas || 0}</td>
+                  <td className={td}>
+                    <div className="flex gap-2">
+                      <button onClick={() => { setEditing(s.id); setForm({ nombre: s.nombre, codigo: s.codigo }); }} className="text-[12px] text-brand hover:underline">Editar</button>
+                      <button onClick={() => setPendingDelete(s)} className="text-[12px] text-muted hover:text-error transition-colors"><Trash2 size={13} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Eliminar sector"
+        message={
+          pendingDelete ? (
+            <>
+              Se eliminará el sector <strong className="text-text">{pendingDelete.nombre}</strong>.
+              Esta acción no se puede deshacer.
+            </>
+          ) : ""
+        }
+        onConfirm={() => pendingDelete && handleDelete(pendingDelete.id)}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }
@@ -176,6 +217,7 @@ function SectoresTab({ sectores, onRefresh }: { sectores: Sector[]; onRefresh: (
 function CamasTab({ camas, sectores, onRefresh }: { camas: Cama[]; sectores: Sector[]; onRefresh: () => void }) {
   const [form, setForm] = useState({ numero: "", sectorId: "", tipo: "ESTANDAR" });
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Cama | null>(null);
 
   const handleCreate = async () => {
     setSaving(true);
@@ -187,7 +229,7 @@ function CamasTab({ camas, sectores, onRefresh }: { camas: Cama[]; sectores: Sec
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar cama?")) return;
+    setPendingDelete(null);
     await fetch(`/api/camas?id=${id}`, { method: "DELETE" });
     onRefresh();
   };
@@ -199,42 +241,60 @@ function CamasTab({ camas, sectores, onRefresh }: { camas: Cama[]; sectores: Sec
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-text">Camas</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-        <input placeholder="Número" value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} className="input-field text-sm" />
-        <select value={form.sectorId} onChange={(e) => setForm({ ...form, sectorId: e.target.value })} className="input-field text-sm">
-          <option value="">Sector...</option>
+      <p className="text-[13px] font-medium text-text">Camas</p>
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <input placeholder="Número" value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} className="input-field text-[13px]" />
+        <select value={form.sectorId} onChange={(e) => setForm({ ...form, sectorId: e.target.value })} className="select-field text-[13px]">
+          <option value="">Sector…</option>
           {sectores.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
-        <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })} className="input-field text-sm">
+        <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })} className="select-field text-[13px]">
           <option value="ESTANDAR">Estándar</option>
           <option value="TERAPIA_INTENSIVA">Terapia Intensiva</option>
           <option value="GUARDIA">Guardia</option>
         </select>
-        <button onClick={handleCreate} disabled={saving || !form.numero || !form.sectorId} className="btn-primary text-sm">Crear</button>
+        <button onClick={handleCreate} disabled={saving || !form.numero || !form.sectorId} className="btn-primary text-[13px]">Crear cama</button>
       </div>
-      <div className="max-h-[400px] overflow-y-auto">
-        <table className="w-full text-sm">
-          <thead><tr className="text-muted border-b border-border"><th className="text-left py-2">N°</th><th className="text-left py-2">Sector</th><th className="text-left py-2">Tipo</th><th className="text-left py-2">Estado</th><th className="text-left py-2">Acciones</th></tr></thead>
-          <tbody>
-            {camas.map((c) => (
-              <tr key={c.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
-                <td className="py-2 text-text">{c.numero}</td>
-                <td className="py-2 text-muted">{c.sector.nombre}</td>
-                <td className="py-2 text-muted">{c.tipo || "—"}</td>
-                <td className="py-2">
-                  <select value={c.estado} onChange={(e) => handleEstado(c.id, e.target.value)} className="input-field text-xs py-1">
-                    {ESTADOS_CAMA.map((e) => <option key={e} value={e}>{e}</option>)}
-                  </select>
-                </td>
-                <td className="py-2">
-                  <button onClick={() => handleDelete(c.id)} className="text-xs text-error"><Trash2 size={12} /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {camas.length === 0 ? (
+        <Empty text="Sin camas registradas." />
+      ) : (
+        <div className="max-h-[400px] overflow-y-auto border border-border rounded-lg">
+          <table className="w-full text-[13px]">
+            <thead><tr className="border-b border-border text-muted"><th className={th}>N°</th><th className={th}>Sector</th><th className={th}>Tipo</th><th className={th}>Estado</th><th className={th}>Acciones</th></tr></thead>
+            <tbody>
+              {camas.map((c) => (
+                <tr key={c.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
+                  <td className={td + " text-text font-mono"}>{c.numero}</td>
+                  <td className={td + " text-muted"}>{c.sector.nombre}</td>
+                  <td className={td + " text-muted"}>{c.tipo || "—"}</td>
+                  <td className={td}>
+                    <select value={c.estado} onChange={(e) => handleEstado(c.id, e.target.value)} className="select-field text-[12px] py-1">
+                      {ESTADOS_CAMA.map((e) => <option key={e} value={e}>{e}</option>)}
+                    </select>
+                  </td>
+                  <td className={td}>
+                    <button onClick={() => setPendingDelete(c)} className="text-muted hover:text-error transition-colors"><Trash2 size={13} /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Eliminar cama"
+        message={
+          pendingDelete ? (
+            <>
+              Se eliminará la cama <strong className="text-text">{pendingDelete.numero}</strong> del sector {pendingDelete.sector.nombre}.
+              Esta acción no se puede deshacer.
+            </>
+          ) : ""
+        }
+        onConfirm={() => pendingDelete && handleDelete(pendingDelete.id)}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }
@@ -263,33 +323,43 @@ function ObrasTab({ obras, onRefresh }: { obras: ObraSocial[]; onRefresh: () => 
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-text">Obras Sociales</h3>
+      <p className="text-[13px] font-medium text-text">Obras sociales</p>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <input placeholder="Código" value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} className="input-field text-sm" />
-        <input placeholder="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="input-field text-sm" />
-        <input placeholder="Sigla" value={form.sigla} onChange={(e) => setForm({ ...form, sigla: e.target.value })} className="input-field text-sm" />
+        <input placeholder="Código" value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} className="input-field text-[13px]" />
+        <input placeholder="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="input-field text-[13px]" />
+        <input placeholder="Sigla" value={form.sigla} onChange={(e) => setForm({ ...form, sigla: e.target.value })} className="input-field text-[13px]" />
         <div className="flex gap-2">
-          <button onClick={handleSave} disabled={saving || !form.codigo || !form.nombre || !form.sigla} className="btn-primary text-sm">{editing ? "Actualizar" : "Crear"}</button>
-          {editing && <button onClick={() => { setEditing(null); setForm({ codigo: "", nombre: "", sigla: "" }); }} className="btn-secondary text-sm"><X size={14} /></button>}
+          <button onClick={handleSave} disabled={saving || !form.codigo || !form.nombre || !form.sigla} className="btn-primary text-[13px]">{editing ? "Actualizar" : "Crear"}</button>
+          {editing && <button onClick={() => { setEditing(null); setForm({ codigo: "", nombre: "", sigla: "" }); }} className="btn-secondary text-[13px]"><X size={14} /></button>}
         </div>
       </div>
-      <table className="w-full text-sm">
-        <thead><tr className="text-muted border-b border-border"><th className="text-left py-2">Código</th><th className="text-left py-2">Nombre</th><th className="text-left py-2">Sigla</th><th className="text-left py-2">Estado</th><th className="text-left py-2">Acciones</th></tr></thead>
-        <tbody>
-          {obras.map((o) => (
-            <tr key={o.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
-              <td className="py-2 text-muted">{o.codigo}</td>
-              <td className="py-2 text-text">{o.nombre}</td>
-              <td className="py-2 text-muted">{o.sigla}</td>
-              <td className="py-2"><Badge variant={o.activa ? "success" : "default"}>{o.activa ? "Activa" : "Inactiva"}</Badge></td>
-              <td className="py-2 flex gap-2">
-                <button onClick={() => { setEditing(o.id); setForm({ codigo: o.codigo, nombre: o.nombre, sigla: o.sigla }); }} className="text-xs text-accent">Editar</button>
-                <button onClick={() => handleToggle(o.id, o.activa)} className="text-xs text-warning">{o.activa ? "Desactivar" : "Activar"}</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {obras.length === 0 ? (
+        <Empty text="Sin obras sociales." />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead><tr className="border-b border-border text-muted"><th className={th}>Código</th><th className={th}>Nombre</th><th className={th}>Sigla</th><th className={th}>Estado</th><th className={th}>Acciones</th></tr></thead>
+            <tbody>
+              {obras.map((o) => (
+                <tr key={o.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
+                  <td className={td + " font-mono text-muted"}>{o.codigo}</td>
+                  <td className={td + " text-text"}>{o.nombre}</td>
+                  <td className={td + " font-mono text-muted"}>{o.sigla}</td>
+                  <td className={td}>
+                    <StatusBadge tone={o.activa ? "success" : "neutral"} label={o.activa ? "Activa" : "Inactiva"} dot={o.activa} />
+                  </td>
+                  <td className={td}>
+                    <div className="flex gap-2 items-center">
+                      <button onClick={() => { setEditing(o.id); setForm({ codigo: o.codigo, nombre: o.nombre, sigla: o.sigla }); }} className="text-[12px] text-brand hover:underline">Editar</button>
+                      <button onClick={() => handleToggle(o.id, o.activa)} className="text-[12px] text-warning hover:underline">{o.activa ? "Desactivar" : "Activar"}</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -298,6 +368,7 @@ function QuirofanosTab({ quirofanos, onRefresh }: { quirofanos: Quirofano[]; onR
   const [form, setForm] = useState({ numero: 0, nombre: "", piso: "" });
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Quirofano | null>(null);
 
   const handleSave = async () => {
     setSaving(true);
@@ -312,7 +383,7 @@ function QuirofanosTab({ quirofanos, onRefresh }: { quirofanos: Quirofano[]; onR
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar quirófano?")) return;
+    setPendingDelete(null);
     await fetch(`/api/quirofanos?id=${id}`, { method: "DELETE" });
     onRefresh();
   };
@@ -324,34 +395,58 @@ function QuirofanosTab({ quirofanos, onRefresh }: { quirofanos: Quirofano[]; onR
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-text">Quirófanos</h3>
+      <p className="text-[13px] font-medium text-text">Quirófanos</p>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <input type="number" placeholder="N°" value={form.numero || ""} onChange={(e) => setForm({ ...form, numero: Number(e.target.value) })} className="input-field text-sm" />
-        <input placeholder="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="input-field text-sm" />
-        <input placeholder="Piso (opcional)" value={form.piso} onChange={(e) => setForm({ ...form, piso: e.target.value })} className="input-field text-sm" />
+        <input type="number" placeholder="N°" value={form.numero || ""} onChange={(e) => setForm({ ...form, numero: Number(e.target.value) })} className="input-field text-[13px]" />
+        <input placeholder="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="input-field text-[13px]" />
+        <input placeholder="Piso (opcional)" value={form.piso} onChange={(e) => setForm({ ...form, piso: e.target.value })} className="input-field text-[13px]" />
         <div className="flex gap-2">
-          <button onClick={handleSave} disabled={saving || !form.numero || !form.nombre} className="btn-primary text-sm">{editing ? "Actualizar" : "Crear"}</button>
-          {editing && <button onClick={() => { setEditing(null); setForm({ numero: 0, nombre: "", piso: "" }); }} className="btn-secondary text-sm"><X size={14} /></button>}
+          <button onClick={handleSave} disabled={saving || !form.numero || !form.nombre} className="btn-primary text-[13px]">{editing ? "Actualizar" : "Crear"}</button>
+          {editing && <button onClick={() => { setEditing(null); setForm({ numero: 0, nombre: "", piso: "" }); }} className="btn-secondary text-[13px]"><X size={14} /></button>}
         </div>
       </div>
-      <table className="w-full text-sm">
-        <thead><tr className="text-muted border-b border-border"><th className="text-left py-2">N°</th><th className="text-left py-2">Nombre</th><th className="text-left py-2">Piso</th><th className="text-left py-2">Disponible</th><th className="text-left py-2">Acciones</th></tr></thead>
-        <tbody>
-          {quirofanos.map((q) => (
-            <tr key={q.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
-              <td className="py-2 text-muted">{q.numero}</td>
-              <td className="py-2 text-text">{q.nombre}</td>
-              <td className="py-2 text-muted">{q.piso || "—"}</td>
-              <td className="py-2"><Badge variant={q.disponible ? "success" : "default"}>{q.disponible ? "Sí" : "No"}</Badge></td>
-              <td className="py-2 flex gap-2">
-                <button onClick={() => { setEditing(q.id); setForm({ numero: q.numero, nombre: q.nombre, piso: q.piso || "" }); }} className="text-xs text-accent">Editar</button>
-                <button onClick={() => handleToggle(q.id, q.disponible)} className="text-xs text-warning">{q.disponible ? "Deshabilitar" : "Habilitar"}</button>
-                <button onClick={() => handleDelete(q.id)} className="text-xs text-error"><Trash2 size={12} /></button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {quirofanos.length === 0 ? (
+        <Empty text="Sin quirófanos." />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead><tr className="border-b border-border text-muted"><th className={th}>N°</th><th className={th}>Nombre</th><th className={th}>Piso</th><th className={th}>Disponible</th><th className={th}>Acciones</th></tr></thead>
+            <tbody>
+              {quirofanos.map((q) => (
+                <tr key={q.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
+                  <td className={td + " font-mono text-muted"}>{q.numero}</td>
+                  <td className={td + " text-text"}>{q.nombre}</td>
+                  <td className={td + " text-muted"}>{q.piso || "—"}</td>
+                  <td className={td}>
+                    <StatusBadge tone={q.disponible ? "success" : "neutral"} label={q.disponible ? "Disponible" : "No disponible"} dot={q.disponible} />
+                  </td>
+                  <td className={td}>
+                    <div className="flex gap-2 items-center">
+                      <button onClick={() => { setEditing(q.id); setForm({ numero: q.numero, nombre: q.nombre, piso: q.piso || "" }); }} className="text-[12px] text-brand hover:underline">Editar</button>
+                      <button onClick={() => handleToggle(q.id, q.disponible)} className="text-[12px] text-warning hover:underline">{q.disponible ? "Deshabilitar" : "Habilitar"}</button>
+                      <button onClick={() => setPendingDelete(q)} className="text-muted hover:text-error transition-colors"><Trash2 size={13} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Eliminar quirófano"
+        message={
+          pendingDelete ? (
+            <>
+              Se eliminará el quirófano <strong className="text-text">{pendingDelete.nombre}</strong> ({pendingDelete.numero}).
+              Esta acción no se puede deshacer.
+            </>
+          ) : ""
+        }
+        onConfirm={() => pendingDelete && handleDelete(pendingDelete.id)}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }
@@ -360,6 +455,7 @@ function RangosTab({ rangos, onRefresh }: { rangos: RangoVital[]; onRefresh: () 
   const [form, setForm] = useState({ parametro: "", minimo: 0, maximo: 0, unidad: "" });
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<RangoVital | null>(null);
 
   const handleSave = async () => {
     setSaving(true);
@@ -374,41 +470,63 @@ function RangosTab({ rangos, onRefresh }: { rangos: RangoVital[]; onRefresh: () 
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar rango?")) return;
+    setPendingDelete(null);
     await fetch(`/api/rangos-vitales?id=${id}`, { method: "DELETE" });
     onRefresh();
   };
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-text">Rangos de Signos Vitales</h3>
+      <p className="text-[13px] font-medium text-text">Rangos de signos vitales</p>
       <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-        <input placeholder="Parámetro (ej: FC)" value={form.parametro} onChange={(e) => setForm({ ...form, parametro: e.target.value })} className="input-field text-sm" />
-        <input type="number" placeholder="Mínimo" value={form.minimo || ""} onChange={(e) => setForm({ ...form, minimo: Number(e.target.value) })} className="input-field text-sm" />
-        <input type="number" placeholder="Máximo" value={form.maximo || ""} onChange={(e) => setForm({ ...form, maximo: Number(e.target.value) })} className="input-field text-sm" />
-        <input placeholder="Unidad" value={form.unidad} onChange={(e) => setForm({ ...form, unidad: e.target.value })} className="input-field text-sm" />
+        <input placeholder="Parámetro (ej: FC)" value={form.parametro} onChange={(e) => setForm({ ...form, parametro: e.target.value })} className="input-field text-[13px]" />
+        <input type="number" placeholder="Mínimo" value={form.minimo || ""} onChange={(e) => setForm({ ...form, minimo: Number(e.target.value) })} className="input-field text-[13px]" />
+        <input type="number" placeholder="Máximo" value={form.maximo || ""} onChange={(e) => setForm({ ...form, maximo: Number(e.target.value) })} className="input-field text-[13px]" />
+        <input placeholder="Unidad" value={form.unidad} onChange={(e) => setForm({ ...form, unidad: e.target.value })} className="input-field text-[13px]" />
         <div className="flex gap-2">
-          <button onClick={handleSave} disabled={saving || !form.parametro || !form.unidad} className="btn-primary text-sm">{editing ? "Actualizar" : "Crear"}</button>
-          {editing && <button onClick={() => { setEditing(null); setForm({ parametro: "", minimo: 0, maximo: 0, unidad: "" }); }} className="btn-secondary text-sm"><X size={14} /></button>}
+          <button onClick={handleSave} disabled={saving || !form.parametro || !form.unidad} className="btn-primary text-[13px]">{editing ? "Actualizar" : "Crear"}</button>
+          {editing && <button onClick={() => { setEditing(null); setForm({ parametro: "", minimo: 0, maximo: 0, unidad: "" }); }} className="btn-secondary text-[13px]"><X size={14} /></button>}
         </div>
       </div>
-      <table className="w-full text-sm">
-        <thead><tr className="text-muted border-b border-border"><th className="text-left py-2">Parámetro</th><th className="text-left py-2">Mínimo</th><th className="text-left py-2">Máximo</th><th className="text-left py-2">Unidad</th><th className="text-left py-2">Acciones</th></tr></thead>
-        <tbody>
-          {rangos.map((r) => (
-            <tr key={r.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
-              <td className="py-2 text-text">{r.parametro}</td>
-              <td className="py-2 text-muted">{r.minimo}</td>
-              <td className="py-2 text-muted">{r.maximo}</td>
-              <td className="py-2 text-muted">{r.unidad}</td>
-              <td className="py-2 flex gap-2">
-                <button onClick={() => { setEditing(r.id); setForm({ parametro: r.parametro, minimo: r.minimo, maximo: r.maximo, unidad: r.unidad }); }} className="text-xs text-accent">Editar</button>
-                <button onClick={() => handleDelete(r.id)} className="text-xs text-error"><Trash2 size={12} /></button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {rangos.length === 0 ? (
+        <Empty text="Sin rangos vitales." />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead><tr className="border-b border-border text-muted"><th className={th}>Parámetro</th><th className={th}>Mínimo</th><th className={th}>Máximo</th><th className={th}>Unidad</th><th className={th}>Acciones</th></tr></thead>
+            <tbody>
+              {rangos.map((r) => (
+                <tr key={r.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
+                  <td className={td + " text-text font-mono"}>{r.parametro}</td>
+                  <td className={td + " text-muted tabular-nums"}>{r.minimo}</td>
+                  <td className={td + " text-muted tabular-nums"}>{r.maximo}</td>
+                  <td className={td + " text-muted"}>{r.unidad}</td>
+                  <td className={td}>
+                    <div className="flex gap-2 items-center">
+                      <button onClick={() => { setEditing(r.id); setForm({ parametro: r.parametro, minimo: r.minimo, maximo: r.maximo, unidad: r.unidad }); }} className="text-[12px] text-brand hover:underline">Editar</button>
+                      <button onClick={() => setPendingDelete(r)} className="text-muted hover:text-error transition-colors"><Trash2 size={13} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Eliminar rango"
+        message={
+          pendingDelete ? (
+            <>
+              Se eliminará el rango <strong className="text-text">{pendingDelete.parametro}</strong> ({pendingDelete.minimo}–{pendingDelete.maximo} {pendingDelete.unidad}).
+              Esta acción no se puede deshacer.
+            </>
+          ) : ""
+        }
+        onConfirm={() => pendingDelete && handleDelete(pendingDelete.id)}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

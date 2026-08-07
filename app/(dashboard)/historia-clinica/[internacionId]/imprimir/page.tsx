@@ -196,7 +196,7 @@ export default function ImprimirCarpetaPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[50vh]">
-      <Loader2 className="w-6 h-6 text-accent animate-spin" />
+      <Loader2 className="w-6 h-6 text-brand animate-spin" />
       <span className="ml-2 text-text-secondary">Cargando carpeta completa...</span>
     </div>
   );

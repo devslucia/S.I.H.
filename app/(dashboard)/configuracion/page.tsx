@@ -1,7 +1,8 @@
 "use client";
 
-import { Settings, UserCheck, Users, Wrench, ClipboardList } from "lucide-react";
+import { Settings, UserCheck, Users, Wrench, ClipboardList, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 const adminModules = [
   {
@@ -36,26 +37,32 @@ const adminModules = [
 
 export default function ConfiguracionPage() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Settings className="w-6 h-6 text-accent" />
-        <h2 className="text-lg font-display font-semibold text-text">Configuración</h2>
-      </div>
+    <div className="space-y-7">
+      <PageHeader
+        eyebrow="Configuración"
+        title="Administración del sistema"
+        description="Herramientas administrativas exclusivas del rol ADMIN: operación, usuarios y asignaciones."
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {adminModules.map((mod) => {
           const Icon = mod.icon;
           return (
             <Link
               key={mod.id}
               href={mod.href}
-              className="card p-4 hover:border-accent/30 transition-colors"
+              className="group border border-border rounded-lg bg-surface p-4 transition-colors hover:border-brand/40 hover:bg-surface-hover"
             >
-              <div className="flex items-center gap-3 mb-2">
-                <Icon className="w-5 h-5 text-accent" />
-                <h3 className="text-text font-medium text-[13px]">{mod.name}</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-md bg-brand-soft flex items-center justify-center shrink-0">
+                  <Icon size={17} className="text-brand" strokeWidth={1.75} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-[14px] font-medium text-text group-hover:text-brand transition-colors">{mod.name}</h3>
+                  <p className="text-[12px] text-muted mt-0.5 leading-snug">{mod.description}</p>
+                </div>
+                <ArrowRight size={15} className="text-muted group-hover:text-brand transition-all group-hover:translate-x-0.5 shrink-0" />
               </div>
-              <p className="text-muted text-xs">{mod.description}</p>
             </Link>
           );
         })}

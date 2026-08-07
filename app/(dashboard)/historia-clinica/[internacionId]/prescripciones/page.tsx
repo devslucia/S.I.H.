@@ -65,6 +65,7 @@ export default function PrescripcionesPage() {
   const [form, setForm] = useState(initialForm);
   const [saving, setSaving] = useState(false);
   const [alerta, setAlerta] = useState<{ droga: string; fechaAlta: string } | null>(null);
+  const [batchError, setBatchError] = useState<string | null>(null);
 
   const fetchPrescripciones = async () => {
     setLoading(true);
@@ -102,13 +103,14 @@ export default function PrescripcionesPage() {
           items?: { ok: boolean; nombre: string; error?: string }[];
         };
         if (data.ok) {
+          setBatchError(null);
           setModalOpen(false);
           setForm(initialForm);
           fetchPrescripciones();
         } else {
           const fallidos = data.items?.filter((i) => !i.ok) || [];
           const mensajes = fallidos.map((i) => `${i.nombre}: ${i.error}`).join("\n");
-          alert(`Algunos ítems no se guardaron:\n${mensajes}`);
+          setBatchError(`Algunos ítems no se guardaron: ${mensajes}`);
         }
       }
     } catch (err) {
@@ -207,6 +209,12 @@ export default function PrescripcionesPage() {
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nueva Prescripción" size="xl">
         <div className="space-y-4">
+          {batchError && (
+            <div className="flex items-start gap-2 text-[13px] text-error border border-error/30 bg-error/10 rounded-md px-3 py-2">
+              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+              <span className="whitespace-pre-line">{batchError}</span>
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-text-secondary">Tipo</label>
             <select name="tipo" value={form.tipo} onChange={handleChange} className="select-field">

@@ -91,7 +91,7 @@ export function ExamenFisicoForm({ value, onChange, patientSex, disabled }: Exam
                 onClick={() => toggle(sec.id)}
                 disabled={disabled}
                 className={`w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors ${
-                  hasInfo ? "bg-accent/5 hover:bg-accent/10" : "hover:bg-border/30"
+                  hasInfo ? "bg-brand/5 hover:bg-brand/10" : "hover:bg-border/30"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -102,7 +102,7 @@ export function ExamenFisicoForm({ value, onChange, patientSex, disabled }: Exam
                   )}
                   <span
                     className={`text-sm font-medium ${
-                      hasInfo ? "text-accent" : "text-text-secondary"
+                      hasInfo ? "text-brand" : "text-text-secondary"
                     }`}
                   >
                     {sec.label}

@@ -28,7 +28,7 @@ function Tabs({ tabs, activeTab, onChange }: TabsProps) {
             className={cn(
               "flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium transition-colors border-b-2 -mb-px whitespace-nowrap",
               isActive
-                ? "border-accent text-accent"
+                ? "border-brand text-brand"
                 : "border-transparent text-muted hover:text-text hover:border-border-hover"
             )}
           >

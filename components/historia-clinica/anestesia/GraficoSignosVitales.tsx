@@ -232,7 +232,7 @@ function GraficoSignosVitales({
         <div className="rounded-xl border border-border bg-surface p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Clock size={16} className="text-accent" />
+              <Clock size={16} className="text-brand" />
               <h4 className="text-sm font-medium text-text-secondary">
                 Registro rápido — Minuto {minutoActual}
               </h4>
@@ -242,7 +242,7 @@ function GraficoSignosVitales({
                 <Plus size={14} /> Evento
               </Button>
               {showEventos && (
-                <div className="absolute z-50 right-0 top-full mt-1 bg-surface border border-border rounded-lg shadow-lg p-2 w-56">
+                <div className="absolute z-50 right-0 top-full mt-1 bg-surface border border-border rounded-lg shadow-card p-2 w-56">
                   {EVENTOS_PREDEFINIDOS.map((ev) => (
                     <button
                       key={ev.key}
@@ -259,9 +259,9 @@ function GraficoSignosVitales({
                       value={eventoCustom}
                       onChange={(e) => setEventoCustom(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleAddEventoCustom()}
-                      className="flex-1 px-2 py-1 text-xs bg-background border border-border rounded text-text focus:outline-none focus:border-accent"
+                      className="flex-1 px-2 py-1 text-xs bg-background border border-border rounded text-text focus:outline-none focus:border-brand"
                     />
-                    <button onClick={handleAddEventoCustom} className="text-xs text-accent px-2">+</button>
+                    <button onClick={handleAddEventoCustom} className="text-xs text-brand px-2">+</button>
                   </div>
                 </div>
               )}
@@ -280,7 +280,7 @@ function GraficoSignosVitales({
                   step="any"
                   value={form[key as keyof typeof form]}
                   onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
-                  className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-text focus:outline-none focus:border-accent"
+                  className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-text focus:outline-none focus:border-brand"
                 />
               </div>
             ))}

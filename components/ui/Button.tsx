@@ -48,7 +48,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         className={cn(
           "inline-flex items-center justify-center font-medium",
-          "focus:outline-none focus:ring-2 focus:ring-accent/30 focus:ring-offset-1 focus:ring-offset-background",
+          "focus:outline-none focus:ring-2 focus:ring-brand/30 focus:ring-offset-1 focus:ring-offset-background",
           "disabled:pointer-events-none disabled:opacity-40",
           "active:scale-[0.97]",
           "min-h-[44px] md:min-h-0",

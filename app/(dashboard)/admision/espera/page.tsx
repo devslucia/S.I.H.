@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Clock, Bed } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
+import { Clock, Bed, ChevronRight } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { OpsStat } from "@/components/ui/OpsStat";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDateTime } from "@/lib/utils";
 
 interface Internacion {
@@ -39,26 +41,29 @@ export default function EsperaCamaPage() {
   useEffect(() => { fetchEspera(); }, [fetchEspera]);
 
   return (
-    <div className="space-y-6">
-      <button onClick={() => router.back()} className="flex items-center gap-2 text-muted hover:text-white transition-colors text-sm">
-        <ArrowLeft size={16} /> Volver
-      </button>
+    <div className="space-y-7">
+      <PageHeader
+        eyebrow="Admisión · Espera de cama"
+        title="Pacientes esperando cama"
+        description="Internaciones activas sin cama asignada. Asigná una cama desde la ficha del paciente."
+      />
 
-      <div className="flex items-center gap-3">
-        <Clock className="w-7 h-7 text-amber" />
-        <div>
-          <h2 className="text-xl font-medium text-white">Espera de Cama</h2>
-          <p className="text-muted text-sm">{internaciones.length} paciente(s) esperando asignación de cama</p>
-        </div>
-      </div>
+      <section className="grid grid-cols-2 gap-5">
+        <OpsStat label="En espera" value={internaciones.length} sub="Sin cama asignada" tone={internaciones.length > 0 ? "warning" : "success"} />
+        <OpsStat label="Urgencias" value={internaciones.filter((i) => i.tipoIngreso === "URGENCIA").length} sub="Requieren prioridad" tone="neutral" />
+      </section>
 
       {loading ? (
-        <p className="text-muted text-sm">Cargando...</p>
+        <div className="space-y-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-lg h-[72px] skeleton" />
+          ))}
+        </div>
       ) : internaciones.length === 0 ? (
-        <div className="card p-8 text-center">
-          <Bed size={32} className="mx-auto text-accent mb-2" />
-          <p className="text-white font-medium">No hay pacientes esperando cama</p>
-          <p className="text-muted text-sm mt-1">Todos los pacientes internados tienen cama asignada.</p>
+        <div className="border border-dashed border-border rounded-lg py-12 text-center">
+          <Bed size={28} className="mx-auto text-muted mb-2" />
+          <p className="text-[13px] text-text">No hay pacientes esperando cama</p>
+          <p className="text-[12px] text-muted mt-1">Todos los pacientes internados tienen cama asignada.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -66,29 +71,28 @@ export default function EsperaCamaPage() {
             <div
               key={i.id}
               onClick={() => router.push(`/admision/${i.paciente.id}`)}
-              className="card p-4 flex items-center justify-between cursor-pointer hover:border-accent/30 transition-colors"
+              className="group flex items-center gap-4 border border-border rounded-lg bg-surface px-4 py-3 cursor-pointer transition-colors hover:bg-surface-hover hover:border-border-hover"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center text-warning">
-                  <Clock size={18} />
-                </div>
-                <div>
-                  <p className="text-white font-medium">{i.paciente.apellido}, {i.paciente.nombre}</p>
-                  <p className="text-muted text-xs">
-                    DNI: {i.paciente.dni} | HC #{i.numero} | Ingreso: {formatDateTime(i.fechaIngreso)}
-                  </p>
-                  {i.motivoIngreso && <p className="text-muted text-xs">Motivo: {i.motivoIngreso}</p>}
-                  {i.tipoIngreso && <p className="text-muted text-xs">Tipo: {i.tipoIngreso}</p>}
-                  {i.medicosTratantesInternacion && i.medicosTratantesInternacion.length > 0 && (
-                    <p className="text-muted text-xs">
-                      {"Tratante" + (i.medicosTratantesInternacion.length > 1 ? "s" : "")}:{" "}
-                      {i.medicosTratantesInternacion.map((mt) => mt.medico.nombre).join(", ")}
-                    </p>
-                  )}
-                  {i.obraSocial && <p className="text-muted text-xs">OS: {i.obraSocial.nombre}</p>}
-                </div>
+              <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center text-warning shrink-0">
+                <Clock size={17} strokeWidth={1.75} />
               </div>
-              <Badge variant="warning">Sin cama</Badge>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <p className="font-serif text-[15px] text-text truncate">{i.paciente.apellido}, {i.paciente.nombre}</p>
+                  <StatusBadge tone="warning" label="Sin cama" dot />
+                </div>
+                <p className="text-[12px] font-mono text-muted mt-1 truncate">
+                  DNI {i.paciente.dni} · HC #{i.numero} · Ingreso {formatDateTime(i.fechaIngreso)}
+                  {i.tipoIngreso && <span className="text-muted/80"> · {i.tipoIngreso}</span>}
+                </p>
+                {i.motivoIngreso && <p className="text-[12px] text-muted/80 mt-0.5 truncate">Motivo: {i.motivoIngreso}</p>}
+                {i.obraSocial && (
+                  <p className="text-[12px] text-muted/80 mt-0.5 truncate">
+                    OS · <span className="font-mono">{i.obraSocial.sigla || i.obraSocial.nombre}</span>
+                  </p>
+                )}
+              </div>
+              <ChevronRight size={16} className="text-muted shrink-0 group-hover:text-brand transition-colors" />
             </div>
           ))}
         </div>

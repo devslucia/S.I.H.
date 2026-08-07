@@ -6,11 +6,11 @@ import { useToast } from "@/components/ui/Toast";
 
 const MAX_DESCRIPCION = 10000;
 
-const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent";
+const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:border-brand";
 const labelClass = "text-xs text-muted font-medium mb-1 block";
 const btnClass = "px-3 py-1.5 text-xs rounded font-medium transition-colors inline-flex items-center gap-1";
-const btnTeal = `${btnClass} bg-accent text-black hover:bg-accent/90`;
-const btnOutline = `${btnClass} border border-border text-muted hover:text-foreground hover:border-muted`;
+const btnTeal = `${btnClass} bg-accent text-black hover:bg-brand/90`;
+const btnOutline = `${btnClass} border border-border text-muted hover:text-text hover:border-muted`;
 const btnDanger = `${btnClass} border border-error/40 text-error hover:bg-error/10`;
 const btnDangerSolid = `${btnClass} bg-error text-white hover:bg-error/90`;
 
@@ -167,7 +167,7 @@ export function PlantillasManager() {
     return (
       <div className="space-y-4 max-w-2xl">
         <div className="flex items-center gap-2">
-          <BookMarked size={14} className="text-accent" />
+          <BookMarked size={14} className="text-brand" />
           <p className="text-xs text-muted">
             {form.id ? "Editar plantilla" : form.importada ? "Plantilla importada — revisá y editá antes de guardar" : "Nueva plantilla"}
           </p>
@@ -233,7 +233,7 @@ export function PlantillasManager() {
           if (f) procesarArchivo(f);
         }}
         className={`rounded-xl border-2 border-dashed p-5 text-center text-xs transition-colors ${
-          dragActive ? "border-accent bg-accent/5" : "border-border text-muted"
+          dragActive ? "border-brand bg-brand/5" : "border-border text-muted"
         }`}
       >
         {importando ? (

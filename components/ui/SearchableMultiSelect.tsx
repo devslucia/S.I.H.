@@ -83,14 +83,14 @@ export function SearchableMultiSelect({
           {selectedItems.map((item) => (
             <span
               key={item.id}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-accent/15 text-accent border border-accent/20"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-brand/15 text-brand border border-brand/20"
             >
               {item.label}
-              {item.sublabel && <span className="text-accent/60">({item.sublabel})</span>}
+              {item.sublabel && <span className="text-brand/60">({item.sublabel})</span>}
               <button
                 type="button"
                 onClick={() => remove(item.id)}
-                className="ml-0.5 hover:text-accent/80 transition-colors"
+                className="ml-0.5 hover:text-brand/80 transition-colors"
               >
                 <X size={12} />
               </button>
@@ -111,7 +111,7 @@ export function SearchableMultiSelect({
           }}
           onFocus={() => setOpen(true)}
           placeholder={placeholder}
-          className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm text-text placeholder-muted transition-colors focus:outline-none focus:border-accent"
+          className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm text-text placeholder-muted transition-colors focus:outline-none focus:border-brand"
         />
       </div>
 
@@ -127,7 +127,7 @@ export function SearchableMultiSelect({
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2 text-left text-sm border-b border-border last:border-0 transition-colors",
                   isSelected
-                    ? "bg-accent/10 text-accent"
+                    ? "bg-brand/10 text-brand"
                     : "hover:bg-surface-hover text-text"
                 )}
               >

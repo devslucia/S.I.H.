@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { Plus, Trash2, Printer } from "lucide-react";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
+import { Modal } from "@/components/ui/Modal";
 import { formatDateTime, formatUserName } from "@/lib/utils";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
 import type { CirugiaFormData, CirugiaFull, UpdateField } from "./types";
 
-const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent";
-const labelClass = "text-xs text-muted font-medium mb-1 block";
-const btnClass = "px-4 py-2 text-sm rounded font-medium transition-colors";
-const btnTeal = `${btnClass} bg-accent text-black hover:bg-accent/90`;
-const btnOutline = `${btnClass} border border-border text-muted hover:text-foreground hover:border-muted`;
+const inputClass = "input-field text-[13px]";
+const labelClass = "text-[11px] font-mono uppercase tracking-widest text-muted mb-1 block";
+const btnTeal = "btn-primary text-[13px]";
+const btnOutline = "btn-secondary text-[13px]";
 
 const SUB_TABS = ["Parte Quirúrgico", "Evolución Post Int.", "Indicaciones Postop."];
 
@@ -68,7 +68,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
         {SUB_TABS.map((st, i) => (
           <button key={i} onClick={() => setSubTab(i)}
             className={`px-4 py-2 text-xs font-medium rounded-t transition-colors ${
-              subTab === i ? "bg-surface text-accent border border-border border-b-0" : "text-muted hover:text-foreground"
+              subTab === i ? "bg-surface text-brand border border-border border-b-0" : "text-muted hover:text-text"
             }`}
           >{st}</button>
         ))}
@@ -79,7 +79,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
         <div className="space-y-6">
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Parte Quirúrgico</h3>
+              <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted">Parte Quirúrgico</h3>
               <div className="flex gap-2">
                 {!isReadOnly && isInstrumentador && (
                   <button onClick={() => setShowPracticaModal(true)} className={`${btnTeal} flex items-center gap-1 text-xs`}>
@@ -114,14 +114,14 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
           </div>
 
           <div className="card p-5">
-            <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Operación y Hallazgos</h3>
+            <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted mb-4">Operación y Hallazgos</h3>
             <VoiceTextarea value={formData?.hallazgos || ""} onChange={(v) => update("hallazgos", v)}
               disabled={disabledHallazgos} rows={8} placeholder="Narrativa completa de la cirugía..." />
           </div>
 
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Implantes</h3>
+              <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted">Implantes</h3>
               {!isReadOnly && isInstrumentador && (
                 <button onClick={() => setShowImplanteModal(true)} className={`${btnTeal} flex items-center gap-1 text-xs`}>
                   <Plus size={14} /> Agregar implante
@@ -153,7 +153,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
       {/* Sub-tab B: Evolución Post Int. */}
       {subTab === 1 && (
         <div className="card p-5">
-          <h3 className="text-sm font-medium text-accent mb-4 uppercase tracking-wide">Evolución Postoperatoria Inmediata</h3>
+          <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted mb-4">Evolución Postoperatoria Inmediata</h3>
           <VoiceTextarea value={formData?.evolucionPostInt || ""} onChange={(v) => update("evolucionPostInt", v)}
             disabled={disabledEvolucion} rows={12}
             placeholder={`[${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}]\nEscriba la evolución aquí...`} />
@@ -164,7 +164,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
       {subTab === 2 && (
         <div className="card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Indicaciones Postoperatorias</h3>
+            <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted">Indicaciones Postoperatorias</h3>
             {!isReadOnly && isMedico && (
               <button onClick={() => {
                 const arr = formData?.indicacionesPostoperatorias || [];
@@ -189,19 +189,19 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
                   <tr key={idx} className="border-t border-border hover:bg-surface-hover transition-colors">
                     <td className="px-3 py-1"><input type="text" value={ind.indicacion} disabled={disabledIndicaciones}
                       onChange={e => { const arr = [...formData.indicacionesPostoperatorias]; arr[idx].indicacion = e.target.value; update("indicacionesPostoperatorias", arr); }}
-                      className="bg-transparent border-none text-sm text-foreground w-full focus:outline-none" /></td>
+                      className="bg-transparent border-none text-sm text-text w-full focus:outline-none" /></td>
                     <td className="px-3 py-1"><input type="text" value={ind.dosis} disabled={disabledIndicaciones}
                       onChange={e => { const arr = [...formData.indicacionesPostoperatorias]; arr[idx].dosis = e.target.value; update("indicacionesPostoperatorias", arr); }}
-                      className="bg-transparent border-none text-sm text-foreground w-full focus:outline-none" /></td>
+                      className="bg-transparent border-none text-sm text-text w-full focus:outline-none" /></td>
                     <td className="px-3 py-1"><input type="text" value={ind.frecuencia} disabled={disabledIndicaciones}
                       onChange={e => { const arr = [...formData.indicacionesPostoperatorias]; arr[idx].frecuencia = e.target.value; update("indicacionesPostoperatorias", arr); }}
-                      className="bg-transparent border-none text-sm text-foreground w-full focus:outline-none" /></td>
+                      className="bg-transparent border-none text-sm text-text w-full focus:outline-none" /></td>
                     <td className="px-3 py-1"><input type="text" value={ind.via} disabled={disabledIndicaciones}
                       onChange={e => { const arr = [...formData.indicacionesPostoperatorias]; arr[idx].via = e.target.value; update("indicacionesPostoperatorias", arr); }}
-                      className="bg-transparent border-none text-sm text-foreground w-full focus:outline-none" /></td>
+                      className="bg-transparent border-none text-sm text-text w-full focus:outline-none" /></td>
                     <td className="px-3 py-1"><input type="text" value={ind.observaciones} disabled={disabledIndicaciones}
                       onChange={e => { const arr = [...formData.indicacionesPostoperatorias]; arr[idx].observaciones = e.target.value; update("indicacionesPostoperatorias", arr); }}
-                      className="bg-transparent border-none text-sm text-foreground w-full focus:outline-none" /></td>
+                      className="bg-transparent border-none text-sm text-text w-full focus:outline-none" /></td>
                     {!disabledIndicaciones && <td className="px-3 py-1"><button onClick={() => {
                       const arr = formData.indicacionesPostoperatorias.filter((_, i) => i !== idx);
                       update("indicacionesPostoperatorias", arr);
@@ -215,54 +215,38 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
       )}
 
       {/* Modal: Agregar implante */}
-      {showImplanteModal && (
-        <div className="fixed inset-0 z-60 bg-black/60 flex items-center justify-center" onClick={() => setShowImplanteModal(false)}>
-          <div className="bg-surface border border-border rounded-lg p-5 w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-medium text-foreground">Agregar implante</h3>
-              <button onClick={() => setShowImplanteModal(false)} className="text-muted hover:text-foreground">X</button>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className={labelClass}>Código</label><input type="text" value={implanteForm.codigo} onChange={e => setImplanteForm({ ...implanteForm, codigo: e.target.value })} className={inputClass} /></div>
-              <div><label className={labelClass}>Nombre</label><input type="text" value={implanteForm.nombre} onChange={e => setImplanteForm({ ...implanteForm, nombre: e.target.value })} className={inputClass} /></div>
-              <div><label className={labelClass}>Lote</label><input type="text" value={implanteForm.lote} onChange={e => setImplanteForm({ ...implanteForm, lote: e.target.value })} className={inputClass} /></div>
-              <div><label className={labelClass}>Modelo</label><input type="text" value={implanteForm.modelo} onChange={e => setImplanteForm({ ...implanteForm, modelo: e.target.value })} className={inputClass} /></div>
-              <div><label className={labelClass}>Lado</label>
-                <select value={implanteForm.lado} onChange={e => setImplanteForm({ ...implanteForm, lado: e.target.value })} className={inputClass}>
-                  <option value="">Seleccionar</option><option value="Izquierdo">Izquierdo</option><option value="Derecho">Derecho</option><option value="Bilateral">Bilateral</option>
-                </select></div>
-            </div>
-            <div className="flex justify-end gap-3 mt-4">
-              <button onClick={() => setShowImplanteModal(false)} className={btnOutline}>Cancelar</button>
-              <button onClick={addImplante} className={btnTeal}>Agregar</button>
-            </div>
-          </div>
+      <Modal open={showImplanteModal} onClose={() => setShowImplanteModal(false)} title="Agregar implante" size="md">
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className={labelClass}>Código</label><input type="text" value={implanteForm.codigo} onChange={e => setImplanteForm({ ...implanteForm, codigo: e.target.value })} className={inputClass} /></div>
+          <div><label className={labelClass}>Nombre</label><input type="text" value={implanteForm.nombre} onChange={e => setImplanteForm({ ...implanteForm, nombre: e.target.value })} className={inputClass} /></div>
+          <div><label className={labelClass}>Lote</label><input type="text" value={implanteForm.lote} onChange={e => setImplanteForm({ ...implanteForm, lote: e.target.value })} className={inputClass} /></div>
+          <div><label className={labelClass}>Modelo</label><input type="text" value={implanteForm.modelo} onChange={e => setImplanteForm({ ...implanteForm, modelo: e.target.value })} className={inputClass} /></div>
+          <div><label className={labelClass}>Lado</label>
+            <select value={implanteForm.lado} onChange={e => setImplanteForm({ ...implanteForm, lado: e.target.value })} className={inputClass}>
+              <option value="">Seleccionar</option><option value="Izquierdo">Izquierdo</option><option value="Derecho">Derecho</option><option value="Bilateral">Bilateral</option>
+            </select></div>
         </div>
-      )}
+        <div className="flex justify-end gap-3 mt-4">
+          <button onClick={() => setShowImplanteModal(false)} className={btnOutline}>Cancelar</button>
+          <button onClick={addImplante} className={btnTeal}>Agregar</button>
+        </div>
+      </Modal>
 
       {/* Modal: Agregar práctica */}
-      {showPracticaModal && (
-        <div className="fixed inset-0 z-60 bg-black/60 flex items-center justify-center" onClick={() => setShowPracticaModal(false)}>
-          <div className="bg-surface border border-border rounded-lg p-5 w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-medium text-foreground">Agregar práctica</h3>
-              <button onClick={() => setShowPracticaModal(false)} className="text-muted hover:text-foreground">X</button>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className={labelClass}>Fecha</label><input type="date" value={practicaForm.fecha} onChange={e => setPracticaForm({ ...practicaForm, fecha: e.target.value })} className={inputClass} /></div>
-              <div><label className={labelClass}>Hora</label><input type="time" value={practicaForm.hora} onChange={e => setPracticaForm({ ...practicaForm, hora: e.target.value })} className={inputClass} /></div>
-              <div className="col-span-2"><label className={labelClass}>Práctica</label><input type="text" value={practicaForm.practica} onChange={e => setPracticaForm({ ...practicaForm, practica: e.target.value })} className={inputClass} /></div>
-              <div><label className={labelClass}>Laboratorio</label><input type="text" value={practicaForm.laboratorio} onChange={e => setPracticaForm({ ...practicaForm, laboratorio: e.target.value })} className={inputClass} /></div>
-              <div><label className={labelClass}>Cargó</label><input type="text" value={practicaForm.cargoPor} onChange={e => setPracticaForm({ ...practicaForm, cargoPor: e.target.value })} className={inputClass} /></div>
-              <div><label className={labelClass}>Acto quirúrgico</label><input type="text" value={practicaForm.actoQuirurgico} onChange={e => setPracticaForm({ ...practicaForm, actoQuirurgico: e.target.value })} className={inputClass} /></div>
-            </div>
-            <div className="flex justify-end gap-3 mt-4">
-              <button onClick={() => setShowPracticaModal(false)} className={btnOutline}>Cancelar</button>
-              <button onClick={addPractica} className={btnTeal}>Agregar</button>
-            </div>
-          </div>
+      <Modal open={showPracticaModal} onClose={() => setShowPracticaModal(false)} title="Agregar práctica" size="md">
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className={labelClass}>Fecha</label><input type="date" value={practicaForm.fecha} onChange={e => setPracticaForm({ ...practicaForm, fecha: e.target.value })} className={inputClass} /></div>
+          <div><label className={labelClass}>Hora</label><input type="time" value={practicaForm.hora} onChange={e => setPracticaForm({ ...practicaForm, hora: e.target.value })} className={inputClass} /></div>
+          <div className="col-span-2"><label className={labelClass}>Práctica</label><input type="text" value={practicaForm.practica} onChange={e => setPracticaForm({ ...practicaForm, practica: e.target.value })} className={inputClass} /></div>
+          <div><label className={labelClass}>Laboratorio</label><input type="text" value={practicaForm.laboratorio} onChange={e => setPracticaForm({ ...practicaForm, laboratorio: e.target.value })} className={inputClass} /></div>
+          <div><label className={labelClass}>Cargó</label><input type="text" value={practicaForm.cargoPor} onChange={e => setPracticaForm({ ...practicaForm, cargoPor: e.target.value })} className={inputClass} /></div>
+          <div><label className={labelClass}>Acto quirúrgico</label><input type="text" value={practicaForm.actoQuirurgico} onChange={e => setPracticaForm({ ...practicaForm, actoQuirurgico: e.target.value })} className={inputClass} /></div>
         </div>
-      )}
+        <div className="flex justify-end gap-3 mt-4">
+          <button onClick={() => setShowPracticaModal(false)} className={btnOutline}>Cancelar</button>
+          <button onClick={addPractica} className={btnTeal}>Agregar</button>
+        </div>
+      </Modal>
     </div>
   );
 }

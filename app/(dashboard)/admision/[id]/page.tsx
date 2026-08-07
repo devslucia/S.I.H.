@@ -2,13 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {ArrowLeft, Plus, AlertTriangle, Calendar, Activity, Trash2, Edit} from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { ArrowLeft, Plus, AlertTriangle, Calendar, Trash2, Edit } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
 import { SearchableMultiSelect } from "@/components/ui/SearchableMultiSelect";
-import {formatDateTime} from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 
 interface Alergia {
   id: string;
@@ -48,21 +47,24 @@ interface Cama { id: string; numero: string; estado: string; sector: { nombre: s
 interface ObraSocial { id: string; nombre: string; sigla: string }
 interface Medico { id: string; nombre: string; matricula?: string | null }
 
-const estadoBadge: Record<string, { variant: "success" | "warning" | "error" | "info" | "default"; label: string }> = {
-  ACTIVA: { variant: "success", label: "Activa" },
-  ALTA_MEDICA: { variant: "info", label: "Alta Médica" },
-  FACTURADA: { variant: "default", label: "Facturada" },
-  FALLECIDO: { variant: "error", label: "Fallecido" },
+const estadoBadge: Record<string, { tone: "success" | "warning" | "info" | "danger" | "neutral"; label: string }> = {
+  ACTIVA: { tone: "success", label: "Activa" },
+  ALTA_MEDICA: { tone: "info", label: "Alta médica" },
+  FACTURADA: { tone: "neutral", label: "Facturada" },
+  FALLECIDO: { tone: "danger", label: "Fallecido" },
 };
 
-const severidadColors: Record<string, string> = {
-  LEVE: "bg-success/10 text-success border border-success/20",
-  MODERADA: "bg-warning/10 text-warning border border-warning/20",
-  SEVERA: "bg-error/10 text-error border border-error/20",
-  ANAFILAXIA: "bg-error/20 text-error border border-error/30",
+const severidadConfig: Record<string, { tone: "success" | "warning" | "danger" | "neutral"; label: string }> = {
+  LEVE: { tone: "success", label: "Leve" },
+  MODERADA: { tone: "warning", label: "Moderada" },
+  SEVERA: { tone: "danger", label: "Severa" },
+  ANAFILAXIA: { tone: "danger", label: "Anafilaxia" },
 };
 
 const initialAlergiaForm = { sustancia: "", severidad: "MODERADA", observacion: "" };
+
+const field = "flex flex-col gap-1";
+const label = "text-[11px] font-mono uppercase tracking-widest text-muted";
 
 export default function PacienteDetailPage() {
   const params = useParams();
@@ -82,6 +84,7 @@ export default function PacienteDetailPage() {
   const [alergiaForm, setAlergiaForm] = useState(initialAlergiaForm);
   const [editingAlergia, setEditingAlergia] = useState<string | null>(null);
   const [savingAlergia, setSavingAlergia] = useState(false);
+  const [alergiaAEliminar, setAlergiaAEliminar] = useState<Alergia | null>(null);
 
   const fetchPaciente = useCallback(async () => {
     setLoading(true);
@@ -169,10 +172,11 @@ export default function PacienteDetailPage() {
     finally { setSavingAlergia(false); }
   };
 
-  const handleDeleteAlergia = async (alergiaId: string) => {
-    if (!confirm("¿Eliminar esta alergia?")) return;
+  const confirmarEliminarAlergia = async () => {
+    if (!alergiaAEliminar) return;
+    setAlergiaAEliminar(null);
     try {
-      const res = await fetch(`/api/pacientes/${params.id}/alergias/${alergiaId}`, { method: "DELETE" });
+      const res = await fetch(`/api/pacientes/${params.id}/alergias/${alergiaAEliminar.id}`, { method: "DELETE" });
       if (res.ok) fetchPaciente();
     } catch (err) { console.error(err); }
   };
@@ -183,205 +187,245 @@ export default function PacienteDetailPage() {
     setAlergiaModalOpen(true);
   };
 
-  if (loading) return <p className="text-muted text-sm">Cargando paciente...</p>;
-  if (!paciente) return <p className="text-muted text-sm">Paciente no encontrado.</p>;
+  if (loading) {
+    return <div className="space-y-2"><div className="skeleton h-24" /><div className="skeleton h-48" /></div>;
+  }
+  if (!paciente) return <p className="text-[13px] text-error p-6">Paciente no encontrado.</p>;
 
   const activeInternacion = paciente.internaciones.find((i) => i.estado === "ACTIVA");
   const camasLibres = camas.filter((c) => c.estado === "LIBRE");
+  const estadoCivil = paciente.estadoCivil === "SOLTERO" ? "Soltero" : paciente.estadoCivil === "CASADO" ? "Casado" : paciente.estadoCivil === "DIVORCIADO" ? "Divorciado" : paciente.estadoCivil === "VIUDO" ? "Viudo" : paciente.estadoCivil === "UNION_CONVIVENCIAL" ? "Unión de hecho" : null;
 
   return (
-    <div className="space-y-6">
-      <button onClick={() => router.back()} className="flex items-center gap-2 text-muted hover:text-text transition-colors text-sm">
-        <ArrowLeft size={16} /> Volver
-      </button>
-
-      {/* Patient Card */}
-      <div className="card p-5">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center text-accent font-medium text-xl">
-              {paciente.nombre[0]}{paciente.apellido[0]}
-            </div>
-            <div>
-              <h2 className="text-xl font-medium text-text">{paciente.apellido}, {paciente.nombre}</h2>
-              <p className="text-muted text-sm">
-                DNI: {paciente.dni} | {paciente.sexo} | {paciente.telefono || "—"}
-              </p>
-              <p className="text-muted text-xs">
-                Est. Civil: { paciente.estadoCivil === "SOLTERO" ? "Soltero" : paciente.estadoCivil === "CASADO" ? "Casado" : paciente.estadoCivil === "DIVORCIADO" ? "Divorciado" : paciente.estadoCivil === "VIUDO" ? "Viudo" : paciente.estadoCivil === "UNION_CONVIVENCIAL" ? "Unión de hecho" : "—"}{paciente.domicilio ? ` · ${paciente.domicilio}${paciente.localidad ? `, ${paciente.localidad}` : ""}` : ""}
-              </p>
-            </div>
-          </div>
-          {paciente.alergias && paciente.alergias.length > 0 && (
-            <Badge variant="error" className="flex items-center gap-1">
-              <AlertTriangle size={12} /> {paciente.alergias.length} alergia(s)
-            </Badge>
-          )}
-        </div>
+    <div className="space-y-7">
+      <div className="flex items-start gap-3">
+        <button onClick={() => router.back()} className="p-1.5 rounded-md border border-border bg-surface text-muted hover:text-text hover:border-border-hover transition-colors mt-1">
+          <ArrowLeft size={15} />
+        </button>
+        <PageHeader
+          eyebrow="Admisión · Paciente"
+          title={`${paciente.apellido}, ${paciente.nombre}`}
+          description={
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="font-mono">DNI {paciente.dni}</span>
+              <span>{paciente.sexo}</span>
+              {paciente.telefono && <span className="font-mono">{paciente.telefono}</span>}
+              {estadoCivil && <span>{estadoCivil}</span>}
+              {paciente.domicilio && <span>{paciente.domicilio}{paciente.localidad ? `, ${paciente.localidad}` : ""}</span>}
+            </span>
+          }
+          actions={
+            <button onClick={() => setNuevaInternacionOpen(true)} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
+              <Plus size={15} /> Nueva internación
+            </button>
+          }
+        />
       </div>
 
-      {/* Alergias Section */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-accent uppercase tracking-wide">Alergias</h3>
-          <Button size="sm" onClick={() => { setEditingAlergia(null); setAlergiaForm(initialAlergiaForm); setAlergiaModalOpen(true); }}>
-            <Plus size={14} /> Agregar
-          </Button>
+      {!!paciente.alergias?.length && (
+        <div className="flex items-center gap-2 text-[13px] text-error border border-error/25 bg-error/10 rounded-md px-3 py-2">
+          <AlertTriangle size={14} /> {paciente.alergias.length} alergia(s) registrada(s)
+        </div>
+      )}
+
+      <section className="border border-border rounded-lg bg-surface p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-mono uppercase tracking-widest text-muted">Alergias</p>
+          <button
+            onClick={() => { setEditingAlergia(null); setAlergiaForm(initialAlergiaForm); setAlergiaModalOpen(true); }}
+            className="btn-secondary text-[12px] inline-flex items-center gap-1.5"
+          >
+            <Plus size={13} /> Agregar
+          </button>
         </div>
         {!paciente.alergias || paciente.alergias.length === 0 ? (
-          <p className="text-muted text-sm">Sin alergias registradas.</p>
+          <p className="text-[13px] text-muted">Sin alergias registradas.</p>
         ) : (
           <div className="space-y-2">
-            {paciente.alergias.map((a) => (
-              <div key={a.id} className="flex items-center justify-between bg-background rounded-lg px-4 py-2">
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${severidadColors[a.severidad || "MODERADA"]}`}>
-                    {a.severidad || "—"}
-                  </span>
-                  <span className="text-text text-sm font-medium">{a.sustancia}</span>
-                  {a.observacion && <span className="text-muted text-xs">— {a.observacion}</span>}
+            {paciente.alergias.map((a) => {
+              const sev = severidadConfig[a.severidad || "MODERADA"] || { tone: "neutral" as const, label: a.severidad || "—" };
+              return (
+                <div key={a.id} className="flex items-center justify-between border border-border/60 rounded-md bg-background/40 px-3 py-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <StatusBadge tone={sev.tone} label={sev.label} />
+                    <span className="text-[13px] text-text font-medium truncate">{a.sustancia}</span>
+                    {a.observacion && <span className="text-[12px] text-muted truncate hidden sm:inline">— {a.observacion}</span>}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => openEditAlergia(a)} className="p-1.5 rounded-md text-muted hover:text-brand hover:bg-brand-soft transition-colors" title="Editar">
+                      <Edit size={14} />
+                    </button>
+                    <button onClick={() => setAlergiaAEliminar(a)} className="p-1.5 rounded-md text-muted hover:text-error hover:bg-error/10 transition-colors" title="Eliminar">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => openEditAlergia(a)} className="p-1 text-muted hover:text-text transition-colors"><Edit size={14} /></button>
-                  <button onClick={() => handleDeleteAlergia(a.id)} className="p-1 text-muted hover:text-error transition-colors"><Trash2 size={14} /></button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Alergia Modal */}
-      <Modal open={alergiaModalOpen} onClose={() => setAlergiaModalOpen(false)} title={editingAlergia ? "Editar Alergia" : "Nueva Alergia"} size="md">
+      <section className="space-y-3">
+        <p className="text-[11px] font-mono uppercase tracking-widest text-muted">Internaciones</p>
+        {paciente.internaciones.length === 0 ? (
+          <div className="border border-dashed border-border rounded-lg py-12 text-center">
+            <Calendar size={28} className="mx-auto text-muted mb-2" />
+            <p className="text-[13px] text-text">Sin internaciones registradas</p>
+            <p className="text-[12px] text-muted mt-1">Este paciente no tiene internaciones en el sistema.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {paciente.internaciones.map((i) => {
+              const badge = estadoBadge[i.estado] || { tone: "neutral" as const, label: i.estado };
+              return (
+                <div
+                  key={i.id}
+                  onClick={() => router.push(`/historia-clinica/${i.id}`)}
+                  className="group flex items-center gap-4 border border-border rounded-lg bg-surface px-4 py-3 cursor-pointer transition-colors hover:bg-surface-hover hover:border-border-hover"
+                >
+                  <div className="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center text-info shrink-0">
+                    <Calendar size={17} strokeWidth={1.75} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="font-serif text-[15px] text-text truncate">Internación #{i.numero}</p>
+                      <StatusBadge tone={badge.tone} label={badge.label} />
+                    </div>
+                    <p className="text-[12px] font-mono text-muted mt-1 truncate">
+                      Ingreso {formatDateTime(i.fechaIngreso)}
+                      {i.fechaEgreso ? ` · Egreso ${formatDateTime(i.fechaEgreso)}` : ""}
+                      {i.cama && <span className="text-muted/80"> · Cama {i.cama.numero} — {i.cama.sector.nombre}</span>}
+                      {i.obraSocial && <span className="text-muted/80"> · OS {i.obraSocial.sigla || i.obraSocial.nombre}</span>}
+                    </p>
+                    {i.motivoIngreso && <p className="text-[12px] text-muted/80 mt-0.5 truncate">Motivo: {i.motivoIngreso}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {!activeInternacion && (
+        <div className="border border-dashed border-border rounded-lg p-6 text-center">
+          <p className="text-[13px] text-text mb-1">No hay internación activa</p>
+          <p className="text-[12px] text-muted mb-3">Creá una internación para iniciar el seguimiento clínico.</p>
+          <button onClick={() => setNuevaInternacionOpen(true)} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
+            <Plus size={15} /> Nueva internación
+          </button>
+        </div>
+      )}
+
+      <Modal open={alergiaModalOpen} onClose={() => setAlergiaModalOpen(false)} title={editingAlergia ? "Editar alergia" : "Nueva alergia"}>
         <form onSubmit={handleSaveAlergia} className="space-y-4">
-          <Input label="Sustancia" name="sustancia" value={alergiaForm.sustancia} onChange={(e) => setAlergiaForm((p) => ({ ...p, sustancia: e.target.value }))} required />
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-text-secondary">Severidad</label>
-            <select value={alergiaForm.severidad} onChange={(e) => setAlergiaForm((p) => ({ ...p, severidad: e.target.value }))} className="select-field">
+          <div className={field}>
+            <label className={label}>Sustancia *</label>
+            <input className="input-field text-[13px]" name="sustancia" value={alergiaForm.sustancia}
+              onChange={(e) => setAlergiaForm((p) => ({ ...p, sustancia: e.target.value }))} required />
+          </div>
+          <div className={field}>
+            <label className={label}>Severidad</label>
+            <select className="select-field text-[13px]" value={alergiaForm.severidad}
+              onChange={(e) => setAlergiaForm((p) => ({ ...p, severidad: e.target.value }))}>
               <option value="LEVE">Leve</option>
               <option value="MODERADA">Moderada</option>
               <option value="SEVERA">Severa</option>
               <option value="ANAFILAXIA">Anafilaxia</option>
             </select>
           </div>
-          <Input label="Observación" name="observacion" value={alergiaForm.observacion} onChange={(e) => setAlergiaForm((p) => ({ ...p, observacion: e.target.value }))} />
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setAlergiaModalOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={savingAlergia}>{savingAlergia ? "Guardando..." : "Guardar"}</Button>
+          <div className={field}>
+            <label className={label}>Observación</label>
+            <input className="input-field text-[13px]" name="observacion" value={alergiaForm.observacion}
+              onChange={(e) => setAlergiaForm((p) => ({ ...p, observacion: e.target.value }))} />
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <button type="button" onClick={() => setAlergiaModalOpen(false)} className="btn-secondary text-[13px]">Cancelar</button>
+            <button type="submit" disabled={savingAlergia} className="btn-primary text-[13px]">
+              {savingAlergia ? "Guardando…" : "Guardar"}
+            </button>
           </div>
         </form>
       </Modal>
 
-      {/* Internaciones Section */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-text">Internaciones</h3>
-        <Button onClick={() => setNuevaInternacionOpen(true)}>
-          <Plus size={16} /> Nueva Internación
-        </Button>
-      </div>
-
-      <div className="space-y-2">
-        {paciente.internaciones.length === 0 ? (
-          <p className="text-muted text-sm">Sin internaciones registradas.</p>
-        ) : (
-          paciente.internaciones.map((i) => {
-            const badge = estadoBadge[i.estado] || { variant: "default" as const, label: i.estado };
-            return (
-              <div
-                key={i.id}
-                onClick={() => router.push(`/historia-clinica/${i.id}`)}
-                className="card p-4 flex items-center justify-between cursor-pointer hover:border-accent/30 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center text-info">
-                    <Calendar size={18} />
-                  </div>
-                  <div>
-                    <p className="text-text font-medium">Internación #{i.numero}</p>
-                    <p className="text-muted text-xs">
-                      Ingreso: {formatDateTime(i.fechaIngreso)}
-                      {i.fechaEgreso ? ` | Egreso: ${formatDateTime(i.fechaEgreso)}` : ""}
-                    </p>
-                    {i.motivoIngreso && <p className="text-muted text-xs">Motivo: {i.motivoIngreso}</p>}
-                    {i.cama && <p className="text-muted text-xs">Cama: {i.cama.numero} - {i.cama.sector.nombre}</p>}
-                    {i.obraSocial && <p className="text-muted text-xs">OS: {i.obraSocial.nombre}</p>}
-                  </div>
-                </div>
-                <Badge variant={badge.variant}>{badge.label}</Badge>
-              </div>
-            );
-          })
-        )}
-      </div>
-
-      {!activeInternacion && (
-        <div className="card p-5 text-center">
-          <Activity size={32} className="mx-auto text-accent mb-2" />
-          <p className="text-text font-medium mb-1">No hay internación activa</p>
-          <p className="text-muted text-sm mb-3">Este paciente no tiene una internación activa actualmente.</p>
-          <Button onClick={() => setNuevaInternacionOpen(true)}>
-            <Plus size={16} /> Nueva Internación
-          </Button>
+      <Modal open={alergiaAEliminar !== null} onClose={() => setAlergiaAEliminar(null)} title="Eliminar alergia">
+        <div className="space-y-4">
+          <p className="text-[13px] text-muted">
+            Se eliminará la alergia a <strong className="text-text">{alergiaAEliminar?.sustancia}</strong> del paciente.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setAlergiaAEliminar(null)} className="btn-secondary text-[13px]">Cancelar</button>
+            <button onClick={confirmarEliminarAlergia} className="btn-danger text-[13px]">Eliminar</button>
+          </div>
         </div>
-      )}
+      </Modal>
 
-      {/* Nueva Internación Modal */}
-      <Modal open={nuevaInternacionOpen} onClose={() => setNuevaInternacionOpen(false)} title="Nueva Internación" size="xl">
+      <Modal open={nuevaInternacionOpen} onClose={() => setNuevaInternacionOpen(false)} title="Nueva internación" size="xl">
         <form onSubmit={handleCreateInternacion} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-text-secondary">Cama</label>
-              <select value={form.camaId} onChange={(e) => setForm((p) => ({ ...p, camaId: e.target.value }))} className="select-field">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className={field}>
+              <label className={label}>Cama</label>
+              <select className="select-field text-[13px]" value={form.camaId} onChange={(e) => setForm((p) => ({ ...p, camaId: e.target.value }))}>
                 <option value="">Sin cama asignada</option>
                 {camasLibres.map((c) => <option key={c.id} value={c.id}>{c.numero} — {c.sector.nombre}</option>)}
               </select>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-text-secondary">Obra Social</label>
-              <select value={form.obraSocialId} onChange={(e) => setForm((p) => ({ ...p, obraSocialId: e.target.value }))} className="select-field">
+            <div className={field}>
+              <label className={label}>Obra social</label>
+              <select className="select-field text-[13px]" value={form.obraSocialId} onChange={(e) => setForm((p) => ({ ...p, obraSocialId: e.target.value }))}>
                 <option value="">Sin obra social</option>
                 {obrasSociales.map((os) => <option key={os.id} value={os.id}>{os.nombre} ({os.sigla})</option>)}
               </select>
             </div>
-            <Input label="N° Afiliado" name="nroAfiliado" value={form.nroAfiliado} onChange={(e) => setForm((p) => ({ ...p, nroAfiliado: e.target.value }))} />
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-text-secondary">Tipo Beneficiario</label>
-              <select value={form.tipoBeneficiario} onChange={(e) => setForm((p) => ({ ...p, tipoBeneficiario: e.target.value }))} className="select-field">
+            <div className={field}>
+              <label className={label}>N° afiliado</label>
+              <input className="input-field text-[13px]" name="nroAfiliado" value={form.nroAfiliado}
+                onChange={(e) => setForm((p) => ({ ...p, nroAfiliado: e.target.value }))} />
+            </div>
+            <div className={field}>
+              <label className={label}>Tipo beneficiario</label>
+              <select className="select-field text-[13px]" value={form.tipoBeneficiario} onChange={(e) => setForm((p) => ({ ...p, tipoBeneficiario: e.target.value }))}>
                 <option value="TITULAR">Titular</option>
                 <option value="FAMILIAR">Familiar</option>
               </select>
             </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-text-secondary">Médico(s) Tratante(s)</label>
-                <SearchableMultiSelect
-                  items={medicos.map((m) => ({ id: m.id, label: m.nombre, sublabel: m.matricula || undefined }))}
-                  selectedIds={form.medicoTratanteIds}
-                  onChange={(ids) => setForm((p) => ({ ...p, medicoTratanteIds: ids }))}
-                  placeholder="Buscar médico..."
-                />
-              </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-text-secondary">Tipo de Ingreso</label>
-              <select name="tipoIngreso" value={form.tipoIngreso} onChange={(e) => setForm((p) => ({ ...p, tipoIngreso: e.target.value }))} className="select-field">
+            <div className={field}>
+              <label className={label}>Médico(s) tratante(s)</label>
+              <SearchableMultiSelect
+                items={medicos.map((m) => ({ id: m.id, label: m.nombre, sublabel: m.matricula || undefined }))}
+                selectedIds={form.medicoTratanteIds}
+                onChange={(ids) => setForm((p) => ({ ...p, medicoTratanteIds: ids }))}
+                placeholder="Buscar médico…"
+              />
+            </div>
+            <div className={field}>
+              <label className={label}>Tipo de ingreso</label>
+              <select className="select-field text-[13px]" name="tipoIngreso" value={form.tipoIngreso} onChange={(e) => setForm((p) => ({ ...p, tipoIngreso: e.target.value }))}>
                 <option value="PROGRAMADO">Programado</option>
                 <option value="URGENCIA">Urgencia</option>
                 <option value="GUARDIA">Guardia</option>
                 <option value="DERIVACION">Derivación</option>
               </select>
             </div>
-            <div className="col-span-2">
-              <Input label="Motivo de Ingreso" name="motivoIngreso" value={form.motivoIngreso} onChange={(e) => setForm((p) => ({ ...p, motivoIngreso: e.target.value }))} />
+            <div className={`${field} sm:col-span-2`}>
+              <label className={label}>Motivo de ingreso</label>
+              <input className="input-field text-[13px]" name="motivoIngreso" value={form.motivoIngreso}
+                onChange={(e) => setForm((p) => ({ ...p, motivoIngreso: e.target.value }))} />
             </div>
-            <div>
-              <Input label="Peso (kg)" name="peso" type="number" step="0.1" min="0" value={form.peso} onChange={(e) => setForm((p) => ({ ...p, peso: e.target.value }))} placeholder="ej: 78.5" />
+            <div className={field}>
+              <label className={label}>Peso (kg)</label>
+              <input className="input-field text-[13px]" name="peso" type="number" step="0.1" min="0" value={form.peso}
+                onChange={(e) => setForm((p) => ({ ...p, peso: e.target.value }))} placeholder="ej: 78.5" />
             </div>
-            <div>
-              <Input label="Diagnóstico / Tipo de Cirugía" name="diagnosticoCirugia" value={form.diagnosticoCirugia} onChange={(e) => setForm((p) => ({ ...p, diagnosticoCirugia: e.target.value }))} placeholder="Diagnóstico o procedimiento" />
+            <div className={field}>
+              <label className={label}>Diagnóstico / tipo de cirugía</label>
+              <input className="input-field text-[13px]" name="diagnosticoCirugia" value={form.diagnosticoCirugia}
+                onChange={(e) => setForm((p) => ({ ...p, diagnosticoCirugia: e.target.value }))} placeholder="Diagnóstico o procedimiento" />
             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setNuevaInternacionOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar"}</Button>
+          <div className="flex justify-end gap-2 pt-1">
+            <button type="button" onClick={() => setNuevaInternacionOpen(false)} className="btn-secondary text-[13px]">Cancelar</button>
+            <button type="submit" disabled={saving} className="btn-primary text-[13px]">{saving ? "Guardando…" : "Guardar"}</button>
           </div>
         </form>
       </Modal>

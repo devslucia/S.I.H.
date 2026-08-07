@@ -70,7 +70,7 @@ function EpisodioCard({ ep }: { ep: EpisodioHistorial }) {
             </Badge>
             <span className="text-xs text-muted">{formatDate(ep.fechaInicio)}</span>
             {hasCirugia && (
-              <span className="text-xs text-accent flex items-center gap-1">
+              <span className="text-xs text-brand flex items-center gap-1">
                 <Scissors size={10} /> Cirugía
               </span>
             )}
@@ -112,7 +112,7 @@ function EpisodioCard({ ep }: { ep: EpisodioHistorial }) {
               <p className="text-xs font-semibold text-muted mb-1">Cirugías</p>
               {ep.internacion!.cirugias.map((c, i) => (
                 <div key={i} className="flex items-start gap-2 text-xs text-text">
-                  <Scissors size={12} className="text-accent mt-0.5 flex-shrink-0" />
+                  <Scissors size={12} className="text-brand mt-0.5 flex-shrink-0" />
                   <div>
                     <p>{c.procedimiento || "Sin procedimiento"}</p>
                     {c.diagnosticoPreop && (
@@ -187,7 +187,7 @@ export function HistorialPaciente({ turnoId }: HistorialPacienteProps) {
         <History size={16} />
         Historial del Paciente
         {episodios.length > 0 && (
-          <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
+          <span className="text-xs bg-brand/10 text-brand px-2 py-0.5 rounded-full">
             {episodios.length}
           </span>
         )}

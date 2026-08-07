@@ -1,10 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, Plus, Pencil, X, CheckCircle, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, AlertTriangle, Check } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { OpsStat } from "@/components/ui/OpsStat";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Modal } from "@/components/ui/Modal";
 import { formatUserName } from "@/lib/utils";
 
 const ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ADMISION", "FACTURACION", "FARMACIA", "SECRETARIA"] as const;
+
+const rolTone: Record<string, "success" | "warning" | "danger" | "info" | "neutral"> = {
+  ADMIN: "danger",
+  MEDICO: "info",
+  ENFERMERO: "success",
+  ANESTESIOLOGO: "warning",
+  INSTRUMENTADOR: "neutral",
+  ADMISION: "neutral",
+  FACTURACION: "neutral",
+  FARMACIA: "neutral",
+  SECRETARIA: "warning",
+};
 
 interface Usuario {
   id: string;
@@ -16,6 +32,8 @@ interface Usuario {
   especialidad?: string | null;
 }
 
+const EMPTY_FORM = { nombre: "", apellido: "", email: "", password: "", rol: "MEDICO", matricula: "", especialidad: "" };
+
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,16 +41,7 @@ export default function UsuariosPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const [form, setForm] = useState({
-    nombre: "",
-    apellido: "",
-    email: "",
-    password: "",
-    rol: "MEDICO",
-    matricula: "",
-    especialidad: "",
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const fetchUsuarios = async () => {
     setLoading(true);
@@ -49,7 +58,7 @@ export default function UsuariosPage() {
   useEffect(() => { fetchUsuarios(); }, []);
 
   const resetForm = () => {
-    setForm({ nombre: "", apellido: "", email: "", password: "", rol: "MEDICO", matricula: "", especialidad: "" });
+    setForm(EMPTY_FORM);
     setEditingId(null);
     setShowForm(false);
     setError(null);
@@ -92,229 +101,184 @@ export default function UsuariosPage() {
       especialidad: form.especialidad || null,
     };
 
-    if (editingId) {
-      if (form.password) payload.password = form.password;
-      try {
+    try {
+      if (editingId) {
+        if (form.password) payload.password = form.password;
         const res = await fetch(`/api/usuarios/${editingId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
         if (res.ok) {
-          setSuccess("Usuario actualizado correctamente");
+          setSuccess("Usuario actualizado correctamente.");
           resetForm();
           fetchUsuarios();
         } else {
           const data = await res.json();
           setError(data.error || "Error al actualizar");
         }
-      } catch {
-        setError("Error de conexión");
-      }
-    } else {
-      if (!form.password) {
-        setError("La contraseña es requerida para crear un usuario");
-        return;
-      }
-      payload.password = form.password;
-      try {
+      } else {
+        if (!form.password) {
+          setError("La contraseña es requerida para crear un usuario");
+          return;
+        }
+        payload.password = form.password;
         const res = await fetch("/api/usuarios", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
         if (res.ok) {
-          setSuccess("Usuario creado correctamente");
+          setSuccess("Usuario creado correctamente.");
           resetForm();
           fetchUsuarios();
         } else {
           const data = await res.json();
           setError(data.error || "Error al crear");
         }
-      } catch {
-        setError("Error de conexión");
       }
+    } catch {
+      setError("Error de conexión");
     }
   };
 
-  if (loading) return <p className="text-muted text-sm">Cargando...</p>;
+  const medicos = usuarios.filter((u) => u.rol === "MEDICO").length;
+  const recepcion = usuarios.filter((u) => ["ADMISION", "SECRETARIA", "FACTURACION", "FARMACIA"].includes(u.rol)).length;
+
+  if (loading) return <div className="space-y-2"><div className="skeleton h-24" /><div className="skeleton h-48" /></div>;
+
+  const field = "flex flex-col gap-1";
+  const label = "text-[11px] font-mono uppercase tracking-widest text-muted";
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Users className="w-6 h-6 text-accent" />
-          <h2 className="text-xl font-medium text-text">Gestionar Usuarios</h2>
-        </div>
-        {!showForm && (
-          <button
-            onClick={() => { resetForm(); setShowForm(true); }}
-            className="flex items-center gap-2 px-3 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:opacity-90 transition-colors"
-          >
-            <Plus size={16} /> Nuevo Usuario
-          </button>
-        )}
-      </div>
+    <div className="space-y-7">
+      <PageHeader
+        eyebrow="Configuración · Usuarios"
+        title="Gestionar usuarios"
+        description="Crear, editar y administrar los usuarios del sistema y sus roles."
+        actions={
+          !showForm && (
+            <button onClick={() => { resetForm(); setShowForm(true); }} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
+              <Plus size={15} /> Nuevo usuario
+            </button>
+          )
+        }
+      />
+
+      <section className="grid grid-cols-2 md:grid-cols-3 gap-5">
+        <OpsStat label="Usuarios" value={usuarios.length} sub="Cuentas activas" tone="info" />
+        <OpsStat label="Médicos" value={medicos} sub="Con perfil clínico" tone="neutral" />
+        <OpsStat label="Recepción" value={recepcion} sub="Adm. + secretarias + fact." tone="neutral" />
+      </section>
 
       {success && (
-        <div className="p-3 bg-success/10 border border-success/30 rounded-lg flex items-center gap-2 text-success text-sm">
-          <CheckCircle size={16} /> {success}
+        <div className="flex items-center gap-2 text-[13px] text-success border border-success/25 bg-success/10 rounded-md px-3 py-2">
+          <Check size={14} /> {success}
         </div>
       )}
-
       {error && (
-        <div className="p-3 bg-error/10 border border-error/30 rounded-lg flex items-center gap-2 text-error text-sm">
-          <AlertTriangle size={16} /> {error}
+        <div className="flex items-center gap-2 text-[13px] text-error border border-error/25 bg-error/10 rounded-md px-3 py-2">
+          <AlertTriangle size={14} /> {error}
         </div>
       )}
 
-      {showForm && (
-        <form onSubmit={handleSubmit} className="card p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-text font-medium">{editingId ? "Editar Usuario" : "Nuevo Usuario"}</h3>
-            <button type="button" onClick={resetForm} className="text-muted hover:text-text">
-              <X size={18} />
-            </button>
+      {usuarios.length === 0 ? (
+        <div className="border border-dashed border-border rounded-lg py-12 text-center">
+          <p className="text-[13px] text-muted">No hay usuarios registrados.</p>
+        </div>
+      ) : (
+        <div className="border border-border rounded-lg overflow-hidden bg-surface">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
+                  <th className="px-4 py-2.5 text-left">Nombre</th>
+                  <th className="px-4 py-2.5 text-left">Email</th>
+                  <th className="px-4 py-2.5 text-left">Rol</th>
+                  <th className="px-4 py-2.5 text-left">Matrícula</th>
+                  <th className="px-4 py-2.5 text-left">Especialidad</th>
+                  <th className="px-4 py-2.5 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usuarios.map((u) => (
+                  <tr key={u.id} className="border-b border-border/50 hover:bg-surface-hover transition-colors">
+                    <td className="px-4 py-2.5 text-text">{formatUserName(u)}</td>
+                    <td className="px-4 py-2.5 font-mono text-[12px] text-muted">{u.email}</td>
+                    <td className="px-4 py-2.5">
+                      <StatusBadge tone={rolTone[u.rol] || "neutral"} label={u.rol} />
+                    </td>
+                    <td className="px-4 py-2.5 text-muted">{u.matricula || "—"}</td>
+                    <td className="px-4 py-2.5 text-muted">{u.especialidad || "—"}</td>
+                    <td className="px-4 py-2.5 text-right">
+                      <button onClick={() => handleEdit(u)} className="p-1.5 rounded-md text-muted hover:text-brand hover:bg-brand-soft transition-colors" title="Editar">
+                        <Pencil size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        </div>
+      )}
 
+      <Modal
+        open={showForm}
+        onClose={resetForm}
+        title={editingId ? "Editar usuario" : "Nuevo usuario"}
+        size="lg"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-muted block mb-1">Nombre *</label>
-              <input
-                type="text"
-                value={form.nombre}
-                onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                className="input-field w-full"
-                required
-              />
+            <div className={field}>
+              <label className={label}>Nombre *</label>
+              <input type="text" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="input-field text-[13px]" required />
             </div>
-            <div>
-              <label className="text-xs text-muted block mb-1">Apellido *</label>
-              <input
-                type="text"
-                value={form.apellido}
-                onChange={(e) => setForm({ ...form, apellido: e.target.value })}
-                className="input-field w-full"
-                required
-              />
+            <div className={field}>
+              <label className={label}>Apellido *</label>
+              <input type="text" value={form.apellido} onChange={(e) => setForm({ ...form, apellido: e.target.value })} className="input-field text-[13px]" required />
             </div>
-            <div>
-              <label className="text-xs text-muted block mb-1">Email *</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="input-field w-full"
-                required
-              />
+            <div className={field}>
+              <label className={label}>Email *</label>
+              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-field text-[13px]" required />
             </div>
-            <div>
-              <label className="text-xs text-muted block mb-1">
-                Contraseña {editingId ? "(dejar vacío para no cambiar)" : "*"}
-              </label>
-              <input
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="input-field w-full"
-                {...(!editingId ? { required: true } : {})}
-              />
+            <div className={field}>
+              <label className={label}>Contraseña {editingId ? "(vacío = no cambiar)" : "*"}</label>
+              <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-field text-[13px]" {...(!editingId ? { required: true } : {})} />
             </div>
-            <div>
-              <label className="text-xs text-muted block mb-1">Rol *</label>
-              <select
-                value={form.rol}
-                onChange={(e) => setForm({ ...form, rol: e.target.value })}
-                className="input-field w-full"
-                required
-              >
+            <div className={field}>
+              <label className={label}>Rol *</label>
+              <select value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value })} className="select-field text-[13px]" required>
                 {ROLES.map((r) => (
                   <option key={r} value={r}>{r}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="text-xs text-muted block mb-1">Matrícula</label>
-              <input
-                type="text"
-                value={form.matricula}
-                onChange={(e) => setForm({ ...form, matricula: e.target.value })}
-                className="input-field w-full"
-                placeholder="Opcional"
-              />
+            <div className={field}>
+              <label className={label}>Matrícula</label>
+              <input type="text" value={form.matricula} onChange={(e) => setForm({ ...form, matricula: e.target.value })} className="input-field text-[13px]" placeholder="Opcional" />
             </div>
-            <div>
-              <label className="text-xs text-muted block mb-1">Especialidad</label>
-              <input
-                type="text"
-                value={form.especialidad}
-                onChange={(e) => setForm({ ...form, especialidad: e.target.value })}
-                className="input-field w-full"
-                placeholder="Opcional"
-              />
+            <div className={`${field} sm:col-span-2`}>
+              <label className={label}>Especialidad</label>
+              <input type="text" value={form.especialidad} onChange={(e) => setForm({ ...form, especialidad: e.target.value })} className="input-field text-[13px]" placeholder="Opcional" />
             </div>
           </div>
 
-          <div className="flex gap-2 justify-end">
-            <button
-              type="button"
-              onClick={resetForm}
-              className="px-4 py-2 text-muted hover:text-text text-sm transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:opacity-90 transition-colors"
-            >
-              {editingId ? "Guardar Cambios" : "Crear Usuario"}
+          {error && (
+            <div className="flex items-center gap-2 text-[12px] text-error border border-error/25 bg-error/10 rounded-md px-3 py-2">
+              <AlertTriangle size={14} /> {error}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-1">
+            <button type="button" onClick={resetForm} className="btn-secondary text-[13px]">Cancelar</button>
+            <button type="submit" className="btn-primary text-[13px]">
+              {editingId ? "Guardar cambios" : "Crear usuario"}
             </button>
           </div>
         </form>
-      )}
-
-      {usuarios.length === 0 ? (
-        <p className="text-muted text-sm">No hay usuarios registrados.</p>
-      ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left p-3 text-muted font-medium">Nombre</th>
-                <th className="text-left p-3 text-muted font-medium">Email</th>
-                <th className="text-left p-3 text-muted font-medium">Rol</th>
-                <th className="text-left p-3 text-muted font-medium">Matrícula</th>
-                <th className="text-left p-3 text-muted font-medium">Especialidad</th>
-                <th className="text-right p-3 text-muted font-medium">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuarios.map((u) => (
-                <tr key={u.id} className="border-b border-border/50 hover:bg-background/50">
-                  <td className="p-3 text-text">{formatUserName(u)}</td>
-                  <td className="p-3 text-muted">{u.email}</td>
-                  <td className="p-3">
-                    <span className="px-2 py-0.5 rounded text-xs bg-accent/10 text-accent border border-accent/30">
-                      {u.rol}
-                    </span>
-                  </td>
-                  <td className="p-3 text-muted">{u.matricula || "—"}</td>
-                  <td className="p-3 text-muted">{u.especialidad || "—"}</td>
-                  <td className="p-3 text-right">
-                    <button
-                      onClick={() => handleEdit(u)}
-                      className="p-1.5 text-muted hover:text-accent transition-colors"
-                      title="Editar"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }
