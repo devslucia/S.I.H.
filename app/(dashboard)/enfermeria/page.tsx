@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   HeartPulse, AlertTriangle, Activity, ChevronDown, ChevronUp,
   FileText, Pill,
@@ -659,6 +659,14 @@ export default function EnfermeriaPage() {
   const [selectedInternacion, setSelectedInternacion] = useState<string | null>(null);
   const [controlesMap, setControlesMap] = useState<Record<string, ControlRecord[]>>({});
   const [loadingControles, setLoadingControles] = useState(false);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const enfocado = useRef<string | null>(null);
+
+  useEffect(() => {
+    const url = new URLSearchParams(window.location.search);
+    const id = url.get("internacionId");
+    if (id) setFocusId(id);
+  }, []);
 
   const [view, setView] = useState<"lista" | "mapa">("lista");
   const [camasApi, setCamasApi] = useState<CamaApi[]>([]);
@@ -730,6 +738,16 @@ export default function EnfermeriaPage() {
       fetchControles(id);
     }
   }, [selectedInternacion, fetchControles]);
+
+  useEffect(() => {
+    if (!focusId || internaciones.length === 0) return;
+    if (enfocado.current === focusId) return;
+    enfocado.current = focusId;
+    setSelectedInternacion(focusId);
+    fetchControles(focusId);
+    const el = document.getElementById(`internacion-${focusId}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [focusId, internaciones, fetchControles]);
 
   useEffect(() => {
     fetchInternaciones();
@@ -822,7 +840,7 @@ export default function EnfermeriaPage() {
             const protocolo = protocolosMap[i.id];
             const controles = controlesMap[i.id] || [];
             return (
-              <div key={i.id} className="border border-border rounded-lg overflow-hidden bg-surface">
+              <div key={i.id} id={`internacion-${i.id}`} className="border border-border rounded-lg overflow-hidden bg-surface">
                 <div className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-background/40 border-b border-border">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center text-brand font-medium text-sm shrink-0">
