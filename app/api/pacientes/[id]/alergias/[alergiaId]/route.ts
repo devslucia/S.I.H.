@@ -6,12 +6,13 @@ import { formatZodError } from "@/lib/validations/format-zod-error";
 
 const alergiaUpdateSchema = z.object({
   sustancia: z.string().min(1).optional(),
+  tipo: z.enum(["MEDICAMENTO", "ALIMENTO", "LATEX", "OTRO"]).optional(),
   severidad: z.enum(["LEVE", "MODERADA", "SEVERA", "ANAFILAXIA"]).optional().nullable(),
   observacion: z.string().optional().nullable(),
 });
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string; alergiaId: string } }) {
-  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO");
+  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO", "ANESTESIOLOGO");
   if (error) return error;
 
   const body = await req.json();
@@ -29,6 +30,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string; 
     where: { id: params.alergiaId },
     data: {
       sustancia: parsed.data.sustancia?.toUpperCase(),
+      tipo: parsed.data.tipo,
       severidad: parsed.data.severidad,
       observacion: parsed.data.observacion,
     },
@@ -38,7 +40,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string; 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string; alergiaId: string } }) {
-  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO");
+  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO", "ANESTESIOLOGO");
   if (error) return error;
 
   const alergia = await prisma.alergia.findUnique({ where: { id: params.alergiaId } });

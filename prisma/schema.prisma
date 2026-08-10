@@ -244,6 +244,7 @@ model Alergia {
   pacienteId  String
   paciente    Paciente @relation(fields: [pacienteId], references: [id])
   sustancia   String
+  tipo        String   @default("MEDICAMENTO")
   severidad   String?
   observacion String?
   createdAt   DateTime @default(now())

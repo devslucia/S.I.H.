@@ -15,6 +15,7 @@ import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/Me
 import { AnamnesisForm } from "@/components/historia-clinica/AnamnesisForm";
 import { EpicrisisForm } from "@/components/historia-clinica/EpicrisisForm";
 import { SeccionInterconsultas } from "@/components/episodios/SeccionInterconsultas";
+import { SeccionAlergias } from "@/components/pacientes/SeccionAlergias";
 import { formatDateTime, formatUserName } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
@@ -280,6 +281,9 @@ export default function PanelMedicoPage() {
           </div>
         </div>
       </div>
+
+      {/* Alergias */}
+      <SeccionAlergias pacienteId={internacion.paciente.id} />
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">

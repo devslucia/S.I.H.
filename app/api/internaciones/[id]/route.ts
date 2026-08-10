@@ -18,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const internacion = await prisma.internacion.findFirst({
     where: { id: params.id, ...visFilter },
     include: {
-      paciente: true,
+      paciente: { include: { alergias: { select: { id: true, sustancia: true } } } },
       cama: { include: { sector: true } },
       obraSocial: true,
       pases: true,
