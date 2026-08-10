@@ -431,7 +431,15 @@ export default function ImprimirCarpetaPage() {
                 {hc.controlesEnfermeria.map((c, i) => (
                   <div key={i} style={{ borderBottom: '1px solid #ccc', paddingBottom: '4px', marginBottom: '4px', fontSize: '8pt' }}>
                     <strong>{formatDate(c.fecha)} {c.hora}</strong> — {c.tipo} — {c.usuario.nombre}<br />
-                    Datos: {JSON.stringify(c.datos)}{c.observacion ? ` — Obs: ${c.observacion}` : ''}
+                    {c.datos && Object.keys(c.datos).length > 0 && (
+                      <span>
+                        {Object.entries(c.datos)
+                          .filter(([, v]) => v !== null && v !== undefined && v !== '')
+                          .map(([k, v]) => `${k} ${v}`)
+                          .join(' · ')}
+                        {c.observacion ? ` — Obs: ${c.observacion}` : ''}
+                      </span>
+                    )}
                   </div>
                 ))}
               </>

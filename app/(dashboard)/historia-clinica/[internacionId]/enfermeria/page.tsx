@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, User, Clock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { VoiceInput } from "@/components/ui/VoiceInput";
-import { formatDateTime } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
 interface ControlEnfermeria {
@@ -44,6 +44,26 @@ const tipoLabels: Record<string, string> = {
   NOTA_LIBRE: "Nota Libre",
 };
 
+interface VitalesForm {
+  pas: string;
+  pad: string;
+  fc: string;
+  fr: string;
+  temperatura: string;
+  spo2: string;
+}
+
+const vitalesVacios: VitalesForm = { pas: "", pad: "", fc: "", fr: "", temperatura: "", spo2: "" };
+
+const vitalesConfig: { key: keyof VitalesForm; label: string; placeholder: string }[] = [
+  { key: "pas", label: "PA sistólica", placeholder: "120" },
+  { key: "pad", label: "PA diastólica", placeholder: "80" },
+  { key: "fc", label: "FC", placeholder: "88" },
+  { key: "fr", label: "FR", placeholder: "18" },
+  { key: "temperatura", label: "T°", placeholder: "36.5" },
+  { key: "spo2", label: "SpO2 %", placeholder: "97" },
+];
+
 export default function EnfermeriaPage() {
   const params = useParams();
   const router = useRouter();
@@ -55,7 +75,7 @@ export default function EnfermeriaPage() {
   const [tipo, setTipo] = useState("SIGNOS_VITALES");
   const [hora, setHora] = useState("");
   const [observacion, setObservacion] = useState("");
-  const [datos, setDatos] = useState("{}");
+  const [vitales, setVitales] = useState<VitalesForm>(vitalesVacios);
   const [saving, setSaving] = useState(false);
 
   const [voiceStatus, setVoiceStatus] = useState<"idle" | "listening" | "processing" | "ready">("idle");
@@ -103,17 +123,14 @@ export default function EnfermeriaPage() {
 
   const applyParsedVitals = () => {
     if (!parsedVitals) return;
-    const newDatos: Record<string, string> = {};
-    try { Object.assign(newDatos, JSON.parse(datos)); } catch {}
-
-    if (parsedVitals.pas && parsedVitals.pad) newDatos.PA = `${parsedVitals.pas}/${parsedVitals.pad}`;
-    else if (parsedVitals.pas) newDatos.PA = String(parsedVitals.pas);
-    if (parsedVitals.fc) newDatos.FC = String(parsedVitals.fc);
-    if (parsedVitals.fr) newDatos.FR = String(parsedVitals.fr);
-    if (parsedVitals.temperatura) newDatos["T°"] = String(parsedVitals.temperatura);
-    if (parsedVitals.spo2) newDatos.SatO2 = String(parsedVitals.spo2);
-
-    setDatos(JSON.stringify(newDatos, null, 2));
+    const next: VitalesForm = { ...vitalesVacios };
+    if (parsedVitals.pas) next.pas = String(parsedVitals.pas);
+    if (parsedVitals.pad) next.pad = String(parsedVitals.pad);
+    if (parsedVitals.fc) next.fc = String(parsedVitals.fc);
+    if (parsedVitals.fr) next.fr = String(parsedVitals.fr);
+    if (parsedVitals.temperatura) next.temperatura = String(parsedVitals.temperatura);
+    if (parsedVitals.spo2) next.spo2 = String(parsedVitals.spo2);
+    setVitales(next);
     if (parsedVitals.observacion) {
       setObservacion(observacion ? observacion + " " + parsedVitals.observacion : parsedVitals.observacion);
     }
@@ -126,18 +143,25 @@ export default function EnfermeriaPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      let datosParsed = {};
-      try { datosParsed = JSON.parse(datos); } catch { datosParsed = { raw: datos }; }
+      const datos: Record<string, string> = {};
+      if (tipo === "SIGNOS_VITALES") {
+        if (vitales.pas && vitales.pad) datos.PA = `${vitales.pas}/${vitales.pad}`;
+        else if (vitales.pas) datos.PA = vitales.pas;
+        if (vitales.fc) datos.FC = vitales.fc;
+        if (vitales.fr) datos.FR = vitales.fr;
+        if (vitales.temperatura) datos["T°"] = vitales.temperatura;
+        if (vitales.spo2) datos.SatO2 = vitales.spo2;
+      }
       const res = await fetch(`/api/historia-clinica/${params.internacionId}/enfermeria`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tipo, hora, observacion, datos: datosParsed }),
+        body: JSON.stringify({ tipo, hora, observacion, datos }),
       });
       if (res.ok) {
         setTipo("SIGNOS_VITALES");
         setHora("");
         setObservacion("");
-        setDatos("{}");
+        setVitales(vitalesVacios);
         fetchControles();
       }
     } catch (err) {
@@ -190,10 +214,24 @@ export default function EnfermeriaPage() {
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-muted">Datos (JSON)</label>
-            <textarea value={datos} onChange={(e) => setDatos(e.target.value)} className="input-field min-h-[60px] resize-y font-mono text-xs" rows={2} />
-          </div>
+          {tipo === "SIGNOS_VITALES" && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              {vitalesConfig.map((v) => (
+                <div key={v.key} className="flex flex-col gap-1.5">
+                  <label className="text-sm text-muted">{v.label}</label>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={vitales[v.key]}
+                    onChange={(e) => setVitales({ ...vitales, [v.key]: e.target.value })}
+                    className="input-field"
+                    placeholder={v.placeholder}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
           {showConfirmVitals && parsedVitals && (
             <div className="p-3 bg-brand/10 border border-brand/30 rounded-lg">
@@ -233,12 +271,16 @@ export default function EnfermeriaPage() {
             <div key={c.id} className="card p-4">
               <div className="flex items-start justify-between mb-1">
                 <div className="flex items-center gap-2 text-xs text-muted">
-                  <Clock size={12} /> {formatDateTime(c.fecha)} — {c.hora}
+                  <Clock size={12} /> {formatDate(c.fecha)} · {c.hora}
                 </div>
                 <span className="badge-success text-[10px]">{tipoLabels[c.tipo] || c.tipo}</span>
               </div>
               {c.observacion && <p className="text-text text-sm mb-1">{c.observacion}</p>}
-              <div className="text-xs text-muted font-mono">{JSON.stringify(c.datos)}</div>
+              {c.datos && Object.keys(c.datos).length > 0 && (
+                <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-text mt-1">
+                  <DatoControl datos={c.datos} />
+                </div>
+              )}
               <div className="flex items-center gap-1 mt-1 text-xs text-muted">
                 <User size={12} /> {c.usuario.nombre}
               </div>
@@ -247,5 +289,27 @@ export default function EnfermeriaPage() {
         </div>
       )}
     </div>
+  );
+}
+
+const etiquetasDatos: Record<string, string> = {
+  PA: "PA",
+  FC: "FC",
+  FR: "FR",
+  "T°": "T°",
+  SatO2: "SpO₂",
+};
+
+function DatoControl({ datos }: { datos: Record<string, unknown> }) {
+  return (
+    <>
+      {Object.entries(datos)
+        .filter(([, v]) => v !== null && v !== undefined && v !== "")
+        .map(([k, v]) => (
+          <span key={k}>
+            <span className="font-medium text-muted">{etiquetasDatos[k] || k}:</span> {String(v)}
+          </span>
+        ))}
+    </>
   );
 }

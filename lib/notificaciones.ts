@@ -33,7 +33,7 @@ export async function crearNotificacionesPrescripcion(
       userId: u.id,
       titulo: "Nueva indicación",
       mensaje,
-      link: `/historia-clinica/${input.internacionId}/enfermeria`,
+      link: `/enfermeria?internacionId=${input.internacionId}`,
       tipo: TIPO_NUEVA_INDICACION,
       refId: input.prescripcionId,
       metadata: {
