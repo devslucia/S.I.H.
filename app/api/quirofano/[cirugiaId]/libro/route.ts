@@ -13,6 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: { cirugiaId: s
   const cirugia = await prisma.cirugia.findUnique({
     where: { id: params.cirugiaId },
     include: {
+      quirofano: { select: { id: true, numero: true, nombre: true } },
       implantes: true,
       medicamentos: { include: { stockItem: true } },
       practicas: true,
@@ -163,6 +164,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
     const updated = await tx.cirugia.update({
       where: { id: params.cirugiaId },
       data: dataUpdate,
+      include: {
+        quirofano: { select: { id: true, numero: true, nombre: true } },
+        internacion: { include: { paciente: true } },
+      },
     });
 
     if (dataUpdate.estado && updated.internacionId) {

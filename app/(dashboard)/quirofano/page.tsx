@@ -14,7 +14,7 @@ import { CirugiaCard, type CirugiaEstado } from "@/components/ui/CirugiaCard";
 interface Cirugia {
   id: string;
   quirofanoId: string | null;
-  quirofano?: { nombre: string } | null;
+  quirofano?: { id: string; numero: number; nombre: string } | null;
   fechaProgramada: string;
   horaProgramada: string;
   estado: CirugiaEstado;
@@ -23,6 +23,12 @@ interface Cirugia {
   internacion?: {
     paciente: { nombre: string; apellido: string } | null;
   } | null;
+}
+
+function nombreQuirofano(c: Cirugia): string {
+  if (c.quirofano?.nombre) return c.quirofano.nombre;
+  if (c.quirofano?.numero) return `Quirófano ${c.quirofano.numero}`;
+  return "Sin quirófano";
 }
 
 interface InternacionDisponible {
@@ -223,7 +229,7 @@ export default function QuirofanoPage() {
   });
 
   const grouped = cirugias.reduce<Record<string, Cirugia[]>>((acc, c) => {
-    const key = c.quirofano?.nombre || c.quirofanoId || "Sin quirófano";
+    const key = nombreQuirofano(c);
     if (!acc[key]) acc[key] = [];
     acc[key].push(c);
     return acc;

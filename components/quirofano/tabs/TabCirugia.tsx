@@ -22,7 +22,21 @@ interface Plantilla {
   descripcion?: string | null;
 }
 
+interface QuirofanoData {
+  id: string;
+  numero: number;
+  nombre: string;
+  piso?: string | null;
+}
+
 const PLANTILLA_ROLES = ["MEDICO", "ANESTESIOLOGO", "ADMIN"];
+
+function quirofanoActualLabel(formData: CirugiaFormData): string {
+  const q = (formData.quirofano ?? null) as { nombre?: string; numero?: number } | null;
+  if (q?.nombre) return q.nombre;
+  if (q?.numero) return `Quirófano ${q.numero}`;
+  return "Quirófano";
+}
 
 interface TabCirugiaProps {
   formData: CirugiaFormData;
@@ -38,7 +52,15 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
   const { toast } = useToast();
   const [plantillas, setPlantillas] = useState<Plantilla[]>([]);
   const [plantillaId, setPlantillaId] = useState("");
+  const [quirofanos, setQuirofanos] = useState<QuirofanoData[]>([]);
   const puedePlantillas = PLANTILLA_ROLES.includes(effectiveRole);
+
+  useEffect(() => {
+    fetch("/api/quirofanos")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setQuirofanos(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, []);
 
   const loadPlantillas = () => {
     if (!puedePlantillas) return;
@@ -150,9 +172,17 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
           </div>
           <div>
             <label className={labelClass}>Quirófano N°</label>
-            <input type="text" value={formData?.quirofanoId || ""}
-              onChange={e => update("quirofanoId", e.target.value)}
-              disabled={disabled("quirofanoId")} className={inputClass} />
+            <select value={formData?.quirofanoId || ""}
+              onChange={e => update("quirofanoId", e.target.value || null)}
+              disabled={disabled("quirofanoId")} className={inputClass}>
+              <option value="">Seleccionar</option>
+              {formData?.quirofanoId && quirofanos.length > 0 && !quirofanos.some(q => q.id === formData.quirofanoId) && (
+                <option value={formData.quirofanoId}>{quirofanoActualLabel(formData)}</option>
+              )}
+              {quirofanos.map(q => (
+                <option key={q.id} value={q.id}>{q.nombre}{q.piso ? ` · ${q.piso}` : ""}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className={labelClass}>Tipo</label>

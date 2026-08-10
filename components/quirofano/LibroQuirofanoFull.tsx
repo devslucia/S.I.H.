@@ -171,7 +171,7 @@ export default function LibroQuirofanoFull() {
       <p><strong>Diagnóstico Preop.:</strong> ${data?.diagnosticoPreop || "—"}</p>
       <p><strong>Diagnóstico Postop.:</strong> ${data?.diagnosticoPostop || "—"}</p></div>
       <div class="col"><p><strong>Score ASA:</strong> ${data?.scoreASA || "—"}</p>
-      <p><strong>Quirófano:</strong> ${data?.quirofano?.nombre || data?.quirofanoId || "—"}</p>
+      <p><strong>Quirófano:</strong> ${data?.quirofano?.nombre || (data?.quirofano?.numero ? `Quirófano ${data.quirofano.numero}` : "—")}</p>
       <p><strong>Tipo:</strong> ${data?.tipo || "—"}</p>
       <p><strong>Arco C:</strong> ${data?.arcoC ? "Sí" : "No"} | <strong>ARM:</strong> ${data?.arm ? "Sí" : "No"} | <strong>Ecógrafo:</strong> ${data?.ecografo ? "Sí" : "No"}</p></div></div>
       </div>
