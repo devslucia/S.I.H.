@@ -87,7 +87,7 @@ export interface CirugiaFull {
   diagnosticoPostop?: string | null;
   scoreASA?: number | null;
   quirofanoId?: string | null;
-  quirofano?: { id: string; nombre: string } | null;
+  quirofano?: { id: string; numero: number; nombre: string } | null;
   cirujanoId?: string | null;
   ayudante1Id?: string | null;
   ayudante2Id?: string | null;

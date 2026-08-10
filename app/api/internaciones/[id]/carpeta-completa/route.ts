@@ -34,6 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       },
       cirugias: {
         include: {
+          quirofano: { select: { id: true, numero: true, nombre: true } },
           implantes: true,
           medicamentos: true,
           practicas: true,

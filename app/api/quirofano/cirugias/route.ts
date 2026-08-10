@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
   const cirugias = await prisma.cirugia.findMany({
     where,
     include: {
+      quirofano: { select: { id: true, numero: true, nombre: true } },
       internacion: {
         include: { paciente: true },
       },
