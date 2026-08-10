@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import CampanaNotificaciones from "@/components/notificaciones/CampanaNotificaciones";
 
 const moduleNames: Record<string, string> = {
   "/": "Tablero",
@@ -84,6 +85,8 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
           <span className="w-1 h-1 rounded-full bg-success" />
           {today}
         </div>
+
+        <CampanaNotificaciones />
 
         <button
           onClick={toggleTheme}
