@@ -6,8 +6,11 @@ import { formatZodError } from "@/lib/validations/format-zod-error";
 
 const ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ADMISION"];
 
+const TIPOS_ALERGIA = ["MEDICAMENTO", "ALIMENTO", "LATEX", "OTRO"] as const;
+
 const alergiaSchema = z.object({
   sustancia: z.string().min(1, "La sustancia es obligatoria"),
+  tipo: z.enum(TIPOS_ALERGIA).default("MEDICAMENTO"),
   severidad: z.enum(["LEVE", "MODERADA", "SEVERA", "ANAFILAXIA"]).optional().nullable(),
   observacion: z.string().optional().nullable(),
 });
@@ -25,7 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO");
+  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO", "ANESTESIOLOGO");
   if (error) return error;
 
   const body = await req.json();
@@ -45,6 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     data: {
       pacienteId: params.id,
       sustancia: parsed.data.sustancia.toUpperCase(),
+      tipo: parsed.data.tipo,
       severidad: parsed.data.severidad,
       observacion: parsed.data.observacion,
     },
