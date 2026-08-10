@@ -83,6 +83,11 @@ async function processOneAplicacion(
     },
   });
 
+  await tx.notificacion.updateMany({
+    where: { refId: prescripcionId, leida: false },
+    data: { leida: true },
+  });
+
   await generarCargo(tx, {
     internacionId,
     concepto: `Medicación: ${droga || "medicación"}`,

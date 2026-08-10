@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { OpsStat } from "@/components/ui/OpsStat";
 import { AlertList, type AlertTone } from "@/components/ui/AlertList";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import IndicacionesNuevas from "@/components/notificaciones/IndicacionesNuevas";
 
 interface StatsData {
   rol: string;
@@ -251,36 +252,40 @@ function KPISection({ data }: { data: StatsData }) {
 
   if (data.rol === "ENFERMERO") {
     return (
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <OpsStat
-          label="Camas"
-          value={`${c.ocupadas} / ${c.total}`}
-          sub={`${c.libres} libres · ${c.enLimpieza} limpieza`}
-          tone={c.libres === 0 ? "danger" : c.libres <= 2 ? "warning" : "success"}
-          href="/camas"
-        />
-        <OpsStat
-          label="Prescripciones"
-          value={data.prescripcionesPendientes}
-          sub="requieren administración"
-          tone={data.prescripcionesPendientes > 0 ? "warning" : "success"}
-          href="/enfermeria"
-        />
-        <OpsStat
-          label="Admisiones de hoy"
-          value={data.admisionesHoy}
-          sub="ingresos registrados"
-          tone={data.admisionesHoy > 0 ? "info" : "neutral"}
-          href="/admision"
-        />
-        <OpsStat
-          label="Pacientes en espera"
-          value={data.pacientesEnEspera}
-          sub="sin cama asignada"
-          tone={data.pacientesEnEspera > 0 ? "warning" : "neutral"}
-          href="/admision"
-        />
-      </section>
+      <div className="space-y-6">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <OpsStat
+            label="Camas"
+            value={`${c.ocupadas} / ${c.total}`}
+            sub={`${c.libres} libres · ${c.enLimpieza} limpieza`}
+            tone={c.libres === 0 ? "danger" : c.libres <= 2 ? "warning" : "success"}
+            href="/camas"
+          />
+          <OpsStat
+            label="Prescripciones"
+            value={data.prescripcionesPendientes}
+            sub="requieren administración"
+            tone={data.prescripcionesPendientes > 0 ? "warning" : "success"}
+            href="/enfermeria"
+          />
+          <OpsStat
+            label="Admisiones de hoy"
+            value={data.admisionesHoy}
+            sub="ingresos registrados"
+            tone={data.admisionesHoy > 0 ? "info" : "neutral"}
+            href="/admision"
+          />
+          <OpsStat
+            label="Pacientes en espera"
+            value={data.pacientesEnEspera}
+            sub="sin cama asignada"
+            tone={data.pacientesEnEspera > 0 ? "warning" : "neutral"}
+            href="/admision"
+          />
+        </section>
+
+        <IndicacionesNuevas />
+      </div>
     );
   }
 

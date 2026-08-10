@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
 import { createPrescripcionSchema } from "@/lib/validations/prescripcion.schema";
 import { verificarAlergia } from "@/lib/utils/alertas-alergia";
+import { crearNotificacionesPrescripcion } from "@/lib/notificaciones";
 import { NextRequest, NextResponse } from "next/server";
 import {errorMessage} from "@/lib/errors";
 
@@ -44,7 +45,11 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
 
   const hc = await prisma.historiaClinica.findUnique({
     where: { internacionId: params.internacionId },
-    include: { internacion: { select: { pacienteId: true } } },
+    include: {
+      internacion: {
+        include: { paciente: { select: { id: true, apellido: true, nombre: true } } },
+      },
+    },
   });
 
   if (!hc) {
@@ -108,6 +113,23 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
           usuarioId: session.user.id,
         },
       });
+
+      const detalle = data.droga || data.descripcion || data.tipo || "indicación";
+      const extra = [data.dosis && `dosis ${data.dosis}`, data.via && `vía ${data.via}`].filter(Boolean).join(", ");
+
+      const paciente = hc.internacion?.paciente;
+      if (paciente) {
+        await crearNotificacionesPrescripcion(prisma, {
+          prescripcionId: prescripcion.id,
+          pacienteId: paciente.id,
+          internacionId: params.internacionId,
+          episodioId: episodio.id,
+          pacienteApellido: paciente.apellido,
+          pacienteNombre: paciente.nombre,
+          detalle: extra ? `${detalle} (${extra})` : detalle,
+        }).catch(() => {});
+      }
+
       results.push({ ok: true, nombre: data.droga || data.tipo, prescripcion });
     } catch (e: unknown) {
       results.push({ ok: false, nombre: data.droga || data.tipo, error: errorMessage(e) || "Error al crear" });

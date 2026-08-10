@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 
 import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
 import { formatUserName } from "@/lib/utils";
+import IndicacionesNuevas from "@/components/notificaciones/IndicacionesNuevas";
 
 interface Prescripcion {
   id: string;
@@ -768,6 +769,8 @@ export default function EnfermeriaPage() {
         title="Vista operativa de pacientes"
         description="Controles, indicaciones y hoja de enfermería por paciente internado."
       />
+
+      <IndicacionesNuevas />
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-5">
         <OpsStat label="Pacientes" value={internaciones.length} sub="Internados activos" tone="info" />

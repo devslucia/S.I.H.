@@ -214,6 +214,7 @@ model Usuario {
   plantillasProtocolo    PlantillaProtocoloQuirurgico[]
   solicitudesInterconsulta Interconsulta[] @relation("SolicitanteInterconsultas")
   interconsultasAsignadas   Interconsulta[] @relation("EspecialistaInterconsultas")
+  notificaciones        Notificacion[]
 }
 
 model Paciente {
@@ -534,6 +535,24 @@ model Prescripcion {
   usuario          Usuario                 @relation(fields: [usuarioId], references: [id])
   aplicaciones     AplicacionMedicamento[]
   createdAt        DateTime                @default(now())
+}
+
+model Notificacion {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       Usuario? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rolDestino String?
+  titulo     String
+  mensaje    String
+  link       String?
+  leida      Boolean  @default(false)
+  tipo       String   @default("NUEVA_INDICACION")
+  refId      String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, leida])
+  @@index([rolDestino, leida])
 }
 
 model AplicacionMedicamento {
