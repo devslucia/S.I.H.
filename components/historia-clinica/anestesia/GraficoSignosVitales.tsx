@@ -19,6 +19,7 @@ import type { SignoVitalRegistro } from "@/types";
 interface GraficoSignosVitalesProps {
   signosVitales: SignoVitalRegistro[];
   minutoActual: number;
+  horaInicio?: Date | null;
   onAddRegistro: (registro: SignoVitalRegistro) => void;
   onAddEvento: (minuto: number, evento: string) => void;
   readOnly?: boolean;
@@ -74,6 +75,7 @@ const EVENTOS_PREDEFINIDOS = [
 function GraficoSignosVitales({
   signosVitales,
   minutoActual,
+  horaInicio,
   onAddRegistro,
   onAddEvento,
   readOnly,
@@ -226,6 +228,49 @@ function GraficoSignosVitales({
           </div>
         </div>
       </div>
+
+      {/* Tabla de registros intraoperatorios */}
+      {signosVitales.length > 0 && (
+        <div className="rounded-xl border border-border bg-surface p-4 overflow-x-auto">
+          <h4 className="text-sm font-medium text-text-secondary mb-3">Registros intraoperatorios</h4>
+          <table className="w-full text-[12px] min-w-[720px]">
+            <thead>
+              <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
+                <th className="text-left py-1.5 pr-2">Min</th>
+                <th className="text-left py-1.5 pr-2">Hora</th>
+                {Object.entries(PARAM_LABELS).map(([key, label]) => (
+                  <th key={key} className="text-left py-1.5 pr-2">{label}</th>
+                ))}
+                <th className="text-left py-1.5">Eventos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...signosVitales].sort((a, b) => a.minuto - b.minuto).map((s) => (
+                <tr key={s.minuto} className="border-b border-border/40">
+                  <td className="py-1.5 pr-2 font-mono text-brand">{`${s.minuto}'`}</td>
+                  <td className="py-1.5 pr-2 font-mono text-muted">
+                    {horaInicio
+                      ? new Date(horaInicio.getTime() + s.minuto * 60000).toLocaleTimeString("es-AR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })
+                      : "—"}
+                  </td>
+                  {Object.keys(PARAM_LABELS).map((key) => (
+                    <td key={key} className="py-1.5 pr-2 text-text">
+                      {s[key as keyof SignoVitalRegistro] ?? "—"}
+                    </td>
+                  ))}
+                  <td className="py-1.5 text-[11px] text-muted">
+                    {s.eventos?.length ? s.eventos.join(", ") : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Panel de ingreso rápido */}
       {!readOnly && (
