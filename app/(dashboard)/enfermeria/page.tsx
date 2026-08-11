@@ -14,8 +14,9 @@ import { BedMap, type BedMapCama } from "@/components/ui/BedMap";
 import { cn } from "@/lib/utils";
 
 import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
-import { formatUserName } from "@/lib/utils";
+import { formatUserName, formatDate } from "@/lib/utils";
 import IndicacionesNuevas from "@/components/notificaciones/IndicacionesNuevas";
+import { useToast } from "@/components/ui/Toast";
 
 interface Prescripcion {
   id: string;
@@ -116,7 +117,8 @@ interface ParsedVitalSigns {
   observacion?: string;
 }
 
-function ControlForm({ internacionId, onSaved }: { internacionId: string; onSaved: () => void }) {
+function ControlForm({ internacionId, onSaved }: { internacionId: string; onSaved: (control?: ControlRecord) => void }) {
+  const { toast } = useToast();
   const [form, setForm] = useState<ControlData>({
     hora: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false }),
     tipo: "SIGNOS_VITALES",
@@ -185,11 +187,16 @@ function ControlForm({ internacionId, onSaved }: { internacionId: string; onSave
         }),
       });
       if (res.ok) {
+        const saved = (await res.json()) as ControlRecord;
         setForm({ ...form, PA: "", FC: "", FR: "", temperatura: "", SatO2: "", observacion: "" });
-        onSaved();
+        toast("success", `Control de signos vitales guardado (${saved.hora})`);
+        onSaved(saved);
+      } else {
+        toast("error", "No se pudo guardar el control");
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de conexión al guardar");
     } finally {
       setSaving(false);
     }
@@ -931,6 +938,7 @@ export default function EnfermeriaPage() {
                           <table className="w-full text-[12px]">
                             <thead>
                               <tr className="text-muted bg-background/40 border-b border-border">
+                                <th className="text-left py-1.5 px-2 font-mono">Fecha</th>
                                 <th className="text-left py-1.5 px-2 font-mono">Hora</th>
                                 <th className="text-left py-1.5 px-2 font-mono">PA</th>
                                 <th className="text-left py-1.5 px-2 font-mono">FC</th>
@@ -938,12 +946,14 @@ export default function EnfermeriaPage() {
                                 <th className="text-left py-1.5 px-2 font-mono">T°</th>
                                 <th className="text-left py-1.5 px-2 font-mono">SpO₂</th>
                                 <th className="text-left py-1.5 px-2 font-mono">Obs</th>
+                                <th className="text-left py-1.5 px-2 font-mono">Registró</th>
                                 <th className="text-left py-1.5 px-2 font-mono">⚠</th>
                               </tr>
                             </thead>
                             <tbody>
                               {controles.map((c) => (
                                 <tr key={c.id} className="border-b border-border/30">
+                                  <td className="py-1.5 px-2 font-mono text-muted">{formatDate(c.fecha)}</td>
                                   <td className="py-1.5 px-2 font-mono text-text">{c.hora}</td>
                                   <td className="py-1.5 px-2 text-muted">{c.datos?.PA || "—"}</td>
                                   <td className="py-1.5 px-2 text-muted">{c.datos?.FC || "—"}</td>
@@ -951,6 +961,7 @@ export default function EnfermeriaPage() {
                                   <td className="py-1.5 px-2 text-muted">{c.datos?.["T°"] || "—"}</td>
                                   <td className="py-1.5 px-2 text-muted">{c.datos?.SatO2 || "—"}</td>
                                   <td className="py-1.5 px-2 text-muted max-w-[140px] truncate">{c.observacion || "—"}</td>
+                                  <td className="py-1.5 px-2 text-muted whitespace-nowrap">{c.usuario?.nombre || "—"}</td>
                                   <td className="py-1.5 px-2">
                                     {c.alertas && c.alertas.length > 0 && (
                                       <span className="flex items-center gap-1 text-[11px] text-error">
@@ -971,7 +982,19 @@ export default function EnfermeriaPage() {
                       <h4 className="text-[13px] font-medium text-text mb-3 flex items-center gap-2">
                         <HeartPulse size={15} className="text-brand" /> Registrar signos vitales
                       </h4>
-                      <ControlForm internacionId={i.id} onSaved={() => { fetchInternaciones(); fetchControles(i.id); }} />
+                      <ControlForm
+                        internacionId={i.id}
+                        onSaved={(control) => {
+                          if (control) {
+                            setControlesMap((prev) => ({
+                              ...prev,
+                              [i.id]: [control, ...(prev[i.id] || [])].slice(0, 5),
+                            }));
+                          }
+                          fetchInternaciones();
+                          fetchControles(i.id);
+                        }}
+                      />
                     </div>
 
                     <HojaEnfermeriaForm internacionId={i.id} onSaved={() => { fetchInternaciones(); }} />

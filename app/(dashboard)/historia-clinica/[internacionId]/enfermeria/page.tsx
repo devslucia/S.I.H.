@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { VoiceInput } from "@/components/ui/VoiceInput";
 import { formatDate } from "@/lib/utils";
 import { useSession } from "next-auth/react";
+import { useToast } from "@/components/ui/Toast";
 
 interface ControlEnfermeria {
   id: string;
@@ -68,6 +69,7 @@ export default function EnfermeriaPage() {
   const params = useParams();
   const router = useRouter();
   const session = useSession();
+  const { toast } = useToast();
   const userRol = session?.data?.user?.rol;
   const canCreate = ["ADMIN","ENFERMERO"].includes(userRol || "");
   const [controles, setControles] = useState<ControlEnfermeria[]>([]);
@@ -158,14 +160,20 @@ export default function EnfermeriaPage() {
         body: JSON.stringify({ tipo, hora, observacion, datos }),
       });
       if (res.ok) {
+        const saved = (await res.json()) as ControlEnfermeria;
         setTipo("SIGNOS_VITALES");
         setHora("");
         setObservacion("");
         setVitales(vitalesVacios);
+        toast("success", `Control de signos vitales guardado (${saved.hora})`);
+        setControles((prev) => [saved, ...prev]);
         fetchControles();
+      } else {
+        toast("error", "No se pudo guardar el control");
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de conexión al guardar");
     } finally {
       setSaving(false);
     }
