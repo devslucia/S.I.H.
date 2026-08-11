@@ -214,22 +214,22 @@ async function main() {
 
   // ── 5. STOCK ──
   const stockData = [
-    { nombre: "Amoxicilina 500mg", principioActivo: "Amoxicilina", presentacion: "Cápsulas", unidad: "unidades", stockActual: 12, stockMinimo: 50, stockMaximo: 200, nomencladorCodigo: "MED-AMOX" },
-    { nombre: "Sol. Fisiológica 1L", presentacion: "Bolsa x 1L", unidad: "unidades", stockActual: 32, stockMinimo: 50, stockMaximo: 150, nomencladorCodigo: "MAT-SFIS" },
-    { nombre: "Paracetamol 1g", principioActivo: "Paracetamol", presentacion: "Comprimidos", unidad: "unidades", stockActual: 240, stockMinimo: 50, stockMaximo: 300, nomencladorCodigo: "MED-PARA" },
-    { nombre: "Omeprazol 40mg", principioActivo: "Omeprazol", presentacion: "Comprimidos", unidad: "unidades", stockActual: 180, stockMinimo: 30, stockMaximo: 200, nomencladorCodigo: "MED-OMEP" },
-    { nombre: "Ketorolac 2% Iny.", principioActivo: "Ketorolac", presentacion: "Ampolla 2ml", unidad: "ampollas", stockActual: 48, stockMinimo: 20, stockMaximo: 100, nomencladorCodigo: "MED-KETO" },
-    { nombre: "Bupivacaína 0.5%", principioActivo: "Bupivacaína", presentacion: "Ampolla 10ml", unidad: "ampollas", stockActual: 24, stockMinimo: 10, stockMaximo: 50, nomencladorCodigo: "MED-BUPI" },
-    { nombre: "Adrenalina 1mg", principioActivo: "Adrenalina", presentacion: "Ampolla 1ml", unidad: "ampollas", stockActual: 36, stockMinimo: 15, stockMaximo: 60, nomencladorCodigo: "MED-ADRE" },
-    { nombre: "Cefazolina 1g", principioActivo: "Cefazolina", presentacion: "Frasco", unidad: "unidades", stockActual: 60, stockMinimo: 25, stockMaximo: 100, nomencladorCodigo: "MED-CEFA" },
-    { nombre: "Diclofenac 75mg", principioActivo: "Diclofenac", presentacion: "Ampolla", unidad: "ampollas", stockActual: 90, stockMinimo: 30, stockMaximo: 120, nomencladorCodigo: "MED-DICL" },
-    { nombre: "Ceftriaxona 1g", principioActivo: "Ceftriaxona", presentacion: "Frasco", unidad: "unidades", stockActual: 25, stockMinimo: 20, stockMaximo: 80, nomencladorCodigo: "MED-CIAXO" },
-    { nombre: "Povidona Yodada (Redox)", presentacion: "Frasco 500ml", unidad: "unidades", stockActual: 8, stockMinimo: 10, stockMaximo: 30, nomencladorCodigo: "MAT-POVI" },
-    { nombre: "Abbocath Nº20", presentacion: "Catéter", unidad: "unidades", stockActual: 45, stockMinimo: 20, stockMaximo: 100, nomencladorCodigo: "MAT-ABBO" },
-    { nombre: "Equipo de perfusión", presentacion: "Equipo", unidad: "unidades", stockActual: 30, stockMinimo: 15, stockMaximo: 60, nomencladorCodigo: "MAT-PERF" },
-    { nombre: "Tubo endotraqueal 7.5", presentacion: "Tubo", unidad: "unidades", stockActual: 12, stockMinimo: 5, stockMaximo: 20, nomencladorCodigo: "MAT-TEND" },
-    { nombre: "Plancha bisturí", presentacion: "Plancha", unidad: "unidades", stockActual: 6, stockMinimo: 5, stockMaximo: 15, nomencladorCodigo: "MAT-BIST" },
-    { nombre: "Electrobisturí desc.", presentacion: "Electrodo", unidad: "unidades", stockActual: 4, stockMinimo: 3, stockMaximo: 10, nomencladorCodigo: "MAT-ELEC" },
+    { nombre: "Amoxicilina 500mg", nTroquel: "854291", principioActivo: "Amoxicilina", presentacion: "Cápsulas", laboratorio: "Roemmers", unidad: "unidades", stockActual: 12, stockMinimo: 50, stockMaximo: 200, nomencladorCodigo: "MED-AMOX", precioCompra: 3000, precioVenta: 4500, fraccion: 30 },
+    { nombre: "Sol. Fisiológica 1L", nTroquel: "SF-1L", presentacion: "Bolsa x 1L", laboratorio: "Baxter", unidad: "unidades", stockActual: 32, stockMinimo: 50, stockMaximo: 150, nomencladorCodigo: "MAT-SFIS", precioCompra: 1500, precioVenta: 2200, fraccion: 1 },
+    { nombre: "Paracetamol 1g", nTroquel: "761553", principioActivo: "Paracetamol", presentacion: "Comprimidos", laboratorio: "Bago", unidad: "unidades", stockActual: 240, stockMinimo: 50, stockMaximo: 300, nomencladorCodigo: "MED-PARA", precioCompra: 2400, precioVenta: 3600, fraccion: 20 },
+    { nombre: "Omeprazol 40mg", nTroquel: "762330", principioActivo: "Omeprazol", presentacion: "Comprimidos", laboratorio: "Roemmers", unidad: "unidades", stockActual: 180, stockMinimo: 30, stockMaximo: 200, nomencladorCodigo: "MED-OMEP", precioCompra: 3100, precioVenta: 4650, fraccion: 14 },
+    { nombre: "Ketorolac 2% Iny.", nTroquel: "770195", principioActivo: "Ketorolac", presentacion: "Ampolla 2ml", laboratorio: "Denver Farma", unidad: "ampollas", stockActual: 48, stockMinimo: 20, stockMaximo: 100, nomencladorCodigo: "MED-KETO", precioCompra: 5200, precioVenta: 7900, fraccion: 25 },
+    { nombre: "Bupivacaína 0.5%", nTroquel: "782900", principioActivo: "Bupivacaína", presentacion: "Ampolla 10ml", laboratorio: "Northia", unidad: "ampollas", stockActual: 24, stockMinimo: 10, stockMaximo: 50, nomencladorCodigo: "MED-BUPI", precioCompra: 9800, precioVenta: 14700, fraccion: 50 },
+    { nombre: "Adrenalina 1mg", nTroquel: "781234", principioActivo: "Adrenalina", presentacion: "Ampolla 1ml", laboratorio: "Northia", unidad: "ampollas", stockActual: 36, stockMinimo: 15, stockMaximo: 60, nomencladorCodigo: "MED-ADRE", precioCompra: 4100, precioVenta: 6400, fraccion: 50 },
+    { nombre: "Cefazolina 1g", nTroquel: "855100", principioActivo: "Cefazolina", presentacion: "Frasco", laboratorio: "Roemmers", unidad: "unidades", stockActual: 60, stockMinimo: 25, stockMaximo: 100, nomencladorCodigo: "MED-CEFA", precioCompra: 6800, precioVenta: 9800, fraccion: 1 },
+    { nombre: "Diclofenac 75mg", nTroquel: "760201", principioActivo: "Diclofenac", presentacion: "Ampolla", laboratorio: "Bago", unidad: "ampollas", stockActual: 90, stockMinimo: 30, stockMaximo: 120, nomencladorCodigo: "MED-DICL", precioCompra: 3600, precioVenta: 5400, fraccion: 30 },
+    { nombre: "Ceftriaxona 1g", nTroquel: "856700", principioActivo: "Ceftriaxona", presentacion: "Frasco", laboratorio: "Elea", unidad: "unidades", stockActual: 25, stockMinimo: 20, stockMaximo: 80, nomencladorCodigo: "MED-CIAXO", precioCompra: 7200, precioVenta: 10500, fraccion: 1 },
+    { nombre: "Povidona Yodada (Redox)", nTroquel: "POV-500", presentacion: "Frasco 500ml", laboratorio: "Roux Océfa", unidad: "unidades", stockActual: 8, stockMinimo: 10, stockMaximo: 30, nomencladorCodigo: "MAT-POVI", precioCompra: 2800, precioVenta: 4300, fraccion: 1 },
+    { nombre: "Abbocath Nº20", nTroquel: "ABB-20", presentacion: "Catéter", laboratorio: "BD", unidad: "unidades", stockActual: 45, stockMinimo: 20, stockMaximo: 100, nomencladorCodigo: "MAT-ABBO", precioCompra: 3750, precioVenta: 5250, fraccion: 50 },
+    { nombre: "Equipo de perfusión", nTroquel: "PER-FUS", presentacion: "Equipo", laboratorio: "BD", unidad: "unidades", stockActual: 30, stockMinimo: 15, stockMaximo: 60, nomencladorCodigo: "MAT-PERF", precioCompra: 1900, precioVenta: 2850, fraccion: 1 },
+    { nombre: "Tubo endotraqueal 7.5", nTroquel: "TET-75", presentacion: "Tubo", laboratorio: "Teleflex", unidad: "unidades", stockActual: 12, stockMinimo: 5, stockMaximo: 20, nomencladorCodigo: "MAT-TEND", precioCompra: 7200, precioVenta: 10800, fraccion: 10 },
+    { nombre: "Plancha bisturí", nTroquel: "BIS-PLA", presentacion: "Plancha", laboratorio: "Aspen", unidad: "unidades", stockActual: 6, stockMinimo: 5, stockMaximo: 15, nomencladorCodigo: "MAT-BIST", precioCompra: 8500, precioVenta: 12500, fraccion: 1 },
+    { nombre: "Electrobisturí desc.", nTroquel: "ELE-DES", presentacion: "Electrodo", laboratorio: "Medtronic", unidad: "unidades", stockActual: 4, stockMinimo: 3, stockMaximo: 10, nomencladorCodigo: "MAT-ELEC", precioCompra: 11000, precioVenta: 16500, fraccion: 10 },
   ];
   const items = [];
   for (const data of stockData) {
