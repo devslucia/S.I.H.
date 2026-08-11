@@ -36,7 +36,18 @@ export interface DatosCarpeta {
   obraSocial?: { nombre?: string } | null;
   pases?: PaseCarpeta[];
   cirugias?: CirugiaCarpeta[];
+  interconsultas?: InterconsultaCarpeta[];
   histClinica?: HistClinicaCarpeta | null;
+}
+
+export interface InterconsultaCarpeta {
+  id: string;
+  especialidad: string;
+  motivo: string;
+  estado: string;
+  createdAt: string;
+  medicoSolicitante?: { id?: string; nombre?: string | null; apellido?: string | null } | null;
+  especialista?: { id?: string; nombre?: string | null; apellido?: string | null; especialidad?: string | null } | null;
 }
 
 export interface PaseCarpeta {
@@ -323,6 +334,8 @@ export function generarHTMLCarpeta(data: DatosCarpeta, usuarios: Usuario[]): str
 
   const headerPaciente = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:9pt;border-bottom:1px solid #000;margin-bottom:12px;padding-bottom:8px">
+      <div style="font-weight:bold">S.I.H. — CARPETA CLÍNICA</div>
+      <div style="text-align:right">Impreso: ${new Date().toLocaleString('es-AR')}</div>
       <div><strong>HISTORIA CLÍNICA N°:</strong> ${data.numero}</div>
       <div><strong>N° Control:</strong> ${data.numero}</div>
       <div><strong>Apellido y Nombres:</strong> ${paciente.apellido}, ${paciente.nombre}</div>
@@ -331,6 +344,11 @@ export function generarHTMLCarpeta(data: DatosCarpeta, usuarios: Usuario[]): str
       <div><strong>Obra Social:</strong> ${data.obraSocial?.nombre ?? 'Particular'}</div>
       <div><strong>Médico:</strong> ${data.medicoSolicitante ?? '—'}</div>
       <div><strong>Ingreso:</strong> ${new Date(data.fechaIngreso).toLocaleDateString('es-AR')}</div>
+      ${(paciente.alergias?.length ?? 0) > 0 ? `
+        <div style="grid-column:1 / -1;margin-top:4px;border:1px solid #d32f2f;background:#fff5f5;color:#d32f2f;padding:4px 6px;font-weight:bold">
+          ⚠ ALERGIAS: ${paciente.alergias.map((a) => a.sustancia).join(' · ')}
+        </div>
+      ` : ''}
     </div>
   `
 
@@ -587,7 +605,31 @@ export function generarHTMLCarpeta(data: DatosCarpeta, usuarios: Usuario[]): str
     html += `</div>${pageBreak}`
   }
 
-  // HOJA 6 — Valoración Preanestésica
+  // HOJA 6 — Interconsultas
+  const interconsultas = data.interconsultas ?? []
+  if (interconsultas.length > 0) {
+    html += `
+      <div>
+        ${membrete}
+        ${headerPaciente}
+        <h2>INTERCONSULTAS</h2>
+        ${interconsultas.map((ic) => `
+          <div style="border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:8px;font-size:9pt">
+            <div><strong>${new Date(ic.createdAt).toLocaleString('es-AR')}</strong> — ${ic.especialidad}</div>
+            <div style="white-space:pre-wrap;margin:4px 0">${ic.motivo}</div>
+            <div style="font-size:8pt;color:#555">
+              Solicitada por ${ic.medicoSolicitante ? (ic.medicoSolicitante.apellido + ', ' + ic.medicoSolicitante.nombre) : '—'}
+              ${ic.especialista ? ' · Especialista: ' + ic.especialista.apellido + ', ' + ic.especialista.nombre : ' · Sin especialista asignado'}
+              · Estado: ${ic.estado}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      ${pageBreak}
+    `
+  }
+
+  // HOJA 7 — Valoración Preanestésica
   if (valoracionPreanestesia) {
     const vp = valoracionPreanestesia
     html += `
@@ -611,7 +653,7 @@ export function generarHTMLCarpeta(data: DatosCarpeta, usuarios: Usuario[]): str
     `
   }
 
-  // HOJA 7 — Protocolo de Anestesia
+  // HOJA 8 — Protocolo de Anestesia
   if (protocoloAnestesia) {
     const pa = protocoloAnestesia
     const drogas = pa.drogas || []
@@ -674,7 +716,7 @@ export function generarHTMLCarpeta(data: DatosCarpeta, usuarios: Usuario[]): str
             <strong style="margin-top:8px;display:block">DROGAS UTILIZADAS</strong>
             <table style="margin-top:6px">
               <thead><tr><th>Categoría</th><th>Nombre</th><th>Dosis</th><th>Vía</th><th>Hora</th></tr></thead>
-              <tbody>${drogas.map((d) => `<tr><td>${d.categoria ?? ''}</td><td>${d.nombre}</td><td>${d.dosis} ${d.unidad ?? ''}</td><td>${d.via ?? ''}</td><td>${d.horaAdministracion ?? ''}</td></tr>`).join('')}</tbody>
+              <tbody>${drogas.map((d) => `<tr><td>${d.categoria ?? ''}</td><td>${d.nombre}</td><td>${d.dosis} ${d.unidad ?? ''}</td><td>${d.via ?? ''}</td><td>${d.horaAdministracion ? new Date(d.horaAdministracion).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''}</td></tr>`).join('')}</tbody>
             </table>
           ` : ''}
 
@@ -722,7 +764,7 @@ export function generarHTMLCarpeta(data: DatosCarpeta, usuarios: Usuario[]): str
     `
   }
 
-  // HOJA 8 — Protocolo Quirúrgico (COMPLETO)
+  // HOJA 9 — Protocolo Quirúrgico (COMPLETO)
   if (cirugias.length > 0) {
     for (const cir of cirugias) {
       const implantes = cir.implantes || []
@@ -796,7 +838,7 @@ export function generarHTMLCarpeta(data: DatosCarpeta, usuarios: Usuario[]): str
     }
   }
 
-  // HOJA 9 — Epicrisis (última, sin pageBreak)
+  // HOJA 10 — Epicrisis (última, sin pageBreak)
   if (epicrisis) {
     const ep = epicrisis
     html += `
