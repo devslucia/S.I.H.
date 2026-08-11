@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/Button";
 interface StockItem {
   id: string;
   nombre: string;
+  nTroquel?: string | null;
   presentacion?: string | null;
+  laboratorio?: string | null;
   stockActual: number;
   principioActivo?: string | null;
 }
@@ -49,7 +51,7 @@ function debounce<T extends (...args: never[]) => void>(fn: T, ms: number): T {
 }
 
 export function MedicacionMultiSelect({
-  searchPlaceholder = "Buscar medicamento...",
+  searchPlaceholder = "Buscar por troquel o nombre…",
   extraFields = [],
   submitLabel = "Agregar",
   onSubmit,
@@ -160,10 +162,11 @@ export function MedicacionMultiSelect({
                     : "hover:bg-surface-hover cursor-pointer"
                 }`}
               >
-                <div>
-                  <span className="text-text font-medium">{item.nombre}</span>
-                  {item.presentacion && <span className="text-muted ml-2">({item.presentacion})</span>}
-                  {item.principioActivo && <span className="text-muted text-xs ml-2">— {item.principioActivo}</span>}
+                <div className="flex items-center gap-2 min-w-0">
+                  {item.nTroquel && <span className="font-mono text-[11px] text-muted shrink-0">{item.nTroquel}</span>}
+                  <span className="text-text font-medium truncate">{item.nombre}</span>
+                  {item.presentacion && <span className="text-muted text-xs truncate">({item.presentacion})</span>}
+                  {item.principioActivo && <span className="text-muted text-xs ml-2 truncate">— {item.principioActivo}</span>}
                 </div>
                 <span className="text-xs text-muted">Stock: {String(item.stockActual)}</span>
               </button>
@@ -180,6 +183,7 @@ export function MedicacionMultiSelect({
             <div key={sel.stockItem.id} className="card p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-text">
+                  {sel.stockItem.nTroquel && <span className="font-mono text-[11px] text-muted mr-1.5">{sel.stockItem.nTroquel}</span>}
                   {sel.stockItem.nombre}
                   {sel.stockItem.presentacion && <span className="text-muted ml-1">({sel.stockItem.presentacion})</span>}
                 </span>

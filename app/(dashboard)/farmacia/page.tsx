@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
 import { formatDate } from "@/lib/utils";
 import { calcularPreciosUnitarios, formatearPrecio } from "@/lib/precios";
+import { matchesStockItem } from "@/lib/stock-item";
 
 interface StockItem {
   id: string;
@@ -365,15 +366,9 @@ export default function FarmaciaPage() {
   };
 
   const filtrados = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = search.trim();
     if (!q) return stock;
-    return stock.filter((i) =>
-      i.nombre.toLowerCase().includes(q) ||
-      (i.principioActivo || "").toLowerCase().includes(q) ||
-      (i.presentacion || "").toLowerCase().includes(q) ||
-      (i.nTroquel || "").toLowerCase().includes(q) ||
-      (i.laboratorio || "").toLowerCase().includes(q)
-    );
+    return stock.filter((i) => matchesStockItem(i, q));
   }, [stock, search]);
 
   const stockBajo = stock.filter((i) => Number(i.stockActual) <= Number(i.stockMinimo)).length;
@@ -408,7 +403,7 @@ export default function FarmaciaPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre, principio activo o presentación…"
+            placeholder="Buscar por troquel, nombre, presentación o laboratorio…"
             className="input-field text-[13px] pl-8"
           />
         </div>

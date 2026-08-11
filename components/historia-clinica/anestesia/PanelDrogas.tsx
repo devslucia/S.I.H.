@@ -16,6 +16,8 @@ interface PanelDrogasProps {
 interface StockDroga {
   id: string;
   nombre: string;
+  nTroquel?: string | null;
+  presentacion?: string | null;
   principioActivo?: string | null;
 }
 
@@ -112,7 +114,7 @@ function PanelDrogas({ control, readOnly }: PanelDrogasProps) {
                   <div className="relative flex-1 min-w-[180px]">
                     <Input
                       label="Droga"
-                      placeholder="Buscar droga..."
+                      placeholder="Buscar por troquel o nombre…"
                       value={field.nombre || ""}
                       disabled={readOnly}
                       onChange={(e) => handleSearch(e.target.value, idx)}
@@ -125,10 +127,15 @@ function PanelDrogas({ control, readOnly }: PanelDrogasProps) {
                             onClick={() => selectDrug(drug, idx)}
                             className="w-full px-3 py-2 text-left text-sm text-text hover:bg-border transition-colors"
                           >
-                            {drug.nombre}
-                            {drug.principioActivo && (
-                              <span className="text-muted ml-2">({drug.principioActivo})</span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {drug.nTroquel && (
+                                <span className="font-mono text-[11px] text-muted shrink-0">{drug.nTroquel}</span>
+                              )}
+                              <span>{drug.nombre}</span>
+                              {drug.principioActivo && (
+                                <span className="text-muted ml-1">({drug.principioActivo})</span>
+                              )}
+                            </div>
                           </button>
                         ))}
                       </div>
