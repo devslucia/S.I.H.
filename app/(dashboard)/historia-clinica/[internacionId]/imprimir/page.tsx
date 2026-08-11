@@ -115,6 +115,15 @@ interface CarpetaCompleta {
     implantes: { codigo: string; nombre: string; lote: string | null; codigoCE: string | null }[];
   }[];
   cargosFacturacion: { concepto: string; cantidad: number; precioUnitario: number; total: number; origen: string; fecha: string }[];
+  interconsultas: {
+    id: string;
+    especialidad: string;
+    motivo: string;
+    estado: string;
+    createdAt: string;
+    medicoSolicitante: { id: string; nombre: string; apellido: string } | null;
+    especialista: { id: string; nombre: string; apellido: string; especialidad: string | null } | null;
+  }[];
 }
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
@@ -137,6 +146,8 @@ function HeaderPaciente({ paciente, internacion }: { paciente: CarpetaCompleta["
       marginBottom: '12px',
       paddingBottom: '8px'
     }}>
+      <div style={{ fontWeight: 'bold' }}>S.I.H. — CARPETA CLÍNICA</div>
+      <div style={{ textAlign: 'right' }}>Impreso: {new Date().toLocaleString('es-AR')}</div>
       <div><strong>HISTORIA CLÍNICA N°:</strong> {internacion.numero}</div>
       <div><strong>N° Control:</strong> {internacion.numero}</div>
       <div><strong>Apellido y Nombres:</strong> {paciente.apellido}, {paciente.nombre}</div>
@@ -145,9 +156,35 @@ function HeaderPaciente({ paciente, internacion }: { paciente: CarpetaCompleta["
       <div><strong>Obra Social:</strong> {internacion.obraSocial?.nombre ?? 'Particular'}</div>
       <div><strong>Médico Cabecera:</strong> {internacion.medicoSolicitante ?? '—'}</div>
       <div><strong>Fecha Ingreso:</strong> {new Date(internacion.fechaIngreso).toLocaleDateString('es-AR')}</div>
+      {paciente.alergias.length > 0 && (
+        <div style={{ gridColumn: '1 / -1', marginTop: '4px', border: '1px solid #d32f2f', background: '#fff5f5', color: '#d32f2f', padding: '4px 6px', fontWeight: 'bold' }}>
+          ⚠ ALERGIAS: {paciente.alergias.map((a) => a.sustancia + (a.severidad ? ` (${a.severidad})` : '')).join(' · ')}
+        </div>
+      )}
     </div>
   );
 }
+
+const LABELS_VITALES: Record<string, string> = {
+  PA: "PA", "PA sistólica": "PA sistólica", "PA diastólica": "PA diastólica", TA: "PA",
+  FC: "FC", FR: "FR", "T°": "T°", Temp: "T°", temp: "T°",
+  SatO2: "SpO₂", sato2: "SpO₂", "SatO₂": "SpO₂",
+};
+
+const SECCIONES = [
+  { key: "informe", label: "Hospitalización" },
+  { key: "anamnesis", label: "Anamnesis" },
+  { key: "evoluciones", label: "Evoluciones" },
+  { key: "prescripciones", label: "Prescripciones" },
+  { key: "enfermeria", label: "Enfermería" },
+  { key: "interconsultas", label: "Interconsultas" },
+  { key: "preanestesia", label: "Val. preanestésica" },
+  { key: "anestesia", label: "Protocolo de anestesia" },
+  { key: "quirurgico", label: "Protocolo quirúrgico" },
+  { key: "epicrisis", label: "Epicrisis" },
+] as const;
+
+type SeccionKey = (typeof SECCIONES)[number]["key"];
 
 function FormPage({ children }: { children: React.ReactNode }) {
   return <div className="page-break no-page-break">{children}</div>;
@@ -163,6 +200,9 @@ export default function ImprimirCarpetaPage() {
   const [data, setData] = useState<CarpetaCompleta | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [visible, setVisible] = useState<Record<SeccionKey, boolean>>(
+    () => Object.fromEntries(SECCIONES.map((s) => [s.key, true])) as Record<SeccionKey, boolean>
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -236,10 +276,37 @@ export default function ImprimirCarpetaPage() {
             <Printer size={16} /> Imprimir Carpeta
           </Button>
         </div>
+        <div className="rounded-lg border border-border bg-surface p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-mono uppercase tracking-widest text-muted">Secciones de la carpeta</p>
+            <div className="flex gap-2">
+              <button onClick={() => setVisible(Object.fromEntries(SECCIONES.map((s) => [s.key, true])) as Record<SeccionKey, boolean>)} className="btn-secondary text-[11px]">
+                Todas
+              </button>
+              <button onClick={() => setVisible(Object.fromEntries(SECCIONES.map((s) => [s.key, false])) as Record<SeccionKey, boolean>)} className="btn-secondary text-[11px]">
+                Ninguna
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {SECCIONES.map((s) => (
+              <label key={s.key} className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-muted cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={visible[s.key]}
+                  onChange={(e) => setVisible((v) => ({ ...v, [s.key]: e.target.checked }))}
+                  className="accent-brand"
+                />
+                {s.label}
+              </label>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="print-only">
         {/* HOJA 1 — Informe de Hospitalización */}
+        {visible.informe && (
         <FormPage>
           <Membrete />
           <HeaderPaciente paciente={p} internacion={data} />
@@ -306,9 +373,10 @@ export default function ImprimirCarpetaPage() {
             </div>
           )}
         </FormPage>
+        )}
 
         {/* HOJA 2 — Anamnesis */}
-        {hc?.anamnesis && (
+        {visible.anamnesis && hc?.anamnesis && (
           <FormPage>
             <Membrete />
             <HeaderPaciente paciente={p} internacion={data} />
@@ -334,7 +402,7 @@ export default function ImprimirCarpetaPage() {
         )}
 
         {/* HOJA 3 — Evoluciones */}
-        {hc?.evoluciones && hc.evoluciones.length > 0 && (
+        {visible.evoluciones && hc?.evoluciones && hc.evoluciones.length > 0 && (
           <FormPage>
             <Membrete />
             <HeaderPaciente paciente={p} internacion={data} />
@@ -343,7 +411,7 @@ export default function ImprimirCarpetaPage() {
               (INGRESE FECHA Y HORA, FIRMA Y SELLO EN CADA NOTA DE EVALUACIÓN)
             </p>
             {hc.evoluciones.map((ev) => (
-              <div key={ev.fecha} style={{ borderBottom: '1px solid #ccc', paddingBottom: '6px', marginBottom: '6px' }}>
+              <div key={ev.fecha} className="avoid-break" style={{ borderBottom: '1px solid #ccc', paddingBottom: '6px', marginBottom: '6px' }}>
                 <strong style={{ fontSize: '9pt' }}>{formatDateTime(ev.fecha)} — {ev.usuario.nombre}</strong>
                 <p style={{ fontSize: '9pt', margin: '2px 0', whiteSpace: 'pre-wrap' }}>{ev.contenido}</p>
               </div>
@@ -352,7 +420,7 @@ export default function ImprimirCarpetaPage() {
         )}
 
         {/* HOJA 4 — Prescripciones */}
-        {hc?.prescripciones && hc.prescripciones.length > 0 && (
+        {visible.prescripciones && hc?.prescripciones && hc.prescripciones.length > 0 && (
           <FormPage>
             <Membrete />
             <HeaderPaciente paciente={p} internacion={data} />
@@ -389,7 +457,7 @@ export default function ImprimirCarpetaPage() {
         )}
 
         {/* HOJA 5 — Hoja de Enfermería */}
-        {((hc?.hojaEnfermeria && hc.hojaEnfermeria.length > 0) || (hc?.controlesEnfermeria && hc.controlesEnfermeria.length > 0)) && (
+        {visible.enfermeria && ((hc?.hojaEnfermeria && hc.hojaEnfermeria.length > 0) || (hc?.controlesEnfermeria && hc.controlesEnfermeria.length > 0)) && (
           <FormPage>
             <Membrete />
             <HeaderPaciente paciente={p} internacion={data} />
@@ -435,7 +503,7 @@ export default function ImprimirCarpetaPage() {
                       <span>
                         {Object.entries(c.datos)
                           .filter(([, v]) => v !== null && v !== undefined && v !== '')
-                          .map(([k, v]) => `${k} ${v}`)
+                          .map(([k, v]) => `${LABELS_VITALES[k] ?? k} ${v}`)
                           .join(' · ')}
                         {c.observacion ? ` — Obs: ${c.observacion}` : ''}
                       </span>
@@ -447,8 +515,30 @@ export default function ImprimirCarpetaPage() {
           </FormPage>
         )}
 
-        {/* HOJA 6 — Valoración Preanestésica */}
-        {hc?.valoracionPreanestesia && (
+        {/* HOJA 6 — Interconsultas */}
+        {visible.interconsultas && (data.interconsultas?.length ?? 0) > 0 && (
+          <FormPage>
+            <Membrete />
+            <HeaderPaciente paciente={p} internacion={data} />
+            <FormTitle>INTERCONSULTAS</FormTitle>
+            {data.interconsultas.map((ic) => (
+              <div key={ic.id} className="avoid-break" style={{ borderBottom: '1px solid #ccc', paddingBottom: '6px', marginBottom: '6px' }}>
+                <p style={{ fontSize: '9pt', margin: 0 }}>
+                  <strong>{formatDateTime(ic.createdAt)}</strong> — {ic.especialidad}
+                </p>
+                <p style={{ fontSize: '9pt', margin: '2px 0', whiteSpace: 'pre-wrap' }}>{ic.motivo}</p>
+                <p style={{ fontSize: '8pt', color: '#555', margin: 0 }}>
+                  Solicitada por {ic.medicoSolicitante ? `${ic.medicoSolicitante.apellido}, ${ic.medicoSolicitante.nombre}` : '—'}
+                  {ic.especialista ? ` · Especialista: ${ic.especialista.apellido}, ${ic.especialista.nombre}` : ' · Sin especialista asignado'}
+                  {' '}· Estado: {ic.estado}
+                </p>
+              </div>
+            ))}
+          </FormPage>
+        )}
+
+        {/* HOJA 7 — Valoración Preanestésica */}
+        {visible.preanestesia && hc?.valoracionPreanestesia && (
           <FormPage>
             <Membrete />
             <HeaderPaciente paciente={p} internacion={data} />
@@ -467,12 +557,13 @@ export default function ImprimirCarpetaPage() {
           </FormPage>
         )}
 
-        {/* HOJA 7 — Protocolo de Anestesia (siempre visible) */}
+        {/* HOJA 8 — Protocolo de Anestesia (solo si existe) */}
+        {visible.anestesia && hc?.protocoloAnestesia && (
         <FormPage>
           <Membrete />
           <HeaderPaciente paciente={p} internacion={data} />
           <FormTitle>PROTOCOLO DE ANESTESIA</FormTitle>
-          {hc?.protocoloAnestesia ? (
+          {(
             <>
               <Field label="Anestesiólogo" value={`${hc.protocoloAnestesia.anestesiologo || '—'}${hc.protocoloAnestesia.matriculaAnestesiologo ? ` (Mat. ${hc.protocoloAnestesia.matriculaAnestesiologo})` : ''}`} />
               <Field label="Cirujano" value={`${hc.protocoloAnestesia.cirujano || '—'}${hc.protocoloAnestesia.matriculaCirujano ? ` (Mat. ${hc.protocoloAnestesia.matriculaCirujano})` : ''}`} />
@@ -591,21 +682,18 @@ export default function ImprimirCarpetaPage() {
                 </p>
               )}
             </>
-          ) : (
-            <p style={{ fontSize: '9pt', color: 'rgb(var(--color-text-secondary))', fontStyle: 'italic', marginTop: '8px' }}>
-              Sin protocolo de anestesia registrado.
-            </p>
           )}
         </FormPage>
+        )}
 
-        {/* HOJA 8 — Protocolo Quirúrgico */}
-        {(data.cirugias?.length ?? 0) > 0 && (
+        {/* HOJA 9 — Protocolo Quirúrgico */}
+        {visible.quirurgico && (data.cirugias?.length ?? 0) > 0 && (
           <FormPage>
             <Membrete />
             <HeaderPaciente paciente={p} internacion={data} />
             <FormTitle>PROTOCOLO QUIRÚRGICO</FormTitle>
             {data.cirugias.map((cir, i) => (
-              <div key={cir.id} style={{ border: '1px solid #000', padding: '8px', marginBottom: '8px' }}>
+              <div key={cir.id} className="avoid-break" style={{ border: '1px solid #000', padding: '8px', marginBottom: '8px' }}>
                 <p style={{ fontSize: '10pt', fontWeight: 'bold', margin: '0 0 4px 0' }}>
                   Cirugía #{i + 1} — {cir.quirofano?.nombre || "—"} — {cir.estado}
                 </p>
@@ -634,8 +722,8 @@ export default function ImprimirCarpetaPage() {
           </FormPage>
         )}
 
-        {/* HOJA 9 — Epicrisis (última, sin page-break) */}
-        {hc?.epicrisis && (
+        {/* HOJA 10 — Epicrisis (última, sin page-break) */}
+        {visible.epicrisis && hc?.epicrisis && (
           <div className="no-page-break">
             <Membrete />
             <HeaderPaciente paciente={p} internacion={data} />
