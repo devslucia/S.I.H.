@@ -26,7 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
   const controles = await prisma.controlEnfermeria.findMany({
     where: { hcId: hc.id },
     include: { usuario: { select: { id: true, nombre: true } } },
-    orderBy: { fecha: "desc" },
+    orderBy: [{ fecha: "desc" }, { hora: "desc" }, { id: "desc" }],
   });
 
   return NextResponse.json(controles);
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
       }
     }
 
-    const control = await tx.controlEnfermeria.create({
+    const created = await tx.controlEnfermeria.create({
       data: {
         hcId: hc.id,
         episodioId: episodio.id,
@@ -98,6 +98,11 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
         alertas: alertas.length > 0 ? alertas : undefined,
         usuarioId: session.user.id,
       },
+    });
+
+    const control = await tx.controlEnfermeria.findUnique({
+      where: { id: created.id },
+      include: { usuario: { select: { id: true, nombre: true } } },
     });
 
     if (body.hojasEnfermeria && Array.isArray(body.hojasEnfermeria)) {
