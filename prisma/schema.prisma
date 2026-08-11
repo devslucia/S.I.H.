@@ -918,19 +918,26 @@ model PracticaCirugia {
 }
 
 model StockItem {
-  id               String                 @id @default(uuid())
-  nombre           String
-  principioActivo  String?
-  presentacion     String?
-  unidad           String
-  stockActual      Decimal
-  stockMinimo      Decimal
-  stockMaximo      Decimal
-  lote             String?
-  vencimiento      DateTime?
-  ubicacion        String?
+  id                String                 @id @default(uuid())
+  nombre            String
+  nTroquel          String?
+  principioActivo   String?
+  presentacion      String?
+  laboratorio       String?
+  unidad            String
+  stockActual       Decimal
+  stockMinimo       Decimal
+  stockMaximo       Decimal
+  lote              String?
+  vencimiento       DateTime?
+  ubicacion         String?
   nomencladorCodigo String?
-  activo           Boolean                @default(true)
+  precioCompra      Decimal?
+  precioVenta       Decimal?
+  fraccion          Int?
+  precioUnidadCompra Decimal?
+  precioUnidadVenta  Decimal?
+  activo            Boolean                @default(true)
   movimientos      MovimientoStock[]
   aplicaciones     AplicacionMedicamento[]
   medicamentosCirugia MedicamentoCirugia[]
