@@ -27,6 +27,32 @@ interface ProtocoloAnestesiaProps {
   cirugiaId?: string;
 }
 
+function onlyArray<T>(value: unknown, fallback: T[] = []): T[] {
+  if (Array.isArray(value)) return value as T[];
+  if (value && typeof value === "object" && Object.keys(value).length > 0) return [value as T];
+  return fallback;
+}
+
+function normalizeSignosVitaPreop(value: unknown): Record<string, number> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const obj = value as Record<string, unknown>;
+  const aliases: Record<string, string> = { PA: "pas", PAD: "pad", FC: "fc", FR: "fr", T: "temp", "T°": "temp" };
+  const out: Record<string, number> = {};
+  for (const [k, raw] of Object.entries(obj)) {
+    const key = aliases[k] ?? k;
+    if (key === "spo2" || key === "SpO2") continue;
+    if (typeof raw === "string" && (key === "pas" || k === "PA") && raw.includes("/")) {
+      const [s, d] = raw.split("/").map((x) => parseFloat(x.replace(",", ".")));
+      if (!Number.isNaN(s)) out["pas"] = s;
+      if (!Number.isNaN(d)) out["pad"] = d;
+      continue;
+    }
+    const num = typeof raw === "number" ? raw : parseFloat(String(raw).replace(",", ".").replace("%", ""));
+    if (!Number.isNaN(num) && ["pas", "pad", "fc", "fr", "temp"].includes(key)) out[key] = num;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 const SECCIONES = [
   { key: "identificacion", label: "1. Identificación" },
   { key: "preanesia", label: "2. Evaluación Preanestésica" },
@@ -148,8 +174,8 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
               ayunoLiquidos: p.ayunoLiquidos ?? null,
               ultimaIngesta: p.ultimaIngesta || "",
               estadoPsiquico: p.estadoPsiquico || "",
-              premedicacion: p.premedicacion || [],
-              signosVitaPreop: p.signosVitaPreop || null,
+              premedicacion: onlyArray<PremedicacionItem>(p.premedicacion),
+              signosVitaPreop: normalizeSignosVitaPreop(p.signosVitaPreop),
               mallampati: p.mallampati || "",
               distTiromentoniana: p.distTiromentoniana ?? null,
               aperturaBucal: p.aperturaBucal ?? null,
@@ -173,12 +199,12 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
               dificultadViaAerea: p.dificultadViaAerea ?? null,
               detalleViaAerea: p.detalleViaAerea || "",
               modalidadVentilatoria: p.modalidadVentilatoria || "",
-              modalidadVentFranja: p.modalidadVentFranja || [],
+              modalidadVentFranja: onlyArray(p.modalidadVentFranja),
               fio2: p.fio2 ?? null,
               oxigenoFlujo: p.oxigenoFlujo ?? null,
               peso: p.peso ?? null,
               talla: p.talla ?? null,
-              liquidosIngresados: p.liquidosIngresados || [],
+              liquidosIngresados: onlyArray(p.liquidosIngresados),
               diuresis: p.diuresis ?? null,
               perdidaSanguinea: p.perdidaSanguinea || "",
               perdidaSanguineaML: p.perdidaSanguineaML ?? null,
@@ -646,14 +672,14 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                       <label className="block text-sm text-muted uppercase tracking-wide">Premedicación</label>
                       <Button type="button" variant="secondary" size="sm" disabled={firmado}
                         onClick={() => {
-                          const prev = form.getValues("premedicacion") || [];
+                          const prev = onlyArray<PremedicacionItem>(form.getValues("premedicacion"));
                           form.setValue("premedicacion", [...prev, { droga: "", dosis: "", via: "", hora: "" }], { shouldDirty: true });
                         }}>+ Agregar</Button>
                     </div>
-                    {(form.watch("premedicacion") || []).length === 0 && (
+                    {onlyArray<PremedicacionItem>(form.watch("premedicacion")).length === 0 && (
                       <p className="text-xs text-muted italic">Sin premedicación registrada</p>
                     )}
-                    {(form.watch("premedicacion") || []).map((_: PremedicacionItem, idx: number) => (
+                    {onlyArray<PremedicacionItem>(form.watch("premedicacion")).map((_: PremedicacionItem, idx: number) => (
                       <div key={idx} className="grid grid-cols-1 sm:grid-cols-4 gap-2 p-2 rounded bg-background border border-border/50 items-end">
                         <Input label="Droga" {...form.register(`premedicacion.${idx}.droga`)} disabled={firmado} />
                         <Input label="Dosis" {...form.register(`premedicacion.${idx}.dosis`)} disabled={firmado} />
@@ -662,7 +688,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                           <Input label="Hora" type="time" {...form.register(`premedicacion.${idx}.hora`)} disabled={firmado} className="flex-1" />
                           <Button type="button" variant="danger" size="sm" disabled={firmado}
                             onClick={() => {
-                              const prev = form.getValues("premedicacion") || [];
+                              const prev = onlyArray<PremedicacionItem>(form.getValues("premedicacion"));
                               form.setValue("premedicacion", prev.filter((_, i) => i !== idx), { shouldDirty: true });
                             }}><Trash2 size={12} /></Button>
                         </div>

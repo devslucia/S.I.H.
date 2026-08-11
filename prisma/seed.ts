@@ -26,10 +26,14 @@ function onWeekday(day: string, weeksAgo: number, h: number, m: number): Date {
   return date;
 }
 
-async function main() {
-  console.log("🌱 Seeding SIMES database...");
+// Redondeo a 2 decimales para precios unitarios
+function redondear2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
 
-  // ── 1. LIMPIEZA (orden por FK) ──
+async function main() {
+  // ── 1. LIMPIEZA (orden FK seguro) ──
+  await prisma.notificacion.deleteMany();
   await prisma.plantillaProtocoloQuirurgico.deleteMany();
   await prisma.firmaDocumento.deleteMany();
   await prisma.cargoFacturacion.deleteMany();
@@ -60,7 +64,6 @@ async function main() {
   await prisma.alergia.deleteMany();
   await prisma.paciente.deleteMany();
   await prisma.movimientoStock.deleteMany();
-  await prisma.usuario.deleteMany();
   await prisma.convenio.deleteMany();
   await prisma.obraSocial.deleteMany();
   await prisma.nomencladorItem.deleteMany();
@@ -70,9 +73,9 @@ async function main() {
   await prisma.quirofano.deleteMany();
   await prisma.rangoVital.deleteMany();
 
-  console.log("✓ Base limpia");
+  console.log("✓ Base limpia (usuarios preservados)");
 
-  // ── 2. USUARIOS (13) ──
+  // ── 2. USUARIOS DEMO (upsert por email — NO se borran) ──
   const adminPw = await bcrypt.hash("Admin1234", 10);
   const medPw = await bcrypt.hash("Med1234", 10);
   const enfPw = await bcrypt.hash("Enf1234", 10);
@@ -81,21 +84,46 @@ async function main() {
   const admPw = await bcrypt.hash("Adm1234", 10);
   const secPw = await bcrypt.hash("Sec1234", 10);
 
-  const admin = await prisma.usuario.create({ data: { nombre: "administrador", email: "admin@simes.com.ar", password: adminPw, rol: "ADMIN" } });
-  const depascuale = await prisma.usuario.create({ data: { nombre: "carina", apellido: "depascuale", email: "depascuale@simes.com.ar", password: medPw, rol: "MEDICO", matricula: "MP-1234", especialidad: "Clínica Médica" } });
-  const romero = await prisma.usuario.create({ data: { nombre: "raúl", apellido: "romero", email: "romero@simes.com.ar", password: medPw, rol: "MEDICO", matricula: "MP-5678", especialidad: "Cirugía General" } });
-  const delgadoPablo = await prisma.usuario.create({ data: { nombre: "pablo", apellido: "delgado", email: "delgado@simes.com.ar", password: medPw, rol: "MEDICO", matricula: "MP-3456", especialidad: "Cirugía General" } });
-  const acosta = await prisma.usuario.create({ data: { nombre: "florencia", apellido: "acosta", email: "acosta@simes.com.ar", password: medPw, rol: "MEDICO", matricula: "MP-9012", especialidad: "Cardiología" } });
-  const sosa = await prisma.usuario.create({ data: { nombre: "carlos sergio", apellido: "sosa", email: "sosa@simes.com.ar", password: medPw, rol: "ANESTESIOLOGO", matricula: "MP-2765", especialidad: "Anestesiología" } });
-  const enfermero = await prisma.usuario.create({ data: { nombre: "laura", apellido: "fernández", email: "enfermeria1@simes.com.ar", password: enfPw, rol: "ENFERMERO" } });
-  const enfermero2 = await prisma.usuario.create({ data: { nombre: "jorge", apellido: "rodríguez", email: "enfermeria2@simes.com.ar", password: enfPw, rol: "ENFERMERO" } });
-  const vanina = await prisma.usuario.create({ data: { nombre: "vanina", apellido: "giménez", email: "instrumentador@simes.com.ar", password: enfPw, rol: "INSTRUMENTADOR" } });
-  const admisionUser = await prisma.usuario.create({ data: { nombre: "personal de admisión", email: "admision@simes.com.ar", password: admPw, rol: "ADMISION" } });
-  const farmaciaUser = await prisma.usuario.create({ data: { nombre: "marcela", apellido: "lópez", email: "farmacia@simes.com.ar", password: farmPw, rol: "FARMACIA" } });
-  const facturacionUser = await prisma.usuario.create({ data: { nombre: "analía", apellido: "gómez", email: "facturacion@simes.com.ar", password: factPw, rol: "FACTURACION" } });
-  const secretaria = await prisma.usuario.create({ data: { nombre: "julieta", apellido: "morales", email: "secretaria@simes.com.ar", password: secPw, rol: "SECRETARIA" } });
+  const usuariosData = [
+    { nombre: "administrador", email: "admin@simes.com.ar", password: adminPw, rol: "ADMIN" as const },
+    { nombre: "carina", apellido: "depascuale", email: "depascuale@simes.com.ar", password: medPw, rol: "MEDICO" as const, matricula: "MP-1234", especialidad: "Clínica Médica" },
+    { nombre: "raúl", apellido: "romero", email: "romero@simes.com.ar", password: medPw, rol: "MEDICO" as const, matricula: "MP-5678", especialidad: "Cirugía General" },
+    { nombre: "pablo", apellido: "delgado", email: "delgado@simes.com.ar", password: medPw, rol: "MEDICO" as const, matricula: "MP-3456", especialidad: "Cirugía General" },
+    { nombre: "florencia", apellido: "acosta", email: "acosta@simes.com.ar", password: medPw, rol: "MEDICO" as const, matricula: "MP-9012", especialidad: "Cardiología" },
+    { nombre: "ana", apellido: "marquez", email: "marquez@simes.com.ar", password: medPw, rol: "MEDICO" as const, matricula: "MP-1122", especialidad: "Neurología" },
+    { nombre: "carlos sergio", apellido: "sosa", email: "sosa@simes.com.ar", password: medPw, rol: "ANESTESIOLOGO" as const, matricula: "MP-2765", especialidad: "Anestesiología" },
+    { nombre: "laura", apellido: "fernández", email: "enfermeria1@simes.com.ar", password: enfPw, rol: "ENFERMERO" as const },
+    { nombre: "jorge", apellido: "rodríguez", email: "enfermeria2@simes.com.ar", password: enfPw, rol: "ENFERMERO" as const },
+    { nombre: "vanina", apellido: "giménez", email: "instrumentador@simes.com.ar", password: enfPw, rol: "INSTRUMENTADOR" as const },
+    { nombre: "personal de admisión", email: "admision@simes.com.ar", password: admPw, rol: "ADMISION" as const },
+    { nombre: "marcela", apellido: "lópez", email: "farmacia@simes.com.ar", password: farmPw, rol: "FARMACIA" as const },
+    { nombre: "analía", apellido: "gómez", email: "facturacion@simes.com.ar", password: factPw, rol: "FACTURACION" as const },
+    { nombre: "julieta", apellido: "morales", email: "secretaria@simes.com.ar", password: secPw, rol: "SECRETARIA" as const },
+  ];
 
-  console.log("✓ Usuarios creados (13)");
+  const users: Record<string, Awaited<ReturnType<typeof prisma.usuario.upsert>>> = {};
+  for (const u of usuariosData) {
+    const { email, ...rest } = u;
+    users[u.nombre] = await prisma.usuario.upsert({
+      where: { email },
+      update: rest,
+      create: { email, ...rest },
+    });
+  }
+  const admin = users["administrador"];
+  const depascuale = users["carina"];
+  const romero = users["raúl"];
+  const delgadoPablo = users["pablo"];
+  const acosta = users["florencia"];
+  const sosa = users["carlos sergio"];
+  const marquez = users["ana"];
+  const enfermero = users["laura"];
+  const enfermero2 = users["jorge"];
+  const vanina = users["vanina"];
+  const farmaciaUser = users["marcela"];
+  const secretaria = users["julieta"];
+
+  console.log("✓ Usuarios demo asegurados (13, upsert por email)");
 
   // ── 3. OBRAS SOCIALES + NOMENCLADOR + CONVENIOS ──
   const osde = await prisma.obraSocial.create({ data: { codigo: "0-0469", nombre: "OSDE", sigla: "OSDE" } });
@@ -103,6 +131,7 @@ async function main() {
   const pami = await prisma.obraSocial.create({ data: { codigo: "0-0800", nombre: "PAMI", sigla: "PAMI" } });
   const sm = await prisma.obraSocial.create({ data: { codigo: "0-0300", nombre: "Swiss Medical", sigla: "SM" } });
   const ips = await prisma.obraSocial.create({ data: { codigo: "0-1212", nombre: "IPS", sigla: "IPS" } });
+  const inssjp = await prisma.obraSocial.create({ data: { codigo: "0-0801", nombre: "INSSJP - PAMI", sigla: "INSSJP" } });
 
   const nomencladorData = [
     { codigo: "CAMA-DIA", descripcion: "Cama/día", tipo: "HOTELERIA" },
@@ -111,57 +140,61 @@ async function main() {
     { codigo: "MED-AMOX", descripcion: "Amoxicilina 500mg", tipo: "MEDICACION" },
     { codigo: "MED-PARA", descripcion: "Paracetamol 1g", tipo: "MEDICACION" },
     { codigo: "MED-OMEP", descripcion: "Omeprazol 40mg", tipo: "MEDICACION" },
-    { codigo: "MED-KETO", descripcion: "Ketorolac 2% Iny.", tipo: "MEDICACION" },
-    { codigo: "MED-BUPI", descripcion: "Bupivacaína 0.5%", tipo: "MEDICACION" },
-    { codigo: "MED-ADRE", descripcion: "Adrenalina 1mg", tipo: "MEDICACION" },
+    { codigo: "MED-KETO", descripcion: "Ketorolac 30mg Iny.", tipo: "MEDICACION" },
     { codigo: "MED-CEFA", descripcion: "Cefazolina 1g", tipo: "MEDICACION" },
     { codigo: "MED-DICL", descripcion: "Diclofenac 75mg", tipo: "MEDICACION" },
     { codigo: "MED-CIAXO", descripcion: "Ceftriaxona 1g", tipo: "MEDICACION" },
+    { codigo: "MED-CLAV", descripcion: "Amoxi-clav 875/125", tipo: "MEDICACION" },
+    { codigo: "MED-IBU", descripcion: "Ibuprofeno 400mg", tipo: "MEDICACION" },
+    { codigo: "MED-OND", descripcion: "Ondansetrón 8mg", tipo: "MEDICACION" },
+    { codigo: "MED-HEPA", descripcion: "Heparina sódica 5000UI", tipo: "MEDICACION" },
+    { codigo: "MED-ENOX", descripcion: "Enoxaparina 40mg", tipo: "MEDICACION" },
+    { codigo: "MED-MET", descripcion: "Metformina 850mg", tipo: "MEDICACION" },
+    { codigo: "MED-ENA", descripcion: "Enalapril 10mg", tipo: "MEDICACION" },
     { codigo: "MAT-SFIS", descripcion: "Sol. Fisiológica 1L", tipo: "MATERIAL" },
-    { codigo: "MAT-POVI", descripcion: "Povidona Yodada", tipo: "MATERIAL" },
-    { codigo: "MAT-ABBO", descripcion: "Abbocath Nº20", tipo: "MATERIAL" },
-    { codigo: "MAT-PERF", descripcion: "Equipo de perfusión", tipo: "MATERIAL" },
-    { codigo: "MAT-TEND", descripcion: "Tubo endotraqueal 7.5", tipo: "MATERIAL" },
+    { codigo: "MAT-DEX5", descripcion: "Dextrosa 5% 1L", tipo: "MATERIAL" },
   ];
 
   const nomencladores = [];
   for (const data of nomencladorData) {
     nomencladores.push(await prisma.nomencladorItem.create({ data }));
   }
+  const nomen = Object.fromEntries(nomencladores.map((n) => [n.codigo, n.id]));
 
   const convenioData = [
     // HOTELERIA
-    { obraSocialId: osde.id, nomencladorId: nomencladores[0].id, valor: 15000 },
-    { obraSocialId: ioma.id, nomencladorId: nomencladores[0].id, valor: 12000 },
-    { obraSocialId: pami.id, nomencladorId: nomencladores[0].id, valor: 10000 },
-    { obraSocialId: sm.id, nomencladorId: nomencladores[0].id, valor: 14500 },
-    { obraSocialId: ips.id, nomencladorId: nomencladores[0].id, valor: 11000 },
-    { obraSocialId: osde.id, nomencladorId: nomencladores[1].id, valor: 42000 },
-    { obraSocialId: ioma.id, nomencladorId: nomencladores[1].id, valor: 36000 },
+    { obraSocialId: osde.id, nomencladorId: nomen["CAMA-DIA"], valor: 15000 },
+    { obraSocialId: ioma.id, nomencladorId: nomen["CAMA-DIA"], valor: 12000 },
+    { obraSocialId: pami.id, nomencladorId: nomen["CAMA-DIA"], valor: 10000 },
+    { obraSocialId: sm.id, nomencladorId: nomen["CAMA-DIA"], valor: 14500 },
+    { obraSocialId: ips.id, nomencladorId: nomen["CAMA-DIA"], valor: 11000 },
+    { obraSocialId: osde.id, nomencladorId: nomen["CAMA-UTI-DIA"], valor: 42000 },
+    { obraSocialId: ioma.id, nomencladorId: nomen["CAMA-UTI-DIA"], valor: 36000 },
     // CONSULTA
-    { obraSocialId: osde.id, nomencladorId: nomencladores[2].id, valor: 12000 },
-    { obraSocialId: sm.id, nomencladorId: nomencladores[2].id, valor: 11500 },
-    { obraSocialId: ioma.id, nomencladorId: nomencladores[2].id, valor: 9000 },
+    { obraSocialId: osde.id, nomencladorId: nomen["CONS-MED"], valor: 12000 },
+    { obraSocialId: sm.id, nomencladorId: nomen["CONS-MED"], valor: 11500 },
+    { obraSocialId: ioma.id, nomencladorId: nomen["CONS-MED"], valor: 9000 },
+    { obraSocialId: pami.id, nomencladorId: nomen["CONS-MED"], valor: 7500 },
     // MEDICACIÓN
-    { obraSocialId: osde.id, nomencladorId: nomencladores[3].id, valor: 850 },
-    { obraSocialId: osde.id, nomencladorId: nomencladores[4].id, valor: 350 },
-    { obraSocialId: osde.id, nomencladorId: nomencladores[5].id, valor: 1200 },
-    { obraSocialId: osde.id, nomencladorId: nomencladores[6].id, valor: 2500 },
-    { obraSocialId: osde.id, nomencladorId: nomencladores[9].id, valor: 4500 },
-    { obraSocialId: ioma.id, nomencladorId: nomencladores[4].id, valor: 280 },
-    { obraSocialId: ioma.id, nomencladorId: nomencladores[9].id, valor: 3800 },
-    { obraSocialId: ioma.id, nomencladorId: nomencladores[11].id, valor: 4200 },
-    { obraSocialId: pami.id, nomencladorId: nomencladores[4].id, valor: 250 },
-    { obraSocialId: pami.id, nomencladorId: nomencladores[9].id, valor: 3500 },
-    { obraSocialId: pami.id, nomencladorId: nomencladores[10].id, valor: 1300 },
-    { obraSocialId: sm.id, nomencladorId: nomencladores[6].id, valor: 2400 },
+    { obraSocialId: osde.id, nomencladorId: nomen["MED-AMOX"], valor: 850 },
+    { obraSocialId: osde.id, nomencladorId: nomen["MED-PARA"], valor: 350 },
+    { obraSocialId: osde.id, nomencladorId: nomen["MED-OMEP"], valor: 1200 },
+    { obraSocialId: osde.id, nomencladorId: nomen["MED-KETO"], valor: 2500 },
+    { obraSocialId: osde.id, nomencladorId: nomen["MED-CEFA"], valor: 4500 },
+    { obraSocialId: osde.id, nomencladorId: nomen["MED-OND"], valor: 3200 },
+    { obraSocialId: osde.id, nomencladorId: nomen["MED-ENOX"], valor: 8500 },
+    { obraSocialId: ioma.id, nomencladorId: nomen["MED-PARA"], valor: 280 },
+    { obraSocialId: ioma.id, nomencladorId: nomen["MED-CEFA"], valor: 3800 },
+    { obraSocialId: ioma.id, nomencladorId: nomen["MED-CIAXO"], valor: 4200 },
+    { obraSocialId: pami.id, nomencladorId: nomen["MED-PARA"], valor: 250 },
+    { obraSocialId: pami.id, nomencladorId: nomen["MED-CEFA"], valor: 3500 },
+    { obraSocialId: pami.id, nomencladorId: nomen["MED-DICL"], valor: 1300 },
+    { obraSocialId: sm.id, nomencladorId: nomen["MED-KETO"], valor: 2400 },
     // MATERIAL
-    { obraSocialId: osde.id, nomencladorId: nomencladores[12].id, valor: 450 },
-    { obraSocialId: osde.id, nomencladorId: nomencladores[13].id, valor: 800 },
-    { obraSocialId: osde.id, nomencladorId: nomencladores[14].id, valor: 350 },
-    { obraSocialId: osde.id, nomencladorId: nomencladores[15].id, valor: 1200 },
-    { obraSocialId: ioma.id, nomencladorId: nomencladores[13].id, valor: 700 },
-    { obraSocialId: pami.id, nomencladorId: nomencladores[13].id, valor: 600 },
+    { obraSocialId: osde.id, nomencladorId: nomen["MAT-SFIS"], valor: 450 },
+    { obraSocialId: osde.id, nomencladorId: nomen["MAT-DEX5"], valor: 500 },
+    { obraSocialId: ioma.id, nomencladorId: nomen["MAT-SFIS"], valor: 400 },
+    { obraSocialId: pami.id, nomencladorId: nomen["MAT-SFIS"], valor: 350 },
   ];
   for (const c of convenioData) {
     await prisma.convenio.create({ data: { ...c, vigenciaDesde: new Date("2025-01-01") } });
@@ -212,465 +245,256 @@ async function main() {
   ]});
   console.log("✓ Sectores, camas, quirófanos y rangos vitales creados");
 
-  // ── 5. STOCK ──
+  // ── 5. STOCK (16 ítems, precios unitarios calculados) ──
   const stockData = [
-    { nombre: "Amoxicilina 500mg", nTroquel: "854291", principioActivo: "Amoxicilina", presentacion: "Cápsulas", laboratorio: "Roemmers", unidad: "unidades", stockActual: 12, stockMinimo: 50, stockMaximo: 200, nomencladorCodigo: "MED-AMOX", precioCompra: 3000, precioVenta: 4500, fraccion: 30 },
-    { nombre: "Sol. Fisiológica 1L", nTroquel: "SF-1L", presentacion: "Bolsa x 1L", laboratorio: "Baxter", unidad: "unidades", stockActual: 32, stockMinimo: 50, stockMaximo: 150, nomencladorCodigo: "MAT-SFIS", precioCompra: 1500, precioVenta: 2200, fraccion: 1 },
-    { nombre: "Paracetamol 1g", nTroquel: "761553", principioActivo: "Paracetamol", presentacion: "Comprimidos", laboratorio: "Bago", unidad: "unidades", stockActual: 240, stockMinimo: 50, stockMaximo: 300, nomencladorCodigo: "MED-PARA", precioCompra: 2400, precioVenta: 3600, fraccion: 20 },
-    { nombre: "Omeprazol 40mg", nTroquel: "762330", principioActivo: "Omeprazol", presentacion: "Comprimidos", laboratorio: "Roemmers", unidad: "unidades", stockActual: 180, stockMinimo: 30, stockMaximo: 200, nomencladorCodigo: "MED-OMEP", precioCompra: 3100, precioVenta: 4650, fraccion: 14 },
-    { nombre: "Ketorolac 2% Iny.", nTroquel: "770195", principioActivo: "Ketorolac", presentacion: "Ampolla 2ml", laboratorio: "Denver Farma", unidad: "ampollas", stockActual: 48, stockMinimo: 20, stockMaximo: 100, nomencladorCodigo: "MED-KETO", precioCompra: 5200, precioVenta: 7900, fraccion: 25 },
-    { nombre: "Bupivacaína 0.5%", nTroquel: "782900", principioActivo: "Bupivacaína", presentacion: "Ampolla 10ml", laboratorio: "Northia", unidad: "ampollas", stockActual: 24, stockMinimo: 10, stockMaximo: 50, nomencladorCodigo: "MED-BUPI", precioCompra: 9800, precioVenta: 14700, fraccion: 50 },
-    { nombre: "Adrenalina 1mg", nTroquel: "781234", principioActivo: "Adrenalina", presentacion: "Ampolla 1ml", laboratorio: "Northia", unidad: "ampollas", stockActual: 36, stockMinimo: 15, stockMaximo: 60, nomencladorCodigo: "MED-ADRE", precioCompra: 4100, precioVenta: 6400, fraccion: 50 },
-    { nombre: "Cefazolina 1g", nTroquel: "855100", principioActivo: "Cefazolina", presentacion: "Frasco", laboratorio: "Roemmers", unidad: "unidades", stockActual: 60, stockMinimo: 25, stockMaximo: 100, nomencladorCodigo: "MED-CEFA", precioCompra: 6800, precioVenta: 9800, fraccion: 1 },
-    { nombre: "Diclofenac 75mg", nTroquel: "760201", principioActivo: "Diclofenac", presentacion: "Ampolla", laboratorio: "Bago", unidad: "ampollas", stockActual: 90, stockMinimo: 30, stockMaximo: 120, nomencladorCodigo: "MED-DICL", precioCompra: 3600, precioVenta: 5400, fraccion: 30 },
-    { nombre: "Ceftriaxona 1g", nTroquel: "856700", principioActivo: "Ceftriaxona", presentacion: "Frasco", laboratorio: "Elea", unidad: "unidades", stockActual: 25, stockMinimo: 20, stockMaximo: 80, nomencladorCodigo: "MED-CIAXO", precioCompra: 7200, precioVenta: 10500, fraccion: 1 },
-    { nombre: "Povidona Yodada (Redox)", nTroquel: "POV-500", presentacion: "Frasco 500ml", laboratorio: "Roux Océfa", unidad: "unidades", stockActual: 8, stockMinimo: 10, stockMaximo: 30, nomencladorCodigo: "MAT-POVI", precioCompra: 2800, precioVenta: 4300, fraccion: 1 },
-    { nombre: "Abbocath Nº20", nTroquel: "ABB-20", presentacion: "Catéter", laboratorio: "BD", unidad: "unidades", stockActual: 45, stockMinimo: 20, stockMaximo: 100, nomencladorCodigo: "MAT-ABBO", precioCompra: 3750, precioVenta: 5250, fraccion: 50 },
-    { nombre: "Equipo de perfusión", nTroquel: "PER-FUS", presentacion: "Equipo", laboratorio: "BD", unidad: "unidades", stockActual: 30, stockMinimo: 15, stockMaximo: 60, nomencladorCodigo: "MAT-PERF", precioCompra: 1900, precioVenta: 2850, fraccion: 1 },
-    { nombre: "Tubo endotraqueal 7.5", nTroquel: "TET-75", presentacion: "Tubo", laboratorio: "Teleflex", unidad: "unidades", stockActual: 12, stockMinimo: 5, stockMaximo: 20, nomencladorCodigo: "MAT-TEND", precioCompra: 7200, precioVenta: 10800, fraccion: 10 },
-    { nombre: "Plancha bisturí", nTroquel: "BIS-PLA", presentacion: "Plancha", laboratorio: "Aspen", unidad: "unidades", stockActual: 6, stockMinimo: 5, stockMaximo: 15, nomencladorCodigo: "MAT-BIST", precioCompra: 8500, precioVenta: 12500, fraccion: 1 },
-    { nombre: "Electrobisturí desc.", nTroquel: "ELE-DES", presentacion: "Electrodo", laboratorio: "Medtronic", unidad: "unidades", stockActual: 4, stockMinimo: 3, stockMaximo: 10, nomencladorCodigo: "MAT-ELEC", precioCompra: 11000, precioVenta: 16500, fraccion: 10 },
+    { nombre: "Amoxicilina 500mg", nTroquel: "854291", principioActivo: "Amoxicilina", presentacion: "Cápsulas x 30", laboratorio: "Roemmers", unidad: "unidades", stockActual: 12, stockMinimo: 8, stockMaximo: 60, lote: "L-AMOX-2026", vencimiento: new Date("2026-12-15"), ubicacion: "FARMACIA-G1", nomencladorCodigo: "MED-AMOX", precioCompra: 3000, precioVenta: 4500, fraccion: 30 },
+    { nombre: "Amoxicilina + Clavulánico 875/125", nTroquel: "856412", principioActivo: "Amoxicilina + ácido clavulánico", presentacion: "Comprimidos x 14", laboratorio: "Elea", unidad: "unidades", stockActual: 10, stockMinimo: 5, stockMaximo: 40, lote: "L-ACLAV-2026", vencimiento: new Date("2026-10-01"), ubicacion: "FARMACIA-G1", nomencladorCodigo: "MED-CLAV", precioCompra: 7400, precioVenta: 10500, fraccion: 14 },
+    { nombre: "Paracetamol 1g", nTroquel: "761553", principioActivo: "Paracetamol", presentacion: "Comprimidos x 20", laboratorio: "Bago", unidad: "unidades", stockActual: 240, stockMinimo: 30, stockMaximo: 200, lote: "L-PARA-2027", vencimiento: new Date("2027-03-20"), ubicacion: "FARMACIA-G2", nomencladorCodigo: "MED-PARA", precioCompra: 2400, precioVenta: 3600, fraccion: 20 },
+    { nombre: "Ibuprofeno 400mg", nTroquel: "763201", principioActivo: "Ibuprofeno", presentacion: "Comprimidos x 30", laboratorio: "Pfizer", unidad: "unidades", stockActual: 90, stockMinimo: 15, stockMaximo: 80, lote: "L-IBU-2026", vencimiento: new Date("2026-11-10"), ubicacion: "FARMACIA-G2", nomencladorCodigo: "MED-IBU", precioCompra: 1900, precioVenta: 2800, fraccion: 30 },
+    { nombre: "Diclofenac 75mg", nTroquel: "760201", principioActivo: "Diclofenac", presentacion: "Ampollas x 30", laboratorio: "Bago", unidad: "ampollas", stockActual: 90, stockMinimo: 20, stockMaximo: 80, lote: "L-DICL-2026", vencimiento: new Date("2026-09-05"), ubicacion: "FARMACIA-G3", nomencladorCodigo: "MED-DICL", precioCompra: 3600, precioVenta: 5400, fraccion: 30 },
+    { nombre: "Ketorolac 30mg", nTroquel: "770195", principioActivo: "Ketorolac trometamol", presentacion: "Ampollas x 25", laboratorio: "Denver Farma", unidad: "ampollas", stockActual: 48, stockMinimo: 15, stockMaximo: 60, lote: "L-KETO-2026", vencimiento: new Date("2026-08-25"), ubicacion: "FARMACIA-G3", nomencladorCodigo: "MED-KETO", precioCompra: 5200, precioVenta: 7900, fraccion: 25 },
+    { nombre: "Omeprazol 40mg", nTroquel: "762330", principioActivo: "Omeprazol", presentacion: "Comprimidos x 14", laboratorio: "Roemmers", unidad: "unidades", stockActual: 180, stockMinimo: 20, stockMaximo: 100, lote: "L-OME-2026", vencimiento: new Date("2026-12-30"), ubicacion: "FARMACIA-G1", nomencladorCodigo: "MED-OMEP", precioCompra: 3100, precioVenta: 4650, fraccion: 14 },
+    { nombre: "Ondansetrón 8mg", nTroquel: "789045", principioActivo: "Ondansetrón", presentacion: "Ampollas x 10", laboratorio: "Richmond", unidad: "ampollas", stockActual: 35, stockMinimo: 10, stockMaximo: 50, lote: "L-OND-2026", vencimiento: new Date("2026-10-18"), ubicacion: "FARMACIA-G3", nomencladorCodigo: "MED-OND", precioCompra: 9500, precioVenta: 13500, fraccion: 10 },
+    { nombre: "Ceftriaxona 1g", nTroquel: "856700", principioActivo: "Ceftriaxona", presentacion: "Frasco ampolla", laboratorio: "Elea", unidad: "unidades", stockActual: 25, stockMinimo: 10, stockMaximo: 40, lote: "L-CTRX-2026", vencimiento: new Date("2026-12-01"), ubicacion: "FARMACIA-G4", nomencladorCodigo: "MED-CIAXO", precioCompra: 7200, precioVenta: 10500, fraccion: 1 },
+    { nombre: "Cefazolina 1g", nTroquel: "855100", principioActivo: "Cefazolina", presentacion: "Frasco ampolla", laboratorio: "Roemmers", unidad: "unidades", stockActual: 60, stockMinimo: 10, stockMaximo: 40, lote: "L-CEFA-2026", vencimiento: new Date("2026-11-20"), ubicacion: "FARMACIA-G4", nomencladorCodigo: "MED-CEFA", precioCompra: 6800, precioVenta: 9800, fraccion: 1 },
+    { nombre: "Heparina sódica 5000 UI", nTroquel: "782300", principioActivo: "Heparina sódica", presentacion: "Ampollas x 50", laboratorio: "Northia", unidad: "ampollas", stockActual: 30, stockMinimo: 10, stockMaximo: 50, lote: "L-HEPA-2027", vencimiento: new Date("2027-01-15"), ubicacion: "FARMACIA-G4", nomencladorCodigo: "MED-HEPA", precioCompra: 12500, precioVenta: 17800, fraccion: 50 },
+    { nombre: "Enoxaparina 40mg", nTroquel: "784120", principioActivo: "Enoxaparina sódica", presentacion: "Jeringas prellenadas x 10", laboratorio: "Roemmers", unidad: "jeringas", stockActual: 18, stockMinimo: 6, stockMaximo: 30, lote: "L-ENOX-2026", vencimiento: new Date("2026-10-30"), ubicacion: "FARMACIA-G5", nomencladorCodigo: "MED-ENOX", precioCompra: 18500, precioVenta: 26000, fraccion: 10 },
+    { nombre: "Sol. Fisiológica 1L", nTroquel: "SF-1L", principioActivo: "Cloruro de sodio 0.9%", presentacion: "Bolsa x 1L", laboratorio: "Baxter", unidad: "unidades", stockActual: 32, stockMinimo: 15, stockMaximo: 60, lote: "L-SFIS-2027", vencimiento: new Date("2027-06-01"), ubicacion: "DEPOSITO-1", nomencladorCodigo: "MAT-SFIS", precioCompra: 1500, precioVenta: 2200, fraccion: 1 },
+    { nombre: "Dextrosa 5% 1L", nTroquel: "DEX-5", principioActivo: "Glucosa 5%", presentacion: "Bolsa x 1L", laboratorio: "Baxter", unidad: "unidades", stockActual: 20, stockMinimo: 10, stockMaximo: 40, lote: "L-DEX5-2027", vencimiento: new Date("2027-05-15"), ubicacion: "DEPOSITO-1", nomencladorCodigo: "MAT-DEX5", precioCompra: 1600, precioVenta: 2400, fraccion: 1 },
+    { nombre: "Metformina 850mg", nTroquel: "758800", principioActivo: "Metformina", presentacion: "Comprimidos x 60", laboratorio: "Montpellier", unidad: "unidades", stockActual: 100, stockMinimo: 15, stockMaximo: 80, lote: "L-MET-2026", vencimiento: new Date("2026-12-10"), ubicacion: "FARMACIA-G2", nomencladorCodigo: "MED-MET", precioCompra: 4200, precioVenta: 6200, fraccion: 60 },
+    { nombre: "Enalapril 10mg", nTroquel: "759940", principioActivo: "Enalapril", presentacion: "Comprimidos x 30", laboratorio: "Roemmers", unidad: "unidades", stockActual: 75, stockMinimo: 10, stockMaximo: 60, lote: "L-ENA-2026", vencimiento: new Date("2026-11-25"), ubicacion: "FARMACIA-G2", nomencladorCodigo: "MED-ENA", precioCompra: 3500, precioVenta: 5200, fraccion: 30 },
   ];
+
   const items = [];
   for (const data of stockData) {
-    items.push(await prisma.stockItem.create({ data }));
+    items.push(await prisma.stockItem.create({
+      data: {
+        ...data,
+        precioUnidadCompra: redondear2(data.precioCompra / data.fraccion),
+        precioUnidadVenta: redondear2(data.precioVenta / data.fraccion),
+        activo: true,
+      },
+    }));
   }
-  console.log("✓ Stock items creados");
+  const stockByName = Object.fromEntries(items.map((i) => [i.nombre, i]));
+  console.log("✓ Stock items creados (16)");
 
-  // ── 6. PACIENTES (5) ──
-  const sureda = await prisma.paciente.create({
-    data: {
-      dni: "33012458", apellido: "Sureda", nombre: "María Daniela", sexo: "FEMENINO",
-      fechaNac: new Date("1987-07-25"), cuil: "27-33012458-6",
-      domicilio: "San Juan 2676", localidad: "Posadas", provincia: "Misiones",
-      telefono: "3764392067", grupoSangre: "A+", estadoCivil: "CASADO",
-    },
-  });
+  // ── 6. PACIENTES (3 nuevos, HC completa) ──
 
+  // ── PACIENTE 1: Clínico internado en UTI ──
   const ferreyra = await prisma.paciente.create({
     data: {
       dni: "32110500", apellido: "Ferreyra", nombre: "Juan Carlos", sexo: "MASCULINO",
       fechaNac: new Date("1975-03-14"), cuil: "20-32110500-8",
       domicilio: "Bolívar 567", localidad: "Posadas", provincia: "Misiones",
-      telefono: "3764789012", grupoSangre: "O+", estadoCivil: "CASADO",
-      alergias: { create: { sustancia: "Penicilina", tipo: "MEDICAMENTO", severidad: "MODERADA", observacion: "Reacción cutánea con urticaria" } },
+      telefono: "3764789012", email: "jcferreyra@gmail.com", grupoSangre: "O+", estadoCivil: "CASADO",
+      alergias: { create: { sustancia: "Penicilina", tipo: "MEDICAMENTO", severidad: "MODERADA", observacion: "Urticaria generalizada con amoxicilina" } },
     },
   });
 
-  const gomez = await prisma.paciente.create({
-    data: {
-      dni: "40889003", apellido: "Gómez", nombre: "Laura Soledad", sexo: "FEMENINO",
-      fechaNac: new Date("1995-11-22"), cuil: "27-40889003-1",
-      domicilio: "Av. Roca 1234", localidad: "Posadas", provincia: "Misiones",
-      telefono: "3764123456", grupoSangre: "B+", estadoCivil: "SOLTERO",
-    },
-  });
-
+  // ── PACIENTE 2: Alta con quirúrgico + epicrisis + control ──
   const villalba = await prisma.paciente.create({
     data: {
       dni: "19003771", apellido: "Villalba", nombre: "Pedro Ernesto", sexo: "MASCULINO",
       fechaNac: new Date("1958-05-08"), cuil: "20-19003771-3",
       domicilio: "Catamarca 890", localidad: "Posadas", provincia: "Misiones",
-      telefono: "3764567890", grupoSangre: "A-", estadoCivil: "CASADO",
-      alergias: { create: { sustancia: "AINE", tipo: "MEDICAMENTO", severidad: "LEVE", observacion: "Dolor epigástrico con ibuprofeno" } },
+      telefono: "3764567890", email: "pevillalba@hotmail.com", grupoSangre: "A-", estadoCivil: "CASADO",
+      alergias: { create: { sustancia: "AINE", tipo: "MEDICAMENTO", severidad: "LEVE", observacion: "Epigastralgia con diclofenac" } },
     },
   });
 
+  // ── PACIENTE 3: Ambulatorio (consultorio, sin internación) ──
   const benitez = await prisma.paciente.create({
     data: {
       dni: "38551234", apellido: "Benítez", nombre: "Martina", sexo: "FEMENINO",
       fechaNac: new Date("1993-02-17"), cuil: "27-38551234-2",
       domicilio: "Lavalle 845", localidad: "Posadas", provincia: "Misiones",
-      telefono: "3764556677", grupoSangre: "0-", estadoCivil: "UNION_CONVIVENCIAL",
+      telefono: "3764556677", email: "martinabenitez93@gmail.com", grupoSangre: "0-", estadoCivil: "UNION_CONVIVENCIAL",
     },
   });
 
-  console.log("✓ Pacientes creados (5)");
+  console.log("✓ Pacientes creados (3)");
 
-  // ── 7. INTERNACIONES (4 + ambulatorio sin internación) ──
-  const intSureda = await prisma.internacion.create({
-    data: {
-      pacienteId: sureda.id, camaId: p3Camas[4].id, obraSocialId: osde.id,
-      nroAfiliado: "62313416002", tipoBeneficiario: "TITULAR",
-      fechaIngreso: addDays(-4, 6, 15), motivoIngreso: "Mastoplastia bilateral programada",
-      diagnosticoCIE: "Q83.0 - Hipomastia bilateral",
-      peso: 62, medicoSolicitante: "Dra. Carina Depascuale",
-      tipoIngreso: "PROGRAMADO", estado: "POSTQUIRURGICO",
-    },
-  });
-
+  // ── 7. INTERNACIONES ──
   const intFerreyra = await prisma.internacion.create({
     data: {
-      pacienteId: ferreyra.id, camaId: utiCamas[0].id, obraSocialId: ioma.id,
-      nroAfiliado: "10234567", tipoBeneficiario: "TITULAR",
-      fechaIngreso: addDays(-5, 9, 0), motivoIngreso: "Neumonía bilateral adquirida en la comunidad",
+      pacienteId: ferreyra.id, camaId: utiCamas[0].id, obraSocialId: osde.id,
+      nroAfiliado: "62318804512", tipoBeneficiario: "TITULAR",
+      fechaIngreso: addDays(-5, 9, 30), motivoIngreso: "Neumonía adquirida en la comunidad con insuficiencia respiratoria",
       diagnosticoCIE: "J18.9 - Neumonía no especificada",
-      peso: 84, medicoSolicitante: "Dra. Carina Depascuale",
+      peso: 88, medicoSolicitante: "Dra. Carina Depascuale",
       tipoIngreso: "URGENCIA", estado: "ACTIVA",
-    },
-  });
-
-  const intGomez = await prisma.internacion.create({
-    data: {
-      pacienteId: gomez.id, camaId: guardiaCamas[0].id, obraSocialId: sm.id,
-      nroAfiliado: "98765432", tipoBeneficiario: "TITULAR",
-      fechaIngreso: addDays(-1, 7, 30), motivoIngreso: "Abdomen agudo a estudio",
-      diagnosticoCIE: "R10.0 - Abdomen agudo",
-      peso: 58, medicoSolicitante: "Dr. Raúl Romero",
-      tipoIngreso: "GUARDIA", estado: "ACTIVA",
     },
   });
 
   const intVillalba = await prisma.internacion.create({
     data: {
-      pacienteId: villalba.id, camaId: p3Camas[1].id, obraSocialId: pami.id,
-      nroAfiliado: "0034567890", tipoBeneficiario: "TITULAR",
-      fechaIngreso: addDays(-8, 10, 0), fechaEgreso: addDays(-1, 12, 0),
-      motivoIngreso: "Colecistitis aguda litiásica",
-      diagnosticoCIE: "K80.0 - Colelitiasis con colecistitis aguda",
-      peso: 78, medicoSolicitante: "Dr. Pablo Delgado",
+      pacienteId: villalba.id, camaId: p3Camas[1].id, obraSocialId: ioma.id,
+      nroAfiliado: "10234588", tipoBeneficiario: "TITULAR",
+      fechaIngreso: addDays(-3, 8, 0), fechaEgreso: addDays(0, 12, 30),
+      motivoIngreso: "Colelitiasis sintomática — colecistectomía laparoscópica programada",
+      diagnosticoCIE: "K80.2 - Colelitiasis sin colecistitis",
+      peso: 71, medicoSolicitante: "Dr. Pablo Delgado",
       tipoIngreso: "PROGRAMADO", estado: "ALTA_MEDICA",
     },
   });
 
   await prisma.internacionMedicoTratante.createMany({ data: [
-    { internacionId: intSureda.id, medicoId: depascuale.id, fechaAsignacion: addDays(-4, 6, 20) },
-    { internacionId: intFerreyra.id, medicoId: depascuale.id, fechaAsignacion: addDays(-5, 9, 1) },
-    { internacionId: intGomez.id, medicoId: romero.id, fechaAsignacion: addDays(-1, 7, 35) },
-    { internacionId: intVillalba.id, medicoId: delgadoPablo.id, fechaAsignacion: addDays(-8, 10, 1) },
+    { internacionId: intFerreyra.id, medicoId: depascuale.id, fechaAsignacion: addDays(-5, 9, 45) },
+    { internacionId: intVillalba.id, medicoId: delgadoPablo.id, fechaAsignacion: addDays(-3, 8, 15) },
   ]});
-  console.log("✓ Internaciones creadas (4)");
+  console.log("✓ Internaciones creadas (2)");
 
   // ── 8. HISTORIAS CLÍNICAS + EPISODIOS ──
-  const hcSureda = await prisma.historiaClinica.create({ data: { internacionId: intSureda.id } });
-  const hcFerreyra = await prisma.historiaClinica.create({ data: { internacionId: intFerreyra.id } });
-  const hcGomez = await prisma.historiaClinica.create({ data: { internacionId: intGomez.id } });
-  const hcVillalba = await prisma.historiaClinica.create({ data: { internacionId: intVillalba.id } });
+  const hcFerreyra = await prisma.historiaClinica.create({ data: { internacionId: intFerreyra.id, pacienteId: ferreyra.id } });
+  const hcVillalba = await prisma.historiaClinica.create({ data: { internacionId: intVillalba.id, pacienteId: villalba.id } });
   const hcBenitez = await prisma.historiaClinica.create({ data: { pacienteId: benitez.id } });
 
-  const epSureda = await prisma.episodio.create({ data: { hcId: hcSureda.id, tipo: "INTERNACION", internacionId: intSureda.id, motivoIngreso: "Mastoplastia bilateral", diagnostico: "Hipomastia bilateral", estado: "EN_CURSO", fechaInicio: addDays(-4, 6, 20) } });
-  const epFerreyra = await prisma.episodio.create({ data: { hcId: hcFerreyra.id, tipo: "INTERNACION", internacionId: intFerreyra.id, motivoIngreso: "Neumonía bilateral", diagnostico: "Neumonía por probable germen comunitario", estado: "EN_CURSO", fechaInicio: addDays(-5, 9, 1) } });
-  const epGomez = await prisma.episodio.create({ data: { hcId: hcGomez.id, tipo: "INTERNACION", internacionId: intGomez.id, motivoIngreso: "Abdomen agudo a estudio", diagnostico: "Abdomen agudo de probable etiología quirúrgica", estado: "EN_CURSO", fechaInicio: addDays(-1, 7, 35) } });
-  const epVillalba = await prisma.episodio.create({ data: { hcId: hcVillalba.id, tipo: "INTERNACION", internacionId: intVillalba.id, motivoIngreso: "Colecistitis aguda", diagnostico: "Colecistitis aguda litiásica", estado: "FINALIZADO", fechaInicio: addDays(-8, 10, 1), fechaFin: addDays(-1, 12, 0) } });
-
-  const epVillalbaConsulta = await prisma.episodio.create({ data: { hcId: hcVillalba.id, tipo: "CONSULTA", motivoIngreso: "Control post operatorio", diagnostico: "Colecistectomía reciente", estado: "FINALIZADO", fechaInicio: addDays(-2, 10, 0), fechaFin: addDays(-2, 10, 30) } });
-  const epBenitezConsulta = await prisma.episodio.create({ data: { hcId: hcBenitez.id, tipo: "CONSULTA", motivoIngreso: "Cefaleas recurrentes", diagnostico: "Cefalea tensional probable", estado: "FINALIZADO", fechaInicio: onWeekday("LUNES", 2, 9, 0), fechaFin: onWeekday("LUNES", 2, 9, 30) } });
+  const epFerreyra = await prisma.episodio.create({ data: { hcId: hcFerreyra.id, tipo: "INTERNACION", internacionId: intFerreyra.id, motivoIngreso: "Neumonía adquirida en la comunidad", diagnostico: "Neumonía bilateral con hipoxemia", estado: "EN_CURSO", fechaInicio: addDays(-5, 9, 45) } });
+  const epVillalba = await prisma.episodio.create({ data: { hcId: hcVillalba.id, tipo: "INTERNACION", internacionId: intVillalba.id, motivoIngreso: "Colelitiasis sintomática", diagnostico: "Colelitiasis — colecistectomía laparoscópica", estado: "FINALIZADO", fechaInicio: addDays(-3, 8, 15), fechaFin: addDays(0, 12, 30) } });
+  const epBenitezConsulta = await prisma.episodio.create({ data: { hcId: hcBenitez.id, tipo: "CONSULTA", motivoIngreso: "Cefalea tensional recidivante", diagnostico: "Cefalea tensional", estado: "FINALIZADO", fechaInicio: addDays(-14, 10, 0), fechaFin: addDays(-14, 10, 30) } });
   console.log("✓ Historias clínicas y episodios creados");
 
   // ── 9. ANAMNESIS Y EVOLUCIONES ──
   await prisma.anamnesis.create({
     data: {
-      hcId: hcSureda.id, episodioId: epSureda.id,
-      motivoConsulta: "Consulta por deseo de aumento mamario bilateral",
-      enfermedadActual: "Paciente de 38 años que consulta por hipomastia bilateral de larga data. Refiere incomodidad con su apariencia física y deseo de colocación de implantes mamarios. Sin dolor ni secreciones. Sin antecedentes de patología mamaria.",
-      antecPatologicos: "Sin antecedentes patológicos relevantes. Sin cirugías previas.",
-      antecFamiliares: "Madre hipertensa. Padre diabético tipo 2.",
-      habitosToxicos: "No fuma. No consume alcohol.",
-      factoresRiesgoCV: "Sedentarismo ocasional.",
-      estadoGeneral: "Buen estado general, lúcida, normohidratada, afebril.",
-      signosVitalesIngreso: { "PA": "110/70", "FC": "76", "FR": "16", "T°": "36.6", "SpO2": "99%" },
-      abdomen: "Blando, depresible, indoloro. RHA presentes.",
-      diagPresuntivo: "Hipomastia bilateral",
-      diagDiferencial: null,
-      planEvaluacion: "Laboratorio preoperatorio completo, electrocardiograma, valoración preanestésica",
-      planTerapeutico: "Mastoplastia de aumento bilateral programada",
-      firmadoAt: addDays(-4, 8, 0), firmadoPor: "Carina Depascuale",
-    },
-  });
-  await prisma.evolucion.create({ data: { hcId: hcSureda.id, episodioId: epSureda.id, fecha: addDays(-3, 20, 0), contenido: "Ingresa para cirugía programada de mañana. Se completa marcación prequirúrgica en posición sentada. Se verifican implantes Motiva Ergonomix2 250cc.", usuarioId: depascuale.id, firmada: true, firmadaAt: addDays(-3, 20, 15) } });
-  await prisma.evolucion.create({ data: { hcId: hcSureda.id, episodioId: epSureda.id, fecha: addDays(-2, 12, 0), contenido: "Postoperatorio inmediato sin complicaciones. Vendaje compresivo u oportuno. Dolor controlado con analgesia EV. Afebril, SV estables.", usuarioId: depascuale.id, firmada: true, firmadaAt: addDays(-2, 12, 10) } });
-  await prisma.evolucion.create({ data: { hcId: hcSureda.id, episodioId: epSureda.id, fecha: addDays(-1, 9, 0), contenido: "Evoluciona favorablemente. Se retira drenaje derecho. Deambula sin dificultad. Se indica dieta blanda e inicio de cefalexina VO.", usuarioId: depascuale.id } });
-
-  await prisma.anamnesis.create({
-    data: {
       hcId: hcFerreyra.id, episodioId: epFerreyra.id,
-      motivoConsulta: "Fiebre alta, tos productiva y dificultad respiratoria de 3 días de evolución",
-      enfermedadActual: "Paciente de 51 años que consulta por cuadro febril de hasta 39°C, tos con expectoración verdosa y disnea progresiva. Refiere dolor torácico bilateral y malestar general intenso.",
-      antecPatologicos: "Hipertensión arterial controlada. No cirugías previas.",
-      antecFamiliares: "Padre fallecido por EPOC. Madre hipertensa.",
-      habitosToxicos: "Exfumador (10 cig/día hasta hace 5 años). Alcohol ocasional.",
-      factoresRiesgoCV: "HTA. Sedentarismo.",
-      estadoGeneral: "Regular estado general, lúcido, febril, taquipneico, saturando 89% al aire.",
-      signosVitalesIngreso: { "PA": "140/85", "FC": "102", "FR": "26", "T°": "38.9", "SpO2": "89%" },
+      motivoConsulta: "Fiebre, tos productiva y disnea de 4 días de evolución",
+      enfermedadActual: "Paciente de 47 años, fumador, que consulta por cuadro febril hasta 39.5°C, tos con expectoración purulenta y disnea progresiva de 4 días. En la guardia presenta saturación de 88% al aire, por lo que se decide internación en UTI con oxigenoterapia.",
+      antecPatologicos: "HTA leve en tratamiento. Bronquitis crónica a repetición. Sin cirugías previas.",
+      antecFamiliares: "Padre hipertenso. Madre con EPOC.",
+      habitosToxicos: "Tabaco 20 cig/día desde hace 25 años. Alcohol ocasional.",
+      factoresRiesgoCV: "HTA. Tabaquismo. Sedentarismo.",
+      estadoGeneral: "Regular estado general, lúcido, febril, taquipneico con tiraje intercostal.",
+      signosVitalesIngreso: { "PA": "142/86", "FC": "108", "FR": "28", "T°": "39.1", "SpO2": "88%" },
+      pielFaneras: "Sudoroso, piel caliente.",
+      torax: "Ventilación disminuida en ambas bases, crepitantes bibasales y sibilancias dispersas.",
+      apRespiratorio: "Disnea de reposo, taquipnea.",
+      apCardiovascular: "Ruidos cardíacos rítmicos, sin soplos. FC 108 lpm.",
       abdomen: "Blando, depresible, indoloro.",
       diagPresuntivo: "Neumonía bilateral adquirida en la comunidad",
-      diagDiferencial: "Neumonía por aspiración / SARS-CoV-2",
-      planEvaluacion: "Laboratorio completo, hisopado nasofaríngeo, radiografía de tórax, cultivo de esputo",
-      planTerapeutico: "Internación en UTI, oxigenoterapia, antibioticoterapia EV, controles estrictos",
+      diagDiferencial: "Neumonía por aspiración / EPOC reagudizado",
+      planEvaluacion: "Laboratorio completo con gasometría, hemocultivos, cultivo de esputo, radiografía de tórax, ECG",
+      planTerapeutico: "Internación en UTI, oxigenoterapia con máscara de reservorio, antibioticoterapia EV empírica, controles estrictos",
       firmadoAt: addDays(-5, 10, 0), firmadoPor: "Carina Depascuale",
     },
   });
-  await prisma.evolucion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-4, 12, 0), contenido: "En UTI con máscara de reservorio a 10 L/min. SpO2 93%. Se inicia Ceftriaxona 2g/día EV y Azitromicina 500mg/día. Pendiente cultivo de esputo y hemocultivos.", usuarioId: depascuale.id, firmada: true, firmadaAt: addDays(-4, 12, 20) } });
-  await prisma.evolucion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-2, 8, 0), contenido: "Evolución favorable. Afebril. SpO2 96% con cánula nasal a 3L/min. Se disminuye oxigenoterapia. Leucocitos en descenso.", usuarioId: depascuale.id } });
-  await prisma.evolucion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-1, 10, 0), contenido: "Monitoreo detecta episodios de FA paroxística. Se solicita interconsulta con Cardiología y se ajusta tratamiento ambulatorio de HTA.", usuarioId: depascuale.id } });
-
-  await prisma.anamnesis.create({
-    data: {
-      hcId: hcGomez.id, episodioId: epGomez.id,
-      motivoConsulta: "Dolor abdominal intenso de inicio súbito",
-      enfermedadActual: "Paciente de 30 años que consulta por dolor abdominal difuso de 6 horas de evolución, de inicio súbito tipo cólico, que se ha intensificado progresivamente. Refiere náuseas y un episodio de vómitos.",
-      antecPatologicos: "Apendicectomía a los 12 años. Sin otros antecedentes.",
-      antecFamiliares: "Sin antecedentes de relevancia.",
-      habitosToxicos: "No fuma. No consume alcohol.",
-      factoresRiesgoCV: "Ninguno.",
-      estadoGeneral: "Regular estado general, dolorosa, lúcida, normohidratada, afebril.",
-      signosVitalesIngreso: { "PA": "115/75", "FC": "88", "FR": "18", "T°": "37.1", "SpO2": "99%" },
-      abdomen: "Doloroso difuso, con cierta defensa abdominal. Signos de irritación peritoneal positivos. RHA disminuidos.",
-      diagPresuntivo: "Abdomen agudo quirúrgico",
-      diagDiferencial: "Enfermedad inflamatoria pélvica / Obstrucción intestinal / Perforación de úlcera",
-      planEvaluacion: "Laboratorio urgente, ecografía abdominal, TAC abdomen",
-      planTerapeutico: "Laparoscopía diagnóstica programada para hoy",
-      firmadoAt: addDays(-1, 8, 0), firmadoPor: "Raúl Romero",
-    },
-  });
-  await prisma.evolucion.create({ data: { hcId: hcGomez.id, episodioId: epGomez.id, fecha: addDays(-1, 18, 0), contenido: "TAC abdomen informa líquido libre en cavidad sin signos de obstrucción. Se decide laparoscopía exploradora para hoy a las 11:00hs.", usuarioId: romero.id } });
-  await prisma.evolucion.create({ data: { hcId: hcGomez.id, episodioId: epGomez.id, fecha: addDays(0, 7, 0), contenido: "En ayuno desde las 21hs. Se premedica y pasa a quirófano.", usuarioId: romero.id } });
+  await prisma.evolucion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-4, 11, 0), contenido: "En UTI con máscara de reservorio a 10 L/min. SpO2 93%. Se inicia ceftriaxona 2g/día EV + azitromicina 500mg/día. Radiografía: consolidación bibasal derecha y parahiliar izquierda. Hemocultivos pendientes.", usuarioId: depascuale.id, firmada: true, firmadaAt: addDays(-4, 11, 15) } });
+  await prisma.evolucion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-2, 9, 0), contenido: "Afebril desde anoche. SpO2 96% con cánula nasal a 3 L/min. Cultivo de esputo: flora mixta, se ajusta esquema según antibiograma. Leucocitosis en descenso.", usuarioId: depascuale.id } });
+  await prisma.evolucion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-1, 10, 30), contenido: "Monitoreo detecta episodios de FA paroxística autolimitados. Interconsulta con Cardiología realizada. Se ajusta enalapril y se agrega anticoagulación profiláctica con enoxaparina 40mg/día.", usuarioId: depascuale.id } });
 
   await prisma.anamnesis.create({
     data: {
       hcId: hcVillalba.id, episodioId: epVillalba.id,
-      motivoConsulta: "Dolor en hipocondrio derecho recurrente de varios meses",
-      enfermedadActual: "Paciente de 68 años que refiere episodios recurrentes de dolor en hipocondrio derecho, especialmente después de comidas grasas. El dolor es de tipo cólico, con irradiación a espalda. Episodio actual de 48 horas sin mejoría.",
-      antecPatologicos: "Diabetes tipo 2 en tratamiento con metformina. HTA controlada.",
-      antecFamiliares: "Madre diabética. Padre fallecido por IAM.",
-      habitosToxicos: "Exfumador (dejó hace 10 años). No alcohol.",
-      factoresRiesgoCV: "HTA. Diabetes. Sedentarismo. Dislipidemia.",
-      estadoGeneral: "Regular estado general, lúcido, discretamente ictérico, afebril.",
-      signosVitalesIngreso: { "PA": "135/80", "FC": "82", "FR": "17", "T°": "36.8", "SpO2": "98%" },
-      abdomen: "Doloroso en hipocondrio derecho con signo de Murphy positivo. Sin signos de irritación peritoneal. RHA presentes.",
-      diagPresuntivo: "Colecistitis aguda litiásica",
-      diagDiferencial: "Coledocolitiasis / Pancreatitis biliar",
-      planEvaluacion: "Laboratorio con función hepática, ecografía abdominal, colangiorresonancia",
+      motivoConsulta: "Dolor en hipocondrio derecho recurrente postprandial",
+      enfermedadActual: "Paciente de 68 años que refiere desde hace 6 meses episodios de dolor en hipocondrio derecho tipo cólico, irradiado a espalda, desencadenados por comidas grasas. Último episodio hace 48 hs con náuseas. Ecografía: litiasis vesicular múltiple.",
+      antecPatologicos: "Ninguno relevante. Sin cirugías previas.",
+      antecFamiliares: "Madre con litiasis vesicular.",
+      habitosToxicos: "No fuma. No consume alcohol.",
+      factoresRiesgoCV: "Ninguno.",
+      estadoGeneral: "Buen estado general, lúcido, normohidratado, afebril.",
+      signosVitalesIngreso: { "PA": "118/74", "FC": "76", "FR": "16", "T°": "36.5", "SpO2": "99%" },
+      abdomen: "Blando, depresible, doloroso en hipocondrio derecho, Murphy negativo en la evaluación. RHA presentes.",
+      diagPresuntivo: "Colelitiasis sintomática",
+      diagDiferencial: "Coledocolitiasis / Disquinesia biliar",
+      planEvaluacion: "Laboratorio con perfil hepático, ecografía abdominal (realizada), valoración preanestésica",
       planTerapeutico: "Colecistectomía laparoscópica programada",
-      firmadoAt: addDays(-8, 11, 0), firmadoPor: "Pablo Delgado",
+      firmadoAt: addDays(-3, 9, 0), firmadoPor: "Pablo Delgado",
     },
   });
-  await prisma.evolucion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-6, 14, 0), contenido: "ECG y valoración cardiovascular completa. Se optimiza control glucémico. Buena evolución preoperatoria.", usuarioId: delgadoPablo.id } });
-  await prisma.evolucion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-1, 12, 0), contenido: "Postoperatorio sin complicaciones. Se otorga alta médica con indicaciones escritas.", usuarioId: delgadoPablo.id, firmada: true, firmadaAt: addDays(-1, 12, 20) } });
-
-  await prisma.anamnesis.create({
-    data: {
-      hcId: hcVillalba.id, episodioId: epVillalbaConsulta.id,
-      motivoConsulta: "Control postoperatorio de colecistectomía",
-      enfermedadActual: "Paciente en buen estado general. Sin dolor abdominal. Herida quirúrgica con buena evolución.",
-      estadoGeneral: "Buen estado general, afebril, eupneico.",
-      signosVitalesIngreso: { "PA": "128/76", "FC": "74", "FR": "15", "T°": "36.4", "SpO2": "98%" },
-      abdomen: "Blando, depresible, indoloro. Herida en región umbilical con punto seco.",
-      diagPresuntivo: "Postoperatorio de colecistectomía",
-      planTerapeutico: "Retiro de puntos en 7 días. Continuar con analgesia según necesidad.",
-      firmadoAt: addDays(-2, 10, 0), firmadoPor: "Pablo Delgado",
-    },
-  });
+  await prisma.evolucion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-2, 18, 0), contenido: "Ingresa para cirugía programada de mañana. Ayuno desde las 22hs. Valoración preanestésica realizada y protocolo firmado. Antibiótico profiláctico indicado.", usuarioId: delgadoPablo.id } });
+  await prisma.evolucion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-1, 12, 30), contenido: "Postoperatorio inmediato de colecistectomía laparoscópica sin complicaciones. Dolor controlado con analgesia EV. Afebril. Deambulación precoz. Dieta liviana tolerada.", usuarioId: delgadoPablo.id, firmada: true, firmadaAt: addDays(-1, 12, 45) } });
+  await prisma.evolucion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(0, 12, 30), contenido: "Egreso hospitalario. Cicatrices en buenas condiciones, afebril, tolerando dieta. Se entrega epicrisis y indicaciones por escrito. Curación de heridas cada 48 hs en consultorio. Turno de control con cirugía general en 7 días.", usuarioId: delgadoPablo.id } });
 
   await prisma.anamnesis.create({
     data: {
       hcId: hcBenitez.id, episodioId: epBenitezConsulta.id,
-      motivoConsulta: "Cefaleas de más de un mes de evolución",
-      enfermedadActual: "Paciente de 33 años que refiere cefalea opresiva bilateral de frecuencia casi diaria, leve a moderada, que no despierta y que mejora parcialmente con paracetamol. Niega aura, vómitos o focalidad.",
-      antecPatologicos: "Sin antecedentes relevantes.",
+      motivoConsulta: "Cefalea frontal bilateral de 3 meses de evolución",
+      enfermedadActual: "Paciente de 33 años que consulta por cefalea de carácter opresivo, bilateral, que empeora a fin de jornada laboral, sin fotofobia ni náuseas. Se autoadministra ibuprofeno cada 2 días con alivio parcial.",
+      antecPatologicos: "Sin antecedentes crónicos. Sin cirugías.",
       antecFamiliares: "Madre con migraña.",
-      habitosToxicos: "No fuma. Consumo social ocasional de alcohol.",
-      estadoGeneral: "Buen estado general.",
-      signosVitalesIngreso: { "PA": "118/72", "FC": "70", "FR": "14", "T°": "36.5", "SpO2": "99%" },
-      diagPresuntivo: "Cefalea tensional probable",
-      diagDiferencial: "Migraña sin aura / Cefalea por tensión ocular",
-      planEvaluacion: "Controles periódicos, descartar tensión ocular",
-      planTerapeutico: "Paracetamol 500mg VO c/8hs durante 5 días, registro de cefaleas",
-      firmadoAt: onWeekday("LUNES", 2, 9, 0), firmadoPor: "Carina Depascuale",
+      habitosToxicos: "No fuma. No consume alcohol.",
+      factoresRiesgoCV: "Ninguno.",
+      estadoGeneral: "Buen estado general, lúcida, normohidratada, afebril.",
+      signosVitalesIngreso: { "PA": "112/72", "FC": "72", "FR": "14", "T°": "36.4", "SpO2": "99%" },
+      snervioso: "Sin signos focales. Fondo de ojo normal. Cerebeloso normal.",
+      diagPresuntivo: "Cefalea tensional recidivante",
+      diagDiferencial: "Cefalea por abuso de analgésicos / Migraña sin aura",
+      planEvaluacion: "Se indica diario de cefaleas y controles periódicos",
+      planTerapeutico: "Ajuste de analgesia (evitar ibuprofeno diario), paracetamol a demanda, técnicas de relajación",
+      firmadoAt: addDays(-14, 10, 30), firmadoPor: "Ana Márquez",
     },
   });
+  await prisma.evolucion.create({ data: { hcId: hcBenitez.id, episodioId: epBenitezConsulta.id, fecha: addDays(-14, 10, 0), contenido: "Consulta ambulatoria por cefalea tensional recidivante. Examen neurológico normal. Se recomienda reducir consumo de AINE, paracetamol a demanda y control en 1 mes.", usuarioId: marquez.id, firmada: true, firmadaAt: addDays(-14, 10, 30) } });
   console.log("✓ Anamnesis y evoluciones creadas");
 
   // ── 10. PRESCRIPCIONES + APLICACIONES ──
-  const presSuredaPara = await prisma.prescripcion.create({ data: { hcId: hcSureda.id, episodioId: epSureda.id, fecha: addDays(-3, 10, 0), tipo: "MEDICACION", droga: "Paracetamol 1g", dosis: "1g", via: "EV", frecuencia: "c/8hs", descripcion: "Analgesia postoperatoria", estado: "ACTIVA", usuarioId: depascuale.id } });
-  await prisma.prescripcion.create({ data: { hcId: hcSureda.id, episodioId: epSureda.id, fecha: addDays(-3, 10, 0), tipo: "MEDICACION", droga: "Cefalexina 500mg", dosis: "500mg", via: "VO", frecuencia: "c/6hs", descripcion: "Profilaxis antibiótica postoperatoria", estado: "ACTIVA", usuarioId: depascuale.id } });
-  await prisma.prescripcion.create({ data: { hcId: hcSureda.id, episodioId: epSureda.id, fecha: addDays(-2, 9, 0), tipo: "DIETA", dieta: "Dieta blanda", descripcion: "Iniciar tolerancia oral", estado: "ACTIVA", usuarioId: depascuale.id } });
-
-  const presFerreyraCeft = await prisma.prescripcion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-4, 12, 0), tipo: "MEDICACION", droga: "Ceftriaxona 1g", dosis: "2g", via: "EV", frecuencia: "c/24hs", descripcion: "Neumonía comunitaria grave", estado: "ACTIVA", usuarioId: depascuale.id } });
-  await prisma.prescripcion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-4, 12, 0), tipo: "MEDICACION", droga: "Azitromicina 500mg", dosis: "500mg", via: "VO", frecuencia: "c/24hs", descripcion: "Neumonía comunitaria grave", estado: "ACTIVA", usuarioId: depascuale.id } });
+  const presFerreyraCeft = await prisma.prescripcion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-4, 11, 0), tipo: "MEDICACION", droga: "Ceftriaxona 1g", dosis: "2g", via: "EV", frecuencia: "c/24hs", descripcion: "Neumonía comunitaria grave", estado: "ACTIVA", usuarioId: depascuale.id } });
+  await prisma.prescripcion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-4, 11, 0), tipo: "MEDICACION", droga: "Azitromicina 500mg", dosis: "500mg", via: "VO", frecuencia: "c/24hs", descripcion: "Neumonía comunitaria grave", estado: "ACTIVA", usuarioId: depascuale.id } });
+  await prisma.prescripcion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-4, 11, 0), tipo: "MEDICACION", droga: "Omeprazol 40mg", dosis: "40mg", via: "EV", frecuencia: "c/24hs", descripcion: "Protección gástrica", estado: "ACTIVA", usuarioId: depascuale.id } });
+  await prisma.prescripcion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-1, 10, 30), tipo: "MEDICACION", droga: "Enoxaparina 40mg", dosis: "40mg", via: "SC", frecuencia: "c/24hs", descripcion: "Anticoagulación profiláctica por FA paroxística", estado: "ACTIVA", usuarioId: depascuale.id } });
   await prisma.prescripcion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-2, 9, 0), tipo: "MEDICACION", droga: "Amoxicilina 500mg", dosis: "500mg", via: "VO", frecuencia: "c/8hs", descripcion: "Intento de prescripción (bloqueada por alergia a penicilina)", estado: "BLOQUEADA_ALERGIA", bloqueadaAlergia: true, usuarioId: depascuale.id } });
-  await prisma.prescripcion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-1, 10, 0), tipo: "MEDICACION", droga: "Enalapril 10mg", dosis: "10mg", via: "VO", frecuencia: "c/12hs", descripcion: "HTA - ajuste por FA paroxística", estado: "ACTIVA", usuarioId: depascuale.id } });
+  await prisma.prescripcion.create({ data: { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-3, 9, 0), tipo: "DIETA", dieta: "Dieta hiposódica", descripcion: "Con control de ingesta", estado: "ACTIVA", usuarioId: depascuale.id } });
 
-  const presGomezKeto = await prisma.prescripcion.create({ data: { hcId: hcGomez.id, episodioId: epGomez.id, fecha: addDays(-1, 8, 30), tipo: "MEDICACION", droga: "Ketorolac 30mg", dosis: "30mg", via: "EV", frecuencia: "c/8hs", descripcion: "Analgesia - abdomen agudo", estado: "ACTIVA", usuarioId: romero.id } });
-  await prisma.prescripcion.create({ data: { hcId: hcGomez.id, episodioId: epGomez.id, fecha: addDays(-1, 18, 0), tipo: "DIETA", dieta: "Ayuno para cirugía", descripcion: "Ayuno desde las 21hs", estado: "ACTIVA", usuarioId: romero.id } });
+  const presVillalbaPara = await prisma.prescripcion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-2, 18, 0), tipo: "MEDICACION", droga: "Paracetamol 1g", dosis: "1g", via: "EV", frecuencia: "c/8hs", descripcion: "Analgesia postoperatoria", estado: "ACTIVA", usuarioId: delgadoPablo.id } });
+  await prisma.prescripcion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-2, 18, 0), tipo: "MEDICACION", droga: "Cefazolina 1g", dosis: "1g", via: "EV", frecuencia: "dosis única prequirúrgica", descripcion: "Profilaxis antibiótica", estado: "COMPLETADA", usuarioId: delgadoPablo.id } });
+  await prisma.prescripcion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-2, 18, 0), tipo: "MEDICACION", droga: "Omeprazol 40mg", dosis: "40mg", via: "VO", frecuencia: "c/24hs", descripcion: "Protección gástrica", estado: "ACTIVA", usuarioId: delgadoPablo.id } });
+  await prisma.prescripcion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-1, 12, 30), tipo: "DIETA", dieta: "Dieta liviana", descripcion: "Tolerada desde el mediodía", estado: "ACTIVA", usuarioId: delgadoPablo.id } });
 
-  await prisma.prescripcion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-7, 9, 0), tipo: "MEDICACION", droga: "Paracetamol 1g", dosis: "1g", via: "VO", frecuencia: "c/8hs", descripcion: "Analgesia", estado: "COMPLETADA", usuarioId: delgadoPablo.id } });
-  await prisma.prescripcion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-7, 9, 0), tipo: "MEDICACION", droga: "Omeprazol 40mg", dosis: "40mg", via: "VO", frecuencia: "c/24hs", descripcion: "Protección gástrica", estado: "COMPLETADA", usuarioId: delgadoPablo.id } });
-
-  await prisma.prescripcion.create({ data: { hcId: hcBenitez.id, episodioId: epBenitezConsulta.id, fecha: onWeekday("LUNES", 2, 9, 0), tipo: "MEDICACION", droga: "Paracetamol 500mg", dosis: "500mg", via: "VO", frecuencia: "c/8hs", duracion: "5 días", descripcion: "Cefalea tensional", estado: "ACTIVA", usuarioId: depascuale.id } });
-
-  const ap1 = await prisma.aplicacionMedicamento.create({ data: { prescripcionId: presSuredaPara.id, fecha: addDays(-1, 10, 0), hora: "10:00", stockItemId: items[2].id, cantidadDescontada: 1, motivo: "Analgesia", enfermeroId: enfermero.id } });
-  const ap2 = await prisma.aplicacionMedicamento.create({ data: { prescripcionId: presSuredaPara.id, fecha: addDays(-1, 18, 0), hora: "18:00", stockItemId: items[2].id, cantidadDescontada: 1, motivo: "Analgesia", enfermeroId: enfermero.id } });
-  const ap3 = await prisma.aplicacionMedicamento.create({ data: { prescripcionId: presFerreyraCeft.id, fecha: addDays(-3, 12, 0), hora: "12:00", stockItemId: items[9].id, cantidadDescontada: 1, motivo: "Antibiótico", enfermeroId: enfermero.id } });
-  const ap4 = await prisma.aplicacionMedicamento.create({ data: { prescripcionId: presGomezKeto.id, fecha: addDays(-1, 19, 0), hora: "19:00", stockItemId: items[4].id, cantidadDescontada: 1, motivo: "Analgesia", enfermeroId: enfermero.id } });
+  const ap1 = await prisma.aplicacionMedicamento.create({ data: { prescripcionId: presFerreyraCeft.id, fecha: addDays(-3, 12, 0), hora: "12:00", stockItemId: stockByName["Ceftriaxona 1g"].id, cantidadDescontada: 1, motivo: "Antibiótico", enfermeroId: enfermero.id } });
+  const ap2 = await prisma.aplicacionMedicamento.create({ data: { prescripcionId: presFerreyraCeft.id, fecha: addDays(-2, 12, 0), hora: "12:00", stockItemId: stockByName["Ceftriaxona 1g"].id, cantidadDescontada: 1, motivo: "Antibiótico", enfermeroId: enfermero.id } });
+  const ap3 = await prisma.aplicacionMedicamento.create({ data: { prescripcionId: presFerreyraCeft.id, fecha: addDays(-1, 12, 0), hora: "12:00", stockItemId: stockByName["Ceftriaxona 1g"].id, cantidadDescontada: 1, motivo: "Antibiótico", enfermeroId: enfermero2.id } });
+  const ap4 = await prisma.aplicacionMedicamento.create({ data: { prescripcionId: presVillalbaPara.id, fecha: addDays(-1, 14, 0), hora: "14:00", stockItemId: stockByName["Paracetamol 1g"].id, cantidadDescontada: 1, motivo: "Analgesia", enfermeroId: enfermero.id } });
   console.log("✓ Prescripciones y aplicaciones creadas");
 
   // ── 11. CIRUGÍAS ──
-  const cirSureda = await prisma.cirugia.create({
-    data: {
-      internacionId: intSureda.id, quirofanoId: q1.id,
-      fechaProgramada: addDays(-3), horaProgramada: "08:00",
-      tipo: "PROGRAMADA", estado: "COMPLETADA",
-      cirujanoId: depascuale.id, anestesiologoId: sosa.id,
-      ayudante1Id: delgadoPablo.id, instrumentadorId: vanina.id, circulanteId: enfermero2.id,
-      diagnosticoPreop: "Hipomastia Bilateral",
-      diagnosticoPostop: "Hipomastia Bilateral",
-      procedimiento: "Mastoplastia de aumento mamario bilateral",
-      hallazgos: "Se coloca implante Motiva Ergonomix2 250cc bilateral por vía submamaria. Hemostasia correcta. Cierre por planos.",
-      horaInicio: "08:00", horaFin: "09:30",
-      muestrasPatologicas: 0, arcoC: false, arm: false, ecografo: true,
-      scoreASA: 2,
-      signosVitalesIntraop: [
-        { tiempo: "08:00", TA: "115/70", FC: 78, SpO2: 99 },
-        { tiempo: "08:20", TA: "118/72", FC: 76, SpO2: 99 },
-        { tiempo: "08:45", TA: "112/68", FC: 74, SpO2: 100 },
-        { tiempo: "09:15", TA: "118/74", FC: 80, SpO2: 99 },
-      ],
-      indicacionesPostoperatorias: [
-        { orden: 1, indicacion: "Dieta blanda a las 4hs", categoria: "dieta" },
-        { orden: 2, indicacion: "Paracetamol 1g EV c/8hs", categoria: "medicacion" },
-        { orden: 3, indicacion: "Deambulación precoz con vendaje compresivo", categoria: "cuidados" },
-      ],
-    },
-  });
-
   const cirVillalba = await prisma.cirugia.create({
     data: {
-      internacionId: intVillalba.id, quirofanoId: q1.id,
-      fechaProgramada: addDays(-6), horaProgramada: "09:00",
+      internacionId: intVillalba.id, quirofanoId: q2.id,
+      fechaProgramada: addDays(-1), horaProgramada: "09:00",
       tipo: "PROGRAMADA", estado: "COMPLETADA",
       cirujanoId: delgadoPablo.id, anestesiologoId: sosa.id,
-      ayudante1Id: romero.id, instrumentadorId: vanina.id, circulanteId: enfermero.id,
-      diagnosticoPreop: "Colecistitis aguda litiásica",
-      diagnosticoPostop: "Colecistitis aguda litiásica",
+      ayudante1Id: romero.id, instrumentadorId: vanina.id, circulanteId: enfermero2.id,
+      diagnosticoPreop: "Colelitiasis sintomática",
+      diagnosticoPostop: "Colelitiasis sintomática",
       procedimiento: "Colecistectomía laparoscópica",
-      hallazgos: "Vesícula distendida con litos múltiples. Sin coledocolitiasis. Se realiza colecistectomía laparoscópica sin complicaciones.",
-      horaInicio: "09:00", horaFin: "10:45",
+      hallazgos: "Vesícula distendida con múltiples litos. Colédoco de calibre normal. Sin complicaciones intraoperatorias.",
+      horaInicio: "09:00", horaFin: "10:30",
       muestrasPatologicas: 1, arcoC: false, arm: false, ecografo: false,
-      scoreASA: 3,
+      scoreASA: 2,
       signosVitalesIntraop: [
-        { tiempo: "09:00", TA: "130/80", FC: 84, SpO2: 98 },
-        { tiempo: "09:30", TA: "125/78", FC: 82, SpO2: 99 },
-        { tiempo: "10:15", TA: "128/80", FC: 80, SpO2: 98 },
+        { tiempo: "09:00", TA: "120/76", FC: 78, SpO2: 99 },
+        { tiempo: "09:30", TA: "118/74", FC: 76, SpO2: 99 },
+        { tiempo: "10:15", TA: "122/78", FC: 74, SpO2: 100 },
       ],
       indicacionesPostoperatorias: [
-        { orden: 1, indicacion: "Ayuno hasta tolerancia oral", categoria: "dieta" },
+        { orden: 1, indicacion: "Dieta liviana a las 4hs", categoria: "dieta" },
         { orden: 2, indicacion: "Paracetamol 1g EV c/8hs", categoria: "medicacion" },
-        { orden: 3, indicacion: "Control de glucemia capilar c/6hs", categoria: "cuidados" },
+        { orden: 3, indicacion: "Deambulación precoz", categoria: "cuidados" },
       ],
     },
   });
 
-  const cirGomez = await prisma.cirugia.create({
-    data: {
-      internacionId: intGomez.id, quirofanoId: q2.id,
-      fechaProgramada: addDays(0), horaProgramada: "11:00",
-      tipo: "URGENCIA", estado: "PROGRAMADA",
-      cirujanoId: romero.id, anestesiologoId: sosa.id,
-      instrumentadorId: vanina.id, circulanteId: enfermero2.id,
-      diagnosticoPreop: "Abdomen agudo de probable etiología quirúrgica",
-      procedimiento: "Laparoscopía diagnóstica",
-      scoreASA: 1,
-      reprogramaciones: {
-        create: {
-          fechaOriginal: addDays(-1),
-          nuevaFecha: addDays(0),
-          motivo: "Priorización por falta de quirófano disponible ayer",
-          registradoPor: "Raúl Romero",
-        },
-      },
-    },
-  });
   console.log("✓ Cirugías creadas");
 
   // ── 12. PREANESTESIA + PROTOCOLO + DROGAS ──
   await prisma.valoracionPreanestesia.create({
     data: {
-      hcId: hcSureda.id, episodioId: epSureda.id, cirugiaId: cirSureda.id,
-      peso: 62, talla: 1.68,
-      diagnosticoPreoperatorio: "Hipomastia bilateral",
-      cirugiaPropuestaTipo: "programada",
-      cirugiaPropuestaDesc: "Mastoplastia de aumento mamario bilateral",
-      antecQuirurgicos: "Ninguno",
-      antecClinicos: { "hta": false, "diabetes": false, "cardiopatia": false, "epoc": false },
-      enfermedadesTratamiento: "Sin tratamiento crónico",
-      examenFisico: { "gradoMallampati": "I", "aperturaBucal": "normal", "distTiromentoniana": "normal" },
-      laboratorio: "Hb 13.2, Plaq 245000, Glicemia 92, Urea 28, Creat 0.9, Na 139, K 4.1",
-      laboratorioFecha: addDays(-4, 12, 0),
-      scoreASA: 2,
-      anestesiaSugerida: "Anestesia general balanceada con IOT",
-      anestesiologoId: sosa.id,
-      firmadaAt: addDays(-4, 13, 0),
-    },
-  });
-
-  const protoSureda = await prisma.protocoloAnestesia.create({
-    data: {
-      hcId: hcSureda.id, episodioId: epSureda.id, cirugiaId: cirSureda.id,
-      anestesiologo: "Carlos Sergio Sosa", matriculaAnestesiologo: "MP-2765",
-      cirujano: "Carina Depascuale", matriculaCirujano: "MP-1234",
-      ayudantes: "Dr. Pablo Delgado",
-      fechaCirugia: addDays(-3),
-      alergiaDetalle: "Sin alergias conocidas",
-      clasificacionASA: "ASA II",
-      grupoSangre: "A+",
-      ayunoSolidos: 8, ayunoLiquidos: 6, ultimaIngesta: "Cena liviana - 8hs previas",
-      estadoPsiquico: "Cooperadora, tranquila",
-      premedicacion: { droga: "Midazolam 5mg", via: "IM", hora: "07:30" },
-      signosVitaPreop: { "PA": "118/72", "FC": "74", "FR": "14", "SpO2": "99%", "T°": "36.5" },
-      mallampati: "I", distTiromentoniana: 6.5, aperturaBucal: 4.5,
-      checklistEquipoAnes: true, checklistReanimacion: true, checklistMonitores: true, checklistPosicion: true,
-      tecnicaAnestesia: ["GENERAL"],
-      viaInduccion: "EV", manejoViaAerea: "IOT", intubacionSubtipo: "Sencilla",
-      nroTubo: "7.5", conManguito: true, dificultadViaAerea: false,
-      modalidadVentilatoria: "Ventilación mecánica", modalidadVentFranja: { "VCV": "VT 450ml FR 12 PEEP 5" },
-      fio2: 0.5, oxigenoFlujo: 2,
-      signosVitales: [
-        { hora: "08:00", TA: "115/70", FC: 78, FR: 12, SpO2: 99, T: "36.5" },
-        { hora: "08:30", TA: "112/68", FC: 74, FR: 12, SpO2: 100, T: "36.5" },
-        { hora: "09:00", TA: "118/72", FC: 78, SpO2: 99, T: "36.6" },
-      ],
-      peso: 62, talla: 1.68,
-      liquidosIngresados: { "Solución Fisiológica": "1000ml", "Cristaloides": "500ml" },
-      diuresis: 120, perdidaSanguinea: "Mínima", perdidaSanguineaML: 50,
-      otrosEgresos: null,
-      posicionOperatoria: "Decúbito dorsal",
-      sondaNasogastrica: false, sondaVesical: false,
-      tipoCirugia: "programada",
-      observaciones: "Procedimiento sin incidencias. Despertar en quirófano.",
-      estadoEgreso: ["DESPIERTO", "TRASLADO_A_SALA"],
-      destinoPaciente: "Sala de internación",
-      aldreteActividad: 2, aldreteRespiracion: 2, aldreteCirculacion: 2, aldreteConciencia: 2, aldreteSpo2: 2,
-      nombreFirmante: "Carlos Sergio Sosa", matriculaFirmante: "MP-2765",
-      firmadoEn: addDays(-3, 10, 0), firmadoPor: "Carlos Sergio Sosa", firmado: true,
-    },
-  });
-
-  await prisma.drogaAnestesia.createMany({ data: [
-    { protocoloId: protoSureda.id, categoria: "INDUCCION", nombre: "Propofol", dosis: 150, unidad: "mg", via: "EV", horaAdministracion: addDays(-3, 8, 1), observaciones: null },
-    { protocoloId: protoSureda.id, categoria: "RELAJANTE", nombre: "Rocuronio", dosis: 40, unidad: "mg", via: "EV", horaAdministracion: addDays(-3, 8, 2), observaciones: null },
-    { protocoloId: protoSureda.id, categoria: "OPIOIDE", nombre: "Fentanilo", dosis: 150, unidad: "mcg", via: "EV", horaAdministracion: addDays(-3, 8, 1), observaciones: null },
-    { protocoloId: protoSureda.id, categoria: "MANTENIMIENTO", nombre: "Sevoflurano", dosis: 2, unidad: "%", via: "Inhalatoria", horaAdministracion: addDays(-3, 8, 3), observaciones: null },
-    { protocoloId: protoSureda.id, categoria: "OTRA", nombre: "Ondansetrón 4mg", dosis: 4, unidad: "mg", via: "EV", horaAdministracion: addDays(-3, 9, 20), observaciones: "Antihemético" },
-  ]});
-
-  await prisma.valoracionPreanestesia.create({
-    data: {
       hcId: hcVillalba.id, episodioId: epVillalba.id, cirugiaId: cirVillalba.id,
-      peso: 78, talla: 1.72,
-      diagnosticoPreoperatorio: "Colecistitis aguda litiásica",
+      peso: 71, talla: 1.63,
+      diagnosticoPreoperatorio: "Colelitiasis sintomática",
       cirugiaPropuestaTipo: "programada",
       cirugiaPropuestaDesc: "Colecistectomía laparoscópica",
       antecQuirurgicos: "Ninguno",
-      antecClinicos: { "hta": true, "diabetes": true, "cardiopatia": false, "epoc": false },
-      enfermedadesTratamiento: "Metformina 850mg c/12hs, Enalapril 10mg c/12hs",
+      antecClinicos: { "hta": false, "diabetes": false, "cardiopatia": false, "epoc": false },
+      enfermedadesTratamiento: "Sin tratamiento crónico",
       examenFisico: { "gradoMallampati": "II", "aperturaBucal": "normal", "distTiromentoniana": "normal" },
-      laboratorio: "Hb 13.8, Plaq 210000, Glicemia 145, HbA1c 7.2, Creat 1.1, BT 1.2, FA 180, GGT 65",
-      laboratorioFecha: addDays(-7, 11, 0),
-      scoreASA: 3,
-      anestesiaSugerida: "Anestesia general balanceada con IOT + analgesia multimodal",
+      laboratorio: "Hb 13.5, Plaq 230000, Glicemia 88, Creat 0.8, BT 0.9, FA 120, GGT 35",
+      laboratorioFecha: addDays(-3, 11, 0),
+      scoreASA: 2,
+      anestesiaSugerida: "Anestesia general balanceada con IOT",
       anestesiologoId: sosa.id,
-      firmadaAt: addDays(-6, 11, 0),
+      firmadaAt: addDays(-3, 11, 30),
     },
   });
 
@@ -680,71 +504,76 @@ async function main() {
       anestesiologo: "Carlos Sergio Sosa", matriculaAnestesiologo: "MP-2765",
       cirujano: "Pablo Delgado", matriculaCirujano: "MP-3456",
       ayudantes: "Dr. Raúl Romero",
-      fechaCirugia: addDays(-6),
-      alergiaDetalle: "Alergia a AINE (dolor epigástrico con ibuprofeno)",
-      clasificacionASA: "ASA III",
+      fechaCirugia: addDays(-1),
+      alergiaDetalle: "Alergia a AINE (epigastralgia con diclofenac)",
+      clasificacionASA: "ASA II",
       esEmergencia: false,
       grupoSangre: "A-",
-      ayunoSolidos: 8, ayunoLiquidos: 6, ultimaIngesta: "Cena - 8hs previas",
-      estadoPsiquico: "Cooperador, orientado",
-      premedicacion: { droga: "Midazolam 3mg", via: "IM", hora: "08:30" },
-      signosVitaPreop: { "PA": "132/78", "FC": "80", "FR": "15", "SpO2": "98%", "T°": "36.6" },
+      ayunoSolidos: 8, ayunoLiquidos: 6, ultimaIngesta: "Cena liviana - 8hs previas",
+      estadoPsiquico: "Cooperativo, tranquilo",
+      premedicacion: [{ droga: "Midazolam 5mg", dosis: "5mg", via: "IM", hora: "08:30" }],
+      signosVitaPreop: { pas: 120, pad: 76, fc: 78, fr: 15, temp: 36.4 },
       mallampati: "II", distTiromentoniana: 6.0, aperturaBucal: 4.0,
       checklistEquipoAnes: true, checklistReanimacion: true, checklistMonitores: true, checklistPosicion: true,
       tecnicaAnestesia: ["GENERAL"],
       viaInduccion: "EV", manejoViaAerea: "IOT", intubacionSubtipo: "Sencilla",
-      nroTubo: "8.0", conManguito: true, dificultadViaAerea: false,
-      modalidadVentilatoria: "Ventilación mecánica", modalidadVentFranja: { "VCV": "VT 500ml FR 12 PEEP 5" },
+      nroTubo: "7.5", conManguito: true, dificultadViaAerea: false,
+      modalidadVentilatoria: "Ventilación mecánica", modalidadVentFranja: [],
       fio2: 0.5, oxigenoFlujo: 2,
       signosVitales: [
-        { hora: "09:00", TA: "130/80", FC: 84, FR: 13, SpO2: 98, T: "36.6" },
-        { hora: "09:40", TA: "125/76", FC: 80, FR: 13, SpO2: 99, T: "36.6" },
-        { hora: "10:20", TA: "128/80", FC: 82, SpO2: 98, T: "36.7" },
+        { minuto: 0, hora: "09:00", pas: 120, pad: 76, fc: 78, fr: 12, spo2: 99, temp: 36.4 },
+        { minuto: 30, hora: "09:30", pas: 118, pad: 74, fc: 76, fr: 12, spo2: 99, temp: 36.5 },
+        { minuto: 70, hora: "10:10", pas: 122, pad: 78, fc: 74, spo2: 100, temp: 36.5 },
       ],
-      peso: 78, talla: 1.72,
-      liquidosIngresados: { "Solución Fisiológica": "1500ml" },
-      diuresis: 200, perdidaSanguinea: "Mínima", perdidaSanguineaML: 80,
+      peso: 71, talla: 1.63,
+      liquidosIngresados: [
+        { tipo: "Solución Fisiológica (NaCl 0.9%)", volumen: 1200, lote: "" },
+        { tipo: "Ringer Lactato", volumen: 500, lote: "" },
+      ],
+      diuresis: 150, perdidaSanguinea: "Mínima", perdidaSanguineaML: 40,
       posicionOperatoria: "Decúbito dorsal con piernas abiertas",
       sondaNasogastrica: true, sondaVesical: false,
       tipoCirugia: "programada",
-      observaciones: "Paciente diabético, se controla glucemia perioperatoria. Evolución favorable.",
+      observaciones: "Procedimiento sin incidencias. Despertar en quirófano.",
       estadoEgreso: ["DESPIERTO", "TRASLADO_A_SALA"],
       destinoPaciente: "Sala de internación",
       aldreteActividad: 2, aldreteRespiracion: 2, aldreteCirculacion: 2, aldreteConciencia: 2, aldreteSpo2: 2,
       nombreFirmante: "Carlos Sergio Sosa", matriculaFirmante: "MP-2765",
-      firmadoEn: addDays(-6, 11, 30), firmadoPor: "Carlos Sergio Sosa", firmado: true,
+      firmadoEn: addDays(-1, 11, 0), firmadoPor: "Carlos Sergio Sosa", firmado: true,
     },
   });
 
   await prisma.drogaAnestesia.createMany({ data: [
-    { protocoloId: protoVillalba.id, categoria: "INDUCCION", nombre: "Propofol", dosis: 180, unidad: "mg", via: "EV", horaAdministracion: addDays(-6, 9, 1), observaciones: null },
-    { protocoloId: protoVillalba.id, categoria: "RELAJANTE", nombre: "Rocuronio", dosis: 50, unidad: "mg", via: "EV", horaAdministracion: addDays(-6, 9, 2), observaciones: null },
-    { protocoloId: protoVillalba.id, categoria: "OPIOIDE", nombre: "Fentanilo", dosis: 200, unidad: "mcg", via: "EV", horaAdministracion: addDays(-6, 9, 1), observaciones: null },
-    { protocoloId: protoVillalba.id, categoria: "MANTENIMIENTO", nombre: "Sevoflurano", dosis: 2, unidad: "%", via: "Inhalatoria", horaAdministracion: addDays(-6, 9, 3), observaciones: null },
+    { protocoloId: protoVillalba.id, categoria: "INDUCCION", nombre: "Propofol", dosis: 160, unidad: "mg", via: "EV", horaAdministracion: addDays(-1, 9, 1), observaciones: null },
+    { protocoloId: protoVillalba.id, categoria: "RELAJANTE", nombre: "Rocuronio", dosis: 40, unidad: "mg", via: "EV", horaAdministracion: addDays(-1, 9, 2), observaciones: null },
+    { protocoloId: protoVillalba.id, categoria: "OPIOIDE", nombre: "Fentanilo", dosis: 150, unidad: "mcg", via: "EV", horaAdministracion: addDays(-1, 9, 1), observaciones: null },
+    { protocoloId: protoVillalba.id, categoria: "MANTENIMIENTO", nombre: "Sevoflurano", dosis: 2, unidad: "%", via: "Inhalatoria", horaAdministracion: addDays(-1, 9, 3), observaciones: null },
+    { protocoloId: protoVillalba.id, categoria: "OTRA", nombre: "Ondansetrón 8mg", dosis: 8, unidad: "mg", via: "EV", horaAdministracion: addDays(-1, 10, 0), observaciones: "Antihemético" },
   ]});
+
   console.log("✓ Valoraciones preanestésicas y protocolos creados");
 
   // ── 13. EPICRISIS ──
   await prisma.epicrisis.create({
     data: {
       hcId: hcVillalba.id, episodioId: epVillalba.id,
-      diagIngreso: "Colecistitis aguda litiásica",
-      diagEgreso: "Colecistitis aguda litiásica",
-      codigosCIE: ["K80.0", "K80.2"],
-      resumenClinico: "Paciente de 68 años con colecistitis aguda litiásica que requirió colecistectomía laparoscópica. Evolución postoperatoria favorable sin complicaciones.",
-      estudiosRealizados: "Laboratorio completo, ecografía abdominal, colangiorresonancia, ECG, valoración cardiológica y preanestésica.",
-      tratamientosRealizados: "Colecistectomía laparoscópica (06 días de internación). Analgesia, protección gástrica, control glucémico.",
-      proximoControlFecha: addDays(7), proximoControlLugar: "Consultorio Cirugía General", proximoControlMedico: "Dr. Pablo Delgado",
-      pendiente: "Retiro de puntos en 7 días en consultorio",
+      diagIngreso: "Colelitiasis sintomática",
+      diagEgreso: "Colelitiasis sintomática - colecistectomía sin complicaciones",
+      codigosCIE: ["K80.2"],
+      resumenClinico: "Paciente de 68 años, con dolor en hipocondrio derecho recurrente postprandial de 6 meses de evolución, litiasis vesicular múltiple por ecografía. Se realizó colecistectomía laparoscópica programada sin complicaciones. Evolución favorable, egreso al 3° día postoperatorio.",
+      estudiosRealizados: "Laboratorio con perfil hepático, ecografía abdominal, ECG, valoración preanestésica.",
+      tratamientosRealizados: "Colecistectomía laparoscópica. Analgesia EV y profilaxis antibiótica perioperatoria.",
+      proximoControlFecha: onWeekday("VIERNES", 0, 10, 0), proximoControlLugar: "Consultorio Cirugía General", proximoControlMedico: "Dr. Pablo Delgado",
+      pendiente: "Retiro de puntos en 7 días. Curación de heridas en consultorio cada 48hs.",
       condicionEgreso: "MEJORADO",
       destino: "DOMICILIO",
       medicacionAlta: [
         { droga: "Paracetamol 1g", dosis: "1g", frecuencia: "c/8hs", via: "VO", duracion: "5 días" },
-        { droga: "Omeprazol 40mg", dosis: "40mg", frecuencia: "c/24hs", via: "VO", duracion: "10 días" },
+        { droga: "Omeprazol 40mg", dosis: "40mg", frecuencia: "c/24hs", via: "VO", duracion: "15 días" },
       ],
-      indicacionesAlta: "Curación de herida cada 48hs. Dieta liviana hipograsa durante 1 semana. Deambulación progresiva. Consultar por fiebre, dolor o enrojecimiento de herida.",
+      indicacionesAlta: "Dieta hipograsa la primera semana. Deambulación progresiva. Curación de heridas cada 48hs. Consultar por fiebre, dolor o enrojecimiento de herida.",
       medicoId: delgadoPablo.id,
-      firmadaAt: addDays(-1, 12, 0),
+      firmadaAt: addDays(0, 12, 30),
     },
   });
   console.log("✓ Epicrisis creada");
@@ -754,23 +583,15 @@ async function main() {
     data: {
       episodioId: epFerreyra.id, medicoSolicitanteId: depascuale.id,
       especialidad: "Cardiología", especialistaId: acosta.id,
-      motivo: "Paciente de 51 años internado por neumonía bilateral. Monitoreo detectó FA paroxística. Se solicita valoración y tratamiento.",
-      estado: "SOLICITADA",
-    },
-  });
-  await prisma.interconsulta.create({
-    data: {
-      episodioId: epVillalba.id, medicoSolicitanteId: delgadoPablo.id,
-      especialidad: "Cardiología", especialistaId: acosta.id,
-      motivo: "Paciente ASA III (DBT2 + HTA) previo a colecistectomía. Valoración cardiovascular preoperatoria.",
+      motivo: "Paciente internado en UTI por neumonía. Monitoreo detectó episodios de FA paroxística. Se solicita valoración y definición de tratamiento anticoagulante.",
       estado: "RESPONDIDA",
     },
   });
   await prisma.interconsulta.create({
     data: {
-      episodioId: epBenitezConsulta.id, medicoSolicitanteId: depascuale.id,
-      especialidad: "Neurología", especialistaId: null,
-      motivo: "Cefaleas crónicas de más de un mes. Evaluar descartar etiología secundaria.",
+      episodioId: epVillalba.id, medicoSolicitanteId: delgadoPablo.id,
+      especialidad: "Nutrición", especialistaId: null,
+      motivo: "Postoperatorio de colecistectomía. Indicación de dieta hipograsa y recomendaciones alimentarias.",
       estado: "SOLICITADA",
     },
   });
@@ -778,112 +599,87 @@ async function main() {
 
   // ── 15. CONTROLES DE ENFERMERÍA ──
   await prisma.controlEnfermeria.createMany({ data: [
-    { hcId: hcSureda.id, episodioId: epSureda.id, fecha: addDays(-1), hora: "06:00", tipo: "SIGNOS_VITALES", datos: { "PA": "120/80", "FC": "88", "FR": "18", "T°": "37.2", "SpO2": "98%" }, usuarioId: enfermero.id },
-    { hcId: hcSureda.id, episodioId: epSureda.id, fecha: addDays(-1), hora: "12:00", tipo: "SIGNOS_VITALES", datos: { "PA": "115/75", "FC": "82", "FR": "16", "T°": "37.0", "SpO2": "99%" }, usuarioId: enfermero.id },
-    { hcId: hcSureda.id, episodioId: epSureda.id, fecha: addDays(-1), hora: "18:00", tipo: "SIGNOS_VITALES", datos: { "PA": "118/76", "FC": "80", "FR": "16", "T°": "36.8", "SpO2": "99%" }, usuarioId: enfermero.id },
-    { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-2), hora: "06:00", tipo: "SIGNOS_VITALES", datos: { "PA": "138/82", "FC": "96", "FR": "22", "T°": "37.8", "SpO2": "92%" }, alertas: { "SpO2": "bajo", "T°": "alto" }, usuarioId: enfermero.id },
-    { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-1), hora: "06:00", tipo: "SIGNOS_VITALES", datos: { "PA": "126/78", "FC": "88", "FR": "18", "T°": "36.9", "SpO2": "96%" }, usuarioId: enfermero2.id },
-    { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-1), hora: "20:00", tipo: "BALANCE_LIQUIDOS", datos: { "ingresos": "2100ml", "egresos": "1650ml", "balance": "+450ml" }, usuarioId: enfermero.id },
-    { hcId: hcGomez.id, episodioId: epGomez.id, fecha: addDays(-1), hora: "20:00", tipo: "SIGNOS_VITALES", datos: { "PA": "118/74", "FC": "86", "FR": "17", "T°": "37.2", "SpO2": "99%" }, usuarioId: enfermero.id },
-    { hcId: hcGomez.id, episodioId: epGomez.id, fecha: addDays(0), hora: "06:30", tipo: "SIGNOS_VITALES", datos: { "PA": "112/72", "FC": "80", "FR": "16", "T°": "36.9", "SpO2": "99%" }, usuarioId: enfermero.id },
-    { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-7), hora: "08:00", tipo: "SIGNOS_VITALES", datos: { "PA": "134/80", "FC": "80", "FR": "16", "T°": "36.7", "SpO2": "98%" }, usuarioId: enfermero.id },
-    { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-6), hora: "14:00", tipo: "GLUCEMIA", datos: { "glucemia": "156 mg/dl" }, usuarioId: enfermero2.id },
-    { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-2), hora: "10:00", tipo: "PESO", datos: { "peso": "77.2 kg" }, usuarioId: enfermero.id },
+    { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-4), hora: "06:00", tipo: "SIGNOS_VITALES", datos: { "PA": "140/84", "FC": "104", "FR": "26", "T°": "38.9", "SpO2": "90%" }, alertas: { "SpO2": "bajo", "T°": "alto", "FC": "alto", "FR": "alto" }, usuarioId: enfermero.id },
+    { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-4), hora: "14:00", tipo: "SIGNOS_VITALES", datos: { "PA": "136/82", "FC": "98", "FR": "24", "T°": "38.5", "SpO2": "92%" }, alertas: { "T°": "alto" }, usuarioId: enfermero.id },
+    { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-2), hora: "06:00", tipo: "SIGNOS_VITALES", datos: { "PA": "128/78", "FC": "88", "FR": "18", "T°": "36.9", "SpO2": "96%" }, usuarioId: enfermero2.id },
+    { hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-1), hora: "20:00", tipo: "BALANCE_LIQUIDOS", datos: { "ingresos": "2200ml", "egresos": "1800ml", "balance": "+400ml" }, usuarioId: enfermero.id },
+    { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-1), hora: "06:00", tipo: "SIGNOS_VITALES", datos: { "PA": "118/74", "FC": "80", "FR": "16", "T°": "36.8", "SpO2": "99%" }, usuarioId: enfermero.id },
+    { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-1), hora: "14:00", tipo: "SIGNOS_VITALES", datos: { "PA": "120/76", "FC": "76", "FR": "16", "T°": "36.6", "SpO2": "99%" }, usuarioId: enfermero.id },
+    { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-1), hora: "20:00", tipo: "SIGNOS_VITALES", datos: { "PA": "116/72", "FC": "74", "FR": "15", "T°": "36.5", "SpO2": "100%" }, usuarioId: enfermero2.id },
   ]});
   console.log("✓ Controles de enfermería creados");
 
   // ── 16. HOJA DE ENFERMERÍA ──
-  const hojaSureda = await prisma.hojaEnfermeria.create({
-    data: {
-      hcId: hcSureda.id, episodioId: epSureda.id, fecha: addDays(-1), seccion: "MEDICACION_ENDOVENOSA",
-      item: "Paracetamol 1g", dosis: "1g", via: "EV",
-      marcasHorarias: { "H08": true, "H12": true, "H16": true, "H20": true, "H24": true },
-      stockItemId: items[2].id,
-    },
-  });
-  await prisma.hojaEnfermeria.create({
-    data: {
-      hcId: hcSureda.id, episodioId: epSureda.id, fecha: addDays(-1), seccion: "MEDICACION_ORAL",
-      item: "Cefalexina 500mg", dosis: "500mg", via: "VO",
-      marcasHorarias: { "H06": true, "H12": true, "H18": true, "H24": true },
-      stockItemId: items[7].id,
-    },
-  });
-  await prisma.hojaEnfermeria.create({
+  const hojaFerreyra = await prisma.hojaEnfermeria.create({
     data: {
       hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-1), seccion: "MEDICACION_ENDOVENOSA",
       item: "Ceftriaxona 2g", dosis: "2g", via: "EV",
-      marcasHorarias: { "H08": true, "H20": true },
-      stockItemId: items[9].id,
+      marcasHorarias: { "H08": true, "H12": true, "H20": true },
+      stockItemId: stockByName["Ceftriaxona 1g"].id,
     },
   });
   await prisma.hojaEnfermeria.create({
     data: {
-      hcId: hcGomez.id, episodioId: epGomez.id, fecha: addDays(-1), seccion: "MEDICACION_IM_SC",
-      item: "Ketorolac 30mg", dosis: "30mg", via: "EV",
-      marcasHorarias: { "H08": true, "H16": true, "H24": true },
-      stockItemId: items[4].id,
+      hcId: hcFerreyra.id, episodioId: epFerreyra.id, fecha: addDays(-1), seccion: "MEDICACION_IM_SC",
+      item: "Enoxaparina 40mg", dosis: "40mg", via: "SC",
+      marcasHorarias: { "H08": true, "H20": true },
+      stockItemId: stockByName["Enoxaparina 40mg"].id,
+    },
+  });
+  await prisma.hojaEnfermeria.create({
+    data: {
+      hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-1), seccion: "MEDICACION_ENDOVENOSA",
+      item: "Paracetamol 1g", dosis: "1g", via: "EV",
+      marcasHorarias: { "H08": true, "H16": true },
+      stockItemId: stockByName["Paracetamol 1g"].id,
     },
   });
   console.log("✓ Hoja de enfermería creada");
 
-  // ── 17. IMPLANTES, MEDICAMENTOS Y PRÁCTICAS DE CIRUGÍA ──
-  await prisma.implante.createMany({ data: [
-    { cirugiaId: cirSureda.id, codigo: "MOTIVA-250-DER", nombre: "Implante mamario Motiva Ergonomix2 250cc", lote: "LOT-MOT-2024-001", modelo: "Ergonomix2 250cc", lado: "DERECHO", codigoCE: "CE-008945" },
-    { cirugiaId: cirSureda.id, codigo: "MOTIVA-250-IZQ", nombre: "Implante mamario Motiva Ergonomix2 250cc", lote: "LOT-MOT-2024-001", modelo: "Ergonomix2 250cc", lado: "IZQUIERDO", codigoCE: "CE-008945" },
-  ]});
-
+  // ── 17. MEDICAMENTOS Y PRÁCTICAS DE CIRUGÍA ──
   await prisma.medicamentoCirugia.createMany({ data: [
-    { cirugiaId: cirSureda.id, stockItemId: items[6].id, nombre: "Adrenalina 1mg", presentacion: "Ampolla", cantidad: 2, via: "SC", fechaAplicacion: addDays(-3), horaAplicacion: "08:10", observacion: "Infiltración" },
-    { cirugiaId: cirSureda.id, stockItemId: items[1].id, nombre: "Sol. Fisiológica 1L", presentacion: "Bolsa x 1L", cantidad: 2, via: "EV", fechaAplicacion: addDays(-3), horaAplicacion: "08:00" },
-    { cirugiaId: cirVillalba.id, stockItemId: items[1].id, nombre: "Sol. Fisiológica 1L", presentacion: "Bolsa x 1L", cantidad: 2, via: "EV", fechaAplicacion: addDays(-6), horaAplicacion: "09:00" },
+    { cirugiaId: cirVillalba.id, stockItemId: stockByName["Sol. Fisiológica 1L"].id, nombre: "Sol. Fisiológica 1L", presentacion: "Bolsa x 1L", cantidad: 2, via: "EV", fechaAplicacion: addDays(-1), horaAplicacion: "09:00" },
+    { cirugiaId: cirVillalba.id, stockItemId: stockByName["Ketorolac 30mg"].id, nombre: "Ketorolac 30mg", presentacion: "Ampolla", cantidad: 1, via: "EV", fechaAplicacion: addDays(-1), horaAplicacion: "10:15", observacion: "Al finalizar el acto" },
   ]});
 
   await prisma.practicaCirugia.createMany({ data: [
-    { cirugiaId: cirVillalba.id, fecha: addDays(-6), hora: "10:45", practica: "Anatomía patológica de vesícula biliar", laboratorio: "Lab. Patología SIMES", cargoPor: "Obra Social", actoQuirurgico: "1er acto" },
-    { cirugiaId: cirSureda.id, fecha: addDays(-3), hora: "09:30", practica: "Ecografía de control intraoperatoria", laboratorio: "Servicio de Diagnóstico por Imágenes", cargoPor: "Obra Social", actoQuirurgico: "1er acto" },
+    { cirugiaId: cirVillalba.id, fecha: addDays(-1), hora: "10:30", practica: "Anatomía patológica de vesícula biliar", laboratorio: "Lab. Patología SIMES", cargoPor: "Obra Social", actoQuirurgico: "1er acto" },
   ]});
-  console.log("✓ Implantes, medicamentos y prácticas de cirugía creados");
+  console.log("✓ Medicamentos y prácticas de cirugía creados");
 
   // ── 18. CARGOS DE FACTURACIÓN ──
   await prisma.cargoFacturacion.createMany({ data: [
-    { internacionId: intSureda.id, concepto: "Cama/día - P3-305", cantidad: 4, precioUnitario: 15000, total: 60000, origen: "CAMA", fecha: addDays(-1) },
-    { internacionId: intSureda.id, concepto: "Quirófano - Mastoplastia", cantidad: 1, precioUnitario: 85000, total: 85000, origen: "QUIROFANO", fecha: addDays(-3) },
-    { internacionId: intSureda.id, concepto: "Anestesia general", cantidad: 1, precioUnitario: 30000, total: 30000, origen: "ANESTESIA", fecha: addDays(-3) },
-    { internacionId: intSureda.id, concepto: "Implante Motiva 250cc (x2)", cantidad: 2, precioUnitario: 45000, total: 90000, origen: "MATERIAL", fecha: addDays(-3) },
     { internacionId: intFerreyra.id, concepto: "Cama UTI/día - UTI-01", cantidad: 5, precioUnitario: 42000, total: 210000, origen: "CAMA", fecha: addDays(-1) },
-    { internacionId: intGomez.id, concepto: "Cama guardia - G-01", cantidad: 1, precioUnitario: 8000, total: 8000, origen: "CAMA", fecha: addDays(-1) },
-    { internacionId: intVillalba.id, concepto: "Cama/día - P3-302", cantidad: 8, precioUnitario: 10000, total: 80000, origen: "CAMA", fecha: addDays(-2), facturado: true },
-    { internacionId: intVillalba.id, concepto: "Quirófano - Colecistectomía", cantidad: 1, precioUnitario: 90000, total: 90000, origen: "QUIROFANO", fecha: addDays(-6), facturado: true },
+    { internacionId: intFerreyra.id, concepto: "Oxigenoterapia con máscara de reservorio", cantidad: 5, precioUnitario: 3000, total: 15000, origen: "MATERIAL", fecha: addDays(-1) },
+    { internacionId: intVillalba.id, concepto: "Cama/día - P3-302", cantidad: 3, precioUnitario: 12000, total: 36000, origen: "CAMA", fecha: addDays(-1) },
+    { internacionId: intVillalba.id, concepto: "Quirófano - Colecistectomía laparoscópica", cantidad: 1, precioUnitario: 90000, total: 90000, origen: "QUIROFANO", fecha: addDays(-1) },
+    { internacionId: intVillalba.id, concepto: "Anestesia general", cantidad: 1, precioUnitario: 30000, total: 30000, origen: "ANESTESIA", fecha: addDays(-1) },
   ]});
-  await prisma.cargoFacturacion.create({ data: { internacionId: intSureda.id, concepto: "Paracetamol 1g EV x2", cantidad: 2, precioUnitario: 500, total: 1000, origen: "MEDICACION", aplicacionId: ap1.id, fecha: addDays(-1) } });
-  await prisma.cargoFacturacion.create({ data: { internacionId: intSureda.id, concepto: "Paracetamol 1g EV", cantidad: 1, precioUnitario: 500, total: 500, origen: "MEDICACION", aplicacionId: ap2.id, fecha: addDays(-1) } });
-  await prisma.cargoFacturacion.create({ data: { internacionId: intSureda.id, concepto: "Medicación EV - hoja enfermería", cantidad: 1, precioUnitario: 800, total: 800, origen: "MEDICACION", hojaEnfermeriaId: hojaSureda.id, fecha: addDays(-1) } });
-  await prisma.cargoFacturacion.create({ data: { internacionId: intFerreyra.id, concepto: "Ceftriaxona 2g EV", cantidad: 1, precioUnitario: 4200, total: 4200, origen: "MEDICACION", aplicacionId: ap3.id, fecha: addDays(-3) } });
-  await prisma.cargoFacturacion.create({ data: { internacionId: intGomez.id, concepto: "Ketorolac 30mg EV", cantidad: 1, precioUnitario: 2400, total: 2400, origen: "MEDICACION", aplicacionId: ap4.id, fecha: addDays(-1) } });
-  await prisma.cargoFacturacion.create({ data: { internacionId: intVillalba.id, concepto: "Colecistectomía laparoscópica", cantidad: 1, precioUnitario: 180000, total: 180000, origen: "PRACTICA", fecha: addDays(-6), facturado: true } });
+  await prisma.cargoFacturacion.create({ data: { internacionId: intFerreyra.id, concepto: "Ceftriaxona 2g EV", cantidad: 1, precioUnitario: 4200, total: 4200, origen: "MEDICACION", aplicacionId: ap1.id, fecha: addDays(-3) } });
+  await prisma.cargoFacturacion.create({ data: { internacionId: intFerreyra.id, concepto: "Ceftriaxona 2g EV", cantidad: 1, precioUnitario: 4200, total: 4200, origen: "MEDICACION", aplicacionId: ap2.id, fecha: addDays(-2) } });
+  await prisma.cargoFacturacion.create({ data: { internacionId: intFerreyra.id, concepto: "Ceftriaxona 2g EV", cantidad: 1, precioUnitario: 4200, total: 4200, origen: "MEDICACION", aplicacionId: ap3.id, fecha: addDays(-1) } });
+  await prisma.cargoFacturacion.create({ data: { internacionId: intFerreyra.id, concepto: "Medicación EV - hoja enfermería", cantidad: 1, precioUnitario: 800, total: 800, origen: "MEDICACION", hojaEnfermeriaId: hojaFerreyra.id, fecha: addDays(-1) } });
+  await prisma.cargoFacturacion.create({ data: { internacionId: intVillalba.id, concepto: "Paracetamol 1g EV", cantidad: 1, precioUnitario: 350, total: 350, origen: "MEDICACION", aplicacionId: ap4.id, fecha: addDays(-1) } });
   console.log("✓ Cargos de facturación creados");
 
   // ── 19. PASES INTERNOS ──
   await prisma.paseInterno.createMany({ data: [
-    { internacionId: intSureda.id, camaAnterior: "P3-304", camaNueva: "P3-305", sector: "TERCER PISO", fecha: addDays(-3, 12, 0), tipoPension: "INDIVIDUAL" },
-    { internacionId: intVillalba.id, camaAnterior: "P3-301", camaNueva: "P3-302", sector: "TERCER PISO", fecha: addDays(-6, 11, 0), tipoPension: "COMPARTIDA" },
+    { internacionId: intFerreyra.id, camaAnterior: "G-01", camaNueva: "UTI-01", sector: "UTI", fecha: addDays(-5, 10, 0), tipoPension: "INDIVIDUAL" },
+    { internacionId: intVillalba.id, camaAnterior: "P3-301", camaNueva: "P3-302", sector: "TERCER PISO", fecha: addDays(-3, 9, 0), tipoPension: "INDIVIDUAL" },
   ]});
 
   // ── 20. MOVIMIENTOS DE STOCK ──
   await prisma.movimientoStock.createMany({ data: [
-    { stockItemId: items[2].id, tipo: "EGRESO", cantidad: 2, motivo: "Aplicación Paracetamol - Sureda", internacionId: intSureda.id, usuarioId: enfermero.id },
-    { stockItemId: items[9].id, tipo: "EGRESO", cantidad: 1, motivo: "Aplicación Ceftriaxona - Ferreyra", internacionId: intFerreyra.id, usuarioId: enfermero.id },
-    { stockItemId: items[4].id, tipo: "EGRESO", cantidad: 1, motivo: "Aplicación Ketorolac - Gómez", internacionId: intGomez.id, usuarioId: enfermero.id },
-    { stockItemId: items[10].id, tipo: "INGRESO", cantidad: 20, motivo: "Compra a proveedor", usuarioId: farmaciaUser.id },
-    { stockItemId: items[9].id, tipo: "INGRESO", cantidad: 40, motivo: "Compra a proveedor", usuarioId: farmaciaUser.id },
+    { stockItemId: stockByName["Ceftriaxona 1g"].id, tipo: "EGRESO", cantidad: 3, motivo: "Aplicaciones Ceftriaxona - Ferreyra", internacionId: intFerreyra.id, usuarioId: enfermero.id },
+    { stockItemId: stockByName["Paracetamol 1g"].id, tipo: "EGRESO", cantidad: 1, motivo: "Aplicación Paracetamol - Villalba", internacionId: intVillalba.id, usuarioId: enfermero.id },
+    { stockItemId: stockByName["Sol. Fisiológica 1L"].id, tipo: "INGRESO", cantidad: 24, motivo: "Compra a proveedor", usuarioId: farmaciaUser.id },
+    { stockItemId: stockByName["Enoxaparina 40mg"].id, tipo: "INGRESO", cantidad: 10, motivo: "Compra a proveedor", usuarioId: farmaciaUser.id },
   ]});
 
   // ── 21. FIRMAS DE DOCUMENTOS ──
   await prisma.firmaDocumento.createMany({ data: [
-    { tipoDoc: "PROTOCOLO_ANESTESIA", docId: protoSureda.id, usuarioId: sosa.id, hash: "sha256-7f3a9c1e2b8d4f6a0e5c3b2d1f0a9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a21", timestamp: addDays(-3, 10, 0) },
-    { tipoDoc: "PROTOCOLO_ANESTESIA", docId: protoVillalba.id, usuarioId: sosa.id, hash: "sha256-9c2d5f7a1b3e4c6d8f0a2b4c6d8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f", timestamp: addDays(-6, 11, 30) },
-    { tipoDoc: "EPICRISIS", docId: "", usuarioId: delgadoPablo.id, hash: "sha256-epicrisis-villalba-2026", timestamp: addDays(-1, 12, 0) },
+    { tipoDoc: "PROTOCOLO_ANESTESIA", docId: protoVillalba.id, usuarioId: sosa.id, hash: "sha256-proto-villalba-2026", timestamp: addDays(-1, 11, 0) },
+    { tipoDoc: "EPICRISIS", docId: "", usuarioId: delgadoPablo.id, hash: "sha256-epicrisis-villalba-2026", timestamp: addDays(0, 12, 30) },
   ]});
 
   // ── 22. CONSULTORIO: horarios, secretaria-médico y turnos ──
@@ -903,21 +699,19 @@ async function main() {
     { secretariaId: secretaria.id, medicoId: delgadoPablo.id, fechaAsignacion: addDays(-30) },
   ]});
 
-  // Turnos: Benítez (6 estados), Villalba (control post-alta)
+  // Turnos: Villalba (control post-alta confirmado), Benítez (ambulatoria con historial completo de estados)
   await prisma.turnoConsultorio.createMany({ data: [
-    { medicoId: depascuale.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: ioma.id, fecha: onWeekday("LUNES", 2, 9, 0), hora: "09:00", motivo: "Cefaleas recurrentes", estado: "COMPLETADO", asistio: true, episodioId: epBenitezConsulta.id },
-    { medicoId: depascuale.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: ioma.id, fecha: onWeekday("LUNES", 1, 10, 0), hora: "10:00", motivo: "Control - cefaleas", estado: "NO_ASISTIO", asistio: false },
-    { medicoId: romero.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: ioma.id, fecha: onWeekday("MARTES", 0, 15, 0), hora: "15:00", motivo: "Consulta de rutina", estado: "CONFIRMADO" },
-    { medicoId: delgadoPablo.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: ioma.id, fecha: onWeekday("JUEVES", 0, 10, 0), hora: "10:00", motivo: "Resultados de laboratorio", estado: "PENDIENTE" },
-    { medicoId: depascuale.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: ioma.id, fecha: onWeekday("MIERCOLES", 1, 9, 30), hora: "09:30", motivo: "Consulta", estado: "CANCELADO" },
-    { medicoId: romero.id, pacienteId: villalba.id, secretariaId: secretaria.id, obraSocialId: pami.id, fecha: onWeekday("JUEVES", 0, 14, 30), hora: "14:30", motivo: "Control postoperatorio - colecistectomía", estado: "CONFIRMADO" },
-    { medicoId: delgadoPablo.id, pacienteId: villalba.id, secretariaId: secretaria.id, obraSocialId: pami.id, fecha: addDays(-2, 10, 0), hora: "10:00", motivo: "Control postoperatorio", estado: "COMPLETADO", asistio: true, episodioId: epVillalbaConsulta.id },
-    { medicoId: depascuale.id, pacienteId: sureda.id, secretariaId: secretaria.id, obraSocialId: osde.id, fecha: onWeekday("VIERNES", 0, 9, 0), hora: "09:00", motivo: "Control postoperatorio - mastoplastia", estado: "EN_CONSULTA", asistio: true },
+    { medicoId: delgadoPablo.id, pacienteId: villalba.id, secretariaId: secretaria.id, obraSocialId: ioma.id, fecha: onWeekday("VIERNES", 0, 10, 0), hora: "10:00", motivo: "Control post alta - colecistectomía", estado: "CONFIRMADO" },
+    { medicoId: marquez.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: inssjp.id, fecha: addDays(-14, 10, 0), hora: "10:00", motivo: "Consulta por cefalea tensional", estado: "COMPLETADO", asistio: true, episodioId: epBenitezConsulta.id },
+    { medicoId: marquez.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: inssjp.id, fecha: addDays(-10, 10, 30), hora: "10:30", motivo: "Consulta por cefalea - paciente no concurrió", estado: "NO_ASISTIO" },
+    { medicoId: marquez.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: inssjp.id, fecha: onWeekday("MIERCOLES", 0, 11, 0), hora: "11:00", motivo: "Control - cefalea", estado: "CONFIRMADO" },
+    { medicoId: marquez.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: inssjp.id, fecha: onWeekday("JUEVES", 0, 11, 0), hora: "11:00", motivo: "Control - cefalea", estado: "PENDIENTE" },
+    { medicoId: marquez.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: inssjp.id, fecha: onWeekday("LUNES", 0, 11, 0), hora: "11:00", motivo: "Control - cefalea", estado: "CANCELADO" },
   ]});
   console.log("✓ Consultorio: horarios, secretaria-médico y turnos creados");
 
   // ── 23. ESTADOS DE CAMA COHERENTES ──
-  await prisma.cama.updateMany({ where: { id: { in: [utiCamas[0].id, p3Camas[4].id, guardiaCamas[0].id] } }, data: { estado: "OCUPADA" } });
+  await prisma.cama.updateMany({ where: { id: { in: [utiCamas[0].id] } }, data: { estado: "OCUPADA" } });
 
   console.log("\n✅ Seed completado exitosamente!");
 }
