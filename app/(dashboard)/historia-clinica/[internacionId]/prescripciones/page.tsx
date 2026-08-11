@@ -229,7 +229,7 @@ export default function PrescripcionesPage() {
 
           {form.tipo === "MEDICACION" ? (
             <MedicacionMultiSelect
-              searchPlaceholder="Buscar medicamento..."
+              searchPlaceholder="Buscar por troquel o nombre…"
               extraFields={[
                 { key: "dosis", label: "Dosis", type: "text", placeholder: "ej: 500" },
                 { key: "unidad", label: "Unidad", type: "text", placeholder: "ej: mg" },

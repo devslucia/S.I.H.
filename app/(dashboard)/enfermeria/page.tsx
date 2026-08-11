@@ -33,8 +33,10 @@ interface Prescripcion {
 interface StockItem {
   id: string;
   nombre: string;
+  nTroquel?: string;
   principioActivo?: string;
   presentacion?: string;
+  laboratorio?: string;
   stockActual: number;
   unidad?: string;
 }
@@ -401,7 +403,9 @@ function AplicarPrescripcion({
               <select value={selectedStockId} onChange={(e) => setSelectedStockId(e.target.value)} className="select-field text-[13px]">
                 <option value="">Sin stock</option>
                 {stockItems.map((s) => (
-                  <option key={s.id} value={s.id}>{s.nombre} ({s.stockActual} {s.unidad || "u"})</option>
+                  <option key={s.id} value={s.id}>
+                    {s.nTroquel ? `${s.nTroquel} · ` : ""}{s.nombre} ({s.stockActual} {s.unidad || "u"})
+                  </option>
                 ))}
               </select>
             </div>
@@ -624,7 +628,7 @@ function MedicacionAdHoc({ internacionId, onApplied }: { internacionId: string; 
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title="Medicación ad-hoc (sin prescripción)" size="lg">
         <MedicacionMultiSelect
-          searchPlaceholder="Buscar medicamento…"
+          searchPlaceholder="Buscar por troquel o nombre…"
           extraFields={[
             { key: "cantidad", label: "Cantidad", type: "number", defaultValue: 1, required: true },
             { key: "via", label: "Vía", type: "select", defaultValue: "VO", options: [

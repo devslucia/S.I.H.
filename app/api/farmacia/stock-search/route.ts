@@ -13,7 +13,10 @@ export async function GET(req: NextRequest) {
     where: {
       activo: true,
       OR: [
+        { nTroquel: { contains: q, mode: "insensitive" } },
         { nombre: { contains: q, mode: "insensitive" } },
+        { presentacion: { contains: q, mode: "insensitive" } },
+        { laboratorio: { contains: q, mode: "insensitive" } },
         { principioActivo: { contains: q, mode: "insensitive" } },
       ],
     },

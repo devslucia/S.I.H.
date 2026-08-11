@@ -149,7 +149,7 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
 
       <Modal open={showStockModal} onClose={() => setShowStockModal(false)} title="Agregar medicamentos / descartables" size="md">
         <MedicacionMultiSelect
-          searchPlaceholder="Buscar por nombre..."
+          searchPlaceholder="Buscar por troquel o nombre…"
           extraFields={[
             { key: "cantidad", label: "Cantidad", type: "number", defaultValue: 1, required: true },
             { key: "via", label: "Vía", type: "select", defaultValue: "EV", options: [
