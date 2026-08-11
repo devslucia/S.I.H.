@@ -20,6 +20,7 @@ import type { SignoVitalRegistro, PremedicacionItem, AlergiaData, PacienteData, 
 import { EscalaAldrete } from "./anestesia/EscalaAldrete";
 import { PanelDrogas } from "./anestesia/PanelDrogas";
 import { GraficoSignosVitales } from "./anestesia/GraficoSignosVitales";
+import { useToast } from "@/components/ui/Toast";
 
 interface ProtocoloAnestesiaProps {
   internacionId: string;
@@ -72,6 +73,10 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
   const [firmarNombre, setFirmarNombre] = useState("");
   const [firmarMatricula, setFirmarMatricula] = useState("");
   const autoSaveRef = useRef(false);
+  const { toast } = useToast();
+  const signosVitalesRef = useRef<SignoVitalRegistro[]>([]);
+  const savingSignosRef = useRef(false);
+  const pendingSignosRef = useRef<SignoVitalRegistro[] | null>(null);
 
   const form = useForm<ProtocoloAnestesiaFormData>({
     resolver: zodResolver(protocoloAnestesiaSchema),
@@ -121,6 +126,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
               setFirmadoData({ nombre: p.nombreFirmante || "", fecha: p.firmadoEn || "" });
             }
             if (p.signosVitales && Array.isArray(p.signosVitales)) {
+              signosVitalesRef.current = p.signosVitales;
               setSignosVitales(p.signosVitales);
             }
             if (p.fechaCirugia) {
@@ -205,9 +211,9 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
   // Auto-guardado con debounce
   useEffect(() => {
     if (loading || firmado || !protocoloId) return;
-    const fingerprint = JSON.stringify(debouncedValues);
+    const fingerprint = JSON.stringify({ ...debouncedValues, signosVitales: signosVitalesRef.current });
     if (fingerprint === debouncedFingerprint.current) return;
-    if (autoSaveRef.current) return;
+    if (autoSaveRef.current || savingSignosRef.current) return;
 
     autoSaveRef.current = true;
     setSaving(true);
@@ -217,7 +223,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
       try {
         const payload = {
           ...debouncedValues,
-          signosVitales,
+          signosVitales: signosVitalesRef.current,
           drogas: debouncedValues.drogas || [],
           cirugiaId: cirugiaId || undefined,
         };
@@ -250,33 +256,98 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
     setSecciones((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Guardar signos vitales
-  const handleAddRegistro = useCallback((registro: SignoVitalRegistro) => {
-    setSignosVitales((prev) => {
-      const existing = prev.findIndex((s) => s.minuto === registro.minuto);
-      if (existing >= 0) {
-        const updated = [...prev];
-        updated[existing] = { ...updated[existing], ...registro };
-        return updated;
+  // Persistencia inmediata de signos vitales intraoperatorios
+  const persistSignos = useCallback(
+    (registros: SignoVitalRegistro[], minuto: number) => {
+      if (firmado) return;
+      if (savingSignosRef.current) {
+        pendingSignosRef.current = registros;
+        return;
       }
-      return [...prev, registro].sort((a, b) => a.minuto - b.minuto);
-    });
-  }, []);
+      savingSignosRef.current = true;
 
-  const handleAddEvento = useCallback((minuto: number, evento: string) => {
-    setSignosVitales((prev) => {
+      const persist = async () => {
+        try {
+          const payload = {
+            ...form.getValues(),
+            signosVitales: registros,
+            drogas: form.getValues("drogas") || [],
+            cirugiaId: cirugiaId || undefined,
+          };
+          const res = await fetch(`/api/historia-clinica/${internacionId}/protocolo-anestesia`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (res.ok) {
+            debouncedFingerprint.current = JSON.stringify({
+              ...form.getValues(),
+              signosVitales: registros,
+            });
+            const hora = horaInicio
+              ? new Date(horaInicio.getTime() + minuto * 60000).toLocaleTimeString("es-AR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                })
+              : "";
+            toast(
+              "success",
+              hora
+                ? `Signos vitales intraoperatorios guardados (${hora})`
+                : "Signos vitales intraoperatorios guardados"
+            );
+          } else if (res.status === 403) {
+            setFirmado(true);
+          } else {
+            setSaveError(true);
+          }
+        } catch {
+          setSaveError(true);
+        } finally {
+          savingSignosRef.current = false;
+          if (pendingSignosRef.current) {
+            const next = pendingSignosRef.current;
+            pendingSignosRef.current = null;
+            persistSignos(next, next[next.length - 1]?.minuto ?? minuto);
+          }
+        }
+      };
+      persist();
+    },
+    [firmado, form, internacionId, cirugiaId, horaInicio, toast]
+  );
+
+  // Guardar signos vitales
+  const handleAddRegistro = useCallback(
+    (registro: SignoVitalRegistro) => {
+      const prev = signosVitalesRef.current;
+      const existing = prev.findIndex((s) => s.minuto === registro.minuto);
+      const next =
+        existing >= 0
+          ? prev.map((s, i) => (i === existing ? { ...s, ...registro } : s))
+          : [...prev, registro].sort((a, b) => a.minuto - b.minuto);
+      signosVitalesRef.current = next;
+      setSignosVitales(next);
+      persistSignos(next, registro.minuto);
+    },
+    [persistSignos]
+  );
+
+  const handleAddEvento = useCallback(
+    (minuto: number, evento: string) => {
+      const prev = signosVitalesRef.current;
       const existing = prev.findIndex((s) => s.minuto === minuto);
-      if (existing >= 0) {
-        const updated = [...prev];
-        updated[existing] = {
-          ...updated[existing],
-          eventos: [...(updated[existing].eventos || []), evento],
-        };
-        return updated;
-      }
-      return [...prev, { minuto, eventos: [evento] }].sort((a, b) => a.minuto - b.minuto);
-    });
-  }, []);
+      const next =
+        existing >= 0
+          ? prev.map((s, i) => (i === existing ? { ...s, eventos: [...(s.eventos || []), evento] } : s))
+          : [...prev, { minuto, eventos: [evento] }].sort((a, b) => a.minuto - b.minuto);
+      signosVitalesRef.current = next;
+      setSignosVitales(next);
+      persistSignos(next, minuto);
+    },
+    [persistSignos]
+  );
 
   // Iniciar hora si no existe
   useEffect(() => {
@@ -773,6 +844,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                 <GraficoSignosVitales
                   signosVitales={signosVitales}
                   minutoActual={minutoActual}
+                  horaInicio={horaInicio}
                   onAddRegistro={handleAddRegistro}
                   onAddEvento={handleAddEvento}
                   readOnly={firmado}
