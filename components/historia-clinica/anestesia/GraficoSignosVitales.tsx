@@ -93,16 +93,17 @@ function GraficoSignosVitales({
   });
   const [eventoCustom, setEventoCustom] = useState("");
   const [showEventos, setShowEventos] = useState(false);
+  const sv = useMemo(() => (Array.isArray(signosVitales) ? signosVitales : []), [signosVitales]);
 
   const chartData = useMemo(() => {
-    const maxMin = Math.max(240, minutoActual + 30, ...signosVitales.map((s) => s.minuto));
+    const maxMin = Math.max(240, minutoActual + 30, ...sv.map((s) => s.minuto ?? 0));
     const points: PuntoGrafico[] = [];
 
     for (let m = 0; m <= maxMin; m += 5) {
-      const registro = signosVitales.find((s) => s.minuto === m);
-      const eventosEnMinuto = signosVitales
-        .filter((s) => s.minuto === m && s.eventos?.length)
-        .flatMap((s) => s.eventos || []);
+      const registro = sv.find((s) => s.minuto === m);
+      const eventosEnMinuto = sv
+        .filter((s) => s.minuto === m && (Array.isArray(s.eventos) ? s.eventos.length : 0) > 0)
+        .flatMap((s) => (Array.isArray(s.eventos) ? s.eventos : []));
 
       points.push({
         minuto: m,
@@ -119,13 +120,13 @@ function GraficoSignosVitales({
       });
     }
     return points;
-  }, [signosVitales, minutoActual]);
+  }, [sv, minutoActual]);
 
   const eventLines = useMemo(() => {
     const events: { minuto: number; label: string; color: string }[] = [];
-    const allEvents = signosVitales.filter((s) => s.eventos?.length);
+    const allEvents = sv.filter((s) => (Array.isArray(s.eventos) ? s.eventos.length : 0) > 0);
     allEvents.forEach((s) => {
-      s.eventos?.forEach((ev) => {
+      (Array.isArray(s.eventos) ? s.eventos : []).forEach((ev) => {
         const predef = EVENTOS_PREDEFINIDOS.find((e) => e.key === ev);
         events.push({
           minuto: s.minuto,
@@ -135,7 +136,7 @@ function GraficoSignosVitales({
       });
     });
     return events;
-  }, [signosVitales]);
+  }, [sv]);
 
   const handleRegister = () => {
     const registro: SignoVitalRegistro = {
@@ -230,7 +231,7 @@ function GraficoSignosVitales({
       </div>
 
       {/* Tabla de registros intraoperatorios */}
-      {signosVitales.length > 0 && (
+      {sv.length > 0 && (
         <div className="rounded-xl border border-border bg-surface p-4 overflow-x-auto">
           <h4 className="text-sm font-medium text-text-secondary mb-3">Registros intraoperatorios</h4>
           <table className="w-full text-[12px] min-w-[720px]">
@@ -245,7 +246,7 @@ function GraficoSignosVitales({
               </tr>
             </thead>
             <tbody>
-              {[...signosVitales].sort((a, b) => a.minuto - b.minuto).map((s) => (
+              {[...sv].sort((a, b) => (a.minuto ?? 0) - (b.minuto ?? 0)).map((s) => (
                 <tr key={s.minuto} className="border-b border-border/40">
                   <td className="py-1.5 pr-2 font-mono text-brand">{`${s.minuto}'`}</td>
                   <td className="py-1.5 pr-2 font-mono text-muted">
@@ -263,7 +264,7 @@ function GraficoSignosVitales({
                     </td>
                   ))}
                   <td className="py-1.5 text-[11px] text-muted">
-                    {s.eventos?.length ? s.eventos.join(", ") : "—"}
+                    {Array.isArray(s.eventos) && s.eventos.length ? s.eventos.join(", ") : "—"}
                   </td>
                 </tr>
               ))}
