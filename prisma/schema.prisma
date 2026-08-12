@@ -252,14 +252,43 @@ model Alergia {
 }
 
 model ObraSocial {
-  id           String        @id @default(uuid())
-  codigo       String        @unique
-  nombre       String
-  sigla        String
-  activa       Boolean       @default(true)
-  convenios    Convenio[]
-  internaciones Internacion[]
-  turnosConsultorio TurnoConsultorio[]
+  id                          String          @id @default(uuid())
+  codigo                      String          @unique
+  nombre                      String
+  sigla                       String
+  descripcion                 String
+  razonSocial                 String
+  domicilio                   String?
+  localidad                   String?
+  tipoContribucion            TipoContribucion @default(CONSUMIDOR_FINAL)
+  tipoIva                     TipoIva         @default(IVA_21)
+  cuit                        String
+  estadoAmbulatorio           EstadoCobertura @default(ACTIVA)
+  estadoInternacion           EstadoCobertura @default(ACTIVA)
+  porcentajeDescMedicamentos  Decimal         @default(0) @db.Decimal(5, 2)
+  activa                      Boolean         @default(true)
+  convenios                   Convenio[]
+  internaciones               Internacion[]
+  turnosConsultorio           TurnoConsultorio[]
+}
+
+enum TipoContribucion {
+  INSCRIPTO
+  NO_INSCRIPTO
+  EXENTO
+  MONOTRIBUTO
+  CONSUMIDOR_FINAL
+}
+
+enum TipoIva {
+  IVA_0
+  IVA_10_5
+  IVA_21
+}
+
+enum EstadoCobertura {
+  ACTIVA
+  SUSPENDIDA
 }
 
 model Convenio {

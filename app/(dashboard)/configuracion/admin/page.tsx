@@ -29,6 +29,16 @@ interface ObraSocial {
   codigo: string;
   nombre: string;
   sigla: string;
+  descripcion: string;
+  razonSocial: string;
+  domicilio: string | null;
+  localidad: string | null;
+  tipoContribucion: string;
+  tipoIva: string;
+  cuit: string;
+  estadoAmbulatorio: string;
+  estadoInternacion: string;
+  porcentajeDescMedicamentos: number;
   activa: boolean;
 }
 
@@ -299,18 +309,48 @@ function CamasTab({ camas, sectores, onRefresh }: { camas: Cama[]; sectores: Sec
   );
 }
 
+const TIPO_CONTRIBUCION = ["INSCRIPTO", "NO_INSCRIPTO", "EXENTO", "MONOTRIBUTO", "CONSUMIDOR_FINAL"];
+
+const IVA_LABEL: Record<string, string> = { IVA_0: "0 %", IVA_10_5: "10.5 %", IVA_21: "21 %" };
+
+const COBERTURA_BADGE: Record<string, { tone: "success" | "danger"; label: string }> = {
+  ACTIVA: { tone: "success", label: "ACTIVA" },
+  SUSPENDIDA: { tone: "danger", label: "SUSPENDIDA" },
+};
+
+const EMPTY_OS_FORM = {
+  codigo: "", nombre: "", sigla: "", descripcion: "", razonSocial: "", cuit: "",
+  domicilio: "", localidad: "", tipoContribucion: "CONSUMIDOR_FINAL", tipoIva: "IVA_21",
+  estadoAmbulatorio: "ACTIVA", estadoInternacion: "ACTIVA", porcentajeDescMedicamentos: "0", activa: true,
+};
+
 function ObrasTab({ obras, onRefresh }: { obras: ObraSocial[]; onRefresh: () => void }) {
-  const [form, setForm] = useState({ codigo: "", nombre: "", sigla: "" });
+  const [form, setForm] = useState(EMPTY_OS_FORM);
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const set = (k: keyof typeof EMPTY_OS_FORM, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleSave = async () => {
     setSaving(true);
+    setError(null);
     try {
       const method = editing ? "PUT" : "POST";
-      const body = editing ? { id: editing, ...form } : form;
-      await fetch("/api/obras-sociales", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      setForm({ codigo: "", nombre: "", sigla: "" });
+      const body = {
+        ...(editing ? { id: editing } : {}),
+        ...form,
+        domicilio: form.domicilio || null,
+        localidad: form.localidad || null,
+        porcentajeDescMedicamentos: Number(form.porcentajeDescMedicamentos),
+      };
+      const res = await fetch("/api/obras-sociales", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Error al guardar");
+        return;
+      }
+      setForm(EMPTY_OS_FORM);
       setEditing(null);
       onRefresh();
     } finally { setSaving(false); }
@@ -321,36 +361,85 @@ function ObrasTab({ obras, onRefresh }: { obras: ObraSocial[]; onRefresh: () => 
     onRefresh();
   };
 
+  const startEdit = (o: ObraSocial) => {
+    setEditing(o.id);
+    setForm({
+      codigo: o.codigo, nombre: o.nombre, sigla: o.sigla, descripcion: o.descripcion, razonSocial: o.razonSocial,
+      cuit: o.cuit, domicilio: o.domicilio ?? "", localidad: o.localidad ?? "",
+      tipoContribucion: o.tipoContribucion, tipoIva: o.tipoIva,
+      estadoAmbulatorio: o.estadoAmbulatorio, estadoInternacion: o.estadoInternacion,
+      porcentajeDescMedicamentos: String(o.porcentajeDescMedicamentos), activa: o.activa,
+    });
+  };
+
+  const cancelEdit = () => { setEditing(null); setForm(EMPTY_OS_FORM); setError(null); };
+
   return (
     <div className="space-y-4">
       <p className="text-[13px] font-medium text-text">Obras sociales</p>
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <input placeholder="Código" value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} className="input-field text-[13px]" />
-        <input placeholder="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="input-field text-[13px]" />
-        <input placeholder="Sigla" value={form.sigla} onChange={(e) => setForm({ ...form, sigla: e.target.value })} className="input-field text-[13px]" />
-        <div className="flex gap-2">
-          <button onClick={handleSave} disabled={saving || !form.codigo || !form.nombre || !form.sigla} className="btn-primary text-[13px]">{editing ? "Actualizar" : "Crear"}</button>
-          {editing && <button onClick={() => { setEditing(null); setForm({ codigo: "", nombre: "", sigla: "" }); }} className="btn-secondary text-[13px]"><X size={14} /></button>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <input placeholder="Código" value={form.codigo} onChange={(e) => set("codigo", e.target.value)} className="input-field text-[13px]" />
+        <input placeholder="Nombre" value={form.nombre} onChange={(e) => set("nombre", e.target.value)} className="input-field text-[13px]" />
+        <input placeholder="Sigla" value={form.sigla} onChange={(e) => set("sigla", e.target.value)} className="input-field text-[13px]" />
+        <input placeholder="CUIT (20-12345678-9)" value={form.cuit} onChange={(e) => set("cuit", e.target.value)} className="input-field text-[13px]" />
+        <input placeholder="Descripción" value={form.descripcion} onChange={(e) => set("descripcion", e.target.value)} className="input-field text-[13px]" />
+        <input placeholder="Razón social" value={form.razonSocial} onChange={(e) => set("razonSocial", e.target.value)} className="input-field text-[13px]" />
+        <input placeholder="Domicilio (opcional)" value={form.domicilio} onChange={(e) => set("domicilio", e.target.value)} className="input-field text-[13px]" />
+        <input placeholder="Localidad (opcional)" value={form.localidad} onChange={(e) => set("localidad", e.target.value)} className="input-field text-[13px]" />
+        <select value={form.tipoContribucion} onChange={(e) => set("tipoContribucion", e.target.value)} className="select-field text-[13px]">
+          {TIPO_CONTRIBUCION.map((t) => <option key={t} value={t}>{t.replace("_", " ")}</option>)}
+        </select>
+        <select value={form.tipoIva} onChange={(e) => set("tipoIva", e.target.value)} className="select-field text-[13px]">
+          {Object.entries(IVA_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+        <select value={form.estadoAmbulatorio} onChange={(e) => set("estadoAmbulatorio", e.target.value)} className="select-field text-[13px]">
+          <option value="ACTIVA">Ambulatorio: ACTIVA</option>
+          <option value="SUSPENDIDA">Ambulatorio: SUSPENDIDA</option>
+        </select>
+        <select value={form.estadoInternacion} onChange={(e) => set("estadoInternacion", e.target.value)} className="select-field text-[13px]">
+          <option value="ACTIVA">Internación: ACTIVA</option>
+          <option value="SUSPENDIDA">Internación: SUSPENDIDA</option>
+        </select>
+        <input type="number" min={0} max={100} placeholder="Desc. medicamentos %" value={form.porcentajeDescMedicamentos} onChange={(e) => set("porcentajeDescMedicamentos", e.target.value)} className="input-field text-[13px]" />
+        <label className="flex items-center gap-2 text-[13px] text-muted select-none">
+          <input type="checkbox" checked={form.activa} onChange={(e) => set("activa", e.target.checked)} className="accent-accent-button" />
+          Activa
+        </label>
+        <div className="flex gap-2 items-center">
+          <button onClick={handleSave} disabled={saving} className="btn-primary text-[13px]">{editing ? "Actualizar" : "Crear"}</button>
+          {editing && <button onClick={cancelEdit} className="btn-secondary text-[13px]"><X size={14} /></button>}
         </div>
       </div>
+      {error && <p className="text-[12px] text-error">{error}</p>}
       {obras.length === 0 ? (
         <Empty text="Sin obras sociales." />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
-            <thead><tr className="border-b border-border text-muted"><th className={th}>Código</th><th className={th}>Nombre</th><th className={th}>Sigla</th><th className={th}>Estado</th><th className={th}>Acciones</th></tr></thead>
+            <thead><tr className="border-b border-border text-muted"><th className={th}>Nombre</th><th className={th}>CUIT</th><th className={th}>Contribución</th><th className={th}>IVA</th><th className={th}>Desc. med.</th><th className={th}>Ambulatorio</th><th className={th}>Internación</th><th className={th}>Estado</th><th className={th}>Acciones</th></tr></thead>
             <tbody>
               {obras.map((o) => (
                 <tr key={o.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
-                  <td className={td + " font-mono text-muted"}>{o.codigo}</td>
-                  <td className={td + " text-text"}>{o.nombre}</td>
-                  <td className={td + " font-mono text-muted"}>{o.sigla}</td>
+                  <td className={td}>
+                    <span className="text-text font-medium">{o.nombre}</span>
+                    <span className="block font-mono text-[11px] text-muted">{o.sigla} · {o.codigo}</span>
+                  </td>
+                  <td className={td + " font-mono text-muted whitespace-nowrap"}>{o.cuit}</td>
+                  <td className={td + " text-muted"}>{o.tipoContribucion.replace("_", " ")}</td>
+                  <td className={td + " text-muted tabular-nums"}>{IVA_LABEL[o.tipoIva] ?? o.tipoIva}</td>
+                  <td className={td + " text-muted tabular-nums"}>{o.porcentajeDescMedicamentos}%</td>
+                  <td className={td}>
+                    <StatusBadge tone={COBERTURA_BADGE[o.estadoAmbulatorio]?.tone ?? "neutral"} label={COBERTURA_BADGE[o.estadoAmbulatorio]?.label ?? o.estadoAmbulatorio} dot />
+                  </td>
+                  <td className={td}>
+                    <StatusBadge tone={COBERTURA_BADGE[o.estadoInternacion]?.tone ?? "neutral"} label={COBERTURA_BADGE[o.estadoInternacion]?.label ?? o.estadoInternacion} dot />
+                  </td>
                   <td className={td}>
                     <StatusBadge tone={o.activa ? "success" : "neutral"} label={o.activa ? "Activa" : "Inactiva"} dot={o.activa} />
                   </td>
                   <td className={td}>
                     <div className="flex gap-2 items-center">
-                      <button onClick={() => { setEditing(o.id); setForm({ codigo: o.codigo, nombre: o.nombre, sigla: o.sigla }); }} className="text-[12px] text-brand hover:underline">Editar</button>
+                      <button onClick={() => startEdit(o)} className="text-[12px] text-brand hover:underline">Editar</button>
                       <button onClick={() => handleToggle(o.id, o.activa)} className="text-[12px] text-warning hover:underline">{o.activa ? "Desactivar" : "Activar"}</button>
                     </div>
                   </td>
