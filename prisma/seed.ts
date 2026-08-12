@@ -126,12 +126,54 @@ async function main() {
   console.log("✓ Usuarios demo asegurados (13, upsert por email)");
 
   // ── 3. OBRAS SOCIALES + NOMENCLADOR + CONVENIOS ──
-  const osde = await prisma.obraSocial.create({ data: { codigo: "0-0469", nombre: "OSDE", sigla: "OSDE" } });
-  const ioma = await prisma.obraSocial.create({ data: { codigo: "0-0120", nombre: "IOMA", sigla: "IOMA" } });
-  const pami = await prisma.obraSocial.create({ data: { codigo: "0-0800", nombre: "PAMI", sigla: "PAMI" } });
-  const sm = await prisma.obraSocial.create({ data: { codigo: "0-0300", nombre: "Swiss Medical", sigla: "SM" } });
-  const ips = await prisma.obraSocial.create({ data: { codigo: "0-1212", nombre: "IPS", sigla: "IPS" } });
-  const inssjp = await prisma.obraSocial.create({ data: { codigo: "0-0801", nombre: "INSSJP - PAMI", sigla: "INSSJP" } });
+  const osde = await prisma.obraSocial.create({ data: {
+    codigo: "0-0469", nombre: "OSDE", sigla: "OSDE",
+    descripcion: "Medicina prepaga privada — cobertura ambulatoria e internación con cartilla propia",
+    razonSocial: "Organización de Servicios Directos Empresarios S.A.",
+    domicilio: "Av. Córdoba 1313", localidad: "CABA",
+    tipoContribucion: "INSCRIPTO", tipoIva: "IVA_21", cuit: "30-70832227-6",
+    estadoAmbulatorio: "ACTIVA", estadoInternacion: "ACTIVA", porcentajeDescMedicamentos: 0,
+  } });
+  const ioma = await prisma.obraSocial.create({ data: {
+    codigo: "0-0120", nombre: "IOMA", sigla: "IOMA",
+    descripcion: "Instituto de Obra Médico Asistencial — obra social provincial bonaerense",
+    razonSocial: "Instituto de Obra Médico Asistencial de la Provincia de Buenos Aires",
+    domicilio: "Calle 5 N° 989", localidad: "La Plata",
+    tipoContribucion: "INSCRIPTO", tipoIva: "IVA_0", cuit: "33-66400001-1",
+    estadoAmbulatorio: "ACTIVA", estadoInternacion: "ACTIVA", porcentajeDescMedicamentos: 40,
+  } });
+  const pami = await prisma.obraSocial.create({ data: {
+    codigo: "0-0800", nombre: "PAMI", sigla: "PAMI",
+    descripcion: "Programa de Asistencia Médica Integral — obra social de jubilados y pensionados",
+    razonSocial: "Instituto Nacional de Servicios Sociales para Jubilados y Pensionados",
+    domicilio: "Av. Paseo Colón 329", localidad: "CABA",
+    tipoContribucion: "INSCRIPTO", tipoIva: "IVA_0", cuit: "33-66955554-2",
+    estadoAmbulatorio: "ACTIVA", estadoInternacion: "ACTIVA", porcentajeDescMedicamentos: 30,
+  } });
+  const sm = await prisma.obraSocial.create({ data: {
+    codigo: "0-0300", nombre: "Swiss Medical", sigla: "SM",
+    descripcion: "Medicina prepaga con red propia de sanatorios y laboratorios",
+    razonSocial: "Swiss Medical Group S.A.",
+    domicilio: "Av. Alicia Moreau de Justo 2050", localidad: "CABA",
+    tipoContribucion: "INSCRIPTO", tipoIva: "IVA_21", cuit: "30-65242799-1",
+    estadoAmbulatorio: "ACTIVA", estadoInternacion: "ACTIVA", porcentajeDescMedicamentos: 0,
+  } });
+  const ips = await prisma.obraSocial.create({ data: {
+    codigo: "0-1212", nombre: "IPS", sigla: "IPS",
+    descripcion: "Instituto de Previsión Social de Misiones — obra social provincial",
+    razonSocial: "Instituto de Previsión Social de la Provincia de Misiones",
+    domicilio: "Bolívar 1767", localidad: "Posadas",
+    tipoContribucion: "INSCRIPTO", tipoIva: "IVA_0", cuit: "30-66500000-8",
+    estadoAmbulatorio: "ACTIVA", estadoInternacion: "ACTIVA", porcentajeDescMedicamentos: 20,
+  } });
+  const inssjp = await prisma.obraSocial.create({ data: {
+    codigo: "0-0801", nombre: "INSSJP - PAMI", sigla: "INSSJP",
+    descripcion: "Cobertura de la seguridad social para jubilados, pensionados y veteranos",
+    razonSocial: "Instituto Nacional de Servicios Sociales para Jubilados y Pensionados",
+    domicilio: "Av. Paseo Colón 329", localidad: "CABA",
+    tipoContribucion: "INSCRIPTO", tipoIva: "IVA_0", cuit: "33-66955554-2",
+    estadoAmbulatorio: "ACTIVA", estadoInternacion: "ACTIVA", porcentajeDescMedicamentos: 30,
+  } });
 
   const nomencladorData = [
     { codigo: "CAMA-DIA", descripcion: "Cama/día", tipo: "HOTELERIA" },
