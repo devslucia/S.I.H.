@@ -20,7 +20,7 @@ type CirugiaAsignacion = {
   circulanteId?: string | null;
 };
 
-export type EffectiveRole = "ADMIN" | "MEDICO" | "ANESTESIOLOGO" | "INSTRUMENTADOR" | "CIRCULANTE";
+export type EffectiveRole = "ADMIN" | "MEDICO" | "ANESTESIOLOGO" | "INSTRUMENTADOR" | "CIRCULANTE" | "NINGUNO";
 
 export function getEffectiveRole(
   cirugia: CirugiaAsignacion,
@@ -33,7 +33,7 @@ export function getEffectiveRole(
   if (cirugia.anestesiologoId === userId) return "ANESTESIOLOGO";
   if (cirugia.instrumentadorId === userId) return "INSTRUMENTADOR";
   if (cirugia.circulanteId === userId) return "CIRCULANTE";
-  return globalRole as EffectiveRole || "MEDICO";
+  return "NINGUNO";
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ export function getEffectiveRole(
 // ──────────────────────────────────────────────────────────────
 
 const FIELDS_ADMIN_MEDICO = [
-  "quirofanoId", "fechaProgramada", "horaProgramada", "tipo",
+  "estado", "quirofanoId", "fechaProgramada", "horaProgramada", "tipo",
   "cirujanoId", "ayudante1Id", "ayudante2Id", "anestesiologoId", "instrumentadorId", "circulanteId",
 ] as const;
 
@@ -86,10 +86,14 @@ export const STRICT_PARTE_QUIRURGICO = true;     // Solo MEDICO puede editar
 
 const EDITABLE_BY_ROLE: Record<EffectiveRole, readonly string[]> = {
   ADMIN: [...FIELDS_ADMIN_MEDICO, ...FIELDS_MEDICO_ONLY, ...FIELDS_INSTRUMENTADOR, ...FIELDS_CIRCULANTE, ...FIELDS_ANESTESIOLOGO, ...FIELDS_SHARED],
-  MEDICO: [...FIELDS_ADMIN_MEDICO, ...FIELDS_MEDICO_ONLY, ...FIELDS_SHARED],
+  MEDICO: [
+    ...FIELDS_ADMIN_MEDICO.filter((f) => f !== "estado" && f !== "fechaProgramada"),
+    ...FIELDS_MEDICO_ONLY, ...FIELDS_SHARED,
+  ],
   ANESTESIOLOGO: [...FIELDS_ANESTESIOLOGO, ...FIELDS_SHARED],
   INSTRUMENTADOR: [...FIELDS_INSTRUMENTADOR, ...FIELDS_SHARED],
   CIRCULANTE: [...FIELDS_CIRCULANTE, ...FIELDS_SHARED],
+  NINGUNO: [],
 };
 
 /**
