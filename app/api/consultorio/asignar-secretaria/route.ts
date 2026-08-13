@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatZodError } from "@/lib/validations/format-zod-error";
-import { errorMessage, prismaErrorCode } from "@/lib/errors";
+import { prismaErrorCode } from "@/lib/errors";
 
 const ASIGNAR_ROLES = ["ADMIN"];
 
@@ -68,7 +68,8 @@ export async function POST(req: NextRequest) {
         { status: 409 }
       );
     }
-    return NextResponse.json({ error: errorMessage(e) || "Error interno" }, { status: 500 });
+    console.error("Error interno en asignar-secretaria:", e);
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 

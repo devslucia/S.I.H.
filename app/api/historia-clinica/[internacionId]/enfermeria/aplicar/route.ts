@@ -4,7 +4,6 @@ import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
 import { descontarStock, type Tx } from "@/lib/utils/stock";
 import { generarCargo } from "@/lib/utils/facturacion";
 import { NextRequest, NextResponse } from "next/server";
-import {errorMessage} from "@/lib/errors";
 
 const APLICAR_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
 const APLICAR_WRITE_ROLES = ["ADMIN", "ENFERMERO", "MEDICO", "ANESTESIOLOGO"];
@@ -62,11 +61,15 @@ async function processOneAplicacion(
     return { ok: false, nombre: item.nombre || prescripcionId || "desconocido", error: "prescripcionId y hora requeridos" };
   }
 
-  if (stockItemId && cantidad) {
+  if (stockItemId && cantidad != null) {
+    const cant = Number(cantidad);
+    if (!Number.isFinite(cant) || cant <= 0) {
+      return { ok: false, nombre: item.nombre || prescripcionId || "desconocido", error: "Cantidad debe ser mayor a 0" };
+    }
     await descontarStock(
       tx,
       stockItemId,
-      Number(cantidad),
+      cant,
       `Aplicación de ${droga || "medicación"}`,
       internacionId
     );
@@ -146,7 +149,8 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
       });
       results.push(result);
     } catch (e: unknown) {
-      results.push({ ok: false, nombre: item.nombre || item.prescripcionId || "desconocido", error: errorMessage(e) || "Error interno" });
+      console.error("Error en ítem de aplicación:", e);
+      results.push({ ok: false, nombre: item.nombre || item.prescripcionId || "desconocido", error: "Error interno" });
     }
   }
 

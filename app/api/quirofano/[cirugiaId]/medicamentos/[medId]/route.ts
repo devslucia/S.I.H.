@@ -22,10 +22,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { cirugiaId
     if (denied) return denied;
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const med = await tx.medicamentoCirugia.findUnique({ where: { id: params.medId } });
-    if (!med) throw new Error("Medicamento no encontrado");
+  const med = await prisma.medicamentoCirugia.findFirst({
+    where: { id: params.medId, cirugiaId: params.cirugiaId },
+  });
+  if (!med) {
+    return NextResponse.json({ error: "Medicamento no encontrado" }, { status: 404 });
+  }
 
+  await prisma.$transaction(async (tx) => {
     if (med.stockItemId) {
       await tx.stockItem.update({
         where: { id: med.stockItemId },
@@ -33,9 +37,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { cirugiaId
       });
     }
 
-    await tx.medicamentoCirugia.delete({ where: { id: params.medId } });
-    return med;
+    await tx.medicamentoCirugia.delete({ where: { id: med.id } });
   });
 
-  return NextResponse.json(result);
+  return NextResponse.json(med);
 }

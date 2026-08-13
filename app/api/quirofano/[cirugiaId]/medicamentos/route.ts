@@ -2,7 +2,6 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import {type Tx} from "@/lib/utils/stock";
-import {errorMessage} from "@/lib/errors";
 
 async function checkAssignment(userId: string, cirugiaId: string) {
   const cirugia = await prisma.cirugia.findUnique({
@@ -106,7 +105,8 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
       });
       results.push(result);
     } catch (e: unknown) {
-      results.push({ ok: false, nombre: item.stockItemId, error: errorMessage(e) || "Error interno" });
+      console.error("Error al registrar medicamento de cirugía:", e);
+      results.push({ ok: false, nombre: item.stockItemId, error: "Error interno" });
     }
   }
 

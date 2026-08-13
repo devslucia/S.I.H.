@@ -146,7 +146,8 @@ export async function POST(req: NextRequest) {
       const estado = msg.split(":")[1] as string;
       return NextResponse.json({ error: `La cama no está disponible (estado: ${estado})` }, { status: 409 });
     }
-    return NextResponse.json({ error: errorMessage(e) || "Error interno" }, { status: 500 });
+    console.error("Error interno en POST /api/internaciones:", e);
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 
   const internacion = await prisma.internacion.findUnique({

@@ -5,7 +5,6 @@ import { createPrescripcionSchema } from "@/lib/validations/prescripcion.schema"
 import { verificarAlergia } from "@/lib/utils/alertas-alergia";
 import { crearNotificacionesPrescripcion } from "@/lib/notificaciones";
 import { NextRequest, NextResponse } from "next/server";
-import {errorMessage} from "@/lib/errors";
 
 const PRESCRIPCIONES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
 const PRESCRIPCIONES_WRITE_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO"];
@@ -132,7 +131,8 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
 
       results.push({ ok: true, nombre: data.droga || data.tipo, prescripcion });
     } catch (e: unknown) {
-      results.push({ ok: false, nombre: data.droga || data.tipo, error: errorMessage(e) || "Error al crear" });
+      console.error("Error al crear prescripción:", e);
+      results.push({ ok: false, nombre: data.droga || data.tipo, error: "Error al crear" });
     }
   }
 

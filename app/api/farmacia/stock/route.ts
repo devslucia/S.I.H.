@@ -32,6 +32,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "stockItemId, tipo y cantidad requeridos" }, { status: 400 });
   }
 
+  const cantNum = Number(cantidad);
+  if (!Number.isFinite(cantNum)) {
+    return NextResponse.json({ error: "cantidad debe ser un número" }, { status: 400 });
+  }
+  if (!["INGRESO", "EGRESO", "AJUSTE"].includes(tipo)) {
+    return NextResponse.json({ error: "Tipo de movimiento inválido" }, { status: 400 });
+  }
+  if ((tipo === "INGRESO" || tipo === "EGRESO") && cantNum <= 0) {
+    return NextResponse.json({ error: "cantidad debe ser mayor a 0" }, { status: 400 });
+  }
+  if (tipo === "AJUSTE" && cantNum < 0) {
+    return NextResponse.json({ error: "El stock no puede quedar negativo" }, { status: 400 });
+  }
+
   const result = await prisma.$transaction(async (tx) => {
     const item = await tx.stockItem.findUniqueOrThrow({
       where: { id: stockItemId },
@@ -40,16 +54,14 @@ export async function POST(req: NextRequest) {
     let nuevoStock = Number(item.stockActual);
 
     if (tipo === "INGRESO") {
-      nuevoStock += Number(cantidad);
+      nuevoStock += cantNum;
     } else if (tipo === "EGRESO") {
-      nuevoStock -= Number(cantidad);
+      nuevoStock -= cantNum;
       if (nuevoStock < 0) {
         throw new Error(`Stock insuficiente para ${item.nombre}`);
       }
     } else if (tipo === "AJUSTE") {
-      nuevoStock = Number(cantidad);
-    } else {
-      throw new Error(`Tipo de movimiento inválido: ${tipo}`);
+      nuevoStock = cantNum;
     }
 
     await tx.stockItem.update({
