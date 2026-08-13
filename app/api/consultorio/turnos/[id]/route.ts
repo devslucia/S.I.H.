@@ -94,6 +94,24 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   const data = parsed.data;
 
+  if (data.estado && rol !== "ADMIN") {
+    const transicionesValidas: Record<string, string[]> = {
+      PENDIENTE: ["PENDIENTE", "CONFIRMADO", "CANCELADO", "NO_ASISTIO"],
+      CONFIRMADO: ["PENDIENTE", "CONFIRMADO", "CANCELADO", "NO_ASISTIO"],
+      EN_CONSULTA: ["EN_CONSULTA"],
+      COMPLETADO: ["COMPLETADO"],
+      CANCELADO: ["CANCELADO"],
+      NO_ASISTIO: ["NO_ASISTIO"],
+    };
+    const permitidos = transicionesValidas[turno.estado] ?? [];
+    if (!permitidos.includes(data.estado)) {
+      return NextResponse.json(
+        { error: `Transición de estado no permitida: ${turno.estado} → ${data.estado}` },
+        { status: 400 }
+      );
+    }
+  }
+
   try {
     const updated = await prisma.turnoConsultorio.update({
       where: { id: params.id },
