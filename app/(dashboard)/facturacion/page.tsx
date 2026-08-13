@@ -5,7 +5,7 @@ import { ChevronDown, ChevronRight, ReceiptText } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { OpsStat } from "@/components/ui/OpsStat";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, toMoney } from "@/lib/utils";
 
 interface Cargo {
   id: string;
@@ -29,7 +29,7 @@ interface Liquidacion {
   totalCargos: number;
 }
 
-const money = (n: number) => `$${n.toFixed(2)}`;
+const money = (n: unknown) => `$${toMoney(n)}`;
 const th = "px-4 py-2.5 text-left text-[11px] font-mono uppercase tracking-widest text-muted whitespace-nowrap";
 const td = "px-4 py-2.5";
 
@@ -61,10 +61,13 @@ export default function FacturacionPage() {
     });
   };
 
-  const totalCargos = liquidaciones.reduce((acc, l) => acc + l.cargos.length, 0);
-  const totalImporte = liquidaciones.reduce((acc, l) => acc + l.totalCargos, 0);
-  const facturados = liquidaciones.reduce((acc, l) => acc + l.cargos.filter((c) => c.facturado).length, 0);
-  const montoPendiente = liquidaciones.reduce((acc, l) => acc + l.cargos.filter((c) => !c.facturado).reduce((a, c) => a + c.total, 0), 0);
+  const totalCargos = liquidaciones.reduce((acc, l) => acc + (Array.isArray(l.cargos) ? l.cargos.length : 0), 0);
+  const totalImporte = liquidaciones.reduce((acc, l) => acc + (Number(l.totalCargos) || 0), 0);
+  const facturados = liquidaciones.reduce((acc, l) => acc + (Array.isArray(l.cargos) ? l.cargos.filter((c) => c.facturado).length : 0), 0);
+  const montoPendiente = liquidaciones.reduce(
+    (acc, l) => acc + (Array.isArray(l.cargos) ? l.cargos.filter((c) => !c.facturado).reduce((a, c) => a + (Number(c.total) || 0), 0) : 0),
+    0
+  );
 
   return (
     <div className="space-y-7">
@@ -94,8 +97,9 @@ export default function FacturacionPage() {
       ) : (
         <div className="space-y-3">
           {liquidaciones.map((liq) => {
+            const cargos = Array.isArray(liq.cargos) ? liq.cargos : [];
             const isExpanded = expanded.has(liq.internacionId);
-            const pendientes = liq.cargos.filter((c) => !c.facturado).length;
+            const pendientes = cargos.filter((c) => !c.facturado).length;
             return (
               <div key={liq.internacionId} className="border border-border rounded-lg bg-surface overflow-hidden">
                 <button
@@ -137,7 +141,7 @@ export default function FacturacionPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {liq.cargos.map((cargo) => (
+                          {cargos.map((cargo) => (
                             <tr key={cargo.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
                               <td className={td + " text-text"}>{cargo.concepto}</td>
                               <td className={td + " text-muted text-[12px]"}>{cargo.origen}</td>
