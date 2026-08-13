@@ -4,21 +4,30 @@ import { createPacienteSchema } from "@/lib/validations/paciente.schema";
 import { NextRequest, NextResponse } from "next/server";
 import { formatZodError } from "@/lib/validations/format-zod-error";
 import { Prisma } from "@prisma/client";
+import { getPacienteScopeWhere } from "@/lib/pacientes-access";
 
-const PACIENTES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION", "SECRETARIA"];
+const PACIENTES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "CIRCULANTE", "ADMISION", "SECRETARIA"];
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 200;
 
 export async function GET(req: NextRequest) {
-  const {error} = await requireRole(...PACIENTES_READ_ROLES);
+  const { session, error } = await requireRole(...PACIENTES_READ_ROLES);
   if (error) return error;
 
   const { searchParams } = new URL(req.url);
   const dni = searchParams.get("dni");
   const q = searchParams.get("q");
+  const limit = Math.min(Number(searchParams.get("limit")) || DEFAULT_LIMIT, MAX_LIMIT);
+  const offset = Math.max(Number(searchParams.get("offset")) || 0, 0);
 
-  const where: Prisma.PacienteWhereInput = {};
+  const where: Prisma.PacienteWhereInput = {
+    ...getPacienteScopeWhere(session.user.id, session.user.rol),
+  };
+
   if (dni) where.dni = { contains: dni };
   if (q) {
     where.OR = [
+      ...(Array.isArray(where.OR) ? where.OR : []),
       { apellido: { contains: q, mode: "insensitive" } },
       { nombre: { contains: q, mode: "insensitive" } },
       { dni: { contains: q } },
@@ -27,8 +36,9 @@ export async function GET(req: NextRequest) {
 
   const pacientes = await prisma.paciente.findMany({
     where,
-    include: { alergias: true },
     orderBy: { apellido: "asc" },
+    take: limit,
+    skip: offset,
   });
 
   return NextResponse.json(pacientes);

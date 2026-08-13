@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatZodError } from "@/lib/validations/format-zod-error";
+import { canAccessPaciente, ALERGIAS_WRITE_ROLES } from "@/lib/pacientes-access";
 
-const ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ADMISION"];
+const ROLES_LECTURA = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ADMISION"];
 
 const TIPOS_ALERGIA = ["MEDICAMENTO", "ALIMENTO", "LATEX", "OTRO"] as const;
 
@@ -16,8 +17,12 @@ const alergiaSchema = z.object({
 });
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const {error} = await requireRole(...ROLES);
+  const { session, error } = await requireRole(...ROLES_LECTURA);
   if (error) return error;
+
+  if (!(await canAccessPaciente(session.user.id, session.user.rol, params.id))) {
+    return NextResponse.json({ error: "Paciente no encontrado" }, { status: 404 });
+  }
 
   const alergias = await prisma.alergia.findMany({
     where: { pacienteId: params.id },
@@ -28,8 +33,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO", "ANESTESIOLOGO");
+  const { session, error } = await requireRole(...ALERGIAS_WRITE_ROLES);
   if (error) return error;
+
+  if (!(await canAccessPaciente(session.user.id, session.user.rol, params.id))) {
+    return NextResponse.json({ error: "Paciente no encontrado" }, { status: 404 });
+  }
 
   const body = await req.json();
   const parsed = alergiaSchema.safeParse(body);

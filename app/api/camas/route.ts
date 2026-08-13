@@ -12,7 +12,11 @@ export async function GET(_req: NextRequest) {
     include: {
       sector: true,
       internaciones: {
-        include: { paciente: true },
+        include: {
+          paciente: {
+            select: { id: true, dni: true, apellido: true, nombre: true, sexo: true, fechaNac: true },
+          },
+        },
         orderBy: { fechaIngreso: "desc" },
         take: 1,
       },
