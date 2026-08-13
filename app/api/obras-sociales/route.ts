@@ -43,11 +43,16 @@ function serializar(obra: { porcentajeDescMedicamentos: unknown } & Record<strin
 }
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(...ROLES);
+  const { session, error } = await requireRole(...ROLES);
   if (error) return error;
 
   const { searchParams } = new URL(req.url);
   const all = searchParams.get("all") === "true";
+
+  // Incluir obras sociales inactivas es gestión administrativa: solo ADMIN
+  if (all && session.user.rol !== "ADMIN") {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+  }
 
   const obras = await prisma.obraSocial.findMany({
     where: all ? {} : { activa: true },

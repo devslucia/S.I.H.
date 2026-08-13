@@ -74,7 +74,7 @@ export async function GET() {
         fechaIngreso: true,
         estado: true,
         cama: { select: { numero: true, sector: { select: { nombre: true } } } },
-        paciente: { select: { nombre: true, apellido: true, dni: true } },
+        paciente: { select: { nombre: true, apellido: true } },
       },
     }),
   ]);
@@ -213,7 +213,6 @@ export async function GET() {
       estado: i.estado,
       cama: i.cama ? `${i.cama.numero} · ${i.cama.sector.nombre}` : null,
       paciente: i.paciente ? `${i.paciente.apellido}, ${i.paciente.nombre}` : null,
-      dni: i.paciente ? i.paciente.dni : null,
     })),
     rolData,
   });

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatZodError } from "@/lib/validations/format-zod-error";
+import { canAccessPaciente, ALERGIAS_WRITE_ROLES } from "@/lib/pacientes-access";
 
 const alergiaUpdateSchema = z.object({
   sustancia: z.string().min(1).optional(),
@@ -11,9 +12,17 @@ const alergiaUpdateSchema = z.object({
   observacion: z.string().optional().nullable(),
 });
 
+async function verificarAccesoPaciente(session: { user: { id: string; rol: string } }, pacienteId: string): Promise<boolean> {
+  return canAccessPaciente(session.user.id, session.user.rol, pacienteId);
+}
+
 export async function PUT(req: NextRequest, { params }: { params: { id: string; alergiaId: string } }) {
-  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO", "ANESTESIOLOGO");
+  const { session, error } = await requireRole(...ALERGIAS_WRITE_ROLES);
   if (error) return error;
+
+  if (!(await verificarAccesoPaciente(session, params.id))) {
+    return NextResponse.json({ error: "Paciente no encontrado" }, { status: 404 });
+  }
 
   const body = await req.json();
   const parsed = alergiaUpdateSchema.safeParse(body);
@@ -40,8 +49,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string; 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string; alergiaId: string } }) {
-  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO", "ENFERMERO", "ANESTESIOLOGO");
+  const { session, error } = await requireRole(...ALERGIAS_WRITE_ROLES);
   if (error) return error;
+
+  if (!(await verificarAccesoPaciente(session, params.id))) {
+    return NextResponse.json({ error: "Paciente no encontrado" }, { status: 404 });
+  }
 
   const alergia = await prisma.alergia.findUnique({ where: { id: params.alergiaId } });
   if (!alergia || alergia.pacienteId !== params.id) {
