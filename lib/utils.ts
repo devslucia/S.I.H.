@@ -30,6 +30,12 @@ export function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+export function toMoney(value: unknown, digits = 2): string {
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n)) return "0.00";
+  return n.toFixed(digits);
+}
+
 export function formatUserName(user: { nombre: string; apellido?: string | null }): string {
   const nombre = capitalize(user.nombre);
   const apellido = user.apellido ? capitalize(user.apellido) : "";

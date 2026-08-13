@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Printer, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Membrete } from "@/components/print/Membrete";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDate, formatDateTime, toMoney } from "@/lib/utils";
 import type { DrogaAnestesiaData } from "@/types";
 
 interface SignosVitalesIntraop {
@@ -364,8 +364,8 @@ export default function ImprimirCarpetaPage() {
                     <tr key={i}>
                       <td style={{ border: '1px solid #000', padding: '3px' }}>{c.concepto}</td>
                       <td style={{ border: '1px solid #000', padding: '3px', textAlign: 'right' }}>{c.cantidad}</td>
-                      <td style={{ border: '1px solid #000', padding: '3px', textAlign: 'right' }}>${Number(c.precioUnitario).toFixed(2)}</td>
-                      <td style={{ border: '1px solid #000', padding: '3px', textAlign: 'right' }}>${Number(c.total).toFixed(2)}</td>
+                      <td style={{ border: '1px solid #000', padding: '3px', textAlign: 'right' }}>${toMoney(c.precioUnitario)}</td>
+                      <td style={{ border: '1px solid #000', padding: '3px', textAlign: 'right' }}>${toMoney(c.total)}</td>
                     </tr>
                   ))}
                 </tbody>
