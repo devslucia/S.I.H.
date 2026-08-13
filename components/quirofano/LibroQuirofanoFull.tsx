@@ -70,6 +70,9 @@ export default function LibroQuirofanoFull() {
         setData(d);
         setFormData({ ...d });
         setPendingItems(getPendingItems(d));
+      } else if (cirRes.status === 403) {
+        const err = await cirRes.json();
+        setInlineError(err.error || "Sin acceso a esta cirugía");
       }
       if (userRes.ok) setUsuarios(await userRes.json());
     } catch (err) { console.error(err); }

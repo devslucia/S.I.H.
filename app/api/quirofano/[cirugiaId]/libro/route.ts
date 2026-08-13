@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getEffectiveRole, validatePatchBody } from "@/lib/quirofano-rbac";
 import { Prisma, type EstadoInternacion } from "@prisma/client";
 
-const LIBRO_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ENFERMERO"];
+const LIBRO_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR", "CIRCULANTE"];
 
 export async function GET(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
   const { session, error } = await requireRole(...LIBRO_ROLES);
@@ -42,6 +42,13 @@ export async function GET(req: NextRequest, { params }: { params: { cirugiaId: s
     session.user.id,
     session.user.rol
   );
+
+  if (effectiveRole === "NINGUNO") {
+    return NextResponse.json(
+      { error: "No está asignado a esta cirugía" },
+      { status: 403 }
+    );
+  }
 
   const enriched = {
     ...cirugia,
@@ -84,8 +91,34 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
     session.user.rol
   );
 
+  if (effectiveRole === "NINGUNO") {
+    return NextResponse.json(
+      { error: "No está asignado a esta cirugía" },
+      { status: 403 }
+    );
+  }
+
   // Validar el body contra los permisos del rol
   const { allowedBody, rejected } = validatePatchBody(body, effectiveRole, cirugiaActual);
+
+  // Reprogramación reservada a ADMIN (A2): MEDICO/otros no pueden
+  // cambiar fechaProgramada ni marcar la cirugía como REPROGRAMADA
+  if (effectiveRole !== "ADMIN") {
+    const camposProhibidos: string[] = [];
+    if ("fechaProgramada" in body) camposProhibidos.push("fechaProgramada");
+    if (body.estado === "REPROGRAMADA") camposProhibidos.push("estado");
+    if (camposProhibidos.length > 0) {
+      return NextResponse.json(
+        { error: "No tiene permiso para reprogramar esta cirugía", fields: camposProhibidos },
+        { status: 403 }
+      );
+    }
+    // El estado no está en la whitelist de MEDICO: se re-agrega solo
+    // con valores de transición operativa (nunca REPROGRAMADA)
+    if (typeof body.estado === "string") {
+      (allowedBody as Record<string, unknown>).estado = body.estado;
+    }
+  }
 
   if (rejected) {
     return NextResponse.json(

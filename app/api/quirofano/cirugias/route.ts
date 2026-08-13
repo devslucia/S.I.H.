@@ -3,10 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma, type EstadoCirugia } from "@prisma/client";
 
-const Q_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
+const Q_READ_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR", "CIRCULANTE"];
 
 export async function GET(req: NextRequest) {
-  const {error} = await requireRole(...Q_READ_ROLES);
+  const { session, error } = await requireRole(...Q_READ_ROLES);
   if (error) return error;
 
   const { searchParams } = new URL(req.url);
@@ -14,6 +14,17 @@ export async function GET(req: NextRequest) {
   const fecha = searchParams.get("fecha");
 
   const where: Prisma.CirugiaWhereInput = {};
+
+  if (session.user.rol !== "ADMIN") {
+    where.OR = [
+      { cirujanoId: session.user.id },
+      { ayudante1Id: session.user.id },
+      { ayudante2Id: session.user.id },
+      { anestesiologoId: session.user.id },
+      { instrumentadorId: session.user.id },
+      { circulanteId: session.user.id },
+    ];
+  }
 
   if (estado) {
     where.estado = estado as EstadoCirugia;
