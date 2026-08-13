@@ -2,8 +2,16 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 const PQ_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
+
+const parteQuirurgicoSchema = z.object({
+  hallazgos: z.string().nullable().optional(),
+  diagnosticoPostop: z.string().nullable().optional(),
+  horaInicio: z.string().nullable().optional(),
+  horaFin: z.string().nullable().optional(),
+});
 
 export async function GET(req: NextRequest, { params }: { params: { internacionId: string } }) {
   const { session, error } = await requireRole(...PQ_READ_ROLES);
@@ -41,6 +49,13 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
   }
 
   const body = await req.json();
+  const parsed = parteQuirurgicoSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Datos inválidos", detalle: parsed.error.issues[0]?.message ?? "Error de validación" },
+      { status: 400 }
+    );
+  }
 
   const cirugia = await prisma.cirugia.findFirst({
     where: { internacionId: params.internacionId },
@@ -50,11 +65,9 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
     return NextResponse.json({ error: "No se encontró cirugía para esta internación" }, { status: 404 });
   }
 
-  const { id: _ignore, ...data } = body;
-
   const updated = await prisma.cirugia.update({
     where: { id: cirugia.id },
-    data,
+    data: parsed.data,
   });
 
   return NextResponse.json(updated);

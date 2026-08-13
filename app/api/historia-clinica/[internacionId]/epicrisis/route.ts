@@ -68,6 +68,15 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
 
   const body = await req.json();
 
+  const existente = await prisma.epicrisis.findUnique({
+    where: { episodioId: episodio.id },
+    select: { firmadaAt: true },
+  });
+
+  if (existente?.firmadaAt) {
+    return NextResponse.json({ error: "La epicrisis está firmada y no puede modificarse" }, { status: 403 });
+  }
+
   const epicrisis = await prisma.epicrisis.upsert({
     where: { episodioId: episodio.id },
     update: {
@@ -85,7 +94,7 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
       destino: body.destino,
       medicacionAlta: body.medicacionAlta,
       indicacionesAlta: body.indicacionesAlta,
-      medicoId: body.medicoId,
+      medicoId: session.user.id,
     },
     create: {
       hcId: hc.id,
@@ -104,7 +113,7 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
       destino: body.destino,
       medicacionAlta: body.medicacionAlta ?? [],
       indicacionesAlta: body.indicacionesAlta,
-      medicoId: body.medicoId,
+      medicoId: session.user.id,
     },
   });
 

@@ -1,7 +1,23 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
+import { protocoloAnestesiaSchema } from "@/lib/validations/protocolo-anestesia";
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
+
+const JSON_NULL_FIELDS = ["premedicacion", "signosVitaPreop", "signosVitales", "liquidosIngresados"] as const;
+
+function jsonSafe(data: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value === null && (JSON_NULL_FIELDS as readonly string[]).includes(key)) {
+      out[key] = Prisma.JsonNull;
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
 
 const PA_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
 
@@ -92,28 +108,34 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
   }
 
   const body = await req.json();
-  const { drogas, cirugiaId, ...campos } = body;
+  const parsed = protocoloAnestesiaSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Datos inválidos", detalle: parsed.error.issues[0]?.message ?? "Error de validación" },
+      { status: 400 }
+    );
+  }
+
+  const { drogas, ...campos } = parsed.data;
+  const dataSeguro = jsonSafe(campos);
+
+  const cirugia = await prisma.cirugia.findFirst({
+    where: { internacionId: params.internacionId },
+    select: { id: true },
+  });
 
   const protocolo = await prisma.$transaction(async (tx) => {
     const result = await tx.protocoloAnestesia.upsert({
       where: { episodioId: episodio.id },
-      update: { ...campos, cirugiaId: cirugiaId || undefined },
-      create: { hcId: hc.id, episodioId: episodio.id, cirugiaId: cirugiaId || null, ...campos },
+      update: { ...dataSeguro },
+      create: { hcId: hc.id, episodioId: episodio.id, cirugiaId: cirugia?.id ?? null, ...dataSeguro },
     });
 
     if (Array.isArray(drogas)) {
       await tx.drogaAnestesia.deleteMany({ where: { protocoloId: result.id } });
       if (drogas.length > 0) {
         await tx.drogaAnestesia.createMany({
-          data: drogas.map((d: {
-            categoria: string;
-            nombre: string;
-            dosis?: number;
-            unidad?: string;
-            via?: string;
-            horaAdministracion?: string;
-            observaciones?: string;
-          }) => ({
+          data: drogas.map((d) => ({
             protocoloId: result.id,
             categoria: d.categoria,
             nombre: d.nombre,

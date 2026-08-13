@@ -12,10 +12,10 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
   }
 
   const body = await req.json();
-  const { protocoloId, nombreFirmante, matriculaFirmante } = body;
+  const { protocoloId } = body;
 
-  if (!protocoloId || !nombreFirmante) {
-    return NextResponse.json({ error: "protocoloId y nombreFirmante requeridos" }, { status: 400 });
+  if (!protocoloId) {
+    return NextResponse.json({ error: "protocoloId requerido" }, { status: 400 });
   }
 
   const protocolo = await prisma.protocoloAnestesia.findUnique({
@@ -42,8 +42,8 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
         firmado: true,
         firmadoEn: new Date(),
         firmadoPor: session.user.id,
-        nombreFirmante,
-        matriculaFirmante: matriculaFirmante ?? null,
+        nombreFirmante: session.user.name ?? "",
+        matriculaFirmante: session.user.matricula ?? null,
       },
     });
 
