@@ -39,8 +39,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
 
     if (internacion.camaId) {
-      await tx.cama.update({
-        where: { id: internacion.camaId },
+      // Liberación atómica: solo si la cama sigue OCUPADA
+      await tx.cama.updateMany({
+        where: { id: internacion.camaId, estado: "OCUPADA" },
         data: { estado: "LIBRE" },
       });
     }

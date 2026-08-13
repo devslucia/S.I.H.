@@ -76,10 +76,22 @@ export async function PUT(req: NextRequest) {
     );
   }
 
-  const cama = await prisma.cama.update({
-    where: { id },
+  // Transición atómica: solo se aplica si el estado actual sigue siendo el esperado
+  // (evita condiciones de carrera entre dos requests concurrentes).
+  // Ocupar solo desde LIBRE; el resto de transiciones desde cualquier estado != destino.
+  const result = await prisma.cama.updateMany({
+    where: { id, estado: estado === "OCUPADA" ? "LIBRE" : { not: estado } },
     data: { estado },
   });
+
+  if (result.count === 0) {
+    return NextResponse.json(
+      { error: "La cama cambió de estado en paralelo. Reintentá." },
+      { status: 409 }
+    );
+  }
+
+  const cama = await prisma.cama.findUnique({ where: { id } });
 
   return NextResponse.json(cama);
 }

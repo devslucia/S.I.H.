@@ -123,10 +123,15 @@ export async function POST(req: NextRequest) {
       });
 
       if (parsed.data.camaId) {
-        await tx.cama.update({
-          where: { id: parsed.data.camaId },
+        // Ocupación atómica: solo si la cama sigue LIBRE (evita TOCTOU entre
+        // el check previo y el update)
+        const ocupada = await tx.cama.updateMany({
+          where: { id: parsed.data.camaId, estado: "LIBRE" },
           data: { estado: "OCUPADA" },
         });
+        if (ocupada.count === 0) {
+          throw new Error("CAMA_NOT_AVAILABLE:OCUPADA");
+        }
       }
 
       return internacion;

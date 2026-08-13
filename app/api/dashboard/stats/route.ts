@@ -24,60 +24,67 @@ export async function GET() {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const [
-    totalCamas,
-    camasOcupadas,
-    camasEnLimpieza,
-    camasFueraServicio,
-    internacionesActivas,
-    admisionesHoy,
-    cirugiasHoy,
-    cirugiasEnCurso,
-    cirugiasProgramadas,
-    turnosHoy,
-    turnosEnConsulta,
-    pacientesEspera,
-    prescripcionesPendientes,
-    usuariosActivos,
-    ultimasInternaciones,
-  ] = await Promise.all([
-    prisma.cama.count(),
-    prisma.cama.count({ where: { estado: "OCUPADA" } }),
-    prisma.cama.count({ where: { estado: "EN_LIMPIEZA" } }),
-    prisma.cama.count({ where: { estado: "FUERA_DE_SERVICIO" } }),
-    prisma.internacion.count({
+  // ── KPIs ──
+  // Ejecución secuencial: el pooler de Supabase opera con connection_limit=1
+  // (modo sesión), Promise.all satura la única conexión y produce timeouts.
+  const camasPorEstado = await prisma.cama.groupBy({ by: ["estado"], _count: { _all: true } });
+  const totalCamas = camasPorEstado.reduce((s, r) => s + r._count._all, 0);
+  const camasOcupadas = camasPorEstado.find((r) => r.estado === "OCUPADA")?._count._all ?? 0;
+  const camasEnLimpieza = camasPorEstado.find((r) => r.estado === "EN_LIMPIEZA")?._count._all ?? 0;
+  const camasFueraServicio = camasPorEstado.find((r) => r.estado === "FUERA_DE_SERVICIO")?._count._all ?? 0;
+
+  const internacionesActivas = (
+    await prisma.internacion.groupBy({
+      by: ["estado"],
       where: { estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] } },
-    }),
-    prisma.internacion.count({
-      where: { fechaIngreso: { gte: today, lt: tomorrow } },
-    }),
-    prisma.cirugia.count({
-      where: { fechaProgramada: { gte: today, lt: tomorrow } },
-    }),
-    prisma.cirugia.count({ where: { estado: "EN_CURSO" } }),
-    prisma.cirugia.count({
-      where: { estado: "PROGRAMADA", fechaProgramada: { gte: today, lt: tomorrow } },
-    }),
-    prisma.turnoConsultorio.count({
-      where: { fecha: { gte: today, lt: tomorrow } },
-    }),
-    prisma.turnoConsultorio.count({ where: { estado: "EN_CONSULTA" } }),
-    prisma.internacion.count({ where: { estado: "ACTIVA", camaId: null } }),
-    prisma.prescripcion.count({ where: { estado: "ACTIVA" } }),
-    prisma.usuario.count({ where: { activo: true } }),
-    prisma.internacion.findMany({
-      orderBy: { fechaIngreso: "desc" },
-      take: 6,
-      select: {
-        id: true,
-        numero: true,
-        fechaIngreso: true,
-        estado: true,
-        cama: { select: { numero: true, sector: { select: { nombre: true } } } },
-        paciente: { select: { nombre: true, apellido: true } },
-      },
-    }),
-  ]);
+      _count: { _all: true },
+    })
+  ).reduce((s, r) => s + r._count._all, 0);
+
+  const admisionesHoy = await prisma.internacion.count({
+    where: { fechaIngreso: { gte: today, lt: tomorrow } },
+  });
+
+  const pacientesEspera = await prisma.internacion.count({
+    where: { estado: "ACTIVA", camaId: null },
+  });
+
+  const cirugiasPorEstadoHoy = await prisma.cirugia.groupBy({
+    by: ["estado"],
+    where: { fechaProgramada: { gte: today, lt: tomorrow } },
+    _count: { _all: true },
+  });
+  const cirugiasHoy = cirugiasPorEstadoHoy.reduce((s, r) => s + r._count._all, 0);
+  const cirugiasProgramadas = cirugiasPorEstadoHoy.find((r) => r.estado === "PROGRAMADA")?._count._all ?? 0;
+
+  const cirugiasEnCurso = await prisma.cirugia.count({ where: { estado: "EN_CURSO" } });
+
+  const turnosPorEstadoHoy = await prisma.turnoConsultorio.groupBy({
+    by: ["estado"],
+    where: { fecha: { gte: today, lt: tomorrow } },
+    _count: { _all: true },
+  });
+  const turnosHoy = turnosPorEstadoHoy.reduce((s, r) => s + r._count._all, 0);
+
+  const turnosEnConsulta = await prisma.turnoConsultorio.count({
+    where: { estado: "EN_CONSULTA" },
+  });
+
+  const prescripcionesPendientes = await prisma.prescripcion.count({ where: { estado: "ACTIVA" } });
+  const usuariosActivos = await prisma.usuario.count({ where: { activo: true } });
+
+  const ultimasInternaciones = await prisma.internacion.findMany({
+    orderBy: { fechaIngreso: "desc" },
+    take: 6,
+    select: {
+      id: true,
+      numero: true,
+      fechaIngreso: true,
+      estado: true,
+      cama: { select: { numero: true, sector: { select: { nombre: true } } } },
+      paciente: { select: { nombre: true, apellido: true } },
+    },
+  });
 
   const camasLibres =
     totalCamas - camasOcupadas - camasEnLimpieza - camasFueraServicio;
@@ -121,25 +128,23 @@ export async function GET() {
         { instrumentadorId: userId },
       ],
     };
-    const [misTurnos, misCirugias, misPacientes] = await Promise.all([
-      prisma.turnoConsultorio.findMany({
-        where: { fecha: { gte: today, lt: tomorrow }, medicoId: userId },
-        orderBy: { hora: "asc" },
-        select: {
-          id: true,
-          hora: true,
-          estado: true,
-          paciente: { select: { nombre: true, apellido: true } },
-        },
-      }),
-      prisma.cirugia.count({ where: cirugiaWhere }),
-      prisma.internacion.count({
-        where: {
-          estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] },
-          medicosTratantesInternacion: { some: { medicoId: userId } },
-        },
-      }),
-    ]);
+    const misTurnos = await prisma.turnoConsultorio.findMany({
+      where: { fecha: { gte: today, lt: tomorrow }, medicoId: userId },
+      orderBy: { hora: "asc" },
+      select: {
+        id: true,
+        hora: true,
+        estado: true,
+        paciente: { select: { nombre: true, apellido: true } },
+      },
+    });
+    const misCirugias = await prisma.cirugia.count({ where: cirugiaWhere });
+    const misPacientes = await prisma.internacion.count({
+      where: {
+        estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] },
+        medicosTratantesInternacion: { some: { medicoId: userId } },
+      },
+    });
     rolData.agenda = misTurnos;
     rolData.cirugiasAsignadas = misCirugias;
     rolData.pacientesMios = misPacientes;
@@ -174,13 +179,13 @@ export async function GET() {
   }
 
   if (rol === "FACTURACION") {
-    const [cargosPendientes, totalPendiente] = await Promise.all([
-      prisma.cargoFacturacion.count({ where: { facturado: false } }),
-      prisma.cargoFacturacion.aggregate({
-        where: { facturado: false },
-        _sum: { total: true },
-      }),
-    ]);
+    const cargosPendientes = await prisma.cargoFacturacion.count({
+      where: { facturado: false },
+    });
+    const totalPendiente = await prisma.cargoFacturacion.aggregate({
+      where: { facturado: false },
+      _sum: { total: true },
+    });
     rolData.cargosPendientes = cargosPendientes;
     rolData.totalPendiente = totalPendiente._sum.total?.toString() ?? "0";
   }

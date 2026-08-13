@@ -23,7 +23,10 @@ export default function LoginPage() {
       redirect: false,
     });
 
-    if (result?.error) {
+    if (result?.status === 429) {
+      setError("Demasiados intentos. Esperá 15 minutos.");
+      setLoading(false);
+    } else if (result?.error) {
       setError("Credenciales inválidas");
       setLoading(false);
     } else {
