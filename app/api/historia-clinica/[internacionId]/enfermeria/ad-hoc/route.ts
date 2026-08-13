@@ -5,7 +5,6 @@ import { descontarStock, type Tx } from "@/lib/utils/stock";
 import { generarCargo } from "@/lib/utils/facturacion";
 import { verificarAlergia } from "@/lib/utils/alertas-alergia";
 import { NextRequest, NextResponse } from "next/server";
-import {errorMessage} from "@/lib/errors";
 
 const ADHOC_WRITE_ROLES = ["ADMIN", "ENFERMERO", "MEDICO", "ANESTESIOLOGO"];
 
@@ -34,11 +33,15 @@ async function processOneAdHoc(
     return { ok: false, nombre: nombre || "desconocido", error: "Hora requerida" };
   }
 
-  if (stockItemId && cantidad) {
+  if (stockItemId && cantidad != null) {
+    const cant = Number(cantidad);
+    if (!Number.isFinite(cant) || cant <= 0) {
+      return { ok: false, nombre: nombre || "desconocido", error: "Cantidad debe ser mayor a 0" };
+    }
     await descontarStock(
       tx,
       stockItemId,
-      Number(cantidad),
+      cant,
       `Medicación ad-hoc: ${nombre || "sin nombre"}`,
       hc.internacionId
     );
@@ -134,7 +137,8 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
       });
       results.push(result);
     } catch (e: unknown) {
-      results.push({ ok: false, nombre: item.nombre || "desconocido", error: errorMessage(e) || "Error interno" });
+      console.error("Error en ítem ad-hoc:", e);
+      results.push({ ok: false, nombre: item.nombre || "desconocido", error: "Error interno" });
     }
   }
 

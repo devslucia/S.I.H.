@@ -69,6 +69,20 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
 
   const body = await req.json();
 
+  if (Array.isArray(body.hojasEnfermeria)) {
+    for (const hoja of body.hojasEnfermeria) {
+      if (hoja.stockItemId && hoja.cantidad != null) {
+        const cant = Number(hoja.cantidad);
+        if (!Number.isFinite(cant) || cant <= 0) {
+          return NextResponse.json(
+            { error: `La cantidad del ítem "${hoja.item ?? ""}" debe ser mayor a 0` },
+            { status: 400 }
+          );
+        }
+      }
+    }
+  }
+
   const result = await prisma.$transaction(async (tx) => {
     const alertas: string[] = [];
 
