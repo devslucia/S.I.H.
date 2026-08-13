@@ -317,6 +317,8 @@ model Cama {
   tipo          TipoCama
   estado        EstadoCama    @default(LIBRE)
   internaciones Internacion[]
+
+  @@index([estado])
 }
 
 model Internacion {
@@ -347,6 +349,9 @@ model Internacion {
   cargosFacturacion  CargoFacturacion[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+
+  @@index([pacienteId])
+  @@index([estado, camaId])
 }
 
 model InternacionMedicoTratante {
@@ -389,6 +394,8 @@ model HistoriaClinica {
   epicrisis             Epicrisis[]
   episodios             Episodio[]
   createdAt             DateTime                  @default(now())
+
+  @@index([pacienteId])
 }
 
 model Episodio {
@@ -491,6 +498,7 @@ model TurnoConsultorio {
   @@index([medicoId, fecha])
   @@index([pacienteId])
   @@index([fecha, estado])
+  @@index([secretariaId, fecha])
 }
 
 model Anamnesis {
@@ -524,6 +532,8 @@ model Anamnesis {
   firmadoPor        String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@index([hcId])
 }
 
 model Evolucion {
@@ -538,6 +548,8 @@ model Evolucion {
   usuario   Usuario  @relation(fields: [usuarioId], references: [id])
   firmada   Boolean  @default(false)
   firmadaAt DateTime?
+
+  @@index([hcId])
 }
 
 model Prescripcion {
@@ -564,6 +576,9 @@ model Prescripcion {
   usuario          Usuario                 @relation(fields: [usuarioId], references: [id])
   aplicaciones     AplicacionMedicamento[]
   createdAt        DateTime                @default(now())
+
+  @@index([hcId])
+  @@index([estado])
 }
 
 model Notificacion {
@@ -614,6 +629,8 @@ model ControlEnfermeria {
   alertas     Json?
   usuarioId   String
   usuario     Usuario      @relation(fields: [usuarioId], references: [id])
+
+  @@index([hcId])
 }
 
 model HojaEnfermeria {
@@ -632,6 +649,8 @@ model HojaEnfermeria {
   stockItem      StockItem?             @relation(fields: [stockItemId], references: [id])
   cargos         CargoFacturacion[]
   createdAt      DateTime            @default(now())
+
+  @@index([hcId])
 }
 
 model RangoVital {
@@ -670,6 +689,8 @@ model ValoracionPreanestesia {
   anestesiologoId     String?
   firmadaAt           DateTime?
   createdAt           DateTime @default(now())
+
+  @@index([hcId])
 }
 
 model ProtocoloAnestesia {
@@ -769,6 +790,8 @@ model ProtocoloAnestesia {
 
   creadoEn              DateTime @default(now())
   actualizadoEn         DateTime @updatedAt
+
+  @@index([hcId])
 }
 
 model DrogaAnestesia {
@@ -807,6 +830,8 @@ model Epicrisis {
   medicoId              String?
   firmadaAt             DateTime?
   createdAt             DateTime          @default(now())
+
+  @@index([hcId])
 }
 
 model Quirofano {
@@ -893,6 +918,8 @@ model Cirugia {
   protocolosAnestesia   ProtocoloAnestesia[]
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
+
+  @@index([fechaProgramada, estado])
 }
 
 model Implante {
@@ -986,6 +1013,8 @@ model MovimientoStock {
   cirugiaId     String?
   usuarioId     String?
   createdAt     DateTime   @default(now())
+
+  @@index([stockItemId, createdAt])
 }
 
 model NomencladorItem {
@@ -1012,6 +1041,7 @@ model CargoFacturacion {
   fecha            DateTime            @default(now())
   facturado        Boolean             @default(false)
   @@index([internacionId])
+  @@index([facturado])
 }
 
 model FirmaDocumento {

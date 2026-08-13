@@ -1,15 +1,23 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
+
+const getSectores = unstable_cache(
+  async () =>
+    prisma.sector.findMany({
+      include: { _count: { select: { camas: true } } },
+      orderBy: { nombre: "asc" },
+    }),
+  ["sectores"],
+  { revalidate: 300 }
+);
 
 export async function GET() {
-  const {error} = await requireRole("ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION");
+  const { error } = await requireRole("ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION");
   if (error) return error;
 
-  const sectores = await prisma.sector.findMany({
-    include: { _count: { select: { camas: true } } },
-    orderBy: { nombre: "asc" },
-  });
+  const sectores = await getSectores();
 
   return NextResponse.json(sectores);
 }

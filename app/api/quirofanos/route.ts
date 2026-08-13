@@ -1,14 +1,19 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
+
+const getQuirofanos = unstable_cache(
+  async () => prisma.quirofano.findMany({ orderBy: { numero: "asc" } }),
+  ["quirofanos"],
+  { revalidate: 60 }
+);
 
 export async function GET() {
-  const {error} = await requireRole("ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR");
+  const { error } = await requireRole("ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR");
   if (error) return error;
 
-  const quirofanos = await prisma.quirofano.findMany({
-    orderBy: { numero: "asc" },
-  });
+  const quirofanos = await getQuirofanos();
 
   return NextResponse.json(quirofanos);
 }

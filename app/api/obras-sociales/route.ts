@@ -2,8 +2,19 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { unstable_cache } from "next/cache";
 
 const ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION"];
+
+const getObrasActivas = unstable_cache(
+  async () =>
+    prisma.obraSocial.findMany({
+      where: { activa: true },
+      orderBy: { nombre: "asc" },
+    }),
+  ["obras-sociales-activas"],
+  { revalidate: 300 }
+);
 
 const MULTIPLICADORES_CUIT = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
 
@@ -54,10 +65,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  const obras = await prisma.obraSocial.findMany({
-    where: all ? {} : { activa: true },
-    orderBy: { nombre: "asc" },
-  });
+  // Catálogo de bajo cambio: cache de 5 min para el listado de activas
+  const obras = all
+    ? await prisma.obraSocial.findMany({
+        where: {},
+        orderBy: { nombre: "asc" },
+      })
+    : await getObrasActivas();
 
   return NextResponse.json(obras.map(serializar));
 }
