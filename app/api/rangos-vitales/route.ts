@@ -1,14 +1,19 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
+
+const getRangos = unstable_cache(
+  async () => prisma.rangoVital.findMany({ orderBy: { parametro: "asc" } }),
+  ["rangos-vitales"],
+  { revalidate: 300 }
+);
 
 export async function GET() {
-  const {error} = await requireRole("ADMIN", "MEDICO", "ENFERMERO");
+  const { error } = await requireRole("ADMIN", "MEDICO", "ENFERMERO");
   if (error) return error;
 
-  const rangos = await prisma.rangoVital.findMany({
-    orderBy: { parametro: "asc" },
-  });
+  const rangos = await getRangos();
 
   return NextResponse.json(rangos);
 }
