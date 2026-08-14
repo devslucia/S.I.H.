@@ -14,7 +14,6 @@ export const drogaAnestesiaSchema = z.object({
 export const premedicacionSchema = z.object({
   droga: z.string().min(1, "Requerido"),
   dosis: z.string().nullable().optional(),
-  via: z.string().min(1, "Requerido"),
   hora: z.string().nullable().optional(),
 });
 
@@ -43,6 +42,7 @@ export const protocoloAnestesiaSchema = z.object({
 
   // Bloque 2
   alergiaDetalle: z.string().nullable().optional(),
+  antecedentesImportancia: z.string().nullable().optional(),
   clasificacionASA: z.string().nullable().optional(),
   esEmergencia: z.boolean().optional(),
   grupoSangre: z.string().nullable().optional(),
@@ -51,10 +51,12 @@ export const protocoloAnestesiaSchema = z.object({
   ultimaIngesta: z.string().nullable().optional(),
   estadoPsiquico: z.string().nullable().optional(),
   premedicacion: z.array(premedicacionSchema).optional(),
+  preoxigenacion: z.boolean().optional(),
+  preoxigenacionDetalle: z.string().nullable().optional(),
   signosVitaPreop: signosVitaPreopSchema.nullable().optional(),
   mallampati: z.string().nullable().optional(),
   distTiromentoniana: z.number().min(0).nullable().optional(),
-  aperturaBucal: z.number().min(0).nullable().optional(),
+  aperturaBucal: z.enum(["+3", "-3"]).nullable().optional(),
   checklistEquipoAnes: z.boolean().optional(),
   checklistReanimacion: z.boolean().optional(),
   checklistMonitores: z.boolean().optional(),
@@ -70,7 +72,9 @@ export const protocoloAnestesiaSchema = z.object({
   farmacoConductiva: z.string().nullable().optional(),
   viaInduccion: z.string().nullable().optional(),
   manejoViaAerea: z.string().nullable().optional(),
+  intubacion: z.boolean().optional(),
   intubacionSubtipo: z.string().nullable().optional(),
+  entubacionEsofagica: z.boolean().optional(),
   canulaFaringealTipo: z.string().nullable().optional(),
   nroTubo: z.string().nullable().optional(),
   conManguito: z.boolean().nullable().optional(),
@@ -86,6 +90,7 @@ export const protocoloAnestesiaSchema = z.object({
   signosVitales: z.any().nullable().optional(),
   peso: z.number().min(0).nullable().optional(),
   talla: z.number().min(0).nullable().optional(),
+  imc: z.number().min(0).nullable().optional(),
 
   // Bloque 5
   liquidosIngresados: z.any().nullable().optional(),

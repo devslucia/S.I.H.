@@ -164,7 +164,6 @@ export interface SignoVitalRegistro {
 export interface PremedicacionItem {
   droga: string;
   dosis?: string | null;
-  via: string;
   hora?: string | null;
 }
 
@@ -196,6 +195,7 @@ export interface ProtocoloAnestesiaData {
 
   // Bloque 2
   alergiaDetalle?: string | null;
+  antecedentesImportancia?: string | null;
   clasificacionASA?: string | null;
   esEmergencia?: boolean;
   grupoSangre?: string | null;
@@ -204,10 +204,12 @@ export interface ProtocoloAnestesiaData {
   ultimaIngesta?: string | null;
   estadoPsiquico?: string | null;
   premedicacion?: PremedicacionItem[] | null;
+  preoxigenacion?: boolean;
+  preoxigenacionDetalle?: string | null;
   signosVitaPreop?: SignoVitalPreop | null;
   mallampati?: string | null;
   distTiromentoniana?: number | null;
-  aperturaBucal?: number | null;
+  aperturaBucal?: string | null;
   checklistEquipoAnes?: boolean;
   checklistReanimacion?: boolean;
   checklistMonitores?: boolean;
@@ -223,7 +225,9 @@ export interface ProtocoloAnestesiaData {
   farmacoConductiva?: string | null;
   viaInduccion?: string | null;
   manejoViaAerea?: string | null;
+  intubacion?: boolean;
   intubacionSubtipo?: string | null;
+  entubacionEsofagica?: boolean;
   canulaFaringealTipo?: string | null;
   nroTubo?: string | null;
   conManguito?: boolean | null;
@@ -239,6 +243,7 @@ export interface ProtocoloAnestesiaData {
   signosVitales?: SignoVitalRegistro[] | null;
   peso?: number | null;
   talla?: number | null;
+  imc?: number | null;
 
   // Bloque 5
   liquidosIngresados?: { tipo: string; volumen: number; lote?: string }[] | null;
