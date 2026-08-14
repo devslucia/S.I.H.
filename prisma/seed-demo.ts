@@ -433,7 +433,7 @@ Se administra profilaxis antibiótica: Cefazolina 2g IV 30 minutos previos al co
       estadoPsiquico: "Colaboradora, orientada, ansiosa prequirúrgica",
       mallampati: "II",
       distTiromentoniana: 6.5,
-      aperturaBucal: 4.0,
+      aperturaBucal: "+3",
       checklistEquipoAnes: true,
       checklistReanimacion: true,
       checklistMonitores: true,

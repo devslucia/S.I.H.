@@ -21,6 +21,14 @@ function jsonSafe(data: Record<string, unknown>): Record<string, unknown> {
 
 const PA_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
 
+function calcularIMC(peso?: number | null, talla?: number | null): number | null {
+  if (!peso || !talla || peso <= 0 || talla <= 0) return null;
+  const tallaMetros = talla >= 3 ? talla / 100 : talla;
+  const imc = peso / (tallaMetros * tallaMetros);
+  if (!Number.isFinite(imc) || imc <= 0) return null;
+  return Math.round(imc * 10) / 10;
+}
+
 export async function GET(req: NextRequest, { params }: { params: { internacionId: string } }) {
   const { session, error } = await requireRole(...PA_READ_ROLES);
   if (error) return error;
@@ -51,8 +59,28 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
     include: { drogas: true },
   });
 
+  const cirugia = await prisma.cirugia.findFirst({
+    where: { internacionId: params.internacionId },
+    select: { id: true, anestesiologoId: true },
+  });
+
+  let anestesiologoAsignado: { nombre: string; matricula: string | null } | null = null;
+  if (cirugia?.anestesiologoId) {
+    const anestesiologo = await prisma.usuario.findUnique({
+      where: { id: cirugia.anestesiologoId },
+      select: { nombre: true, apellido: true, matricula: true },
+    });
+    if (anestesiologo) {
+      anestesiologoAsignado = {
+        nombre: `${anestesiologo.nombre} ${anestesiologo.apellido ?? ""}`.trim(),
+        matricula: anestesiologo.matricula,
+      };
+    }
+  }
+
   return NextResponse.json({
     protocolo: protocolo ?? null,
+    anestesiologoAsignado,
     paciente: episodio.internacion?.paciente ?? null,
     internacion: episodio.internacion ? {
       id: episodio.internacion.id,
@@ -116,8 +144,10 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
     );
   }
 
-  const { drogas, ...campos } = parsed.data;
-  const dataSeguro = jsonSafe(campos);
+  const { drogas, imc: _imcCliente, ...campos } = parsed.data;
+
+  const imc = calcularIMC(campos.peso, campos.talla);
+  const dataSeguro = jsonSafe({ ...campos, imc });
 
   const cirugia = await prisma.cirugia.findFirst({
     where: { internacionId: params.internacionId },

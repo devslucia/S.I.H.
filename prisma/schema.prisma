@@ -712,23 +712,26 @@ model ProtocoloAnestesia {
   fechaCirugia           DateTime?
 
   // Bloque 2 - Evaluación preanestésica
-  alergiaDetalle       String?
-  clasificacionASA     String?
-  esEmergencia         Boolean @default(false)
-  grupoSangre          String?
-  ayunoSolidos         Int?
-  ayunoLiquidos        Int?
-  ultimaIngesta        String?
-  estadoPsiquico       String?
-  premedicacion        Json?
-  signosVitaPreop      Json?
-  mallampati           String?
-  distTiromentoniana   Float?
-  aperturaBucal        Float?
-  checklistEquipoAnes  Boolean @default(false)
-  checklistReanimacion Boolean @default(false)
-  checklistMonitores   Boolean @default(false)
-  checklistPosicion    Boolean @default(false)
+  alergiaDetalle         String?
+  antecedentesImportancia String?
+  clasificacionASA       String?
+  esEmergencia           Boolean @default(false)
+  grupoSangre            String?
+  ayunoSolidos           Int?
+  ayunoLiquidos          Int?
+  ultimaIngesta          String?
+  estadoPsiquico         String?
+  premedicacion          Json?
+  preoxigenacion         Boolean @default(false)
+  preoxigenacionDetalle  String?
+  signosVitaPreop        Json?
+  mallampati             String?
+  distTiromentoniana     Float?
+  aperturaBucal          String?
+  checklistEquipoAnes    Boolean @default(false)
+  checklistReanimacion   Boolean @default(false)
+  checklistMonitores     Boolean @default(false)
+  checklistPosicion      Boolean @default(false)
 
   // Bloque 3 - Técnica
   tecnicaAnestesia      String[]
@@ -742,7 +745,9 @@ model ProtocoloAnestesia {
   // General
   viaInduccion          String?
   manejoViaAerea        String?
+  intubacion            Boolean @default(false)
   intubacionSubtipo     String?
+  entubacionEsofagica   Boolean @default(false)
   canulaFaringealTipo   String?
   nroTubo               String?
   conManguito           Boolean?
@@ -760,6 +765,7 @@ model ProtocoloAnestesia {
   // Bloque 4 - Datos físicos
   peso  Float?
   talla Float?
+  imc   Float?
 
   // Bloque 5 - Balance
   liquidosIngresados Json?

@@ -72,6 +72,7 @@ interface ProtocoloPdfData {
   ayudantes: string | null;
   fechaCirugia: string | Date | null;
   alergiaDetalle: string | null;
+  antecedentesImportancia: string | null;
   clasificacionASA: string | null;
   esEmergencia: boolean;
   ayunoSolidos: number | null;
@@ -79,10 +80,12 @@ interface ProtocoloPdfData {
   ultimaIngesta: string | null;
   estadoPsiquico: string | null;
   premedicacion: unknown;
+  preoxigenacion: boolean;
+  preoxigenacionDetalle: string | null;
   signosVitaPreop: unknown;
   mallampati: string | null;
   distTiromentoniana: number | null;
-  aperturaBucal: number | null;
+  aperturaBucal: string | null;
   tecnicaAnestesia: string[];
   tipoConductiva: string | null;
   posicionPuncion: string | null;
@@ -92,7 +95,9 @@ interface ProtocoloPdfData {
   farmacoConductiva: string | null;
   viaInduccion: string | null;
   manejoViaAerea: string | null;
+  intubacion: boolean;
   intubacionSubtipo: string | null;
+  entubacionEsofagica: boolean;
   canulaFaringealTipo: string | null;
   nroTubo: string | null;
   fio2: number | null;
@@ -102,6 +107,7 @@ interface ProtocoloPdfData {
   drogas: DrogaAnestesia[];
   peso: number | null;
   talla: number | null;
+  imc: number | null;
   diuresis: number | null;
   perdidaSanguinea: string | null;
   perdidaSanguineaML: number | null;
@@ -160,24 +166,27 @@ function ProtocoloPDF({ protocolo, paciente, internacion }: ProtocoloPDFProps) {
         <Field label="Ayudantes" value={p.ayudantes} />
         <Field label="Peso" value={p.peso ? `${p.peso} kg` : "—"} />
         <Field label="Talla" value={p.talla ? `${p.talla} cm` : "—"} />
+        <Field label="IMC" value={p.imc != null ? `${p.imc} kg/m²` : "—"} />
 
         {/* Bloque 2 */}
         <SectionTitle>2. Evaluación Preanestésica</SectionTitle>
         <Field label="Alergias" value={p.alergiaDetalle || "No especificadas"} />
+        {p.antecedentesImportancia && <Field label="Antecedentes de importancia" value={p.antecedentesImportancia} />}
         <Field label="ASA" value={`${p.clasificacionASA || "—"}${p.esEmergencia ? " (E) Emergencia" : ""}`} />
         <Field label="Ayuno sólidos" value={p.ayunoSolidos != null ? `${p.ayunoSolidos}h` : "—"} />
         <Field label="Ayuno líquidos" value={p.ayunoLiquidos != null ? `${p.ayunoLiquidos}h` : "—"} />
         <Field label="Última ingesta" value={p.ultimaIngesta} />
         <Field label="Estado psíquico" value={p.estadoPsiquico} />
         {premedicacion && premedicacion.length > 0 && (
-          <Field label="Premedicación" value={premedicacion.map((pm) => `${pm.droga}${pm.dosis ? ` ${pm.dosis}` : ""} ${pm.via}${pm.hora ? ` (${pm.hora})` : ""}`).join("; ")} />
+          <Field label="Premedicación" value={premedicacion.map((pm) => `${pm.droga}${pm.dosis ? ` ${pm.dosis}` : ""}${pm.hora ? ` (${pm.hora})` : ""}`).join("; ")} />
         )}
+        <Field label="Preoxigenación" value={p.preoxigenacion ? `Sí${p.preoxigenacionDetalle ? ` — ${p.preoxigenacionDetalle}` : ""}` : "No"} />
         {signosVitaPreop && (
           <Field label="SV Preoperatorios" value={`PAS: ${signosVitaPreop.pas ?? "—"} | PAD: ${signosVitaPreop.pad ?? "—"} | FC: ${signosVitaPreop.fc ?? "—"} | FR: ${signosVitaPreop.fr ?? "—"} | T: ${signosVitaPreop.temp ?? "—"}°C`} />
         )}
         <Field label="Mallampati" value={p.mallampati} />
         <Field label="Dist. tiromentoniana" value={p.distTiromentoniana != null ? `${p.distTiromentoniana} cm` : "—"} />
-        <Field label="Apertura bucal" value={p.aperturaBucal != null ? `${p.aperturaBucal} cm` : "—"} />
+        <Field label="Apertura bucal" value={p.aperturaBucal ? (p.aperturaBucal === "3" ? "+3" : p.aperturaBucal) : "—"} />
 
         {/* Bloque 3 */}
         <SectionTitle>3. Técnica Anestésica</SectionTitle>
@@ -195,7 +204,9 @@ function ProtocoloPDF({ protocolo, paciente, internacion }: ProtocoloPDFProps) {
           <>
             <Field label="Vía inducción" value={p.viaInduccion} />
             <Field label="Vía aérea" value={p.manejoViaAerea} />
+            <Field label="Intubación" value={p.intubacion ? "Sí" : "No"} />
             {p.intubacionSubtipo && <Field label="Subtipo intubación" value={p.intubacionSubtipo} />}
+            {p.entubacionEsofagica && <Field label="Entubación esofágica accidental" value="Sí" />}
             {p.canulaFaringealTipo && <Field label="Cánula faríngea" value={p.canulaFaringealTipo} />}
             <Field label="N° tubo" value={p.nroTubo} />
             <Field label="FiO₂" value={p.fio2 != null ? `${p.fio2}%` : "—"} />
