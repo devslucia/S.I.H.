@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings, UserCheck, Users, Wrench, ClipboardList, ArrowRight } from "lucide-react";
+import { Settings, UserCheck, Users, Wrench, ClipboardList, ArrowRight, FileSpreadsheet } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -32,6 +32,13 @@ const adminModules = [
     description: "Configurar qué secretarias pueden agendar turnos para cada médico",
     icon: ClipboardList,
     href: "/configuracion/asignar-secretaria-consultorio",
+  },
+  {
+    id: 4,
+    name: "Nomencladores",
+    description: "Maestro nacional de prácticas y copias editables por obra social",
+    icon: FileSpreadsheet,
+    href: "/configuracion/nomencladores",
   },
 ];
 

@@ -188,56 +188,56 @@ enum DiaSemana {
 }
 
 model Usuario {
-  id                String               @id @default(uuid())
-  nombre            String
-  apellido          String?
-  email             String               @unique
-  password          String
-  rol               Rol
-  matricula         String?
-  especialidad      String?
-  activo            Boolean              @default(true)
-  createdAt         DateTime             @default(now())
-  evoluciones       Evolucion[]
-  prescripciones    Prescripcion[]
-  controlesEnfermeria ControlEnfermeria[]
-  aplicaciones        AplicacionMedicamento[]
-  firmasDocumento   FirmaDocumento[]
-  internacionesTratadas InternacionMedicoTratante[]
-  cirugiasInstrumentadas Cirugia[]    @relation("InstrumentadorCirugia")
-  cirugiasCirculante     Cirugia[]    @relation("CirculanteCirugia")
-  secretariasAsignadas   SecretariaMedico[] @relation("MedicoSecretarias")
-  medicosAsignados       SecretariaMedico[] @relation("SecretariaMedicos")
-  horariosConsultorio    HorarioMedicoConsultorio[]
-  turnosComoMedico       TurnoConsultorio[] @relation("MedicoTurnos")
-  turnosComoSecretaria   TurnoConsultorio[] @relation("SecretariaTurnos")
-  plantillasProtocolo    PlantillaProtocoloQuirurgico[]
-  solicitudesInterconsulta Interconsulta[] @relation("SolicitanteInterconsultas")
-  interconsultasAsignadas   Interconsulta[] @relation("EspecialistaInterconsultas")
-  notificaciones        Notificacion[]
+  id                       String                         @id @default(uuid())
+  nombre                   String
+  apellido                 String?
+  email                    String                         @unique
+  password                 String
+  rol                      Rol
+  matricula                String?
+  especialidad             String?
+  activo                   Boolean                        @default(true)
+  createdAt                DateTime                       @default(now())
+  evoluciones              Evolucion[]
+  prescripciones           Prescripcion[]
+  controlesEnfermeria      ControlEnfermeria[]
+  aplicaciones             AplicacionMedicamento[]
+  firmasDocumento          FirmaDocumento[]
+  internacionesTratadas    InternacionMedicoTratante[]
+  cirugiasInstrumentadas   Cirugia[]                      @relation("InstrumentadorCirugia")
+  cirugiasCirculante       Cirugia[]                      @relation("CirculanteCirugia")
+  secretariasAsignadas     SecretariaMedico[]             @relation("MedicoSecretarias")
+  medicosAsignados         SecretariaMedico[]             @relation("SecretariaMedicos")
+  horariosConsultorio      HorarioMedicoConsultorio[]
+  turnosComoMedico         TurnoConsultorio[]             @relation("MedicoTurnos")
+  turnosComoSecretaria     TurnoConsultorio[]             @relation("SecretariaTurnos")
+  plantillasProtocolo      PlantillaProtocoloQuirurgico[]
+  solicitudesInterconsulta Interconsulta[]                @relation("SolicitanteInterconsultas")
+  interconsultasAsignadas  Interconsulta[]                @relation("EspecialistaInterconsultas")
+  notificaciones           Notificacion[]
 }
 
 model Paciente {
-  id          String      @id @default(uuid())
-  dni         String      @unique
-  apellido    String
-  nombre      String
-  sexo        Sexo
-  fechaNac    DateTime
-  cuil        String?
-  domicilio   String?
-  localidad   String?
-  provincia   String?
-  telefono    String?
-  email       String?
-  grupoSangre String?
-  estadoCivil EstadoCivil?
-  alergias    Alergia[]
-  internaciones Internacion[]
+  id                String             @id @default(uuid())
+  dni               String             @unique
+  apellido          String
+  nombre            String
+  sexo              Sexo
+  fechaNac          DateTime
+  cuil              String?
+  domicilio         String?
+  localidad         String?
+  provincia         String?
+  telefono          String?
+  email             String?
+  grupoSangre       String?
+  estadoCivil       EstadoCivil?
+  alergias          Alergia[]
+  internaciones     Internacion[]
   historiasClinicas HistoriaClinica[]
   turnosConsultorio TurnoConsultorio[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 }
 
 model Alergia {
@@ -252,24 +252,25 @@ model Alergia {
 }
 
 model ObraSocial {
-  id                          String          @id @default(uuid())
-  codigo                      String          @unique
-  nombre                      String
-  sigla                       String
-  descripcion                 String
-  razonSocial                 String
-  domicilio                   String?
-  localidad                   String?
-  tipoContribucion            TipoContribucion @default(CONSUMIDOR_FINAL)
-  tipoIva                     TipoIva         @default(IVA_21)
-  cuit                        String
-  estadoAmbulatorio           EstadoCobertura @default(ACTIVA)
-  estadoInternacion           EstadoCobertura @default(ACTIVA)
-  porcentajeDescMedicamentos  Decimal         @default(0) @db.Decimal(5, 2)
-  activa                      Boolean         @default(true)
-  convenios                   Convenio[]
-  internaciones               Internacion[]
-  turnosConsultorio           TurnoConsultorio[]
+  id                         String                  @id @default(uuid())
+  codigo                     String                  @unique
+  nombre                     String
+  sigla                      String
+  descripcion                String
+  razonSocial                String
+  domicilio                  String?
+  localidad                  String?
+  tipoContribucion           TipoContribucion        @default(CONSUMIDOR_FINAL)
+  tipoIva                    TipoIva                 @default(IVA_21)
+  cuit                       String
+  estadoAmbulatorio          EstadoCobertura         @default(ACTIVA)
+  estadoInternacion          EstadoCobertura         @default(ACTIVA)
+  porcentajeDescMedicamentos Decimal                 @default(0) @db.Decimal(5, 2)
+  activa                     Boolean                 @default(true)
+  convenios                  Convenio[]
+  nomencladores              NomencladorObraSocial[]
+  internaciones              Internacion[]
+  turnosConsultorio          TurnoConsultorio[]
 }
 
 enum TipoContribucion {
@@ -292,14 +293,14 @@ enum EstadoCobertura {
 }
 
 model Convenio {
-  id             String          @id @default(uuid())
-  obraSocialId   String
-  obraSocial     ObraSocial      @relation(fields: [obraSocialId], references: [id])
-  nomencladorId  String
-  nomenclador    NomencladorItem @relation(fields: [nomencladorId], references: [id])
-  valor          Decimal
-  vigenciaDesde  DateTime
-  vigenciaHasta  DateTime?
+  id            String          @id @default(uuid())
+  obraSocialId  String
+  obraSocial    ObraSocial      @relation(fields: [obraSocialId], references: [id])
+  nomencladorId String
+  nomenclador   NomencladorItem @relation(fields: [nomencladorId], references: [id])
+  valor         Decimal
+  vigenciaDesde DateTime
+  vigenciaHasta DateTime?
 }
 
 model Sector {
@@ -322,33 +323,33 @@ model Cama {
 }
 
 model Internacion {
-  id                 String              @id @default(uuid())
-  numero             Int                 @unique @default(autoincrement())
-  pacienteId         String
-  paciente           Paciente            @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
-  camaId             String?
-  cama               Cama?               @relation(fields: [camaId], references: [id])
-  obraSocialId       String?
-  obraSocial         ObraSocial?         @relation(fields: [obraSocialId], references: [id])
-  nroAfiliado        String?
-  tipoBeneficiario   TipoBeneficiario?
-  fechaIngreso       DateTime            @default(now())
-  fechaEgreso        DateTime?
-  motivoIngreso      String?
-  peso               Float?
-  diagnosticoCirugia String?
-  diagnosticoCIE     String?
-  medicoSolicitante  String?
+  id                          String                      @id @default(uuid())
+  numero                      Int                         @unique @default(autoincrement())
+  pacienteId                  String
+  paciente                    Paciente                    @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  camaId                      String?
+  cama                        Cama?                       @relation(fields: [camaId], references: [id])
+  obraSocialId                String?
+  obraSocial                  ObraSocial?                 @relation(fields: [obraSocialId], references: [id])
+  nroAfiliado                 String?
+  tipoBeneficiario            TipoBeneficiario?
+  fechaIngreso                DateTime                    @default(now())
+  fechaEgreso                 DateTime?
+  motivoIngreso               String?
+  peso                        Float?
+  diagnosticoCirugia          String?
+  diagnosticoCIE              String?
+  medicoSolicitante           String?
   medicosTratantesInternacion InternacionMedicoTratante[]
-  tipoIngreso        TipoIngreso
-  estado             EstadoInternacion   @default(ACTIVA)
-  pases              PaseInterno[]
-  histClinica        HistoriaClinica?
-  episodio           Episodio?
-  cirugias           Cirugia[]
-  cargosFacturacion  CargoFacturacion[]
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  tipoIngreso                 TipoIngreso
+  estado                      EstadoInternacion           @default(ACTIVA)
+  pases                       PaseInterno[]
+  histClinica                 HistoriaClinica?
+  episodio                    Episodio?
+  cirugias                    Cirugia[]
+  cargosFacturacion           CargoFacturacion[]
+  createdAt                   DateTime                    @default(now())
+  updatedAt                   DateTime                    @updatedAt
 
   @@index([pacienteId])
   @@index([estado, camaId])
@@ -379,96 +380,96 @@ model PaseInterno {
 }
 
 model HistoriaClinica {
-  id                    String                    @id @default(uuid())
-  internacionId         String?                   @unique
-  internacion           Internacion?              @relation(fields: [internacionId], references: [id])
-  pacienteId            String?
-  paciente              Paciente?                 @relation(fields: [pacienteId], references: [id])
-  anamnesis             Anamnesis[]
-  evoluciones           Evolucion[]
-  prescripciones        Prescripcion[]
-  controlesEnfermeria   ControlEnfermeria[]
-  hojaEnfermeria        HojaEnfermeria[]
+  id                     String                   @id @default(uuid())
+  internacionId          String?                  @unique
+  internacion            Internacion?             @relation(fields: [internacionId], references: [id])
+  pacienteId             String?
+  paciente               Paciente?                @relation(fields: [pacienteId], references: [id])
+  anamnesis              Anamnesis[]
+  evoluciones            Evolucion[]
+  prescripciones         Prescripcion[]
+  controlesEnfermeria    ControlEnfermeria[]
+  hojaEnfermeria         HojaEnfermeria[]
   valoracionPreanestesia ValoracionPreanestesia[]
-  protocoloAnestesia    ProtocoloAnestesia[]
-  epicrisis             Epicrisis[]
-  episodios             Episodio[]
-  createdAt             DateTime                  @default(now())
+  protocoloAnestesia     ProtocoloAnestesia[]
+  epicrisis              Epicrisis[]
+  episodios              Episodio[]
+  createdAt              DateTime                 @default(now())
 
   @@index([pacienteId])
 }
 
 model Episodio {
-  id                String           @id @default(uuid())
-  hcId              String
-  hc                HistoriaClinica  @relation(fields: [hcId], references: [id])
-  tipo              TipoEpisodio
-  internacionId     String?          @unique
-  internacion       Internacion?     @relation(fields: [internacionId], references: [id])
-  numero            Int              @default(autoincrement())
-  motivoIngreso     String?
-  diagnostico       String?
-  estado            EstadoEpisodio   @default(EN_CURSO)
-  fechaInicio       DateTime         @default(now())
-  fechaFin          DateTime?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  id            String          @id @default(uuid())
+  hcId          String
+  hc            HistoriaClinica @relation(fields: [hcId], references: [id])
+  tipo          TipoEpisodio
+  internacionId String?         @unique
+  internacion   Internacion?    @relation(fields: [internacionId], references: [id])
+  numero        Int             @default(autoincrement())
+  motivoIngreso String?
+  diagnostico   String?
+  estado        EstadoEpisodio  @default(EN_CURSO)
+  fechaInicio   DateTime        @default(now())
+  fechaFin      DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
-  anamnesis         Anamnesis[]
-  evoluciones       Evolucion[]
-  prescripciones    Prescripcion[]
-  controlesEnfermeria ControlEnfermeria[]
-  hojaEnfermeria    HojaEnfermeria[]
+  anamnesis              Anamnesis[]
+  evoluciones            Evolucion[]
+  prescripciones         Prescripcion[]
+  controlesEnfermeria    ControlEnfermeria[]
+  hojaEnfermeria         HojaEnfermeria[]
   valoracionPreanestesia ValoracionPreanestesia?
-  protocoloAnestesia ProtocoloAnestesia?
-  epicrisis         Epicrisis?
-  turnoConsultorio  TurnoConsultorio?
-  interconsultas    Interconsulta[]
+  protocoloAnestesia     ProtocoloAnestesia?
+  epicrisis              Epicrisis?
+  turnoConsultorio       TurnoConsultorio?
+  interconsultas         Interconsulta[]
 
   @@index([hcId, fechaInicio])
   @@index([tipo])
 }
 
 model Interconsulta {
-  id                  String               @id @default(uuid())
+  id                  String              @id @default(uuid())
   episodioId          String
-  episodio            Episodio             @relation(fields: [episodioId], references: [id], onDelete: Cascade)
+  episodio            Episodio            @relation(fields: [episodioId], references: [id], onDelete: Cascade)
   medicoSolicitanteId String
-  medicoSolicitante   Usuario              @relation("SolicitanteInterconsultas", fields: [medicoSolicitanteId], references: [id])
+  medicoSolicitante   Usuario             @relation("SolicitanteInterconsultas", fields: [medicoSolicitanteId], references: [id])
   especialidad        String
   especialistaId      String?
-  especialista        Usuario?             @relation("EspecialistaInterconsultas", fields: [especialistaId], references: [id])
+  especialista        Usuario?            @relation("EspecialistaInterconsultas", fields: [especialistaId], references: [id])
   motivo              String
-  estado              EstadoInterconsulta  @default(SOLICITADA)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
+  estado              EstadoInterconsulta @default(SOLICITADA)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
 
   @@index([episodioId])
   @@index([especialistaId])
 }
 
 model HorarioMedicoConsultorio {
-  id              String    @id @default(uuid())
-  medicoId        String
-  medico          Usuario   @relation(fields: [medicoId], references: [id], onDelete: Cascade)
-  dia             DiaSemana
-  horaInicio      String
-  horaFin         String
-  intervaloMin    Int       @default(30)
-  activo          Boolean   @default(true)
-  createdAt       DateTime  @default(now())
+  id           String    @id @default(uuid())
+  medicoId     String
+  medico       Usuario   @relation(fields: [medicoId], references: [id], onDelete: Cascade)
+  dia          DiaSemana
+  horaInicio   String
+  horaFin      String
+  intervaloMin Int       @default(30)
+  activo       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
 
   @@unique([medicoId, dia, horaInicio])
   @@index([medicoId])
 }
 
 model SecretariaMedico {
-  id              String    @id @default(uuid())
+  id              String   @id @default(uuid())
   secretariaId    String
-  secretaria      Usuario   @relation("SecretariaMedicos", fields: [secretariaId], references: [id], onDelete: Cascade)
+  secretaria      Usuario  @relation("SecretariaMedicos", fields: [secretariaId], references: [id], onDelete: Cascade)
   medicoId        String
-  medico          Usuario   @relation("MedicoSecretarias", fields: [medicoId], references: [id], onDelete: Cascade)
-  fechaAsignacion DateTime  @default(now())
+  medico          Usuario  @relation("MedicoSecretarias", fields: [medicoId], references: [id], onDelete: Cascade)
+  fechaAsignacion DateTime @default(now())
 
   @@unique([secretariaId, medicoId])
   @@index([secretariaId])
@@ -476,24 +477,24 @@ model SecretariaMedico {
 }
 
 model TurnoConsultorio {
-  id              String       @id @default(uuid())
-  medicoId        String
-  medico          Usuario      @relation("MedicoTurnos", fields: [medicoId], references: [id])
-  pacienteId      String
-  paciente        Paciente     @relation(fields: [pacienteId], references: [id])
-  secretariaId    String?
-  secretaria      Usuario?     @relation("SecretariaTurnos", fields: [secretariaId], references: [id])
-  obraSocialId    String?
-  obraSocial      ObraSocial?  @relation(fields: [obraSocialId], references: [id])
-  fecha           DateTime
-  hora            String
-  motivo          String?
-  estado          EstadoTurno  @default(PENDIENTE)
-  asistio         Boolean?
-  episodioId      String?      @unique
-  episodio        Episodio?    @relation(fields: [episodioId], references: [id])
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id           String      @id @default(uuid())
+  medicoId     String
+  medico       Usuario     @relation("MedicoTurnos", fields: [medicoId], references: [id])
+  pacienteId   String
+  paciente     Paciente    @relation(fields: [pacienteId], references: [id])
+  secretariaId String?
+  secretaria   Usuario?    @relation("SecretariaTurnos", fields: [secretariaId], references: [id])
+  obraSocialId String?
+  obraSocial   ObraSocial? @relation(fields: [obraSocialId], references: [id])
+  fecha        DateTime
+  hora         String
+  motivo       String?
+  estado       EstadoTurno @default(PENDIENTE)
+  asistio      Boolean?
+  episodioId   String?     @unique
+  episodio     Episodio?   @relation(fields: [episodioId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   @@index([medicoId, fecha])
   @@index([pacienteId])
@@ -502,52 +503,52 @@ model TurnoConsultorio {
 }
 
 model Anamnesis {
-  id                String   @id @default(uuid())
-  hcId              String
-  hc                HistoriaClinica @relation(fields: [hcId], references: [id])
-  episodioId        String?  @unique
-  episodio          Episodio? @relation(fields: [episodioId], references: [id])
-  motivoConsulta    String?
-  enfermedadActual  String?
-  antecPatologicos  String?
-  antecFamiliares   String?
-  habitosToxicos    String?
-  factoresRiesgoCV  String?
-  otros             String?
-  estadoGeneral     String?
+  id                   String          @id @default(uuid())
+  hcId                 String
+  hc                   HistoriaClinica @relation(fields: [hcId], references: [id])
+  episodioId           String?         @unique
+  episodio             Episodio?       @relation(fields: [episodioId], references: [id])
+  motivoConsulta       String?
+  enfermedadActual     String?
+  antecPatologicos     String?
+  antecFamiliares      String?
+  habitosToxicos       String?
+  factoresRiesgoCV     String?
+  otros                String?
+  estadoGeneral        String?
   signosVitalesIngreso Json?
-  pielFaneras       String?
-  cabezaCuello      String?
-  torax             String?
-  apRespiratorio    String?
-  apCardiovascular  String?
-  abdomen           String?
-  snervioso         String?
-  extremidades      String?
-  diagPresuntivo    String?
-  diagDiferencial   String?
-  planEvaluacion    String?
-  planTerapeutico   String?
-  firmadoAt         DateTime?
-  firmadoPor        String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  pielFaneras          String?
+  cabezaCuello         String?
+  torax                String?
+  apRespiratorio       String?
+  apCardiovascular     String?
+  abdomen              String?
+  snervioso            String?
+  extremidades         String?
+  diagPresuntivo       String?
+  diagDiferencial      String?
+  planEvaluacion       String?
+  planTerapeutico      String?
+  firmadoAt            DateTime?
+  firmadoPor           String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
   @@index([hcId])
 }
 
 model Evolucion {
-  id        String   @id @default(uuid())
-  hcId      String
-  hc        HistoriaClinica @relation(fields: [hcId], references: [id])
+  id         String          @id @default(uuid())
+  hcId       String
+  hc         HistoriaClinica @relation(fields: [hcId], references: [id])
   episodioId String?
-  episodio  Episodio? @relation(fields: [episodioId], references: [id])
-  fecha     DateTime @default(now())
-  contenido String
-  usuarioId String
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
-  firmada   Boolean  @default(false)
-  firmadaAt DateTime?
+  episodio   Episodio?       @relation(fields: [episodioId], references: [id])
+  fecha      DateTime        @default(now())
+  contenido  String
+  usuarioId  String
+  usuario    Usuario         @relation(fields: [usuarioId], references: [id])
+  firmada    Boolean         @default(false)
+  firmadaAt  DateTime?
 
   @@index([hcId])
 }
@@ -600,45 +601,45 @@ model Notificacion {
 }
 
 model AplicacionMedicamento {
-  id                 String              @id @default(uuid())
+  id                 String            @id @default(uuid())
   prescripcionId     String?
-  prescripcion       Prescripcion?       @relation(fields: [prescripcionId], references: [id])
+  prescripcion       Prescripcion?     @relation(fields: [prescripcionId], references: [id])
   fecha              DateTime
   hora               String
   stockItemId        String?
-  stockItem          StockItem?          @relation(fields: [stockItemId], references: [id])
+  stockItem          StockItem?        @relation(fields: [stockItemId], references: [id])
   cantidadDescontada Decimal?
   motivo             String?
   enfermeroId        String
-  enfermero          Usuario             @relation(fields: [enfermeroId], references: [id])
+  enfermero          Usuario           @relation(fields: [enfermeroId], references: [id])
   cargo              CargoFacturacion?
-  createdAt          DateTime            @default(now())
+  createdAt          DateTime          @default(now())
 }
 
 model ControlEnfermeria {
-  id          String       @id @default(uuid())
+  id          String          @id @default(uuid())
   hcId        String
   hc          HistoriaClinica @relation(fields: [hcId], references: [id])
   episodioId  String?
-  episodio    Episodio?    @relation(fields: [episodioId], references: [id])
-  fecha       DateTime     @default(now())
+  episodio    Episodio?       @relation(fields: [episodioId], references: [id])
+  fecha       DateTime        @default(now())
   hora        String
   tipo        TipoControl
   datos       Json
   observacion String?
   alertas     Json?
   usuarioId   String
-  usuario     Usuario      @relation(fields: [usuarioId], references: [id])
+  usuario     Usuario         @relation(fields: [usuarioId], references: [id])
 
   @@index([hcId])
 }
 
 model HojaEnfermeria {
-  id             String              @id @default(uuid())
+  id             String             @id @default(uuid())
   hcId           String
-  hc             HistoriaClinica     @relation(fields: [hcId], references: [id])
+  hc             HistoriaClinica    @relation(fields: [hcId], references: [id])
   episodioId     String?
-  episodio       Episodio?           @relation(fields: [episodioId], references: [id])
+  episodio       Episodio?          @relation(fields: [episodioId], references: [id])
   fecha          DateTime
   seccion        SeccionEnfermeria
   item           String
@@ -646,88 +647,88 @@ model HojaEnfermeria {
   via            String?
   marcasHorarias Json
   stockItemId    String?
-  stockItem      StockItem?             @relation(fields: [stockItemId], references: [id])
+  stockItem      StockItem?         @relation(fields: [stockItemId], references: [id])
   cargos         CargoFacturacion[]
-  createdAt      DateTime            @default(now())
+  createdAt      DateTime           @default(now())
 
   @@index([hcId])
 }
 
 model RangoVital {
-  id            String   @id @default(uuid())
-  parametro     String
-  minimo        Float
-  maximo        Float
-  unidad        String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String   @id @default(uuid())
+  parametro String
+  minimo    Float
+  maximo    Float
+  unidad    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([parametro])
 }
 
 model ValoracionPreanestesia {
-  id                  String   @id @default(uuid())
-  hcId                String
-  hc                  HistoriaClinica @relation(fields: [hcId], references: [id])
-  episodioId          String?   @unique
-  episodio            Episodio? @relation(fields: [episodioId], references: [id])
-  cirugiaId           String?
-  peso                Float?
-  talla               Float?
+  id                       String          @id @default(uuid())
+  hcId                     String
+  hc                       HistoriaClinica @relation(fields: [hcId], references: [id])
+  episodioId               String?         @unique
+  episodio                 Episodio?       @relation(fields: [episodioId], references: [id])
+  cirugiaId                String?
+  peso                     Float?
+  talla                    Float?
   diagnosticoPreoperatorio String?
-  cirugiaPropuestaTipo       String?  // "programada" | "urgencia"
-  cirugiaPropuestaDesc       String?
-  antecQuirurgicos    String?
-  antecClinicos       Json?
-  enfermedadesTratamiento String?
-  examenFisico        Json?
-  laboratorio         String?
-  laboratorioFecha    DateTime?
-  scoreASA            Int?
-  anestesiaSugerida   String?
-  comentarios         String?
-  anestesiologoId     String?
-  firmadaAt           DateTime?
-  createdAt           DateTime @default(now())
+  cirugiaPropuestaTipo     String? // "programada" | "urgencia"
+  cirugiaPropuestaDesc     String?
+  antecQuirurgicos         String?
+  antecClinicos            Json?
+  enfermedadesTratamiento  String?
+  examenFisico             Json?
+  laboratorio              String?
+  laboratorioFecha         DateTime?
+  scoreASA                 Int?
+  anestesiaSugerida        String?
+  comentarios              String?
+  anestesiologoId          String?
+  firmadaAt                DateTime?
+  createdAt                DateTime        @default(now())
 
   @@index([hcId])
 }
 
 model ProtocoloAnestesia {
-  id                    String   @id @default(uuid())
-  hcId                  String
-  hc                    HistoriaClinica @relation(fields: [hcId], references: [id])
-  episodioId            String?   @unique
-  episodio              Episodio? @relation(fields: [episodioId], references: [id])
-  cirugiaId             String?
-  cirugia               Cirugia? @relation(fields: [cirugiaId], references: [id])
+  id         String          @id @default(uuid())
+  hcId       String
+  hc         HistoriaClinica @relation(fields: [hcId], references: [id])
+  episodioId String?         @unique
+  episodio   Episodio?       @relation(fields: [episodioId], references: [id])
+  cirugiaId  String?
+  cirugia    Cirugia?        @relation(fields: [cirugiaId], references: [id])
 
   // Bloque 1 - Equipo
-  anestesiologo         String?
+  anestesiologo          String?
   matriculaAnestesiologo String?
-  cirujano              String?
-  matriculaCirujano     String?
-  ayudantes             String?
-  fechaCirugia          DateTime?
+  cirujano               String?
+  matriculaCirujano      String?
+  ayudantes              String?
+  fechaCirugia           DateTime?
 
   // Bloque 2 - Evaluación preanestésica
-  alergiaDetalle        String?
-  clasificacionASA      String?
-  esEmergencia          Boolean  @default(false)
-  grupoSangre           String?
-  ayunoSolidos          Int?
-  ayunoLiquidos         Int?
-  ultimaIngesta         String?
-  estadoPsiquico        String?
-  premedicacion         Json?
-  signosVitaPreop       Json?
-  mallampati            String?
-  distTiromentoniana    Float?
-  aperturaBucal         Float?
-  checklistEquipoAnes   Boolean  @default(false)
-  checklistReanimacion  Boolean  @default(false)
-  checklistMonitores    Boolean  @default(false)
-  checklistPosicion     Boolean  @default(false)
+  alergiaDetalle       String?
+  clasificacionASA     String?
+  esEmergencia         Boolean @default(false)
+  grupoSangre          String?
+  ayunoSolidos         Int?
+  ayunoLiquidos        Int?
+  ultimaIngesta        String?
+  estadoPsiquico       String?
+  premedicacion        Json?
+  signosVitaPreop      Json?
+  mallampati           String?
+  distTiromentoniana   Float?
+  aperturaBucal        Float?
+  checklistEquipoAnes  Boolean @default(false)
+  checklistReanimacion Boolean @default(false)
+  checklistMonitores   Boolean @default(false)
+  checklistPosicion    Boolean @default(false)
 
   // Bloque 3 - Técnica
   tecnicaAnestesia      String[]
@@ -753,171 +754,171 @@ model ProtocoloAnestesia {
   oxigenoFlujo          Float?
 
   // Bloque 4 - Registro
-  drogas                DrogaAnestesia[]
-  signosVitales         Json?
+  drogas        DrogaAnestesia[]
+  signosVitales Json?
 
   // Bloque 4 - Datos físicos
-  peso                  Float?
-  talla                 Float?
+  peso  Float?
+  talla Float?
 
   // Bloque 5 - Balance
-  liquidosIngresados    Json?
-  diuresis              Int?
-  perdidaSanguinea      String?
-  perdidaSanguineaML    Int?
-  otrosEgresos          String?
-  posicionOperatoria    String?
-  sondaNasogastrica     Boolean  @default(false)
-  sondaVesical          Boolean  @default(false)
-  tipoCirugia           String?
-  observaciones         String?
+  liquidosIngresados Json?
+  diuresis           Int?
+  perdidaSanguinea   String?
+  perdidaSanguineaML Int?
+  otrosEgresos       String?
+  posicionOperatoria String?
+  sondaNasogastrica  Boolean @default(false)
+  sondaVesical       Boolean @default(false)
+  tipoCirugia        String?
+  observaciones      String?
 
   // Bloque 6 - Recuperación
-  estadoEgreso          String[]
-  destinoPaciente       String?
-  aldreteActividad      Int?
-  aldreteRespiracion    Int?
-  aldreteCirculacion    Int?
-  aldreteConciencia     Int?
-  aldreteSpo2           Int?
+  estadoEgreso       String[]
+  destinoPaciente    String?
+  aldreteActividad   Int?
+  aldreteRespiracion Int?
+  aldreteCirculacion Int?
+  aldreteConciencia  Int?
+  aldreteSpo2        Int?
 
   // Firma
-  nombreFirmante        String?
-  matriculaFirmante     String?
-  firmadoEn             DateTime?
-  firmadoPor            String?
-  firmado               Boolean  @default(false)
+  nombreFirmante    String?
+  matriculaFirmante String?
+  firmadoEn         DateTime?
+  firmadoPor        String?
+  firmado           Boolean   @default(false)
 
-  creadoEn              DateTime @default(now())
-  actualizadoEn         DateTime @updatedAt
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
 
   @@index([hcId])
 }
 
 model DrogaAnestesia {
-  id                  String   @id @default(uuid())
-  protocoloId         String
-  protocolo           ProtocoloAnestesia @relation(fields: [protocoloId], references: [id], onDelete: Cascade)
-  categoria           String
-  nombre              String
-  dosis               Float?
-  unidad              String?
-  via                 String?
-  horaAdministracion  DateTime?
-  observaciones       String?
+  id                 String             @id @default(uuid())
+  protocoloId        String
+  protocolo          ProtocoloAnestesia @relation(fields: [protocoloId], references: [id], onDelete: Cascade)
+  categoria          String
+  nombre             String
+  dosis              Float?
+  unidad             String?
+  via                String?
+  horaAdministracion DateTime?
+  observaciones      String?
 }
 
 model Epicrisis {
-  id                    String           @id @default(uuid())
-  hcId                  String
-  hc                    HistoriaClinica  @relation(fields: [hcId], references: [id])
-  episodioId            String?           @unique
-  episodio              Episodio?        @relation(fields: [episodioId], references: [id])
-  diagIngreso           String?
-  diagEgreso            String?
-  codigosCIE            String[]
-  resumenClinico        String?
-  estudiosRealizados    String?
+  id                     String           @id @default(uuid())
+  hcId                   String
+  hc                     HistoriaClinica  @relation(fields: [hcId], references: [id])
+  episodioId             String?          @unique
+  episodio               Episodio?        @relation(fields: [episodioId], references: [id])
+  diagIngreso            String?
+  diagEgreso             String?
+  codigosCIE             String[]
+  resumenClinico         String?
+  estudiosRealizados     String?
   tratamientosRealizados String?
-  proximoControlFecha   DateTime?
-  proximoControlLugar   String?
-  proximoControlMedico  String?
-  pendiente             String?
-  condicionEgreso       CondicionEgreso?
-  destino               DestinoEgreso?
-  medicacionAlta        Json[]
-  indicacionesAlta      String?
-  medicoId              String?
-  firmadaAt             DateTime?
-  createdAt             DateTime          @default(now())
+  proximoControlFecha    DateTime?
+  proximoControlLugar    String?
+  proximoControlMedico   String?
+  pendiente              String?
+  condicionEgreso        CondicionEgreso?
+  destino                DestinoEgreso?
+  medicacionAlta         Json[]
+  indicacionesAlta       String?
+  medicoId               String?
+  firmadaAt              DateTime?
+  createdAt              DateTime         @default(now())
 
   @@index([hcId])
 }
 
 model Quirofano {
-  id            String   @id @default(uuid())
-  numero        Int      @unique
-  nombre        String
-  piso          String?
-  disponible    Boolean  @default(true)
-  cirugias      Cirugia[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String    @id @default(uuid())
+  numero     Int       @unique
+  nombre     String
+  piso       String?
+  disponible Boolean   @default(true)
+  cirugias   Cirugia[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }
 
 model Cirugia {
-  id                    String              @id @default(uuid())
-  internacionId         String
-  internacion           Internacion         @relation(fields: [internacionId], references: [id])
-  quirofanoId           String?
-  quirofano             Quirofano?          @relation(fields: [quirofanoId], references: [id], onDelete: Restrict)
-  fechaProgramada       DateTime
-  horaProgramada        String
-  tipo                  TipoCirugia
-  estado                EstadoCirugia       @default(PROGRAMADA)
-  cirujanoId            String?
-  ayudante1Id           String?
-  ayudante2Id           String?
-  anestesiologoId       String?
-  instrumentadorId      String?
-  instrumentador        Usuario?       @relation("InstrumentadorCirugia", fields: [instrumentadorId], references: [id])
+  id                         String        @id @default(uuid())
+  internacionId              String
+  internacion                Internacion   @relation(fields: [internacionId], references: [id])
+  quirofanoId                String?
+  quirofano                  Quirofano?    @relation(fields: [quirofanoId], references: [id], onDelete: Restrict)
+  fechaProgramada            DateTime
+  horaProgramada             String
+  tipo                       TipoCirugia
+  estado                     EstadoCirugia @default(PROGRAMADA)
+  cirujanoId                 String?
+  ayudante1Id                String?
+  ayudante2Id                String?
+  anestesiologoId            String?
+  instrumentadorId           String?
+  instrumentador             Usuario?      @relation("InstrumentadorCirugia", fields: [instrumentadorId], references: [id])
   instrumentadorNombreLegado String?
-  circulanteId          String?
-  circulante            Usuario?       @relation("CirculanteCirugia", fields: [circulanteId], references: [id])
-  circulanteNombreLegado String?
-  diagnosticoPreop      String?
-  diagnosticoPostop     String?
-  procedimiento         String?
-  intervencionesAgregadas String?
-  hallazgos             String?
-  horaInicio            String?
-  horaFin               String?
-  muestrasPatologicas   Int?
-  muestrasBacteriologicas Int?
-  arcoC                 Boolean             @default(false)
-  arm                   Boolean             @default(false)
-  ecografo              Boolean             @default(false)
-  scoreASA              Int?
-  observaciones         String?
-  muestrasPatologicasObs String?
+  circulanteId               String?
+  circulante                 Usuario?      @relation("CirculanteCirugia", fields: [circulanteId], references: [id])
+  circulanteNombreLegado     String?
+  diagnosticoPreop           String?
+  diagnosticoPostop          String?
+  procedimiento              String?
+  intervencionesAgregadas    String?
+  hallazgos                  String?
+  horaInicio                 String?
+  horaFin                    String?
+  muestrasPatologicas        Int?
+  muestrasBacteriologicas    Int?
+  arcoC                      Boolean       @default(false)
+  arm                        Boolean       @default(false)
+  ecografo                   Boolean       @default(false)
+  scoreASA                   Int?
+  observaciones              String?
+  muestrasPatologicasObs     String?
   muestrasBacteriologicasObs String?
 
   // Parto/Cesárea
-  horaNacimiento        String?
-  sexoRN                String?
-  pesoRN                Int?
-  apgar1                Int?
-  apgar5                Int?
-  tipoParto             String?
-  complicacionesParto   String?
+  horaNacimiento      String?
+  sexoRN              String?
+  pesoRN              Int?
+  apgar1              Int?
+  apgar5              Int?
+  tipoParto           String?
+  complicacionesParto String?
 
   // Balance intraoperatorio (JSON arrays)
-  balanceIngresos       Json?
-  balanceEgresos        Json?
+  balanceIngresos Json?
+  balanceEgresos  Json?
 
   // Signos vitales intraoperatorios (JSON array)
-  signosVitalesIntraop  Json?
+  signosVitalesIntraop Json?
 
   observacionesAnestesia String?
   posicionOperatoria     String?
-  sondaNasogastrica      Boolean             @default(false)
-  sondaVesical           Boolean             @default(false)
+  sondaNasogastrica      Boolean @default(false)
+  sondaVesical           Boolean @default(false)
   diuresisIntraop        Int?
   sangrePerdida          String?
 
   // Evolución post operatoria inmediata
-  evolucionPostInt       String?
+  evolucionPostInt String?
 
   // Indicaciones postoperatorias (JSON array)
   indicacionesPostoperatorias Json?
 
-  implantes             Implante[]
-  medicamentos          MedicamentoCirugia[]
-  practicas             PracticaCirugia[]
-  reprogramaciones      Reprogramacion[]
-  protocolosAnestesia   ProtocoloAnestesia[]
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  implantes           Implante[]
+  medicamentos        MedicamentoCirugia[]
+  practicas           PracticaCirugia[]
+  reprogramaciones    Reprogramacion[]
+  protocolosAnestesia ProtocoloAnestesia[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   @@index([fechaProgramada, estado])
 }
@@ -947,9 +948,9 @@ model Reprogramacion {
 }
 
 model MedicamentoCirugia {
-  id              String    @id @default(uuid())
+  id              String     @id @default(uuid())
   cirugiaId       String
-  cirugia         Cirugia   @relation(fields: [cirugiaId], references: [id])
+  cirugia         Cirugia    @relation(fields: [cirugiaId], references: [id])
   stockItemId     String?
   stockItem       StockItem? @relation(fields: [stockItemId], references: [id])
   nombre          String
@@ -962,84 +963,134 @@ model MedicamentoCirugia {
 }
 
 model PracticaCirugia {
-  id               String   @id @default(uuid())
-  cirugiaId        String
-  cirugia          Cirugia  @relation(fields: [cirugiaId], references: [id])
-  fecha            DateTime
-  hora             String
-  practica         String
-  laboratorio      String?
-  cargoPor         String?
-  actoQuirurgico   String?
+  id             String   @id @default(uuid())
+  cirugiaId      String
+  cirugia        Cirugia  @relation(fields: [cirugiaId], references: [id])
+  fecha          DateTime
+  hora           String
+  practica       String
+  laboratorio    String?
+  cargoPor       String?
+  actoQuirurgico String?
 }
 
 model StockItem {
-  id                String                 @id @default(uuid())
-  nombre            String
-  nTroquel          String?
-  principioActivo   String?
-  presentacion      String?
-  laboratorio       String?
-  unidad            String
-  stockActual       Decimal
-  stockMinimo       Decimal
-  stockMaximo       Decimal
-  lote              String?
-  vencimiento       DateTime?
-  ubicacion         String?
-  nomencladorCodigo String?
-  precioCompra      Decimal?
-  precioVenta       Decimal?
-  fraccion          Int?
-  precioUnidadCompra Decimal?
-  precioUnidadVenta  Decimal?
-  activo            Boolean                @default(true)
-  movimientos      MovimientoStock[]
-  aplicaciones     AplicacionMedicamento[]
+  id                  String                  @id @default(uuid())
+  nombre              String
+  nTroquel            String?
+  principioActivo     String?
+  presentacion        String?
+  laboratorio         String?
+  unidad              String
+  stockActual         Decimal
+  stockMinimo         Decimal
+  stockMaximo         Decimal
+  lote                String?
+  vencimiento         DateTime?
+  ubicacion           String?
+  nomencladorCodigo   String?
+  precioCompra        Decimal?
+  precioVenta         Decimal?
+  fraccion            Int?
+  precioUnidadCompra  Decimal?
+  precioUnidadVenta   Decimal?
+  activo              Boolean                 @default(true)
+  movimientos         MovimientoStock[]
+  aplicaciones        AplicacionMedicamento[]
   medicamentosCirugia MedicamentoCirugia[]
-  hojasEnfermeria  HojaEnfermeria[]
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
+  hojasEnfermeria     HojaEnfermeria[]
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
 }
 
 model MovimientoStock {
-  id            String     @id @default(uuid())
+  id            String         @id @default(uuid())
   stockItemId   String
-  stockItem     StockItem  @relation(fields: [stockItemId], references: [id])
+  stockItem     StockItem      @relation(fields: [stockItemId], references: [id])
   tipo          TipoMovimiento
   cantidad      Decimal
   motivo        String
   internacionId String?
   cirugiaId     String?
   usuarioId     String?
-  createdAt     DateTime   @default(now())
+  createdAt     DateTime       @default(now())
 
   @@index([stockItemId, createdAt])
 }
 
 model NomencladorItem {
-  id          String     @id @default(uuid())
-  codigo      String     @unique
-  descripcion String
-  tipo        String
-  convenios   Convenio[]
+  id                         String                      @id @default(uuid())
+  codigo                     String                      @unique
+  descripcion                String
+  tipo                       String
+  seccion                    String?
+  capitulo                   String?
+  uEspecialista              Decimal?
+  uAyudantes                 Decimal?
+  uAnestesista               Decimal?
+  cantidadAyudantes          Int?
+  notas                      String?
+  activo                     Boolean                     @default(true)
+  convenios                  Convenio[]
+  nomencladorObraSocialItems NomencladorObraSocialItem[]
+  createdAt                  DateTime                    @default(now())
+  updatedAt                  DateTime                    @updatedAt
+
+  @@index([capitulo, seccion])
+}
+
+model NomencladorObraSocial {
+  id            String                      @id @default(uuid())
+  obraSocialId  String
+  obraSocial    ObraSocial                  @relation(fields: [obraSocialId], references: [id], onDelete: Cascade)
+  nombre        String?
+  vigenciaDesde DateTime?
+  vigenciaHasta DateTime?
+  activo        Boolean                     @default(true)
+  items         NomencladorObraSocialItem[]
+  createdAt     DateTime                    @default(now())
+  updatedAt     DateTime                    @updatedAt
+
+  @@unique([obraSocialId, nombre])
+  @@index([obraSocialId])
+}
+
+model NomencladorObraSocialItem {
+  id                      String                @id @default(uuid())
+  nomencladorObraSocialId String
+  nomencladorObraSocial   NomencladorObraSocial @relation(fields: [nomencladorObraSocialId], references: [id], onDelete: Cascade)
+  nomencladorItemId       String?
+  nomencladorItem         NomencladorItem?      @relation(fields: [nomencladorItemId], references: [id], onDelete: SetNull)
+  codigo                  String
+  honorarioEspecialista   Decimal?
+  honorarioAyudantes      Decimal?
+  honorarioAnestesista    Decimal?
+  gastos                  Decimal?
+  total                   Decimal?
+  activo                  Boolean               @default(true)
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+
+  @@unique([nomencladorObraSocialId, codigo])
+  @@index([codigo])
 }
 
 model CargoFacturacion {
-  id               String              @id @default(uuid())
+  id               String                 @id @default(uuid())
   internacionId    String
-  internacion      Internacion         @relation(fields: [internacionId], references: [id])
+  internacion      Internacion            @relation(fields: [internacionId], references: [id])
   concepto         String
   cantidad         Decimal
   precioUnitario   Decimal
   total            Decimal
   origen           OrigenCargo
-  aplicacionId     String?             @unique
+  aplicacionId     String?                @unique
   aplicacion       AplicacionMedicamento? @relation(fields: [aplicacionId], references: [id])
   hojaEnfermeriaId String?
-  hojaEnfermeria   HojaEnfermeria?     @relation(fields: [hojaEnfermeriaId], references: [id])
-  fecha            DateTime            @default(now())
-  facturado        Boolean             @default(false)
+  hojaEnfermeria   HojaEnfermeria?        @relation(fields: [hojaEnfermeriaId], references: [id])
+  fecha            DateTime               @default(now())
+  facturado        Boolean                @default(false)
+
   @@index([internacionId])
   @@index([facturado])
 }
