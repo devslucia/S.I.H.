@@ -61,7 +61,7 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
 
   const cirugia = await prisma.cirugia.findFirst({
     where: { internacionId: params.internacionId },
-    select: { id: true, anestesiologoId: true },
+    select: { id: true, anestesiologoId: true, cirujanoId: true, ayudante1Id: true, ayudante2Id: true },
   });
 
   let anestesiologoAsignado: { nombre: string; matricula: string | null } | null = null;
@@ -78,9 +78,42 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
     }
   }
 
+  // Equipo quirúrgico de la cirugía (fuente de verdad; el form lo muestra solo lectura)
+  const equipoIds = [cirugia?.cirujanoId, cirugia?.ayudante1Id, cirugia?.ayudante2Id].filter(
+    (v): v is string => Boolean(v)
+  );
+  const equipoUsuarios = equipoIds.length
+    ? await prisma.usuario.findMany({
+        where: { id: { in: equipoIds } },
+        select: { id: true, nombre: true, apellido: true, matricula: true },
+      })
+    : [];
+  const equipoMap = new Map(equipoUsuarios.map((u) => [u.id, u]));
+  const nombreDe = (id?: string | null) => {
+    const u = id ? equipoMap.get(id) : undefined;
+    return u ? `${u.nombre} ${u.apellido ?? ""}`.trim() : null;
+  };
+  const equipoCirugia = {
+    cirujano: cirugia?.cirujanoId
+      ? {
+          nombre: nombreDe(cirugia.cirujanoId),
+          matricula: cirugia.cirujanoId ? equipoMap.get(cirugia.cirujanoId)?.matricula ?? null : null,
+        }
+      : null,
+    ayudantes: [cirugia?.ayudante1Id, cirugia?.ayudante2Id]
+      .filter((v): v is string => Boolean(v))
+      .map((id) => ({
+        nombre: nombreDe(id),
+        matricula: equipoMap.get(id)?.matricula ?? null,
+      }))
+      .filter((a) => a.nombre != null),
+    hayEquipo: Boolean(cirugia?.cirujanoId || cirugia?.ayudante1Id || cirugia?.ayudante2Id),
+  };
+
   return NextResponse.json({
     protocolo: protocolo ?? null,
     anestesiologoAsignado,
+    equipoCirugia,
     paciente: episodio.internacion?.paciente ?? null,
     internacion: episodio.internacion ? {
       id: episodio.internacion.id,
@@ -151,8 +184,33 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
 
   const cirugia = await prisma.cirugia.findFirst({
     where: { internacionId: params.internacionId },
-    select: { id: true },
+    select: { id: true, cirujanoId: true, ayudante1Id: true, ayudante2Id: true },
   });
+
+  // Fuente de verdad del equipo quirúrgico: la cirugía.
+  // Se sobrescriben los campos legacy del protocolo para no romper lecturas viejas
+  // (PDF, carpeta completa) y porque el form ya no los edita.
+  const equipoIds = [cirugia?.cirujanoId, cirugia?.ayudante1Id, cirugia?.ayudante2Id].filter(
+    (v): v is string => Boolean(v)
+  );
+  const equipoUsuarios = equipoIds.length
+    ? await prisma.usuario.findMany({
+        where: { id: { in: equipoIds } },
+        select: { id: true, nombre: true, apellido: true, matricula: true },
+      })
+    : [];
+  const equipoMap = new Map(equipoUsuarios.map((u) => [u.id, u]));
+  const nombreDe = (id?: string | null) => {
+    const u = id ? equipoMap.get(id) : undefined;
+    return u ? `${u.nombre} ${u.apellido ?? ""}`.trim() : null;
+  };
+  campos.cirujano = cirugia?.cirujanoId ? nombreDe(cirugia.cirujanoId) ?? null : null;
+  campos.matriculaCirujano = cirugia?.cirujanoId ? equipoMap.get(cirugia.cirujanoId)?.matricula ?? null : null;
+  campos.ayudantes =
+    [cirugia?.ayudante1Id, cirugia?.ayudante2Id]
+      .map((id) => (id ? nombreDe(id) : null))
+      .filter((v): v is string => Boolean(v))
+      .join(", ") || null;
 
   const protocolo = await prisma.$transaction(async (tx) => {
     const result = await tx.protocoloAnestesia.upsert({
