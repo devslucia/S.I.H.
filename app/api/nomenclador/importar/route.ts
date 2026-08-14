@@ -2,23 +2,10 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-
-const itemSchema = z.object({
-  codigo: z.string().trim().min(1, "codigo requerido"),
-  descripcion: z.string().trim().min(1, "descripcion requerida"),
-  tipo: z.string().trim().min(1).default("QUIRURGICA"),
-  capitulo: z.string().trim().optional().nullable(),
-  seccion: z.string().trim().optional().nullable(),
-  uEspecialista: z.coerce.number().nonnegative().optional().nullable(),
-  uAyudantes: z.coerce.number().nonnegative().optional().nullable(),
-  uAnestesista: z.coerce.number().nonnegative().optional().nullable(),
-  cantidadAyudantes: z.coerce.number().int().nonnegative().optional().nullable(),
-  notas: z.string().trim().optional().nullable(),
-  activo: z.boolean().optional().default(true),
-});
+import { nomencladorItemSchema } from "@/lib/nomenclador-schemas";
 
 const bodySchema = z.object({
-  items: z.array(itemSchema).min(1, "sin items"),
+  items: z.array(nomencladorItemSchema).min(1, "sin items"),
 });
 
 export async function POST(req: NextRequest) {
