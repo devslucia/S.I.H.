@@ -16,7 +16,7 @@ import { formatDateTime } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
 import { protocoloAnestesiaSchema } from "@/lib/validations/protocolo-anestesia";
 import type { ProtocoloAnestesiaFormData } from "@/lib/validations/protocolo-anestesia";
-import type { SignoVitalRegistro, PremedicacionItem, AlergiaData, PacienteData, InternacionData } from "@/types";
+import type { SignoVitalRegistro, BoloRegistro, InfusionRegistro, PremedicacionItem, AlergiaData, PacienteData, InternacionData } from "@/types";
 import { EscalaAldrete } from "./anestesia/EscalaAldrete";
 import { PanelDrogas } from "./anestesia/PanelDrogas";
 import { GraficoSignosVitales } from "./anestesia/GraficoSignosVitales";
@@ -440,6 +440,55 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
       signosVitalesRef.current = next;
       setSignosVitales(next);
       persistSignos(next, minuto);
+    },
+    [persistSignos]
+  );
+
+  // FASE 3: bolos e infusiones (arrays por minuto en el registro intraoperatorio)
+  const handleAddBolo = useCallback(
+    (minuto: number, bolo: BoloRegistro) => {
+      const prev = signosVitalesRef.current;
+      const existing = prev.findIndex((s) => s.minuto === minuto);
+      const next =
+        existing >= 0
+          ? prev.map((s, i) => (i === existing ? { ...s, bolos: [...(s.bolos || []), bolo] } : s))
+          : [...prev, { minuto, bolos: [bolo] }].sort((a, b) => a.minuto - b.minuto);
+      signosVitalesRef.current = next;
+      setSignosVitales(next);
+      persistSignos(next, minuto);
+    },
+    [persistSignos]
+  );
+
+  const handleAddInfusion = useCallback(
+    (infusion: InfusionRegistro) => {
+      const minuto = infusion.inicio;
+      const infusionConId = { ...infusion, id: infusion.id ?? crypto.randomUUID() };
+      const prev = signosVitalesRef.current;
+      const existing = prev.findIndex((s) => s.minuto === minuto);
+      const next =
+        existing >= 0
+          ? prev.map((s, i) => (i === existing ? { ...s, infusiones: [...(s.infusiones || []), infusionConId] } : s))
+          : [...prev, { minuto, infusiones: [infusionConId] }].sort((a, b) => a.minuto - b.minuto);
+      signosVitalesRef.current = next;
+      setSignosVitales(next);
+      persistSignos(next, minuto);
+    },
+    [persistSignos]
+  );
+
+  const handleUpdateInfusion = useCallback(
+    (id: string, fin: number) => {
+      const prev = signosVitalesRef.current;
+      const next = prev.map((s) => {
+        if (!Array.isArray(s.infusiones) || !s.infusiones.some((i) => i.id === id)) return s;
+        return { ...s, infusiones: s.infusiones.map((i) => (i.id === id ? { ...i, fin } : i)) };
+      });
+      const huboCambio = JSON.stringify(next) !== JSON.stringify(prev);
+      if (!huboCambio) return;
+      signosVitalesRef.current = next;
+      setSignosVitales(next);
+      persistSignos(next, fin);
     },
     [persistSignos]
   );
@@ -1034,6 +1083,9 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                   horaInicio={horaInicio}
                   onAddRegistro={handleAddRegistro}
                   onAddEvento={handleAddEvento}
+                  onAddBolo={handleAddBolo}
+                  onAddInfusion={handleAddInfusion}
+                  onUpdateInfusion={handleUpdateInfusion}
                   readOnly={firmado}
                 />
               )}

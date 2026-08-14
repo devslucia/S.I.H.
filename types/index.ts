@@ -146,6 +146,26 @@ export interface DrogaAnestesiaData {
   observaciones?: string | null;
 }
 
+export interface BoloRegistro {
+  droga: string;
+  dosis: number;
+  unidad: string;
+  via?: string | null;
+}
+
+export interface InfusionRegistro {
+  id?: string;
+  droga: string;
+  velocidad: string;
+  inicio: number;
+  fin?: number | null;
+}
+
+export interface BalanceHorarioItem {
+  ingresos?: number | null;
+  egresos?: number | null;
+}
+
 export interface SignoVitalRegistro {
   minuto: number;
   pas?: number | null;
@@ -158,7 +178,14 @@ export interface SignoVitalRegistro {
   temp?: number | null;
   oxigenoFlujo?: number | null;
   modalidadVent?: string | null;
+  sevo?: number | null;
+  iso?: number | null;
+  des?: number | null;
+  fio2?: number | null;
   eventos?: string[];
+  bolos?: BoloRegistro[];
+  infusiones?: InfusionRegistro[];
+  balance?: BalanceHorarioItem | null;
 }
 
 export interface PremedicacionItem {
