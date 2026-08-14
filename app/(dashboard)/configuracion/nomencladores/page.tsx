@@ -11,6 +11,9 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
+  Plus,
+  Pencil,
+  Power,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -22,6 +25,7 @@ interface ItemNacional {
   id: string;
   codigo: string;
   descripcion: string;
+  tipo: string;
   capitulo: string | null;
   seccion: string | null;
   uEspecialista: number | null;
@@ -118,6 +122,13 @@ export default function NomencladoresPage() {
   const [busyImportNac, setBusyImportNac] = useState(false);
   const [busyImportCopia, setBusyImportCopia] = useState(false);
   const [detalleAbierto, setDetalleAbierto] = useState<string | null>(null);
+
+  const [formAbierto, setFormAbierto] = useState(false);
+  const [editando, setEditando] = useState<ItemNacional | null>(null);
+  const [form, setForm] = useState<Record<string, string>>({});
+  const [formErr, setFormErr] = useState<string | null>(null);
+  const [guardandoForm, setGuardandoForm] = useState(false);
+  const [toggleId, setToggleId] = useState<string | null>(null);
 
   const cargarNacional = useCallback(async (qAct: string, offset: number) => {
     setLoading(true);
@@ -311,8 +322,90 @@ export default function NomencladoresPage() {
     }
   };
 
-  const tabs: { id: Tab; label: string; icon: typeof BookOpen }[] = [
-    { id: "nacional", label: "Nacional", icon: BookOpen },
+  const abrirAlta = () => {
+    setEditando(null);
+    setForm({
+      codigo: "",
+      descripcion: "",
+      tipo: "QUIRURGICA",
+      capitulo: "",
+      seccion: "",
+      uEspecialista: "",
+      uAyudantes: "",
+      uAnestesista: "",
+      cantidadAyudantes: "",
+      notas: "",
+      activo: "true",
+    });
+    setFormErr(null);
+    setFormAbierto(true);
+  };
+
+  const abrirEdicion = (item: ItemNacional) => {
+    setEditando(item);
+    setForm({
+      codigo: item.codigo,
+      descripcion: item.descripcion,
+      tipo: item.tipo,
+      capitulo: item.capitulo ?? "",
+      seccion: item.seccion ?? "",
+      uEspecialista: fmtNum(item.uEspecialista),
+      uAyudantes: fmtNum(item.uAyudantes),
+      uAnestesista: fmtNum(item.uAnestesista),
+      cantidadAyudantes: fmtNum(item.cantidadAyudantes),
+      notas: item.notas ?? "",
+      activo: String(item.activo),
+    });
+    setFormErr(null);
+    setFormAbierto(true);
+  };
+
+  const guardarForm = async () => {
+    setGuardandoForm(true);
+    setFormErr(null);
+    try {
+      const payload = {
+        codigo: form.codigo?.trim(),
+        descripcion: form.descripcion?.trim(),
+        tipo: form.tipo?.trim() || undefined,
+        capitulo: form.capitulo?.trim() || null,
+        seccion: form.seccion?.trim() || null,
+        uEspecialista: num(form.uEspecialista ?? ""),
+        uAyudantes: num(form.uAyudantes ?? ""),
+        uAnestesista: num(form.uAnestesista ?? ""),
+        cantidadAyudantes: num(form.cantidadAyudantes ?? ""),
+        notas: form.notas?.trim() || null,
+        activo: form.activo === "true",
+      };
+      const res = await fetch(editando ? `/api/nomenclador/${editando.id}` : "/api/nomenclador", {
+        method: editando ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFormErr(d.error ?? "Error al guardar");
+        return;
+      }
+      setFormAbierto(false);
+      setEditando(null);
+      cargarNacional(q, offsetNac);
+    } finally {
+      setGuardandoForm(false);
+    }
+  };
+
+  const toggleActivo = async (item: ItemNacional) => {
+    setToggleId(item.id);
+    try {
+      await fetch(`/api/nomenclador/${item.id}`, { method: "DELETE" });
+      cargarNacional(q, offsetNac);
+    } finally {
+      setToggleId(null);
+    }
+  };
+
+  const tabs: { id: Tab; label: string; icon: typeof BookOpen }[] = [    { id: "nacional", label: "Nacional", icon: BookOpen },
     { id: "por-os", label: "Por obra social", icon: Building2 },
     { id: "importar", label: "Importar", icon: Upload },
   ];
@@ -322,7 +415,7 @@ export default function NomencladoresPage() {
       <PageHeader
         eyebrow="Configuración · Nomencladores"
         title="Nomencladores de prácticas"
-        description="Maestro nacional (GILSA, solo lectura) y copias editables por obra social con importación de valores."
+        description="Maestro nacional (GILSA, editable por ADMIN) y copias por obra social con importación de valores."
       />
 
       {error && <div className="text-[13px] text-error bg-error/5 border border-error/20 rounded-md px-3 py-2">{error}</div>}
@@ -363,9 +456,55 @@ export default function NomencladoresPage() {
             </div>
             <button onClick={buscarNacional} className="btn-primary text-[13px]">Buscar</button>
             <button onClick={() => cargarNacional("", 0)} className="btn-secondary text-[13px]">Limpiar</button>
+            <button onClick={abrirAlta} className="btn-primary text-[13px]">
+              <Plus size={14} /> Agregar práctica
+            </button>
           </div>
 
-          <div className="text-[12px] text-muted font-mono">{totalNac} prácticas · maestro no editable</div>
+          {formAbierto && (
+            <div className="border border-border rounded-lg bg-surface p-4 space-y-3">
+              <h3 className="text-[13px] font-semibold">{editando ? `Editar ${editando.codigo}` : "Nueva práctica"}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <CampoForm label="Código *" valor={form.codigo ?? ""} set={(v) => setForm({ ...form, codigo: v })} mono />
+                <CampoForm label="Descripción *" valor={form.descripcion ?? ""} set={(v) => setForm({ ...form, descripcion: v })} wide />
+                <CampoForm label="Tipo" valor={form.tipo ?? ""} set={(v) => setForm({ ...form, tipo: v })} />
+                <CampoForm label="Capítulo" valor={form.capitulo ?? ""} set={(v) => setForm({ ...form, capitulo: v })} mono />
+                <CampoForm label="Sección" valor={form.seccion ?? ""} set={(v) => setForm({ ...form, seccion: v })} wide />
+                <CampoForm label="U. Especialista" valor={form.uEspecialista ?? ""} set={(v) => setForm({ ...form, uEspecialista: v })} mono />
+                <CampoForm label="U. Ayudantes" valor={form.uAyudantes ?? ""} set={(v) => setForm({ ...form, uAyudantes: v })} mono />
+                <CampoForm label="U. Anestesista" valor={form.uAnestesista ?? ""} set={(v) => setForm({ ...form, uAnestesista: v })} mono />
+                <CampoForm label="Cant. ayudantes" valor={form.cantidadAyudantes ?? ""} set={(v) => setForm({ ...form, cantidadAyudantes: v })} mono />
+                <CampoForm label="Notas" valor={form.notas ?? ""} set={(v) => setForm({ ...form, notas: v })} />
+                <label className="flex items-center gap-2 text-[13px]">
+                  <input
+                    type="checkbox"
+                    checked={form.activo === "true"}
+                    onChange={(e) => setForm({ ...form, activo: String(e.target.checked) })}
+                    className="accent-brand"
+                  />
+                  Activa
+                </label>
+              </div>
+              {formErr && <div className="text-[13px] text-error">{formErr}</div>}
+              <div className="flex gap-2">
+                <button onClick={guardarForm} disabled={guardandoForm} className="btn-primary text-[13px]">
+                  {guardandoForm ? "Guardando…" : "Guardar"}
+                </button>
+                <button
+                  onClick={() => {
+                    setFormAbierto(false);
+                    setEditando(null);
+                    setFormErr(null);
+                  }}
+                  className="btn-secondary text-[13px]"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="text-[12px] text-muted font-mono">{totalNac} prácticas · edición ADMIN</div>
 
           <div className="border border-border rounded-lg overflow-hidden bg-surface">
             <table className="w-full text-[13px]">
@@ -376,6 +515,7 @@ export default function NomencladoresPage() {
                   <th className="px-4 py-2.5 text-left">U. Esp.</th>
                   <th className="px-4 py-2.5 text-left">Ayud.</th>
                   <th className="px-4 py-2.5 text-left">Estado</th>
+                  <th className="px-4 py-2.5 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -393,11 +533,33 @@ export default function NomencladoresPage() {
                     <td className="px-4 py-2">
                       <StatusBadge tone={it.activo ? "success" : "neutral"} label={it.activo ? "Activo" : "Inactivo"} />
                     </td>
+                    <td className="px-4 py-2">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => abrirEdicion(it)}
+                          className="p-1.5 rounded-md text-muted hover:text-brand hover:bg-brand-soft transition-colors"
+                          title="Editar"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          onClick={() => toggleActivo(it)}
+                          disabled={toggleId === it.id}
+                          className={cn(
+                            "p-1.5 rounded-md transition-colors",
+                            it.activo ? "text-muted hover:text-error hover:bg-error/5" : "text-muted hover:text-success hover:bg-success/10"
+                          )}
+                          title={it.activo ? "Desactivar" : "Activar"}
+                        >
+                          {it.activo ? <Power size={13} /> : <RefreshCw size={13} />}
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
                 {!loading && itemsNac.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted text-[13px]">Sin resultados</td>
+                    <td colSpan={6} className="px-4 py-8 text-center text-muted text-[13px]">Sin resultados</td>
                   </tr>
                 )}
               </tbody>
@@ -560,6 +722,23 @@ export default function NomencladoresPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function CampoForm(props: { label: string; valor: string; set: (v: string) => void; mono?: boolean; wide?: boolean }) {
+  const { label, valor, set, mono, wide } = props;
+  return (
+    <div className={cn("flex flex-col gap-1", wide && "md:col-span-2")}>
+      <label className="text-[11px] font-mono uppercase tracking-widest text-muted">{label}</label>
+      <input
+        value={valor}
+        onChange={(e) => set(e.target.value)}
+        className={cn(
+          "border border-border rounded-md bg-surface px-3 py-1.5 text-[13px]",
+          mono && "font-mono text-[12px]"
+        )}
+      />
     </div>
   );
 }

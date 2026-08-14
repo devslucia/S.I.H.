@@ -1,8 +1,10 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { nomencladorItemSchema } from "@/lib/nomenclador-schemas";
 
 const ROLES = ["ADMIN", "FACTURACION"];
+const itemSchema = nomencladorItemSchema;
 
 export async function GET(req: NextRequest) {
   const { error } = await requireRole(...ROLES);
@@ -44,4 +46,32 @@ export async function GET(req: NextRequest) {
     })),
     total,
   });
+}
+
+export async function POST(req: NextRequest) {
+  const { error } = await requireRole("ADMIN");
+  if (error) return error;
+
+  const body = await req.json().catch(() => null);
+  const parsed = itemSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.errors[0]?.message ?? "payload inválido" }, { status: 400 });
+  }
+
+  const duplicado = await prisma.nomencladorItem.findUnique({ where: { codigo: parsed.data.codigo } });
+  if (duplicado) {
+    return NextResponse.json({ error: `Ya existe la práctica ${parsed.data.codigo}` }, { status: 409 });
+  }
+
+  const item = await prisma.nomencladorItem.create({ data: parsed.data });
+
+  return NextResponse.json(
+    {
+      ...item,
+      uEspecialista: item.uEspecialista === null ? null : Number(item.uEspecialista),
+      uAyudantes: item.uAyudantes === null ? null : Number(item.uAyudantes),
+      uAnestesista: item.uAnestesista === null ? null : Number(item.uAnestesista),
+    },
+    { status: 201 }
+  );
 }
