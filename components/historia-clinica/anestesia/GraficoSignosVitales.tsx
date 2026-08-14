@@ -1,20 +1,21 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import {
-  ComposedChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ReferenceLine,
-} from "recharts";
-import { Plus, Clock } from "lucide-react";
+import React, { useCallback, useMemo, useState } from "react";
+import { Clock, CornerDownLeft, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import type { SignoVitalRegistro } from "@/types";
+import { GrillaIntraoperatoria } from "./GrillaIntraoperatoria";
+import {
+  EVENTOS_INTRAOP,
+  EVENTO_SIMBOLOS,
+  VARIABLE_COLORES,
+  VARIABLE_DEFAULT,
+  VARIABLE_LABELS,
+  VARIABLES_PANEL,
+  VARIABLE_UNIDADES,
+  type VariableIntraop,
+} from "./intraoperatorio";
 
 interface GraficoSignosVitalesProps {
   signosVitales: SignoVitalRegistro[];
@@ -25,53 +26,6 @@ interface GraficoSignosVitalesProps {
   readOnly?: boolean;
 }
 
-const PARAM_COLORES: Record<string, string> = {
-  pas: "#ef4444",
-  pad: "#3b82f6",
-  pam: "#a855f7",
-  fc: "#f97316",
-  spo2: "#22c55e",
-  fr: "#06b6d4",
-  etco2: "#eab308",
-  temp: "#ec4899",
-  oxigenoFlujo: "#8b5cf6",
-};
-
-const PARAM_LABELS: Record<string, string> = {
-  pas: "PA Sistólica",
-  pad: "PA Diastólica",
-  pam: "PA Media",
-  fc: "Frec. Cardíaca",
-  spo2: "SpO₂",
-  fr: "Freq. Respiratoria",
-  etco2: "EtCO₂",
-  temp: "Temp",
-  oxigenoFlujo: "O₂ Flujo (L/min)",
-};
-
-interface PuntoGrafico {
-  minuto: number;
-  label: string;
-  pas?: number | null;
-  pad?: number | null;
-  pam?: number | null;
-  fc?: number | null;
-  spo2?: number | null;
-  fr?: number | null;
-  etco2?: number | null;
-  temp?: number | null;
-  eventos?: string[];
-}
-
-const EVENTOS_PREDEFINIDOS = [
-  { key: "inicio_anestesia", label: "Inicio anestesia", color: "#c47a5a" },
-  { key: "inicio_cirugia", label: "Inicio cirugía", color: "#f97316" },
-  { key: "intubacion", label: "Intubación", color: "#3b82f6" },
-  { key: "extubacion", label: "Extubación", color: "#3b82f6" },
-  { key: "fin_cirugia", label: "Fin cirugía", color: "#f97316" },
-  { key: "fin_anestesia", label: "Fin anestesia", color: "#c47a5a" },
-];
-
 function GraficoSignosVitales({
   signosVitales,
   minutoActual,
@@ -80,263 +34,378 @@ function GraficoSignosVitales({
   onAddEvento,
   readOnly,
 }: GraficoSignosVitalesProps) {
-  const [form, setForm] = useState({
-    pas: "",
-    pad: "",
-    pam: "",
-    fc: "",
-    spo2: "",
-    fr: "",
-    etco2: "",
-    temp: "",
-    oxigenoFlujo: "",
-  });
-  const [eventoCustom, setEventoCustom] = useState("");
-  const [showEventos, setShowEventos] = useState(false);
   const sv = useMemo(() => (Array.isArray(signosVitales) ? signosVitales : []), [signosVitales]);
 
-  const chartData = useMemo(() => {
-    const maxMin = Math.max(240, minutoActual + 30, ...sv.map((s) => s.minuto ?? 0));
-    const points: PuntoGrafico[] = [];
+  const [variableActiva, setVariableActiva] = useState<VariableIntraop | null>(null);
+  const [minutoSeleccionado, setMinutoSeleccionado] = useState<number | null>(null);
+  const [valorInput, setValorInput] = useState("");
+  const [eventoCustom, setEventoCustom] = useState("");
+  const [showEventoCustom, setShowEventoCustom] = useState(false);
 
-    for (let m = 0; m <= maxMin; m += 5) {
-      const registro = sv.find((s) => s.minuto === m);
-      const eventosEnMinuto = sv
-        .filter((s) => s.minuto === m && (Array.isArray(s.eventos) ? s.eventos.length : 0) > 0)
-        .flatMap((s) => (Array.isArray(s.eventos) ? s.eventos : []));
+  // Último valor registrado para una variable (prefill del input rápido, con default sugerido)
+  const ultimoValor = useCallback(
+    (v: VariableIntraop, hastaMinuto?: number | null): number | null => {
+      const conValor = [...sv]
+        .filter((s) => {
+          const val = s[v];
+          return val != null && Number.isFinite(val) && (hastaMinuto == null || (s.minuto ?? 0) <= hastaMinuto);
+        })
+        .sort((a, b) => (a.minuto ?? 0) - (b.minuto ?? 0));
+      const last = conValor[conValor.length - 1];
+      return last ? (last[v] as number) : null;
+    },
+    [sv]
+  );
 
-      points.push({
-        minuto: m,
-        label: `${m}'`,
-        pas: registro?.pas ?? null,
-        pad: registro?.pad ?? null,
-        pam: registro?.pam ?? null,
-        fc: registro?.fc ?? null,
-        spo2: registro?.spo2 ?? null,
-        fr: registro?.fr ?? null,
-        etco2: registro?.etco2 ?? null,
-        temp: registro?.temp ?? null,
-        eventos: eventosEnMinuto.length > 0 ? eventosEnMinuto : undefined,
-      });
+  // Último valor REAL registrado (para mostrar en el panel, sin default)
+  const ultimoRegistrado = useCallback(
+    (v: VariableIntraop): number | null => {
+      const conValor = sv
+        .filter((s) => s[v] != null && Number.isFinite(s[v]))
+        .sort((a, b) => (a.minuto ?? 0) - (b.minuto ?? 0));
+      const last = conValor[conValor.length - 1];
+      return last ? (last[v] as number) : null;
+    },
+    [sv]
+  );
+
+  const valorEnMinuto = useCallback(
+    (v: VariableIntraop, m: number): number | null => {
+      const r = sv.find((s) => s.minuto === m);
+      const val = r?.[v] ?? null;
+      return val != null && Number.isFinite(val) ? (val as number) : null;
+    },
+    [sv]
+  );
+
+  const sugerirValor = useCallback(
+    (v: VariableIntraop, m: number | null): string => {
+      const real = m != null ? valorEnMinuto(v, m) : null;
+      if (real != null) return String(real);
+      const prev = m != null ? ultimoValor(v, m) : ultimoValor(v);
+      return prev != null ? String(prev) : "";
+    },
+    [valorEnMinuto, ultimoValor]
+  );
+
+  const seleccionarVariable = (v: VariableIntraop) => {
+    if (readOnly) return;
+    const next = variableActiva === v ? null : v;
+    setVariableActiva(next);
+    setValorInput(next ? sugerirValor(next, minutoSeleccionado) : "");
+  };
+
+  const seleccionarMinuto = (m: number) => {
+    setMinutoSeleccionado(m);
+    if (variableActiva) {
+      setValorInput(sugerirValor(variableActiva, m));
     }
-    return points;
-  }, [sv, minutoActual]);
+  };
 
-  const eventLines = useMemo(() => {
-    const events: { minuto: number; label: string; color: string }[] = [];
-    const allEvents = sv.filter((s) => (Array.isArray(s.eventos) ? s.eventos.length : 0) > 0);
-    allEvents.forEach((s) => {
-      (Array.isArray(s.eventos) ? s.eventos : []).forEach((ev) => {
-        const predef = EVENTOS_PREDEFINIDOS.find((e) => e.key === ev);
-        events.push({
-          minuto: s.minuto,
-          label: predef?.label ?? ev,
-          color: predef?.color ?? "#6b7280",
-        });
+  const guardarValor = () => {
+    if (readOnly || !variableActiva || minutoSeleccionado == null) return;
+    const num = parseFloat(valorInput.replace(",", "."));
+    if (!Number.isFinite(num)) return;
+    onAddRegistro({ minuto: minutoSeleccionado, [variableActiva]: num });
+    setValorInput("");
+    setMinutoSeleccionado(null);
+  };
+
+  const guardarEvento = (key: string) => {
+    if (readOnly) return;
+    onAddEvento(minutoSeleccionado ?? minutoActual, key);
+    setMinutoSeleccionado(null);
+  };
+
+  const guardarEventoCustom = () => {
+    if (readOnly || !eventoCustom.trim()) return;
+    onAddEvento(minutoSeleccionado ?? minutoActual, eventoCustom.trim());
+    setEventoCustom("");
+    setShowEventoCustom(false);
+    setMinutoSeleccionado(null);
+  };
+
+  const resumenMinuto = useMemo(() => {
+    if (minutoSeleccionado == null) return null;
+    const r = sv.find((s) => s.minuto === minutoSeleccionado);
+    if (!r) return null;
+    const partes = VARIABLES_PANEL.map((v) => {
+      const val = r[v];
+      if (val == null || !Number.isFinite(val)) return null;
+      return (
+        <span key={v} className="inline-flex items-center gap-1">
+          <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: VARIABLE_COLORES[v] }} />
+          <span className="font-mono">
+            {VARIABLE_LABELS[v]}: {val} {VARIABLE_UNIDADES[v]}
+          </span>
+        </span>
+      );
+    }).filter(Boolean);
+    if (partes.length === 0) return null;
+    return (
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+        <span className="font-mono text-brand font-semibold">{minutoSeleccionado}&apos;</span>
+        {partes}
+      </div>
+    );
+  }, [sv, minutoSeleccionado]);
+
+  const leyenda = useMemo(() => {
+    const items: { simbolo: React.ReactNode; label: string }[] = [
+      {
+        simbolo: <svg width="12" height="12" viewBox="0 0 12 12"><polygon points="1,2 11,2 6,11" fill={VARIABLE_COLORES.pas} /></svg>,
+        label: "PAS",
+      },
+      {
+        simbolo: <svg width="12" height="12" viewBox="0 0 12 12"><polygon points="1,10 11,10 6,1" fill={VARIABLE_COLORES.pad} /></svg>,
+        label: "PAD",
+      },
+      { simbolo: <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: VARIABLE_COLORES.fc }} />, label: "FC" },
+      { simbolo: <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: VARIABLE_COLORES.spo2 }} />, label: "SpO₂" },
+      { simbolo: <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: VARIABLE_COLORES.etco2 }} />, label: "EtCO₂" },
+    ];
+    Object.entries(EVENTO_SIMBOLOS).forEach(([key, def]) => {
+      items.push({
+        simbolo: (
+          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border text-[9px] font-bold font-mono" style={{ borderColor: def.color, color: def.color }}>
+            {def.simbolo}
+          </span>
+        ),
+        label: EVENTOS_INTRAOP.find((e) => e.key === key)?.label ?? key,
       });
     });
-    return events;
-  }, [sv]);
+    return items;
+  }, []);
 
-  const handleRegister = () => {
-    const registro: SignoVitalRegistro = {
-      minuto: minutoActual,
-      pas: form.pas ? parseFloat(form.pas) : null,
-      pad: form.pad ? parseFloat(form.pad) : null,
-      pam: form.pam ? parseFloat(form.pam) : null,
-      fc: form.fc ? parseFloat(form.fc) : null,
-      spo2: form.spo2 ? parseFloat(form.spo2) : null,
-      fr: form.fr ? parseFloat(form.fr) : null,
-      etco2: form.etco2 ? parseFloat(form.etco2) : null,
-      temp: form.temp ? parseFloat(form.temp) : null,
-      oxigenoFlujo: form.oxigenoFlujo ? parseFloat(form.oxigenoFlujo) : null,
-    };
-    onAddRegistro(registro);
-    setForm({ pas: "", pad: "", pam: "", fc: "", spo2: "", fr: "", etco2: "", temp: "", oxigenoFlujo: "" });
-  };
-
-  const handleAddEvento = (key: string) => {
-    onAddEvento(minutoActual, key);
-    setShowEventos(false);
-  };
-
-  const handleAddEventoCustom = () => {
-    if (eventoCustom.trim()) {
-      onAddEvento(minutoActual, eventoCustom.trim());
-      setEventoCustom("");
-      setShowEventos(false);
-    }
-  };
+  const horaMinuto = (m: number) =>
+    horaInicio
+      ? new Date(horaInicio.getTime() + m * 60000).toLocaleTimeString("es-AR", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      : "—";
 
   return (
     <div className="space-y-4">
-      {/* Gráfico con scroll horizontal */}
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <h4 className="text-sm font-medium text-text-secondary mb-3">Registro Gráfico de Signos Vitales</h4>
-        <div className="overflow-x-auto" style={{ scrollbarWidth: "thin" }}>
-          <div style={{ minWidth: Math.max(800, chartData.length * 40) }}>
-            <ComposedChart
-              width={Math.max(800, chartData.length * 40)}
-              height={320}
-              data={chartData}
-              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-border))" />
-              <XAxis
-                dataKey="label"
-                stroke="#6b7280"
-                tick={{ fontSize: 10 }}
-                interval={0}
-              />
-              <YAxis stroke="#6b7280" tick={{ fontSize: 10 }} domain={[0, 240]} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "rgb(var(--color-surface))",
-                  border: "1px solid rgb(var(--color-border))",
-                  borderRadius: "8px",
-                  color: "#d1d5db",
-                  fontSize: "12px",
-                }}
-              />
-              <Legend
-                wrapperStyle={{ fontSize: "11px" }}
-                formatter={(value: string) => PARAM_LABELS[value] || value}
-              />
+      <div className="grid grid-cols-1 xl:grid-cols-[240px_minmax(0,1fr)] gap-4">
+        {/* ===== Panel lateral de variables ===== */}
+        <aside className="space-y-4">
+          <div className="rounded-xl border border-border bg-surface p-3">
+            <h4 className="text-[11px] font-medium text-muted font-mono uppercase tracking-widest mb-2">Variables</h4>
+            <div className="space-y-1.5">
+              {VARIABLES_PANEL.map((v) => {
+                const activa = variableActiva === v;
+                const ult = ultimoRegistrado(v);
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    disabled={readOnly}
+                    onClick={() => seleccionarVariable(v)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${
+                      activa ? "bg-surface-active" : "bg-background hover:bg-surface-active"
+                    } ${readOnly ? "cursor-default" : "cursor-pointer"}`}
+                    style={activa ? { borderColor: VARIABLE_COLORES[v] } : undefined}
+                  >
+                    <span className="inline-block w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: VARIABLE_COLORES[v] }} />
+                    <span className={`text-sm flex-1 ${activa ? "text-text" : "text-text-secondary"}`}>{VARIABLE_LABELS[v]}</span>
+                    <span className="text-xs font-mono text-muted">
+                      {ult != null ? `${ult} ${VARIABLE_UNIDADES[v]}` : "—"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-              {eventLines.map((ev, i) => (
-                <ReferenceLine
-                  key={`${ev.minuto}-${i}`}
-                  x={`${ev.minuto}'`}
-                  stroke={ev.color}
-                  strokeDasharray="4 4"
-                  label={{
-                    value: ev.label,
-                    position: "top",
-                    fill: ev.color,
-                    fontSize: 9,
+          {/* Input rápido */}
+          {!readOnly && variableActiva && (
+            <div className="rounded-xl border border-border bg-surface p-3" style={{ borderColor: VARIABLE_COLORES[variableActiva] }}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: VARIABLE_COLORES[variableActiva] }} />
+                <span className="text-sm font-medium text-text">{VARIABLE_LABELS[variableActiva]}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVariableActiva(null);
+                    setValorInput("");
                   }}
-                />
-              ))}
+                  className="ml-auto text-xs text-muted hover:text-text"
+                  aria-label="Quitar variable activa"
+                >
+                  ✕
+                </button>
+              </div>
+              {minutoSeleccionado != null ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-brand font-semibold whitespace-nowrap">{minutoSeleccionado}&apos;</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="any"
+                      value={valorInput}
+                      onChange={(e) => setValorInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && guardarValor()}
+                      placeholder={String(ultimoValor(variableActiva, minutoSeleccionado) ?? VARIABLE_DEFAULT[variableActiva] ?? "")}
+                      className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-text focus:outline-none focus:border-brand"
+                    />
+                    <span className="text-xs text-muted whitespace-nowrap">{VARIABLE_UNIDADES[variableActiva]}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    {ultimoValor(variableActiva, minutoSeleccionado) != null && (
+                      <button
+                        type="button"
+                        onClick={() => setValorInput(String(ultimoValor(variableActiva, minutoSeleccionado)))}
+                        className="text-[11px] text-muted hover:text-brand font-mono"
+                      >
+                        usar último: {ultimoValor(variableActiva, minutoSeleccionado)}
+                      </button>
+                    )}
+                    <Button size="sm" onClick={guardarValor} disabled={!valorInput.trim()}>
+                      <CornerDownLeft size={13} /> Registrar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-muted italic">Seleccioná un minuto en la grilla temporal…</p>
+              )}
+            </div>
+          )}
 
-              <Line type="monotone" dataKey="pas" stroke={PARAM_COLORES.pas} name="pas" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-              <Line type="monotone" dataKey="pad" stroke={PARAM_COLORES.pad} name="pad" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-              <Line type="monotone" dataKey="pam" stroke={PARAM_COLORES.pam} name="pam" strokeWidth={1.5} dot={{ r: 2 }} connectNulls strokeDasharray="5 5" />
-              <Line type="monotone" dataKey="fc" stroke={PARAM_COLORES.fc} name="fc" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-              <Line type="monotone" dataKey="spo2" stroke={PARAM_COLORES.spo2} name="spo2" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-              <Line type="monotone" dataKey="fr" stroke={PARAM_COLORES.fr} name="fr" strokeWidth={1.5} dot={{ r: 2 }} connectNulls />
-              <Line type="monotone" dataKey="etco2" stroke={PARAM_COLORES.etco2} name="etco2" strokeWidth={1.5} dot={{ r: 2 }} connectNulls />
-            </ComposedChart>
+          {/* Eventos de un toque */}
+          {!readOnly && (
+            <div className="rounded-xl border border-border bg-surface p-3">
+              <h4 className="text-[11px] font-medium text-muted font-mono uppercase tracking-widest mb-2">Eventos</h4>
+              <div className="grid grid-cols-2 gap-1.5">
+                {EVENTOS_INTRAOP.map((ev) => {
+                  const def = EVENTO_SIMBOLOS[ev.key];
+                  return (
+                    <button
+                      key={ev.key}
+                      type="button"
+                      onClick={() => guardarEvento(ev.key)}
+                      className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-border bg-background text-xs text-text-secondary hover:bg-surface-active transition-colors"
+                      title={`Marcar en minuto ${minutoSeleccionado ?? minutoActual}`}
+                    >
+                      <span
+                        className="inline-flex items-center justify-center w-4 h-4 rounded-full border text-[9px] font-bold font-mono shrink-0"
+                        style={{ borderColor: def.color, color: def.color }}
+                      >
+                        {def.simbolo}
+                      </span>
+                      {ev.label}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setShowEventoCustom((s) => !s)}
+                  className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg border border-dashed border-border bg-background text-xs text-muted hover:bg-surface-active transition-colors"
+                >
+                  <Plus size={12} /> Otro
+                </button>
+              </div>
+              {showEventoCustom && (
+                <div className="mt-2 flex gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="Evento personalizado…"
+                    value={eventoCustom}
+                    onChange={(e) => setEventoCustom(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && guardarEventoCustom()}
+                    className="flex-1 px-2 py-1 text-xs bg-background border border-border rounded-lg text-text focus:outline-none focus:border-brand"
+                  />
+                  <Button size="sm" variant="secondary" onClick={guardarEventoCustom} disabled={!eventoCustom.trim()}>
+                    +
+                  </Button>
+                </div>
+              )}
+              {minutoSeleccionado != null && (
+                <p className="mt-2 text-[11px] text-muted font-mono">Se marcará en minuto {minutoSeleccionado}&apos; (sino {minutoActual}&apos;)</p>
+              )}
+            </div>
+          )}
+        </aside>
+
+        {/* ===== Gráfica ===== */}
+        <div className="rounded-xl border border-border bg-surface p-4 min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <Clock size={16} className="text-brand" />
+              <h4 className="text-sm font-medium text-text-secondary">Registro Gráfico de Signos Vitales</h4>
+            </div>
+            <span className="text-xs font-mono text-muted">
+              minuto actual: {minutoActual}&apos;
+              {horaInicio ? ` · ${horaMinuto(minutoActual)}` : ""}
+            </span>
+          </div>
+
+          {resumenMinuto && <div className="mb-2">{resumenMinuto}</div>}
+
+          <GrillaIntraoperatoria
+            registros={sv}
+            minutoActual={minutoActual}
+            horaInicio={horaInicio}
+            minutoSeleccionado={minutoSeleccionado}
+            onSeleccionarMinuto={seleccionarMinuto}
+            readOnly={readOnly}
+          />
+
+          {/* Leyenda de símbolos */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-border/60">
+            {leyenda.map((item) => (
+              <span key={item.label} className="inline-flex items-center gap-1.5 text-[10px] font-mono text-muted uppercase tracking-wide">
+                {item.simbolo} {item.label}
+              </span>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Tabla de registros intraoperatorios */}
+      {/* ===== Tabla de registros intraoperatorios ===== */}
       {sv.length > 0 && (
         <div className="rounded-xl border border-border bg-surface p-4 overflow-x-auto">
           <h4 className="text-sm font-medium text-text-secondary mb-3">Registros intraoperatorios</h4>
-          <table className="w-full text-[12px] min-w-[720px]">
+          <table className="w-full text-[12px] min-w-[760px]">
             <thead>
               <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
                 <th className="text-left py-1.5 pr-2">Min</th>
                 <th className="text-left py-1.5 pr-2">Hora</th>
-                {Object.entries(PARAM_LABELS).map(([key, label]) => (
-                  <th key={key} className="text-left py-1.5 pr-2">{label}</th>
+                {VARIABLES_PANEL.map((v) => (
+                  <th key={v} className="text-left py-1.5 pr-2">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: VARIABLE_COLORES[v] }} />
+                      {VARIABLE_LABELS[v]}
+                    </span>
+                  </th>
                 ))}
                 <th className="text-left py-1.5">Eventos</th>
               </tr>
             </thead>
             <tbody>
-              {[...sv].sort((a, b) => (a.minuto ?? 0) - (b.minuto ?? 0)).map((s) => (
-                <tr key={s.minuto} className="border-b border-border/40">
-                  <td className="py-1.5 pr-2 font-mono text-brand">{`${s.minuto}'`}</td>
-                  <td className="py-1.5 pr-2 font-mono text-muted">
-                    {horaInicio
-                      ? new Date(horaInicio.getTime() + s.minuto * 60000).toLocaleTimeString("es-AR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false,
-                        })
-                      : "—"}
-                  </td>
-                  {Object.keys(PARAM_LABELS).map((key) => (
-                    <td key={key} className="py-1.5 pr-2 text-text">
-                      {s[key as keyof SignoVitalRegistro] ?? "—"}
+              {[...sv]
+                .sort((a, b) => (a.minuto ?? 0) - (b.minuto ?? 0))
+                .map((s) => (
+                  <tr key={s.minuto} className="border-b border-border/40 hover:bg-surface-active/60 transition-colors">
+                    <td className="py-1.5 pr-2 font-mono text-brand">{`${s.minuto}'`}</td>
+                    <td className="py-1.5 pr-2 font-mono text-muted">{horaMinuto(s.minuto)}</td>
+                    {VARIABLES_PANEL.map((v) => {
+                      const val = s[v];
+                      return (
+                        <td key={v} className="py-1.5 pr-2 font-mono text-text">
+                          {val != null && Number.isFinite(val) ? val : "—"}
+                        </td>
+                      );
+                    })}
+                    <td className="py-1.5 text-[11px] text-muted">
+                      {Array.isArray(s.eventos) && s.eventos.length ? s.eventos.join(", ") : "—"}
                     </td>
-                  ))}
-                  <td className="py-1.5 text-[11px] text-muted">
-                    {Array.isArray(s.eventos) && s.eventos.length ? s.eventos.join(", ") : "—"}
-                  </td>
-                </tr>
-              ))}
+                  </tr>
+                ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* Panel de ingreso rápido */}
-      {!readOnly && (
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Clock size={16} className="text-brand" />
-              <h4 className="text-sm font-medium text-text-secondary">
-                Registro rápido — Minuto {minutoActual}
-              </h4>
-            </div>
-            <div className="relative">
-              <Button variant="secondary" size="sm" onClick={() => setShowEventos(!showEventos)}>
-                <Plus size={14} /> Evento
-              </Button>
-              {showEventos && (
-                <div className="absolute z-50 right-0 top-full mt-1 bg-surface border border-border rounded-lg shadow-card p-2 w-56">
-                  {EVENTOS_PREDEFINIDOS.map((ev) => (
-                    <button
-                      key={ev.key}
-                      onClick={() => handleAddEvento(ev.key)}
-                      className="w-full px-3 py-1.5 text-left text-sm text-text hover:bg-border rounded transition-colors"
-                    >
-                      {ev.label}
-                    </button>
-                  ))}
-                  <div className="border-t border-border mt-1 pt-1 flex gap-1">
-                    <input
-                      type="text"
-                      placeholder="Evento personalizado..."
-                      value={eventoCustom}
-                      onChange={(e) => setEventoCustom(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAddEventoCustom()}
-                      className="flex-1 px-2 py-1 text-xs bg-background border border-border rounded text-text focus:outline-none focus:border-brand"
-                    />
-                    <button onClick={handleAddEventoCustom} className="text-xs text-brand px-2">+</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-            {Object.entries(PARAM_LABELS).map(([key, label]) => (
-              <div key={key}>
-                <label className="block text-xs text-muted mb-1">
-                  <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: PARAM_COLORES[key] }} />
-                  {label}
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={form[key as keyof typeof form]}
-                  onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
-                  className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-text focus:outline-none focus:border-brand"
-                />
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-3 flex justify-end">
-            <Button onClick={handleRegister}>
-              Registrar en minuto {minutoActual}
-            </Button>
-          </div>
         </div>
       )}
     </div>
