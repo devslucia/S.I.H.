@@ -1,22 +1,29 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import type { SignoVitalRegistro } from "@/types";
-import { EVENTO_SIMBOLOS, VARIABLE_COLORES } from "./intraoperatorio";
+import type { InfusionRegistro, SignoVitalRegistro } from "@/types";
+import { EVENTO_SIMBOLOS, GAS_FIO2, GASES_INTRAOP, VARIABLE_COLORES, BAL_INGRESO_COLOR, BAL_EGRESO_COLOR, colorDeDroga } from "./intraoperatorio";
 
 // Geometría de la grilla (pixels)
 const COL_W = 44; // ancho de cada columna de 5 minutos
 const MAIN_H = 230; // alto del área principal (escala 0-220)
 const MAIN_MAX = 220;
-const ROW_H = 54; // alto de cada renglón dedicado
+const ROW_H = 54; // alto de cada renglón dedicado (SpO₂ / EtCO₂)
 const ROW_GAP = 10;
+const GAS_ROW_H = 34; // alto de renglones de gases
+const GAS_GAP = 8;
+const FARM_BAND_H = 22; // banda de fármacos (bolos / infusiones)
 const BAND_H = 26; // franja de eventos
+const BAL_BAND_H = 22; // banda de balance de fluidos (por hora)
 const AXIS_H = 24;
 const MARGIN = { top: 10, right: 20, left: 46, bottom: 6 };
 
 const ROWS_TOP = MARGIN.top + MAIN_H + 14;
-const BAND_TOP = ROWS_TOP + 2 * (ROW_H + ROW_GAP) + 8;
+const GAS_TOP = ROWS_TOP + 2 * (ROW_H + ROW_GAP) + 8;
+const FARM_TOP = GAS_TOP + 2 * (GAS_ROW_H + GAS_GAP) + 6;
+const BAND_TOP = FARM_TOP + FARM_BAND_H + 2;
 const AXIS_TOP = BAND_TOP + BAND_H;
+const BAL_TOP = AXIS_TOP + AXIS_H + 4;
 
 const ROW_DEFS = [
   { key: "spo2" as const, min: 60, max: 100, label: "SpO₂ %" },
@@ -26,6 +33,8 @@ const ROW_DEFS = [
 const BORDE = "rgb(var(--color-border))";
 const GRID = "rgb(var(--color-border) / 0.55)";
 const MUTED = "rgb(var(--color-muted))";
+
+const BAL_MAX_ML = 2000;
 
 function clamp(v: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, v));
@@ -47,6 +56,14 @@ function yRow(rowIdx: number, v: number): number {
   const row = ROW_DEFS[rowIdx];
   const top = ROWS_TOP + rowIdx * (ROW_H + ROW_GAP);
   return top + (row.max - clamp(v, row.min, row.max)) * (ROW_H / (row.max - row.min));
+}
+
+function yGasRow(esFio2: boolean, v: number): number {
+  const top = GAS_TOP + (esFio2 ? GAS_ROW_H + GAS_GAP : 0);
+  if (esFio2) {
+    return top + (GAS_FIO2.max - clamp(v, GAS_FIO2.min, GAS_FIO2.max)) * (GAS_ROW_H / (GAS_FIO2.max - GAS_FIO2.min));
+  }
+  return top + (GASES_INTRAOP[0].max - clamp(v, GASES_INTRAOP[0].min, GASES_INTRAOP[0].max)) * (GAS_ROW_H / (GASES_INTRAOP[0].max - GASES_INTRAOP[0].min));
 }
 
 // Segmentos de línea con huecos (equivalente a connectNulls)
@@ -100,7 +117,7 @@ function GrillaIntraoperatoria({
     return {
       maxMin,
       width: MARGIN.left + nCols * COL_W + MARGIN.right,
-      height: AXIS_TOP + AXIS_H + MARGIN.bottom,
+      height: BAL_TOP + BAL_BAND_H + MARGIN.bottom,
     };
   }, [sv, minutoActual]);
 
@@ -227,6 +244,179 @@ function GrillaIntraoperatoria({
     return out;
   }, [minutosRegistrados, porMinuto]);
 
+  // Renglones de gases: anestésicos (Sevo/Iso/Des, 0-10%) + FiO₂ (21-100%)
+  const gases = useMemo(() => {
+    const out: React.ReactNode[] = [];
+    for (const g of GASES_INTRAOP) {
+      const segs = segmentosY(minutosRegistrados, porMinuto, (r) => r[g.key], yGasRow.bind(null, false));
+      segs.forEach((s, si) => {
+        out.push(
+          <polyline
+            key={`gline-${g.key}-${si}`}
+            points={s.map((p) => `${p.x},${p.y}`).join(" ")}
+            fill="none"
+            stroke={g.color}
+            strokeWidth={1.5}
+            opacity={0.9}
+          />
+        );
+      });
+      for (const m of minutosRegistrados) {
+        const r = porMinuto.get(m);
+        const v = r?.[g.key] ?? null;
+        if (v == null || !Number.isFinite(v)) continue;
+        out.push(
+          <circle key={`gpt-${g.key}-${m}`} cx={xFor(m)} cy={yGasRow(false, v)} r={2.6} fill={g.color} />
+        );
+      }
+    }
+    const fio2Segs = segmentosY(minutosRegistrados, porMinuto, (r) => r.fio2, yGasRow.bind(null, true));
+    fio2Segs.forEach((s, si) => {
+      out.push(
+        <polyline
+          key={`fio2line-${si}`}
+          points={s.map((p) => `${p.x},${p.y}`).join(" ")}
+          fill="none"
+          stroke={GAS_FIO2.color}
+          strokeWidth={1.5}
+          opacity={0.9}
+        />
+      );
+    });
+    for (const m of minutosRegistrados) {
+      const r = porMinuto.get(m);
+      const v = r?.fio2 ?? null;
+      if (v == null || !Number.isFinite(v)) continue;
+      out.push(
+        <circle key={`fio2pt-${m}`} cx={xFor(m)} cy={yGasRow(true, v)} r={2.6} fill={GAS_FIO2.color} />
+      );
+    }
+    return out;
+  }, [minutosRegistrados, porMinuto]);
+
+  // Indicador de modalidad ventilatoria (ARM / VM / EVP / Espontánea) en el renglón de gases
+  const modalidadesVent = useMemo(() => {
+    const out: React.ReactNode[] = [];
+    for (const m of minutosRegistrados) {
+      const r = porMinuto.get(m);
+      const mod = r?.modalidadVent;
+      if (!mod || typeof mod !== "string" || !mod.trim()) continue;
+      const x = xFor(m);
+      const y = GAS_TOP + 10;
+      out.push(
+        <text
+          key={`mod-${m}`}
+          x={x}
+          y={y}
+          textAnchor="middle"
+          fontSize={7}
+          fontWeight={700}
+          fill={MUTED}
+          fontFamily="IBM Plex Mono, monospace"
+        >
+          {mod.trim().slice(0, 8)}
+        </text>
+      );
+    }
+    return out;
+  }, [minutosRegistrados, porMinuto]);
+
+  // Banda de fármacos: bolos (marcadores) e infusiones (spans inicio→fin)
+  const farmacos = useMemo(() => {
+    const out: React.ReactNode[] = [];
+    const cy = FARM_TOP + FARM_BAND_H / 2;
+
+    for (const m of minutosRegistrados) {
+      const r = porMinuto.get(m);
+      const bolos = Array.isArray(r?.bolos) ? (r!.bolos as { droga: string; dosis: number; unidad: string }[]) : [];
+      bolos.forEach((b, i) => {
+        const color = colorDeDroga(b.droga);
+        const x = xFor(m);
+        const off = (i - (bolos.length - 1) / 2) * 14;
+        out.push(
+          <g key={`bolo-${m}-${i}`} transform={`translate(${x + off}, ${cy})`}>
+            <polygon
+              points={`0,-4 5,0 0,4 -5,0`}
+              fill={color}
+              stroke="#ffffff"
+              strokeWidth={0.6}
+            >
+              <title>{`${b.droga} ${b.dosis} ${b.unidad} — min ${m}'`}</title>
+            </polygon>
+          </g>
+        );
+      });
+    }
+
+    const infusiones: (InfusionRegistro & { minuto: number })[] = [];
+    for (const r of sv) {
+      if (Array.isArray(r.infusiones)) {
+        for (const i of r.infusiones) infusiones.push({ ...i, minuto: r.minuto });
+      }
+    }
+    infusiones.forEach((inf, idx) => {
+      const color = colorDeDroga(inf.droga);
+      const x1 = xFor(inf.inicio);
+      const x2 = xFor(inf.fin != null ? inf.fin : maxMin);
+      const y = cy - 7;
+      out.push(
+        <g key={`inf-${inf.id ?? idx}`}>
+          <line x1={x1} y1={y} x2={Math.max(x2, x1 + 4)} y2={y} stroke={color} strokeWidth={3} opacity={0.85}>
+            <title>{`${inf.droga} · ${inf.velocidad} · desde ${inf.inicio}'${inf.fin != null ? ` · hasta ${inf.fin}'` : " · activa"}`}</title>
+          </line>
+          <polygon points={`${x1},${y - 4} ${x1 + 5},${y} ${x1},${y + 4}`} fill={color}>
+            <title>{`${inf.droga} · ${inf.velocidad} · desde ${inf.inicio}'`}</title>
+          </polygon>
+          {inf.fin != null && (
+            <line x1={x2} y1={y - 4} x2={x2} y2={y + 4} stroke={color} strokeWidth={1.5}>
+              <title>{`fin ${inf.fin}'`}</title>
+            </line>
+          )}
+          <text x={x1 + 8} y={y - 4} fontSize={7} fill={color} fontFamily="IBM Plex Mono, monospace">
+            {inf.droga.slice(0, 10)}
+          </text>
+        </g>
+      );
+    });
+
+    return out;
+  }, [minutosRegistrados, porMinuto, sv, maxMin]);
+
+  // Banda de balance de fluidos: barras por hora (ingresos / egresos)
+  const balance = useMemo(() => {
+    const out: React.ReactNode[] = [];
+    const items = sv
+      .filter((r) => r.balance && ((r.balance?.ingresos ?? 0) > 0 || (r.balance?.egresos ?? 0) > 0))
+      .sort((a, b) => a.minuto - b.minuto);
+    const maxVal = Math.max(BAL_MAX_ML, ...items.map((r) => Math.max(r.balance?.ingresos ?? 0, r.balance?.egresos ?? 0)));
+    const scale = BAL_BAND_H / 2 / maxVal;
+    const midY = BAL_TOP + BAL_BAND_H / 2;
+    for (const r of items) {
+      const x = xFor(r.minuto);
+      const ing = r.balance?.ingresos ?? 0;
+      const egr = r.balance?.egresos ?? 0;
+      if (ing > 0) {
+        const h = ing * scale;
+        out.push(
+          <g key={`bal-ing-${r.minuto}`}>
+            <rect x={x - 2.5} y={midY - h} width={5} height={h} fill={BAL_INGRESO_COLOR} opacity={0.85} />
+            <title>{`Hora ${r.minuto}'–${r.minuto + 59}': ingresos ${ing} ml`}</title>
+          </g>
+        );
+      }
+      if (egr > 0) {
+        const h = egr * scale;
+        out.push(
+          <g key={`bal-egr-${r.minuto}`}>
+            <rect x={x - 2.5} y={midY} width={5} height={h} fill={BAL_EGRESO_COLOR} opacity={0.85} />
+            <title>{`Hora ${r.minuto}'–${r.minuto + 59}': egresos ${egr} ml`}</title>
+          </g>
+        );
+      }
+    }
+    return out;
+  }, [sv]);
+
   // Franja de eventos (símbolos FAAAAR)
   const eventos = useMemo(() => {
     const out: React.ReactNode[] = [];
@@ -350,6 +540,12 @@ function GrillaIntraoperatoria({
         );
       }
     });
+    out.push(
+      <line key="gasb-0" x1={MARGIN.left} y1={GAS_TOP} x2={width - MARGIN.right} y2={GAS_TOP} stroke={BORDE} strokeWidth={1} />,
+      <line key="gasb-1" x1={MARGIN.left} y1={GAS_TOP + GAS_ROW_H + GAS_GAP} x2={width - MARGIN.right} y2={GAS_TOP + GAS_ROW_H + GAS_GAP} stroke={BORDE} strokeWidth={1} />,
+      <line key="farmb" x1={MARGIN.left} y1={FARM_TOP} x2={width - MARGIN.right} y2={FARM_TOP} stroke={BORDE} strokeWidth={1} />,
+      <line key="balb" x1={MARGIN.left} y1={BAL_TOP} x2={width - MARGIN.right} y2={BAL_TOP} stroke={BORDE} strokeWidth={1} />
+    );
     return out;
   }, [width]);
 
@@ -360,7 +556,8 @@ function GrillaIntraoperatoria({
       const x = xFor(m);
       out.push(
         <text key={`xl-${m}`} x={x} y={AXIS_TOP + 14} textAnchor="middle" fontSize={9} fill={MUTED} fontFamily="IBM Plex Mono, monospace">
-          {m}&apos;        </text>
+          {m}&apos;
+        </text>
       );
       if (m % 60 === 0 && horaInicio) {
         const t = new Date(horaInicio.getTime() + m * 60000).toLocaleTimeString("es-AR", {
@@ -398,6 +595,56 @@ function GrillaIntraoperatoria({
         </text>
       );
     });
+    out.push(
+      <text
+        key="gasl"
+        x={MARGIN.left - 6}
+        y={GAS_TOP + GAS_ROW_H / 2 + 3}
+        textAnchor="end"
+        fontSize={9}
+        fill={GASES_INTRAOP[0].color}
+        fontWeight={600}
+        fontFamily="IBM Plex Mono, monospace"
+      >
+        Gases %
+      </text>,
+      <text
+        key="fio2l"
+        x={MARGIN.left - 6}
+        y={GAS_TOP + GAS_ROW_H + GAS_GAP + GAS_ROW_H / 2 + 3}
+        textAnchor="end"
+        fontSize={9}
+        fill={GAS_FIO2.color}
+        fontWeight={600}
+        fontFamily="IBM Plex Mono, monospace"
+      >
+        {GAS_FIO2.label}
+      </text>,
+      <text
+        key="farml"
+        x={MARGIN.left - 6}
+        y={FARM_TOP + FARM_BAND_H / 2 + 3}
+        textAnchor="end"
+        fontSize={9}
+        fill={MUTED}
+        fontWeight={600}
+        fontFamily="IBM Plex Mono, monospace"
+      >
+        Fármacos
+      </text>,
+      <text
+        key="ball"
+        x={MARGIN.left - 6}
+        y={BAL_TOP + BAL_BAND_H / 2 + 3}
+        textAnchor="end"
+        fontSize={9}
+        fill={MUTED}
+        fontWeight={600}
+        fontFamily="IBM Plex Mono, monospace"
+      >
+        Balance
+      </text>
+    );
     return out;
   }, [columnas, horaInicio]);
 
@@ -438,8 +685,14 @@ function GrillaIntraoperatoria({
           />
         ))}
         {puntosRenglones}
+        {gases}
+        {modalidadesVent}
+        <line x1={MARGIN.left} y1={FARM_TOP} x2={width - MARGIN.right} y2={FARM_TOP} stroke={BORDE} strokeWidth={1} />
+        {farmacos}
         <line x1={MARGIN.left} y1={BAND_TOP} x2={width - MARGIN.right} y2={BAND_TOP} stroke={BORDE} strokeWidth={1} />
         {eventos}
+        <line x1={MARGIN.left} y1={BAL_TOP} x2={width - MARGIN.right} y2={BAL_TOP} stroke={BORDE} strokeWidth={1} />
+        {balance}
         {lineaMinutoActual}
         {ejes}
       </svg>
