@@ -118,6 +118,11 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
   const [firmarMatricula, setFirmarMatricula] = useState("");
   const autoSaveRef = useRef(false);
   const anestesiologoAsignadoRef = useRef("");
+  const [equipoCirugia, setEquipoCirugia] = useState<{
+    cirujano: { nombre: string | null; matricula: string | null } | null;
+    ayudantes: { nombre: string | null; matricula: string | null }[];
+    hayEquipo: boolean;
+  }>({ cirujano: null, ayudantes: [], hayEquipo: false });
   const { toast } = useToast();
   const signosVitalesRef = useRef<SignoVitalRegistro[]>([]);
   const savingSignosRef = useRef(false);
@@ -184,9 +189,6 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
             form.reset({
               anestesiologo: p.anestesiologo || "",
               matriculaAnestesiologo: p.matriculaAnestesiologo || "",
-              cirujano: p.cirujano || "",
-              matriculaCirujano: p.matriculaCirujano || "",
-              ayudantes: p.ayudantes || "",
               fechaCirugia: p.fechaCirugia ? new Date(p.fechaCirugia).toISOString().slice(0, 16) : "",
               alergiaDetalle: p.alergiaDetalle || "",
               antecedentesImportancia: p.antecedentesImportancia || "",
@@ -257,6 +259,9 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
           // Respeta ediciones manuales: solo sobrescribe si el campo está vacío o si el
           // valor guardado proviene de un autocompletado previo (trackeado en sessionStorage).
           const asignado = data.anestesiologoAsignado;
+          if (data.equipoCirugia) {
+            setEquipoCirugia(data.equipoCirugia);
+          }
           const storageKey = `sih-pa-anestesiologo-${internacionId}`;
           if (asignado) {
             const nombreAsignado = asignado.nombre;
@@ -659,9 +664,6 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     <Input label="Anestesiólogo" placeholder={anestesiologoAsignadoRef.current || "Ingresar anestesiólogo a cargo..."} {...form.register("anestesiologo")} disabled={firmado} />
                     <Input label="Matrícula Anestesiólogo" placeholder="Matrícula..." {...form.register("matriculaAnestesiologo")} disabled={firmado} />
-                    <Input label="Cirujano Principal" {...form.register("cirujano")} disabled={firmado} />
-                    <Input label="Matrícula Cirujano" {...form.register("matriculaCirujano")} disabled={firmado} />
-                    <Input label="Ayudante(s)" {...form.register("ayudantes")} disabled={firmado} />
                     <Input label="Fecha Cirugía" type="datetime-local" {...form.register("fechaCirugia")} disabled={firmado} />
                     <Input label="Peso (kg)" type="number" step="0.1" {...form.register("peso", { valueAsNumber: true })} disabled={firmado} />
                     <Input label="Talla (cm)" type="number" step="0.1" {...form.register("talla", { valueAsNumber: true })} disabled={firmado} />
@@ -669,6 +671,29 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                       <label className="block text-sm text-muted">IMC (calculado)</label>
                       <div className={`flex items-center rounded-md border px-3 py-2 text-sm ${form.watch("imc") ? "border-border bg-surface-active text-text" : "border-border/60 bg-background text-muted"}`}>
                         {form.watch("imc") ? `${form.watch("imc")} kg/m²` : "—"}
+                      </div>
+                    </div>
+                    <div className="sm:col-span-2 lg:col-span-3 xl:col-span-4">
+                      <div className="rounded-lg border border-border/70 bg-surface-active/40 px-3 py-2.5 text-xs text-muted">
+                        {equipoCirugia.hayEquipo ? (
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                            <span className="font-mono uppercase tracking-widest text-[10px] text-muted">Equipo quirúrgico (de la cirugía)</span>
+                            <span className="text-text-secondary">
+                              <span className="font-semibold">Cirujano:</span> {equipoCirugia.cirujano?.nombre || "—"}
+                              {equipoCirugia.cirujano?.matricula ? ` (Mat. ${equipoCirugia.cirujano.matricula})` : ""}
+                            </span>
+                            {equipoCirugia.ayudantes.length > 0 && (
+                              <span className="text-text-secondary">
+                                <span className="font-semibold">Ayudantes:</span>{" "}
+                                {equipoCirugia.ayudantes
+                                  .map((a) => `${a.nombre || "—"}${a.matricula ? ` (Mat. ${a.matricula})` : ""}`)
+                                  .join(", ")}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="italic">Sin equipo quirúrgico asignado en la cirugía — se tomará de la programación quirúrgica.</span>
+                        )}
                       </div>
                     </div>
                   </div>
