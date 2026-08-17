@@ -61,7 +61,15 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
 
   const cirugia = await prisma.cirugia.findFirst({
     where: { internacionId: params.internacionId },
-    select: { id: true, anestesiologoId: true, cirujanoId: true, ayudante1Id: true, ayudante2Id: true },
+    select: {
+      id: true,
+      anestesiologoId: true,
+      cirujanoId: true,
+      ayudante1Id: true,
+      ayudante2Id: true,
+      horaInicio: true,
+      horaFin: true,
+    },
   });
 
   let anestesiologoAsignado: { nombre: string; matricula: string | null } | null = null;
@@ -114,6 +122,7 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
     protocolo: protocolo ?? null,
     anestesiologoAsignado,
     equipoCirugia,
+    tiemposCirugia: { inicio: cirugia?.horaInicio ?? null, fin: cirugia?.horaFin ?? null },
     paciente: episodio.internacion?.paciente ?? null,
     internacion: episodio.internacion ? {
       id: episodio.internacion.id,

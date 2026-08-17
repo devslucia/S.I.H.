@@ -204,6 +204,22 @@ export default function ImprimirCarpetaPage() {
     () => Object.fromEntries(SECCIONES.map((s) => [s.key, true])) as Record<SeccionKey, boolean>
   );
 
+  const cirugiaConHoras = data?.cirugias.find((c) => c.horaInicio || c.horaFin) ?? null;
+
+  const horaEventoAnestesia = (key: string): string | null => {
+    const regs = hc?.protocoloAnestesia?.signosVitales as unknown as
+      | { minuto?: number; eventos?: string[] }[]
+      | null;
+    const base = hc?.protocoloAnestesia?.fechaCirugia ? new Date(hc.protocoloAnestesia.fechaCirugia).getTime() : null;
+    if (!regs || base == null) return null;
+    for (const r of regs) {
+      if (Array.isArray(r.eventos) && r.eventos.includes(key) && typeof r.minuto === "number") {
+        return new Date(base + r.minuto * 60000).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+      }
+    }
+    return null;
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -569,6 +585,10 @@ export default function ImprimirCarpetaPage() {
               <Field label="Cirujano" value={`${hc.protocoloAnestesia.cirujano || '—'}${hc.protocoloAnestesia.matriculaCirujano ? ` (Mat. ${hc.protocoloAnestesia.matriculaCirujano})` : ''}`} />
               <Field label="Ayudantes" value={hc.protocoloAnestesia.ayudantes} />
               <Field label="Fecha de Cirugía" value={hc.protocoloAnestesia.fechaCirugia ? formatDateTime(hc.protocoloAnestesia.fechaCirugia) : null} />
+              <Field label="Hora inicio anestesia" value={horaEventoAnestesia('inicio_anestesia')} />
+              <Field label="Hora fin anestesia" value={horaEventoAnestesia('fin_anestesia')} />
+              <Field label="Hora inicio cirugía" value={cirugiaConHoras?.horaInicio} />
+              <Field label="Hora fin cirugía" value={cirugiaConHoras?.horaFin} />
 
               <p style={{ fontSize: '10pt', fontWeight: 'bold', marginTop: '8px', marginBottom: '4px' }}>Evaluación Preanestésica</p>
               <Field label="Alergias" value={hc.protocoloAnestesia.alergiaDetalle || 'No especificadas'} />

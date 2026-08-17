@@ -126,20 +126,35 @@ interface ProtocoloPdfData {
   nombreFirmante: string | null;
   matriculaFirmante: string | null;
   firmadoEn: string | Date | null;
+  signosVitales: unknown;
 }
 
 interface ProtocoloPDFProps {
   protocolo: ProtocoloPdfData;
   paciente: { apellido: string; nombre: string; dni: string; grupoSangre?: string | null };
   internacion: { numero: number };
+  cirugia: { horaInicio: string | null; horaFin: string | null } | null;
 }
 
-function ProtocoloPDF({ protocolo, paciente, internacion }: ProtocoloPDFProps) {
+function ProtocoloPDF({ protocolo, paciente, internacion, cirugia }: ProtocoloPDFProps) {
   const p = protocolo;
   const premedicacion = (p.premedicacion as PremedicacionItem[] | null) ?? null;
   const signosVitaPreop = (p.signosVitaPreop as SignoVitalPreop | null) ?? null;
   const modalidadVentFranja = (p.modalidadVentFranja as ModalidadVentFranja[] | null) ?? null;
   const ald = (p.aldreteActividad ?? 0) + (p.aldreteRespiracion ?? 0) + (p.aldreteCirculacion ?? 0) + (p.aldreteConciencia ?? 0) + (p.aldreteSpo2 ?? 0);
+
+  const horaDeEvento = (key: string): string | null => {
+    const registros = Array.isArray(p.signosVitales) ? (p.signosVitales as { minuto?: number; eventos?: unknown }[]) : [];
+    const base = p.fechaCirugia ? new Date(p.fechaCirugia).getTime() : null;
+    if (base == null) return null;
+    for (const r of registros) {
+      const evs = Array.isArray(r.eventos) ? (r.eventos as string[]) : [];
+      if (evs.includes(key) && typeof r.minuto === "number" && Number.isFinite(r.minuto)) {
+        return new Date(base + r.minuto * 60000).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+      }
+    }
+    return null;
+  };
 
   return (
     <Document>
@@ -160,10 +175,14 @@ function ProtocoloPDF({ protocolo, paciente, internacion }: ProtocoloPDFProps) {
         <Text style={{ fontSize: 13, fontWeight: "bold", textAlign: "center", marginBottom: 12 }}>PROTOCOLO DE ANESTESIA</Text>
 
         {/* Bloque 1 */}
-        <SectionTitle>1. Identificación - Equipo</SectionTitle>
+        <SectionTitle>1. Identificación - Equipo - Tiempos</SectionTitle>
         <Field label="Anestesiólogo" value={`${p.anestesiologo || "—"} ${p.matriculaAnestesiologo ? `(Mat. ${p.matriculaAnestesiologo})` : ""}`} />
         <Field label="Cirujano" value={`${p.cirujano || "—"} ${p.matriculaCirujano ? `(Mat. ${p.matriculaCirujano})` : ""}`} />
         <Field label="Ayudantes" value={p.ayudantes} />
+        <Field label="Hora inicio anestesia" value={horaDeEvento("inicio_anestesia")} />
+        <Field label="Hora fin anestesia" value={horaDeEvento("fin_anestesia")} />
+        <Field label="Hora inicio cirugía" value={cirugia?.horaInicio} />
+        <Field label="Hora fin cirugía" value={cirugia?.horaFin} />
         <Field label="Peso" value={p.peso ? `${p.peso} kg` : "—"} />
         <Field label="Talla" value={p.talla ? `${p.talla} cm` : "—"} />
         <Field label="IMC" value={p.imc != null ? `${p.imc} kg/m²` : "—"} />
@@ -304,8 +323,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const paciente = internacion.paciente;
 
+  const cirugia = await prisma.cirugia.findFirst({
+    where: { internacionId: internacion.id },
+    select: { horaInicio: true, horaFin: true },
+  });
+
   const buffer = await renderToBuffer(
-    <ProtocoloPDF protocolo={protocolo} paciente={paciente} internacion={internacion} />
+    <ProtocoloPDF protocolo={protocolo} paciente={paciente} internacion={internacion} cirugia={cirugia} />
   );
 
   return new Response(new Uint8Array(buffer), {
