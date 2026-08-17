@@ -355,14 +355,14 @@ function GraficoSignosVitales({
         })
       : `${m}'`;
 
-  const inputCls = "rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-text focus:outline-none focus:border-brand";
-  const selectCls = "rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-text focus:outline-none focus:border-brand";
+  const inputCls = "rounded-lg border border-border bg-background px-2 py-2 min-h-[40px] text-sm text-text focus:outline-none focus:border-brand";
+  const selectCls = "rounded-lg border border-border bg-background px-2 py-2 min-h-[40px] text-sm text-text focus:outline-none focus:border-brand";
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 xl:grid-cols-[240px_minmax(0,1fr)] gap-4">
         {/* ===== Panel lateral ===== */}
-        <aside className="space-y-4">
+        <aside className="space-y-4 min-w-0">
           <div className="rounded-xl border border-border bg-surface p-3">
             <h4 className="text-[11px] font-medium text-muted font-mono uppercase tracking-widest mb-2">Variables</h4>
             <div className="space-y-1.5">
@@ -421,7 +421,7 @@ function GraficoSignosVitales({
                       onChange={(e) => setValorInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && guardarValor()}
                       placeholder={String(ultimoValor(variableActiva, minutoSeleccionado) ?? VARIABLE_DEFAULT[variableActiva] ?? "")}
-                      className={inputCls}
+                      className={`${inputCls} flex-1 min-w-0`}
                     />
                     <span className="text-xs text-muted whitespace-nowrap">{VARIABLE_UNIDADES[variableActiva]}</span>
                   </div>
@@ -435,7 +435,7 @@ function GraficoSignosVitales({
                         usar último: {ultimoValor(variableActiva, minutoSeleccionado)}
                       </button>
                     )}
-                    <Button size="sm" onClick={guardarValor} disabled={!valorInput.trim()}>
+                    <Button size="sm" onClick={guardarValor} disabled={!valorInput.trim()} className="min-h-[40px] whitespace-nowrap">
                       <CornerDownLeft size={13} /> Registrar
                     </Button>
                   </div>
@@ -459,7 +459,7 @@ function GraficoSignosVitales({
                   <h5 className="text-xs font-medium text-text-secondary mb-1.5">Gases inhalatorios</h5>
                   <div className="grid grid-cols-2 gap-1.5">
                     {GASES_INTRAOP.map((g) => (
-                      <label key={g.key} className="flex items-center gap-1.5">
+                      <label key={g.key} className="flex items-center gap-1.5 min-w-0">
                         <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: g.color }} />
                         <input
                           type="number"
@@ -469,11 +469,11 @@ function GraficoSignosVitales({
                           value={gasesInput[g.key]}
                           onChange={(e) => setGasesInput((prev) => ({ ...prev, [g.key]: e.target.value }))}
                           onKeyDown={(e) => e.key === "Enter" && guardarGases()}
-                          className={`${inputCls} w-full px-1.5 py-1 text-xs`}
+                          className={`${inputCls} w-full min-w-0 text-xs`}
                         />
                       </label>
                     ))}
-                    <label className="flex items-center gap-1.5">
+                    <label className="flex items-center gap-1.5 min-w-0">
                       <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: GAS_FIO2.color }} />
                       <input
                         type="number"
@@ -483,22 +483,21 @@ function GraficoSignosVitales({
                         value={gasesInput.fio2}
                         onChange={(e) => setGasesInput((prev) => ({ ...prev, fio2: e.target.value }))}
                         onKeyDown={(e) => e.key === "Enter" && guardarGases()}
-                        className={`${inputCls} w-full px-1.5 py-1 text-xs`}
+                        className={`${inputCls} w-full min-w-0 text-xs`}
                       />
                     </label>
-                    <div />
-                    <Button size="sm" variant="secondary" onClick={guardarGases}>
-                      Registrar gases
-                    </Button>
                   </div>
+                  <Button size="sm" variant="secondary" onClick={guardarGases} className="mt-1.5 w-full min-h-[40px] whitespace-nowrap">
+                    Registrar gases
+                  </Button>
                   <p className="mt-1.5 text-[10px] text-muted font-mono">En minuto {minutoSeleccionado ?? minutoActual}&apos; (hora {horaMinuto(minutoSeleccionado ?? minutoActual)})</p>
                 </div>
 
                 {/* Modalidad ventilatoria */}
                 <div>
                   <h5 className="text-xs font-medium text-text-secondary mb-1.5">Modalidad ventilatoria</h5>
-                  <div className="flex items-center gap-1.5">
-                    <select value={modalidadSel} onChange={(e) => setModalidadSel(e.target.value)} className={`${selectCls} flex-1 px-1.5 py-1 text-xs`}>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <select value={modalidadSel} onChange={(e) => setModalidadSel(e.target.value)} className={`${selectCls} flex-1 min-w-[160px] text-xs`}>
                       <option value="">— seleccionar —</option>
                       {MODALIDADES_VENT.map((m) => (
                         <option key={m} value={m}>
@@ -506,7 +505,7 @@ function GraficoSignosVitales({
                         </option>
                       ))}
                     </select>
-                    <Button size="sm" variant="secondary" onClick={aplicarModalidad} disabled={!modalidadSel}>
+                    <Button size="sm" variant="secondary" onClick={aplicarModalidad} disabled={!modalidadSel} className="min-h-[40px] shrink-0 whitespace-nowrap">
                       Aplicar
                     </Button>
                   </div>
@@ -516,8 +515,8 @@ function GraficoSignosVitales({
                 <div>
                   <h5 className="text-xs font-medium text-text-secondary mb-1.5">Bolo</h5>
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <select value={boloDroga} onChange={(e) => setBoloDroga(e.target.value)} className={`${selectCls} flex-1 px-1.5 py-1 text-xs`}>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <select value={boloDroga} onChange={(e) => setBoloDroga(e.target.value)} className={`${selectCls} flex-1 min-w-[150px] text-xs`}>
                         {DROGAS_BOLO.map((d) => (
                           <option key={d} value={d}>
                             {d}
@@ -532,9 +531,9 @@ function GraficoSignosVitales({
                         value={boloDosis}
                         onChange={(e) => setBoloDosis(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && guardarBolo()}
-                        className={`${inputCls} w-16 px-1.5 py-1 text-xs`}
+                        className={`${inputCls} w-20 shrink-0 min-w-0 text-xs`}
                       />
-                      <select value={boloUnidad} onChange={(e) => setBoloUnidad(e.target.value)} className={`${selectCls} px-1.5 py-1 text-xs`}>
+                      <select value={boloUnidad} onChange={(e) => setBoloUnidad(e.target.value)} className={`${selectCls} min-w-[74px] shrink-0 text-xs`}>
                         {UNIDADES_BOLO.map((u) => (
                           <option key={u} value={u}>
                             {u}
@@ -542,8 +541,8 @@ function GraficoSignosVitales({
                         ))}
                       </select>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="secondary" onClick={guardarBolo} disabled={!boloDosis.trim()}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button size="sm" variant="secondary" onClick={guardarBolo} disabled={!boloDosis.trim()} className="min-h-[40px] whitespace-nowrap">
                         <Plus size={12} /> Registrar bolo
                       </Button>
                       <span className="text-[10px] text-muted font-mono">min {minutoSeleccionado ?? minutoActual}&apos;</span>
@@ -555,22 +554,22 @@ function GraficoSignosVitales({
                 <div>
                   <h5 className="text-xs font-medium text-text-secondary mb-1.5">Infusión continua</h5>
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <select value={infDroga} onChange={(e) => setInfDroga(e.target.value)} className={`${selectCls} flex-1 px-1.5 py-1 text-xs`}>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <select value={infDroga} onChange={(e) => setInfDroga(e.target.value)} className={`${selectCls} flex-1 min-w-[150px] text-xs`}>
                         {DROGAS_INFUSION.map((d) => (
                           <option key={d} value={d}>
                             {d}
                           </option>
                         ))}
                       </select>
-                      <select value={infVelocidad} onChange={(e) => setInfVelocidad(e.target.value)} className={`${selectCls} px-1.5 py-1 text-xs`}>
+                      <select value={infVelocidad} onChange={(e) => setInfVelocidad(e.target.value)} className={`${selectCls} min-w-[90px] shrink-0 text-xs`}>
                         {VELOCIDADES_INFUSION.map((v) => (
                           <option key={v} value={v}>
                             {v}
                           </option>
                         ))}
                       </select>
-                      <Button size="sm" variant="secondary" onClick={iniciarInfusion}>
+                      <Button size="sm" variant="secondary" onClick={iniciarInfusion} className="min-h-[40px] shrink-0 whitespace-nowrap">
                         Iniciar
                       </Button>
                     </div>
@@ -603,7 +602,7 @@ function GraficoSignosVitales({
                     <p className="text-[10px] text-muted font-mono">
                       Hora {labelHora(horaBalance)}–{labelHora(horaBalance + 60)}
                     </p>
-                    <div className="flex items-center gap-1.5">
+                    <div className="grid grid-cols-2 gap-1.5">
                       <input
                         type="number"
                         inputMode="decimal"
@@ -611,7 +610,7 @@ function GraficoSignosVitales({
                         value={balIngresos}
                         onChange={(e) => setBalIngresos(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && guardarBalance()}
-                        className={`${inputCls} flex-1 px-1.5 py-1 text-xs`}
+                        className={`${inputCls} w-full min-w-0 text-xs`}
                       />
                       <input
                         type="number"
@@ -620,12 +619,12 @@ function GraficoSignosVitales({
                         value={balEgresos}
                         onChange={(e) => setBalEgresos(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && guardarBalance()}
-                        className={`${inputCls} flex-1 px-1.5 py-1 text-xs`}
+                        className={`${inputCls} w-full min-w-0 text-xs`}
                       />
-                      <Button size="sm" variant="secondary" onClick={guardarBalance} disabled={!balIngresos.trim() && !balEgresos.trim()}>
-                        Guardar
-                      </Button>
                     </div>
+                    <Button size="sm" variant="secondary" onClick={guardarBalance} disabled={!balIngresos.trim() && !balEgresos.trim()} className="w-full sm:w-auto min-h-[40px] whitespace-nowrap">
+                      Guardar
+                    </Button>
                     {balanceHoraActual && (balanceHoraActual.ingresos != null || balanceHoraActual.egresos != null) && (
                       <p className="text-[10px] font-mono text-brand">
                         {`actual: +${balanceHoraActual.ingresos ?? 0} / -${balanceHoraActual.egresos ?? 0} ml`}
@@ -678,7 +677,7 @@ function GraficoSignosVitales({
                     value={eventoCustom}
                     onChange={(e) => setEventoCustom(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && guardarEventoCustom()}
-                    className="flex-1 px-2 py-2 text-xs bg-background border border-border rounded-lg text-text focus:outline-none focus:border-brand"
+                    className="flex-1 px-2 py-2 min-h-[40px] text-xs bg-background border border-border rounded-lg text-text focus:outline-none focus:border-brand"
                   />
                   <Button size="sm" variant="secondary" onClick={guardarEventoCustom} disabled={!eventoCustom.trim()}>
                     +
