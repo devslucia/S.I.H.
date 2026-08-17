@@ -375,7 +375,7 @@ function GraficoSignosVitales({
                     type="button"
                     disabled={readOnly}
                     onClick={() => seleccionarVariable(v)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 min-h-[40px] rounded-lg border text-left transition-colors ${
                       activa ? "bg-surface-active" : "bg-background hover:bg-surface-active"
                     } ${readOnly ? "cursor-default" : "cursor-pointer"}`}
                     style={activa ? { borderColor: VARIABLE_COLORES[v] } : undefined}
@@ -641,7 +641,7 @@ function GraficoSignosVitales({
           {!readOnly && (
             <div className="rounded-xl border border-border bg-surface p-3">
               <h4 className="text-[11px] font-medium text-muted font-mono uppercase tracking-widest mb-2">Eventos</h4>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {EVENTOS_INTRAOP.map((ev) => {
                   const def = EVENTO_SIMBOLOS[ev.key];
                   return (
@@ -649,7 +649,7 @@ function GraficoSignosVitales({
                       key={ev.key}
                       type="button"
                       onClick={() => guardarEvento(ev.key)}
-                      className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-border bg-background text-xs text-text-secondary hover:bg-surface-active transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] rounded-lg border border-border bg-background text-xs text-text-secondary hover:bg-surface-active transition-colors"
                       title={`Marcar en minuto ${minutoSeleccionado ?? minutoActual}`}
                     >
                       <span
@@ -665,7 +665,7 @@ function GraficoSignosVitales({
                 <button
                   type="button"
                   onClick={() => setShowEventoCustom((s) => !s)}
-                  className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg border border-dashed border-border bg-background text-xs text-muted hover:bg-surface-active transition-colors"
+                  className="flex items-center justify-center gap-1 px-3 py-2.5 min-h-[40px] rounded-lg border border-dashed border-border bg-background text-xs text-muted hover:bg-surface-active transition-colors"
                 >
                   <Plus size={12} /> Otro
                 </button>
@@ -678,7 +678,7 @@ function GraficoSignosVitales({
                     value={eventoCustom}
                     onChange={(e) => setEventoCustom(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && guardarEventoCustom()}
-                    className="flex-1 px-2 py-1 text-xs bg-background border border-border rounded-lg text-text focus:outline-none focus:border-brand"
+                    className="flex-1 px-2 py-2 text-xs bg-background border border-border rounded-lg text-text focus:outline-none focus:border-brand"
                   />
                   <Button size="sm" variant="secondary" onClick={guardarEventoCustom} disabled={!eventoCustom.trim()}>
                     +

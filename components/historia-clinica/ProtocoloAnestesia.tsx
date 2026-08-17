@@ -123,6 +123,10 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
     ayudantes: { nombre: string | null; matricula: string | null }[];
     hayEquipo: boolean;
   }>({ cirujano: null, ayudantes: [], hayEquipo: false });
+  const [tiemposCirugia, setTiemposCirugia] = useState<{ inicio: string | null; fin: string | null }>({
+    inicio: null,
+    fin: null,
+  });
   const { toast } = useToast();
   const signosVitalesRef = useRef<SignoVitalRegistro[]>([]);
   const savingSignosRef = useRef(false);
@@ -261,6 +265,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
           const asignado = data.anestesiologoAsignado;
           if (data.equipoCirugia) {
             setEquipoCirugia(data.equipoCirugia);
+            setTiemposCirugia(data.tiemposCirugia);
           }
           const storageKey = `sih-pa-anestesiologo-${internacionId}`;
           if (asignado) {
@@ -694,6 +699,21 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                         ) : (
                           <span className="italic">Sin equipo quirúrgico asignado en la cirugía — se tomará de la programación quirúrgica.</span>
                         )}
+                        {tiemposCirugia.inicio || tiemposCirugia.fin ? (
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border/50 pt-1.5">
+                            <span className="font-mono uppercase tracking-widest text-[10px] text-muted">Tiempos de cirugía (de la cirugía)</span>
+                            {tiemposCirugia.inicio && (
+                              <span className="text-text-secondary">
+                                <span className="font-semibold">Inicio:</span> {tiemposCirugia.inicio}
+                              </span>
+                            )}
+                            {tiemposCirugia.fin && (
+                              <span className="text-text-secondary">
+                                <span className="font-semibold">Fin:</span> {tiemposCirugia.fin}
+                              </span>
+                            )}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -766,7 +786,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                   </div>
 
                   {/* Ayuno */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input label="Último ayuno - Sólidos (horas)" type="number" min={0} {...form.register("ayunoSolidos", { valueAsNumber: true })} disabled={firmado} />
                     <Input label="Último ayuno - Líquidos (horas)" type="number" min={0} {...form.register("ayunoLiquidos", { valueAsNumber: true })} disabled={firmado} />
                   </div>
@@ -814,7 +834,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                         </button>
                       ))}
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Input label="Dist. tiromentoniana (cm)" type="number" step="0.1" {...form.register("distTiromentoniana", { valueAsNumber: true })} disabled={firmado} />
                       <div className="space-y-1">
                         <label className="block text-sm text-muted">Apertura bucal</label>
