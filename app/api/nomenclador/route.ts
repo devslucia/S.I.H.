@@ -43,6 +43,8 @@ export async function GET(req: NextRequest) {
       uEspecialista: i.uEspecialista === null ? null : Number(i.uEspecialista),
       uAyudantes: i.uAyudantes === null ? null : Number(i.uAyudantes),
       uAnestesista: i.uAnestesista === null ? null : Number(i.uAnestesista),
+      gastos: i.gastos === null ? null : Number(i.gastos),
+      total: i.total === null ? null : Number(i.total),
     })),
     total,
   });
@@ -71,6 +73,8 @@ export async function POST(req: NextRequest) {
       uEspecialista: item.uEspecialista === null ? null : Number(item.uEspecialista),
       uAyudantes: item.uAyudantes === null ? null : Number(item.uAyudantes),
       uAnestesista: item.uAnestesista === null ? null : Number(item.uAnestesista),
+      gastos: item.gastos === null ? null : Number(item.gastos),
+      total: item.total === null ? null : Number(item.total),
     },
     { status: 201 }
   );

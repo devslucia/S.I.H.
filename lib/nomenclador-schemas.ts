@@ -10,6 +10,8 @@ export const nomencladorItemSchema = z.object({
   uAyudantes: z.coerce.number().nonnegative().optional().nullable(),
   uAnestesista: z.coerce.number().nonnegative().optional().nullable(),
   cantidadAyudantes: z.coerce.number().int().nonnegative().optional().nullable(),
+  gastos: z.coerce.number().nonnegative().optional().nullable(),
+  total: z.coerce.number().nonnegative().optional().nullable(),
   notas: z.string().trim().optional().nullable(),
   activo: z.boolean().optional().default(true),
 });

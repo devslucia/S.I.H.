@@ -32,6 +32,8 @@ interface ItemNacional {
   uAyudantes: number | null;
   uAnestesista: number | null;
   cantidadAyudantes: number | null;
+  gastos: number | null;
+  total: number | null;
   notas: string | null;
   activo: boolean;
 }
@@ -334,6 +336,8 @@ export default function NomencladoresPage() {
       uAyudantes: "",
       uAnestesista: "",
       cantidadAyudantes: "",
+      gastos: "",
+      total: "",
       notas: "",
       activo: "true",
     });
@@ -353,6 +357,8 @@ export default function NomencladoresPage() {
       uAyudantes: fmtNum(item.uAyudantes),
       uAnestesista: fmtNum(item.uAnestesista),
       cantidadAyudantes: fmtNum(item.cantidadAyudantes),
+      gastos: fmtNum(item.gastos),
+      total: fmtNum(item.total),
       notas: item.notas ?? "",
       activo: String(item.activo),
     });
@@ -374,6 +380,8 @@ export default function NomencladoresPage() {
         uAyudantes: num(form.uAyudantes ?? ""),
         uAnestesista: num(form.uAnestesista ?? ""),
         cantidadAyudantes: num(form.cantidadAyudantes ?? ""),
+        gastos: num(form.gastos ?? ""),
+        total: num(form.total ?? ""),
         notas: form.notas?.trim() || null,
         activo: form.activo === "true",
       };
@@ -474,6 +482,8 @@ export default function NomencladoresPage() {
                 <CampoForm label="U. Ayudantes" valor={form.uAyudantes ?? ""} set={(v) => setForm({ ...form, uAyudantes: v })} mono />
                 <CampoForm label="U. Anestesista" valor={form.uAnestesista ?? ""} set={(v) => setForm({ ...form, uAnestesista: v })} mono />
                 <CampoForm label="Cant. ayudantes" valor={form.cantidadAyudantes ?? ""} set={(v) => setForm({ ...form, cantidadAyudantes: v })} mono />
+                <CampoForm label="Gastos ($)" valor={form.gastos ?? ""} set={(v) => setForm({ ...form, gastos: v })} mono />
+                <CampoForm label="Total ($)" valor={form.total ?? ""} set={(v) => setForm({ ...form, total: v })} mono />
                 <CampoForm label="Notas" valor={form.notas ?? ""} set={(v) => setForm({ ...form, notas: v })} />
                 <label className="flex items-center gap-2 text-[13px]">
                   <input
@@ -514,6 +524,9 @@ export default function NomencladoresPage() {
                   <th className="px-4 py-2.5 text-left">Descripción</th>
                   <th className="px-4 py-2.5 text-left">U. Esp.</th>
                   <th className="px-4 py-2.5 text-left">Ayud.</th>
+                  <th className="px-4 py-2.5 text-left">Anest.</th>
+                  <th className="px-4 py-2.5 text-left">Gastos</th>
+                  <th className="px-4 py-2.5 text-left">Total</th>
                   <th className="px-4 py-2.5 text-left">Estado</th>
                   <th className="px-4 py-2.5 text-right">Acciones</th>
                 </tr>
@@ -530,6 +543,9 @@ export default function NomencladoresPage() {
                     <td className="px-4 py-2 font-mono text-[12px]">
                       {it.cantidadAyudantes ? `${it.cantidadAyudantes}x ${fmtNum(it.uAyudantes)}` : fmtNum(it.uAyudantes)}
                     </td>
+                    <td className="px-4 py-2 font-mono text-[12px]">{fmtNum(it.uAnestesista)}</td>
+                    <td className="px-4 py-2 font-mono text-[12px]">{fmtNum(it.gastos)}</td>
+                    <td className="px-4 py-2 font-mono text-[12px]">{fmtNum(it.total)}</td>
                     <td className="px-4 py-2">
                       <StatusBadge tone={it.activo ? "success" : "neutral"} label={it.activo ? "Activo" : "Inactivo"} />
                     </td>
@@ -559,7 +575,7 @@ export default function NomencladoresPage() {
                 ))}
                 {!loading && itemsNac.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-muted text-[13px]">Sin resultados</td>
+                    <td colSpan={8} className="px-4 py-8 text-center text-muted text-[13px]">Sin resultados</td>
                   </tr>
                 )}
               </tbody>

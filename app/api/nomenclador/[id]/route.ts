@@ -41,6 +41,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     "uAyudantes",
     "uAnestesista",
     "cantidadAyudantes",
+    "gastos",
+    "total",
     "notas",
     "activo",
   ] as const) {
@@ -54,6 +56,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     uEspecialista: item.uEspecialista === null ? null : Number(item.uEspecialista),
     uAyudantes: item.uAyudantes === null ? null : Number(item.uAyudantes),
     uAnestesista: item.uAnestesista === null ? null : Number(item.uAnestesista),
+    gastos: item.gastos === null ? null : Number(item.gastos),
+    total: item.total === null ? null : Number(item.total),
   });
 }
 
@@ -76,5 +80,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     uEspecialista: item.uEspecialista === null ? null : Number(item.uEspecialista),
     uAyudantes: item.uAyudantes === null ? null : Number(item.uAyudantes),
     uAnestesista: item.uAnestesista === null ? null : Number(item.uAnestesista),
+    gastos: item.gastos === null ? null : Number(item.gastos),
+    total: item.total === null ? null : Number(item.total),
   });
 }
