@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {ArrowLeft, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Printer, PenLine, AlertTriangle, Clock, Trash2} from "lucide-react";
 
@@ -31,6 +31,19 @@ function onlyArray<T>(value: unknown, fallback: T[] = []): T[] {
   if (Array.isArray(value)) return value as T[];
   if (value && typeof value === "object" && Object.keys(value).length > 0) return [value as T];
   return fallback;
+}
+
+// Campos derivados o de solo lectura (recalculados por el server o autocompletados
+// desde la cirugía) que no deben disparar autoguardado ni entrar al fingerprint.
+const FIELDS_NO_EDITABLES = ["imc", "cirujano", "matriculaCirujano", "ayudantes"];
+
+function pickEditables<T extends Record<string, unknown>>(values: T): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(values)) {
+    if (FIELDS_NO_EDITABLES.includes(key)) continue;
+    out[key] = value;
+  }
+  return out;
 }
 
 function normalizeAperturaBucal(value: unknown): "+3" | "-3" | null {
@@ -174,7 +187,9 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
     },
   });
 
-  const watchedValues = form.watch();
+  // useWatch memoiza por deep-equality: referencia estable entre renders,
+  // evitando que useDebounce re-agende el estado en loop (objeto nuevo por render con form.watch()).
+  const watchedValues = useWatch({ control: form.control });
   const debouncedValues = useDebounce(watchedValues, 800);
   const debouncedFingerprint = useRef("");
 
@@ -315,8 +330,8 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
               esAutocompletadoPrevio &&
               (actual !== nombreAsignado || matriculaActual !== (asignado.matricula || ""))
             ) {
-              form.setValue("anestesiologo", nombreAsignado, { shouldDirty: true });
-              form.setValue("matriculaAnestesiologo", asignado.matricula || "", { shouldDirty: true });
+              form.setValue("anestesiologo", nombreAsignado, { shouldDirty: false });
+              form.setValue("matriculaAnestesiologo", asignado.matricula || "", { shouldDirty: false });
             }
             try {
               sessionStorage.setItem(storageKey, nombreAsignado);
@@ -341,11 +356,11 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
     fetchData();
   }, [internacionId]);
 
-  // Auto-guardado con debounce
+  // Auto-guardado con debounce: solo con cambios reales del usuario (isDirty),
+  // sin guardado en el mount ni reintentos en ráfaga (fingerprint estable).
   useEffect(() => {
-    if (loading || firmado) return;
-    if (!protocoloId && !form.formState.isDirty) return;
-    const fingerprint = JSON.stringify({ ...debouncedValues, signosVitales: signosVitalesRef.current });
+    if (loading || firmado || !form.formState.isDirty) return;
+    const fingerprint = JSON.stringify({ ...pickEditables(debouncedValues), signosVitales: signosVitalesRef.current });
     if (fingerprint === debouncedFingerprint.current) return;
     if (autoSaveRef.current || savingSignosRef.current) return;
 
@@ -375,17 +390,20 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
         } else if (res.status === 403) {
           setFirmado(true);
         } else {
+          const errBody = await res.json().catch(() => null);
           setSaveError(true);
+          toast("error", errBody?.error ?? `Error al guardar (${res.status})`);
         }
       } catch {
         setSaveError(true);
+        toast("error", "Error de red al guardar");
       } finally {
         setSaving(false);
         autoSaveRef.current = false;
       }
     };
     save();
-  }, [debouncedValues, loading, firmado, protocoloId, internacionId, signosVitales, cirugiaId, form.formState.isDirty]);
+  }, [debouncedValues, loading, firmado, protocoloId, internacionId, signosVitales, cirugiaId, form, toast]);
 
   // Toggle sección
   const toggleSeccion = (key: string) => {
@@ -436,10 +454,13 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
           } else if (res.status === 403) {
             setFirmado(true);
           } else {
+            const errBody = await res.json().catch(() => null);
             setSaveError(true);
+            toast("error", errBody?.error ?? `Error al guardar signos (${res.status})`);
           }
         } catch {
           setSaveError(true);
+          toast("error", "Error de red al guardar signos");
         } finally {
           savingSignosRef.current = false;
           if (pendingSignosRef.current) {
@@ -539,7 +560,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
     if (!horaInicio && !loading && protocoloId) {
       setHoraInicio(new Date());
       if (!form.getValues("fechaCirugia")) {
-        form.setValue("fechaCirugia", new Date().toISOString().slice(0, 16), { shouldDirty: true });
+        form.setValue("fechaCirugia", new Date().toISOString().slice(0, 16), { shouldDirty: false });
       }
     }
   }, [horaInicio, loading, protocoloId, form]);

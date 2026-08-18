@@ -188,9 +188,6 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
 
   const { drogas, imc: _imcCliente, ...campos } = parsed.data;
 
-  const imc = calcularIMC(campos.peso, campos.talla);
-  const dataSeguro = jsonSafe({ ...campos, imc });
-
   // Legacy: derivar tecnicaAnestesia desde el tipo elegido para no romper lecturas viejas
   // (PDF "Técnica", carpeta completa) que siguen consumiendo el array conductiva/general.
   if (campos.tipoAnestesia === "General") {
@@ -200,6 +197,15 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
   } else if (campos.tipoAnestesia && campos.tipoAnestesia !== "Otra") {
     campos.tecnicaAnestesia = ["conductiva"];
   }
+
+  const imc = calcularIMC(campos.peso, campos.talla);
+  const dataSeguro = jsonSafe({
+    ...campos,
+    imc,
+    // El form puede enviar "" cuando el protocolo no tiene fecha de cirugía;
+    // Prisma rechaza el string vacío en DateTime? (500 en cada autoguardado).
+    fechaCirugia: campos.fechaCirugia ? new Date(campos.fechaCirugia) : null,
+  });
 
   const cirugia = await prisma.cirugia.findFirst({
     where: { internacionId: params.internacionId },
