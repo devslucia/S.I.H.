@@ -739,6 +739,12 @@ model ProtocoloAnestesia {
   tecnicaAnestesia      String[]
   tipoAnestesia         String?
   tipoAnestesiaDetalle  String?
+  nivelBloqueo          String?
+  lateralidad           String?
+  nervioPlexo           String?
+  tecnicaBloqueo        String?
+  zonaLocal             String?
+  nivelSedacion         String?
   // Conductiva
   tipoConductiva        String?
   posicionPuncion       String?

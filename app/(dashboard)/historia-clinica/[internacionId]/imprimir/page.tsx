@@ -79,6 +79,9 @@ interface CarpetaCompleta {
       distTiromentoniana: number | null; aperturaBucal: number | null;
       tecnicaAnestesia: string[];
       tipoAnestesia: string | null; tipoAnestesiaDetalle: string | null;
+      nivelBloqueo: string | null; lateralidad: string | null;
+      nervioPlexo: string | null; tecnicaBloqueo: string | null;
+      zonaLocal: string | null; nivelSedacion: string | null;
       viaInduccion: string | null; manejoViaAerea: string | null;
       nroTubo: string | null; dificultadViaAerea: boolean | null;
       modalidadVentilatoria: string | null; fio2: number | null;
@@ -604,6 +607,12 @@ export default function ImprimirCarpetaPage() {
 
               <p style={{ fontSize: '10pt', fontWeight: 'bold', marginTop: '8px', marginBottom: '4px' }}>Técnica Anestésica</p>
               <Field label="Tipo de anestesia" value={hc.protocoloAnestesia.tipoAnestesia ? (hc.protocoloAnestesia.tipoAnestesia === 'Otra' && hc.protocoloAnestesia.tipoAnestesiaDetalle ? `${hc.protocoloAnestesia.tipoAnestesia}: ${hc.protocoloAnestesia.tipoAnestesiaDetalle}` : hc.protocoloAnestesia.tipoAnestesia) : null} />
+              <Field label="Nivel de bloqueo / espacio" value={hc.protocoloAnestesia.nivelBloqueo} />
+              <Field label="Lateralidad" value={hc.protocoloAnestesia.lateralidad} />
+              <Field label="Nervio / plexo" value={hc.protocoloAnestesia.nervioPlexo} />
+              <Field label="Técnica de bloqueo" value={hc.protocoloAnestesia.tecnicaBloqueo} />
+              <Field label="Zona" value={hc.protocoloAnestesia.zonaLocal} />
+              <Field label="Nivel de sedación" value={hc.protocoloAnestesia.nivelSedacion} />
               <Field label="Técnica" value={hc.protocoloAnestesia.tecnicaAnestesia?.join(' + ') || null} />
               <Field label="Vía inducción" value={hc.protocoloAnestesia.viaInduccion} />
               <Field label="Vía aérea" value={hc.protocoloAnestesia.manejoViaAerea} />

@@ -191,6 +191,16 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
   const imc = calcularIMC(campos.peso, campos.talla);
   const dataSeguro = jsonSafe({ ...campos, imc });
 
+  // Legacy: derivar tecnicaAnestesia desde el tipo elegido para no romper lecturas viejas
+  // (PDF "Técnica", carpeta completa) que siguen consumiendo el array conductiva/general.
+  if (campos.tipoAnestesia === "General") {
+    campos.tecnicaAnestesia = ["general"];
+  } else if (campos.tipoAnestesia === "Combinada (general + regional)") {
+    campos.tecnicaAnestesia = ["general", "conductiva"];
+  } else if (campos.tipoAnestesia && campos.tipoAnestesia !== "Otra") {
+    campos.tecnicaAnestesia = ["conductiva"];
+  }
+
   const cirugia = await prisma.cirugia.findFirst({
     where: { internacionId: params.internacionId },
     select: { id: true, cirujanoId: true, ayudante1Id: true, ayudante2Id: true },
