@@ -10,6 +10,8 @@ interface ObraSocialSel {
   id: string;
   nombre: string;
   sigla: string;
+  activa: boolean;
+  estadoInternacion: string;
 }
 
 interface Galeno {
@@ -87,7 +89,7 @@ export default function GalenosPage() {
 
   const cargarOS = useCallback(async () => {
     try {
-      const res = await fetch("/api/obras-sociales?activa=true");
+      const res = await fetch("/api/obras-sociales?all=true");
       if (res.ok) {
         const d = await res.json();
         setObrasSociales(Array.isArray(d) ? d : []);
@@ -216,6 +218,7 @@ export default function GalenosPage() {
                 {obrasSociales.map((os) => (
                   <option key={os.id} value={os.id}>
                     {os.sigla} · {os.nombre}
+                    {(!os.activa || os.estadoInternacion !== "ACTIVA") ? " (suspendida)" : ""}
                   </option>
                 ))}
               </select>

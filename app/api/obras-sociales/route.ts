@@ -3,13 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { unstable_cache } from "next/cache";
+import { whereObrasSocialesUsables } from "@/lib/obra-social";
 
 const ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION"];
 
 const getObrasActivas = unstable_cache(
-  async () =>
+  async (contexto: "AMBULATORIO" | "INTERNACION" | null) =>
     prisma.obraSocial.findMany({
-      where: { activa: true },
+      where: contexto ? whereObrasSocialesUsables(contexto) : { activa: true },
       orderBy: { nombre: "asc" },
     }),
   ["obras-sociales-activas"],
@@ -59,6 +60,8 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const all = searchParams.get("all") === "true";
+  const contextoRaw = searchParams.get("contexto")?.toUpperCase();
+  const contexto = contextoRaw === "AMBULATORIO" || contextoRaw === "INTERNACION" ? contextoRaw : null;
 
   // Incluir obras sociales inactivas es gestión administrativa: solo ADMIN
   if (all && session.user.rol !== "ADMIN") {
@@ -71,7 +74,7 @@ export async function GET(req: NextRequest) {
         where: {},
         orderBy: { nombre: "asc" },
       })
-    : await getObrasActivas();
+    : await getObrasActivas(contexto);
 
   return NextResponse.json(obras.map(serializar));
 }

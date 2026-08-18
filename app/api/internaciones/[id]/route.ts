@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { assertObraSocialUsable } from "@/lib/obra-social";
 import { getVisibleInternacionesWhere } from "@/lib/internaciones-visibility";
 import { updateInternacionSchema } from "@/lib/validations/internacion.schema";
 import { NextRequest, NextResponse } from "next/server";
@@ -45,6 +46,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const parsed = updateInternacionSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
+  }
+
+  if (parsed.data.obraSocialId) {
+    const { error: osError } = await assertObraSocialUsable(prisma, parsed.data.obraSocialId, "INTERNACION");
+    if (osError) return NextResponse.json({ error: osError }, { status: 400 });
   }
 
   const internacion = await prisma.internacion.update({

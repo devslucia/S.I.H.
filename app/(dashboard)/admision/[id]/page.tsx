@@ -98,7 +98,7 @@ export default function PacienteDetailPage() {
   const fetchLookups = useCallback(async () => {
     const [camasRes, osRes, medRes] = await Promise.all([
       fetch("/api/camas"),
-      fetch("/api/obras-sociales"),
+      fetch("/api/obras-sociales?contexto=INTERNACION"),
       fetch("/api/usuarios/medicos"),
     ]);
     if (camasRes.ok) setCamas(await camasRes.json());
