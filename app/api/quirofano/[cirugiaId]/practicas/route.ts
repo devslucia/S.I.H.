@@ -1,9 +1,7 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { calcularImportesNomenclador, getGalenoVigente, normalizarItemNacional } from "@/lib/galeno";
-
-const CODIGO_NACIONAL_RE = /^\d{2}\.\d{2}\.\d{2}$/;
+import { calcularImportesNomenclador, getGalenoVigente, normalizarItemNacional, resolverPractica } from "@/lib/galeno";
 
 async function checkAssignment(userId: string, cirugiaId: string) {
   const cirugia = await prisma.cirugia.findUnique({
@@ -43,9 +41,9 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
       select: { internacionId: true },
     });
     if (cirugia) {
-      // Cálculo automático por galeno: si la práctica es un código del
-      // Nomenclador Nacional, se resuelve el ítem y el galeno vigente de la
-      // obra social de la internación en la fecha de la práctica.
+      // Cálculo automático por galeno: se resuelve la práctica contra la
+      // obra social de la internación (específica de esa OS primero, luego
+      // nacional) y se aplica el galeno vigente en la fecha de la práctica.
       const codigo = String(body.practica ?? "").trim();
       let precioUnitario = 0;
       let total = 0;
@@ -58,35 +56,37 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
         gastosPractica?: number;
       } = {};
 
-      if (CODIGO_NACIONAL_RE.test(codigo)) {
-        const item = await tx.nomencladorItem.findUnique({ where: { codigo } });
+      if (codigo) {
         const internacion = await tx.internacion.findUnique({
           where: { id: cirugia.internacionId },
           select: { obraSocialId: true },
         });
 
-        if (item && internacion?.obraSocialId) {
-          const fechaPrestacion = new Date(body.fecha);
-          const galeno = await getGalenoVigente(tx, internacion.obraSocialId, fechaPrestacion);
-          if (!galeno) {
-            return NextResponse.json(
-              {
-                error: "Falta configurar galeno para esta obra social en la fecha de la práctica. Revisá Configuración → Galenos por obra social.",
-              },
-              { status: 400 }
-            );
+        if (internacion?.obraSocialId) {
+          const item = await resolverPractica(tx, codigo, internacion.obraSocialId);
+          if (item) {
+            const fechaPrestacion = new Date(body.fecha);
+            const galeno = await getGalenoVigente(tx, internacion.obraSocialId, fechaPrestacion);
+            if (!galeno) {
+              return NextResponse.json(
+                {
+                  error: "Falta configurar galeno para esta obra social en la fecha de la práctica. Revisá Configuración → Galenos por obra social.",
+                },
+                { status: 400 }
+              );
+            }
+            const importes = calcularImportesNomenclador(normalizarItemNacional(item), galeno);
+            precioUnitario = importes.total;
+            total = precioUnitario;
+            Object.assign(desglose, {
+              nomencladorId: item.id,
+              galenoQx: Number(galeno.galenoQx),
+              honorariosEspecialista: importes.honorariosEspecialista,
+              honorariosAyudantes: importes.honorariosAyudantes,
+              honorariosAnestesista: importes.honorariosAnestesista,
+              gastosPractica: importes.gastosPractica,
+            });
           }
-          const importes = calcularImportesNomenclador(normalizarItemNacional(item), galeno);
-          precioUnitario = importes.total;
-          total = precioUnitario;
-          Object.assign(desglose, {
-            nomencladorId: item.id,
-            galenoQx: Number(galeno.galenoQx),
-            honorariosEspecialista: importes.honorariosEspecialista,
-            honorariosAyudantes: importes.honorariosAyudantes,
-            honorariosAnestesista: importes.honorariosAnestesista,
-            gastosPractica: importes.gastosPractica,
-          });
         }
       }
 

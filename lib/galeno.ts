@@ -29,6 +29,22 @@ export interface ImportesCalculados {
 }
 
 /**
+ * Resuelve una práctica para facturar contra una obra social:
+ * 1. Práctica ESPECIFICA de esa OS (si existe, pisa al nacional).
+ * 2. Práctica NACIONAL (visible para todas las OS).
+ * Devuelve null si el código no corresponde a ninguna práctica activa.
+ */
+export async function resolverPractica(tx: Tx, codigo: string, obraSocialId: string): Promise<NomencladorItem | null> {
+  const especifica = await tx.nomencladorItem.findFirst({
+    where: { codigo, obraSocialId, activo: true },
+  });
+  if (especifica) return especifica;
+  return tx.nomencladorItem.findFirst({
+    where: { codigo, obraSocialId: null, activo: true },
+  });
+}
+
+/**
  * Resuelve el galeno vigente de una obra social para una fecha de prestación.
  * Vigente = activo y la fecha cae dentro de [vigenciaDesde, vigenciaHasta].
  * Si hay varios vigentes, se toma el de vigenciaDesde más reciente.

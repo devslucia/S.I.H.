@@ -22,14 +22,19 @@ export async function POST(req: NextRequest) {
   let actualizados = 0;
   const errores: { codigo: string; razon: string }[] = [];
 
+  // El import GILSA solo toca el maestro NACIONAL: nunca crea ni modifica
+  // prácticas específicas por obra social.
   for (const item of parsed.data.items) {
     try {
-      const existe = await prisma.nomencladorItem.findUnique({ where: { codigo: item.codigo } });
+      const existe = await prisma.nomencladorItem.findFirst({
+        where: { codigo: item.codigo, obraSocialId: null },
+      });
+      const data = { ...item, alcance: "NACIONAL" as const, obraSocialId: null };
       if (existe) {
-        await prisma.nomencladorItem.update({ where: { codigo: item.codigo }, data: item });
+        await prisma.nomencladorItem.update({ where: { id: existe.id }, data });
         actualizados++;
       } else {
-        await prisma.nomencladorItem.create({ data: item });
+        await prisma.nomencladorItem.create({ data });
         creados++;
       }
     } catch (e) {

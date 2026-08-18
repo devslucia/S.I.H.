@@ -34,6 +34,9 @@ interface ItemNacional {
   gastos: number | null;
   notas: string | null;
   activo: boolean;
+  alcance: "NACIONAL" | "ESPECIFICA";
+  obraSocialId: string | null;
+  obraSocial: { id: string; sigla: string; nombre: string } | null;
 }
 
 interface Copia {
@@ -101,6 +104,7 @@ export default function NomencladoresPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [q, setQ] = useState("");
+  const [alcanceFiltro, setAlcanceFiltro] = useState<"" | "NACIONAL" | "ESPECIFICA">("");
   const [itemsNac, setItemsNac] = useState<ItemNacional[]>([]);
   const [totalNac, setTotalNac] = useState(0);
   const [offsetNac, setOffsetNac] = useState(0);
@@ -130,22 +134,37 @@ export default function NomencladoresPage() {
   const [guardandoForm, setGuardandoForm] = useState(false);
   const [toggleId, setToggleId] = useState<string | null>(null);
 
-  const cargarNacional = useCallback(async (qAct: string, offset: number) => {
+  const cargarNacional = useCallback(async (qAct: string, offset: number, alcance: "" | "NACIONAL" | "ESPECIFICA" = "") => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams({ take: "100", offset: String(offset) });
       if (qAct) params.set("q", qAct);
+      if (alcance) params.set("alcance", alcance);
       const res = await fetch(`/api/nomenclador?${params}`);
       if (!res.ok) throw new Error("No autorizado");
       const data = await res.json();
       setItemsNac(data.items);
       setTotalNac(data.total);
     } catch {
-      setError("Error al cargar el nomenclador nacional");
+      setError("Error al cargar el nomenclador");
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const cargarObrasParaForm = useCallback(async () => {
+    try {
+      const res = await fetch("/api/obras-sociales?all=true");
+      if (res.ok) {
+        setObrasSociales(await res.json());
+        return;
+      }
+    } catch {
+      // fallback: solo activas si el rol no puede ver el listado completo
+    }
+    const res = await fetch("/api/obras-sociales");
+    if (res.ok) setObrasSociales(await res.json());
   }, []);
 
   const cargarCopias = useCallback(async () => {
@@ -169,7 +188,8 @@ export default function NomencladoresPage() {
 
   useEffect(() => {
     cargarNacional("", 0);
-  }, [cargarNacional]);
+    cargarObrasParaForm();
+  }, [cargarNacional, cargarObrasParaForm]);
 
   useEffect(() => {
     if (tab !== "por-os") return;
@@ -183,7 +203,7 @@ export default function NomencladoresPage() {
 
   const buscarNacional = () => {
     setOffsetNac(0);
-    cargarNacional(q, 0);
+    cargarNacional(q, 0, alcanceFiltro);
   };
 
   const importarNacional = async (file: File) => {
@@ -336,6 +356,8 @@ export default function NomencladoresPage() {
       gastos: "",
       notas: "",
       activo: "true",
+      alcance: "NACIONAL",
+      obraSocialId: "",
     });
     setFormErr(null);
     setFormAbierto(true);
@@ -355,6 +377,8 @@ export default function NomencladoresPage() {
       gastos: fmtNum(item.gastos),
       notas: item.notas ?? "",
       activo: String(item.activo),
+      alcance: item.alcance,
+      obraSocialId: item.obraSocialId ?? "",
     });
     setFormErr(null);
     setFormAbierto(true);
@@ -376,6 +400,8 @@ export default function NomencladoresPage() {
         gastos: num(form.gastos ?? ""),
         notas: form.notas?.trim() || null,
         activo: form.activo === "true",
+        alcance: form.alcance === "ESPECIFICA" ? "ESPECIFICA" : "NACIONAL",
+        obraSocialId: form.alcance === "ESPECIFICA" ? form.obraSocialId || null : null,
       };
       const res = await fetch(editando ? `/api/nomenclador/${editando.id}` : "/api/nomenclador", {
         method: editando ? "PUT" : "POST",
@@ -443,7 +469,7 @@ export default function NomencladoresPage() {
 
       {tab === "nacional" && (
         <div className="space-y-4">
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center">
             <div className="relative flex-1 min-w-[260px]">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
               <input
@@ -454,8 +480,28 @@ export default function NomencladoresPage() {
                 className="w-full border border-border rounded-md bg-surface pl-9 pr-3 py-2 text-[13px]"
               />
             </div>
+            <div className="flex gap-1.5">
+              {([["", "Todas"], ["NACIONAL", "Nacional"], ["ESPECIFICA", "Específicas"]] as const).map(([v, label]) => (
+                <button
+                  key={v}
+                  onClick={() => {
+                    setAlcanceFiltro(v);
+                    setOffsetNac(0);
+                    cargarNacional(q, 0, v);
+                  }}
+                  className={cn(
+                    "border rounded-md px-3 py-1.5 text-[13px] transition-colors",
+                    alcanceFiltro === v
+                      ? "bg-accent-button text-white border-accent-button"
+                      : "bg-surface text-muted border-border hover:border-border-hover hover:text-text"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <button onClick={buscarNacional} className="btn-primary text-[13px]">Buscar</button>
-            <button onClick={() => cargarNacional("", 0)} className="btn-secondary text-[13px]">Limpiar</button>
+            <button onClick={() => { setQ(""); cargarNacional("", 0, alcanceFiltro); }} className="btn-secondary text-[13px]">Limpiar</button>
             <button onClick={abrirAlta} className="btn-primary text-[13px]">
               <Plus size={14} /> Agregar práctica
             </button>
@@ -465,6 +511,32 @@ export default function NomencladoresPage() {
             <div className="border border-border rounded-lg bg-surface p-4 space-y-3">
               <h3 className="text-[13px] font-semibold">{editando ? `Editar ${editando.codigo}` : "Nueva práctica"}</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Tipo de práctica *</label>
+                  <select
+                    value={form.alcance ?? "NACIONAL"}
+                    onChange={(e) => setForm({ ...form, alcance: e.target.value })}
+                    className="border border-border rounded-md bg-surface px-3 py-1.5 text-[13px]"
+                  >
+                    <option value="NACIONAL">Nacional (todas las OS)</option>
+                    <option value="ESPECIFICA">Específica de obra social</option>
+                  </select>
+                </div>
+                {form.alcance === "ESPECIFICA" && (
+                  <div className="flex flex-col gap-1 md:col-span-3">
+                    <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Obra social *</label>
+                    <select
+                      value={form.obraSocialId ?? ""}
+                      onChange={(e) => setForm({ ...form, obraSocialId: e.target.value })}
+                      className="border border-border rounded-md bg-surface px-3 py-1.5 text-[13px]"
+                    >
+                      <option value="">Seleccionar…</option>
+                      {obrasSociales.map((os) => (
+                        <option key={os.id} value={os.id}>{os.nombre} ({os.sigla})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <CampoForm label="Código *" valor={form.codigo ?? ""} set={(v) => setForm({ ...form, codigo: v })} mono />
                 <CampoForm label="Descripción *" valor={form.descripcion ?? ""} set={(v) => setForm({ ...form, descripcion: v })} wide />
                 <CampoForm label="Tipo" valor={form.tipo ?? ""} set={(v) => setForm({ ...form, tipo: v })} />
@@ -512,6 +584,7 @@ export default function NomencladoresPage() {
                 <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
                   <th className="px-4 py-2.5 text-left">Código</th>
                   <th className="px-4 py-2.5 text-left">Descripción</th>
+                  <th className="px-4 py-2.5 text-left">Alcance</th>
                   <th className="px-4 py-2.5 text-left">U. Esp.</th>
                   <th className="px-4 py-2.5 text-left">Ayudantes</th>
                   <th className="px-4 py-2.5 text-left">Anestesista</th>
@@ -527,6 +600,13 @@ export default function NomencladoresPage() {
                     <td className="px-4 py-2">
                       {it.descripcion}
                       {it.seccion && <div className="text-[11px] text-muted">{it.seccion}</div>}
+                    </td>
+                    <td className="px-4 py-2">
+                      {it.alcance === "NACIONAL" ? (
+                        <StatusBadge tone="neutral" label="NACIONAL" />
+                      ) : (
+                        <StatusBadge tone="success" label={`ESPECÍFICA${it.obraSocial ? ` · ${it.obraSocial.sigla}` : ""}`} />
+                      )}
                     </td>
                     <td className="px-4 py-2 font-mono text-[12px]">{fmtNum(it.uEspecialista)}</td>
                     <td className="px-4 py-2 font-mono text-[12px]">{fmtNum(it.uAyudantes)}</td>
@@ -561,7 +641,7 @@ export default function NomencladoresPage() {
                 ))}
                 {!loading && itemsNac.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-muted text-[13px]">Sin resultados</td>
+                    <td colSpan={9} className="px-4 py-8 text-center text-muted text-[13px]">Sin resultados</td>
                   </tr>
                 )}
               </tbody>

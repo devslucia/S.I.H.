@@ -54,15 +54,15 @@ async function main() {
     const values: unknown[] = [];
     const ph: string[] = [];
     lote.forEach((f, j) => {
-      const b = j * 15;
-      ph.push(`($${b + 1},$${b + 2},$${b + 3},$${b + 4},$${b + 5},$${b + 6},$${b + 7},$${b + 8},$${b + 9},$${b + 10},$${b + 11},$${b + 12},$${b + 13},$${b + 14},$${b + 15})`);
-      values.push(f.id, f.codigo, f.descripcion, f.tipo, f.capitulo, f.seccion, f.uEspecialista, f.uAyudantes, f.uAnestesista, f.cantidadAyudantes, f.gastos, f.total, f.notas, true, new Date());
+      const b = j * 16;
+      ph.push(`($${b + 1},$${b + 2},$${b + 3},$${b + 4},$${b + 5},$${b + 6},$${b + 7},$${b + 8},$${b + 9},$${b + 10},$${b + 11},$${b + 12},$${b + 13},$${b + 14},$${b + 15},$${b + 16})`);
+      values.push(f.id, f.codigo, f.descripcion, f.tipo, f.capitulo, f.seccion, f.uEspecialista, f.uAyudantes, f.uAnestesista, f.cantidadAyudantes, f.gastos, f.total, f.notas, true, new Date(), null);
     });
     await prisma.$executeRawUnsafe(
       `INSERT INTO "NomencladorItem"
-        (id, codigo, descripcion, tipo, capitulo, seccion, "uEspecialista", "uAyudantes", "uAnestesista", "cantidadAyudantes", gastos, total, notas, activo, "updatedAt")
+        (id, codigo, descripcion, tipo, capitulo, seccion, "uEspecialista", "uAyudantes", "uAnestesista", "cantidadAyudantes", gastos, total, notas, activo, "updatedAt", "obraSocialId")
        VALUES ${ph.join(",")}
-       ON CONFLICT (codigo) DO UPDATE SET
+       ON CONFLICT (codigo, "obraSocialId") DO UPDATE SET
         descripcion = EXCLUDED.descripcion,
         tipo = EXCLUDED.tipo,
         capitulo = EXCLUDED.capitulo,
@@ -75,7 +75,9 @@ async function main() {
         total = EXCLUDED.total,
         notas = EXCLUDED.notas,
         activo = EXCLUDED.activo,
-        "updatedAt" = EXCLUDED."updatedAt"`,
+        "updatedAt" = EXCLUDED."updatedAt",
+        alcance = 'NACIONAL'::"AlcanceNomenclador",
+        "obraSocialId" = NULL`,
       ...values
     );
     console.log(`lote ${i + 1}-${i + lote.length} ok`);

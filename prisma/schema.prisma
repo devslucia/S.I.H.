@@ -270,6 +270,7 @@ model ObraSocial {
   convenios                  Convenio[]
   nomencladores              NomencladorObraSocial[]
   galenos                    GalenoObraSocial[]
+  nomencladorEspecifico      NomencladorItem[]
   internaciones              Internacion[]
   turnosConsultorio          TurnoConsultorio[]
 }
@@ -291,6 +292,11 @@ enum TipoIva {
 enum EstadoCobertura {
   ACTIVA
   SUSPENDIDA
+}
+
+enum AlcanceNomenclador {
+  NACIONAL
+  ESPECIFICA
 }
 
 model Convenio {
@@ -1037,7 +1043,7 @@ model MovimientoStock {
 
 model NomencladorItem {
   id                         String                      @id @default(uuid())
-  codigo                     String                      @unique
+  codigo                     String
   descripcion                String
   tipo                       String
   seccion                    String?
@@ -1050,11 +1056,16 @@ model NomencladorItem {
   total                      Decimal?
   notas                      String?
   activo                     Boolean                     @default(true)
+  alcance                    AlcanceNomenclador          @default(NACIONAL)
+  obraSocialId               String?
+  obraSocial                 ObraSocial?                 @relation(fields: [obraSocialId], references: [id], onDelete: Restrict)
   convenios                  Convenio[]
   nomencladorObraSocialItems NomencladorObraSocialItem[]
   createdAt                  DateTime                    @default(now())
   updatedAt                  DateTime                    @updatedAt
 
+  @@unique([codigo, obraSocialId])
+  @@index([alcance])
   @@index([capitulo, seccion])
   cargos CargoFacturacion[]
 }
