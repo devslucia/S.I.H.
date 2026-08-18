@@ -69,7 +69,7 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
             {!collapsed && (
               <div className="flex flex-col">
                 <span className="text-text font-semibold text-sm leading-none tracking-tight">SIH</span>
-                <span className="text-muted text-[10px] font-mono leading-none mt-1 uppercase tracking-widest">Hospital</span>
+                <span className="text-muted text-[9px] font-mono leading-tight mt-1 uppercase">Sistema Informático Hospitalario</span>
               </div>
             )}
           </Link>

@@ -31,7 +31,7 @@ function Membrete() {
     <View style={styles.header}>
       <Text style={styles.headerIcon}>✚</Text>
       <View>
-        <Text style={styles.headerTitle}>SANATORIO SIMES</Text>
+        <Text style={styles.headerTitle}>SIH — Sistema Informático Hospitalario</Text>
         <Text style={styles.headerSub}>Córdoba N° 2344 — Posadas, Misiones</Text>
         <Text style={styles.headerSub}>Tel: 03765-430280 / 430283</Text>
       </View>
@@ -157,7 +157,7 @@ function InformePDF({ paciente, internacion, alergias }: InformePDFProps) {
 
         <View style={styles.footer}>
           <Text>Documento generado automáticamente por el Sistema de Información Hospitalaria (S.I.H.)</Text>
-          <Text>Sanatorio SIMES — Posadas, Misiones</Text>
+          <Text>SIH — Posadas, Misiones</Text>
         </View>
 
         <View style={styles.firmLine}>

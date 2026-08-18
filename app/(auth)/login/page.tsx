@@ -43,7 +43,7 @@ export default function LoginPage() {
             <span className="text-3xl font-bold text-brand font-mono">S.I.H.</span>
           </div>
           <p className="text-muted text-sm">Sistema Informático Hospitalario</p>
-          <p className="text-muted text-xs mt-1">Sanatorio SIMES — Posadas, Misiones</p>
+          <p className="text-muted text-xs mt-3">Desarrollado por Cristaldo</p>
         </div>
 
         <form onSubmit={handleSubmit} className="card p-6 space-y-4">
