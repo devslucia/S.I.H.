@@ -1045,6 +1045,8 @@ model NomencladorItem {
   uAyudantes                 Decimal?
   uAnestesista               Decimal?
   cantidadAyudantes          Int?
+  gastos                     Decimal?
+  total                      Decimal?
   notas                      String?
   activo                     Boolean                     @default(true)
   convenios                  Convenio[]

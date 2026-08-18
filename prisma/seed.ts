@@ -174,74 +174,7 @@ async function main() {
     estadoAmbulatorio: "ACTIVA", estadoInternacion: "ACTIVA", porcentajeDescMedicamentos: 30,
   } });
 
-  const nomencladorData = [
-    { codigo: "CAMA-DIA", descripcion: "Cama/día", tipo: "HOTELERIA" },
-    { codigo: "CAMA-UTI-DIA", descripcion: "Cama UTI/día", tipo: "HOTELERIA" },
-    { codigo: "CONS-MED", descripcion: "Consulta médica", tipo: "CONSULTA" },
-    { codigo: "MED-AMOX", descripcion: "Amoxicilina 500mg", tipo: "MEDICACION" },
-    { codigo: "MED-PARA", descripcion: "Paracetamol 1g", tipo: "MEDICACION" },
-    { codigo: "MED-OMEP", descripcion: "Omeprazol 40mg", tipo: "MEDICACION" },
-    { codigo: "MED-KETO", descripcion: "Ketorolac 30mg Iny.", tipo: "MEDICACION" },
-    { codigo: "MED-CEFA", descripcion: "Cefazolina 1g", tipo: "MEDICACION" },
-    { codigo: "MED-DICL", descripcion: "Diclofenac 75mg", tipo: "MEDICACION" },
-    { codigo: "MED-CIAXO", descripcion: "Ceftriaxona 1g", tipo: "MEDICACION" },
-    { codigo: "MED-CLAV", descripcion: "Amoxi-clav 875/125", tipo: "MEDICACION" },
-    { codigo: "MED-IBU", descripcion: "Ibuprofeno 400mg", tipo: "MEDICACION" },
-    { codigo: "MED-OND", descripcion: "Ondansetrón 8mg", tipo: "MEDICACION" },
-    { codigo: "MED-HEPA", descripcion: "Heparina sódica 5000UI", tipo: "MEDICACION" },
-    { codigo: "MED-ENOX", descripcion: "Enoxaparina 40mg", tipo: "MEDICACION" },
-    { codigo: "MED-MET", descripcion: "Metformina 850mg", tipo: "MEDICACION" },
-    { codigo: "MED-ENA", descripcion: "Enalapril 10mg", tipo: "MEDICACION" },
-    { codigo: "MAT-SFIS", descripcion: "Sol. Fisiológica 1L", tipo: "MATERIAL" },
-    { codigo: "MAT-DEX5", descripcion: "Dextrosa 5% 1L", tipo: "MATERIAL" },
-  ];
-
-  const nomencladores = [];
-  for (const data of nomencladorData) {
-    nomencladores.push(await prisma.nomencladorItem.create({ data }));
-  }
-  const nomen = Object.fromEntries(nomencladores.map((n) => [n.codigo, n.id]));
-
-  const convenioData = [
-    // HOTELERIA
-    { obraSocialId: osde.id, nomencladorId: nomen["CAMA-DIA"], valor: 15000 },
-    { obraSocialId: ioma.id, nomencladorId: nomen["CAMA-DIA"], valor: 12000 },
-    { obraSocialId: pami.id, nomencladorId: nomen["CAMA-DIA"], valor: 10000 },
-    { obraSocialId: sm.id, nomencladorId: nomen["CAMA-DIA"], valor: 14500 },
-    { obraSocialId: ips.id, nomencladorId: nomen["CAMA-DIA"], valor: 11000 },
-    { obraSocialId: osde.id, nomencladorId: nomen["CAMA-UTI-DIA"], valor: 42000 },
-    { obraSocialId: ioma.id, nomencladorId: nomen["CAMA-UTI-DIA"], valor: 36000 },
-    // CONSULTA
-    { obraSocialId: osde.id, nomencladorId: nomen["CONS-MED"], valor: 12000 },
-    { obraSocialId: sm.id, nomencladorId: nomen["CONS-MED"], valor: 11500 },
-    { obraSocialId: ioma.id, nomencladorId: nomen["CONS-MED"], valor: 9000 },
-    { obraSocialId: pami.id, nomencladorId: nomen["CONS-MED"], valor: 7500 },
-    // MEDICACIÓN
-    { obraSocialId: osde.id, nomencladorId: nomen["MED-AMOX"], valor: 850 },
-    { obraSocialId: osde.id, nomencladorId: nomen["MED-PARA"], valor: 350 },
-    { obraSocialId: osde.id, nomencladorId: nomen["MED-OMEP"], valor: 1200 },
-    { obraSocialId: osde.id, nomencladorId: nomen["MED-KETO"], valor: 2500 },
-    { obraSocialId: osde.id, nomencladorId: nomen["MED-CEFA"], valor: 4500 },
-    { obraSocialId: osde.id, nomencladorId: nomen["MED-OND"], valor: 3200 },
-    { obraSocialId: osde.id, nomencladorId: nomen["MED-ENOX"], valor: 8500 },
-    { obraSocialId: ioma.id, nomencladorId: nomen["MED-PARA"], valor: 280 },
-    { obraSocialId: ioma.id, nomencladorId: nomen["MED-CEFA"], valor: 3800 },
-    { obraSocialId: ioma.id, nomencladorId: nomen["MED-CIAXO"], valor: 4200 },
-    { obraSocialId: pami.id, nomencladorId: nomen["MED-PARA"], valor: 250 },
-    { obraSocialId: pami.id, nomencladorId: nomen["MED-CEFA"], valor: 3500 },
-    { obraSocialId: pami.id, nomencladorId: nomen["MED-DICL"], valor: 1300 },
-    { obraSocialId: sm.id, nomencladorId: nomen["MED-KETO"], valor: 2400 },
-    // MATERIAL
-    { obraSocialId: osde.id, nomencladorId: nomen["MAT-SFIS"], valor: 450 },
-    { obraSocialId: osde.id, nomencladorId: nomen["MAT-DEX5"], valor: 500 },
-    { obraSocialId: ioma.id, nomencladorId: nomen["MAT-SFIS"], valor: 400 },
-    { obraSocialId: pami.id, nomencladorId: nomen["MAT-SFIS"], valor: 350 },
-  ];
-  for (const c of convenioData) {
-    await prisma.convenio.create({ data: { ...c, vigenciaDesde: new Date("2025-01-01") } });
-  }
-
-  console.log("✓ Obras sociales, nomenclador y convenios creados");
+  console.log("✓ Obras sociales creadas");
 
   // ── 4. SECTORES / CAMAS / QUIRÓFANOS / RANGOS ──
   const uti = await prisma.sector.create({ data: { nombre: "UTI", codigo: "UTI" } });

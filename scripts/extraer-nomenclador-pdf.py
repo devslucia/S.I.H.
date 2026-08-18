@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
 """Extrae items del Nomenclador Nacional (PDF GILSA, ~141 págs) a CSV.
 
+v3: parseo por POSICIÓN ABSOLUTA contra el encabezado de columnas que se
+    repite en cada página del PDF. El header ("CODIGO ... HONORARIOS GASTOS
+    TOTAL" + "... Especialista Ayudantes Anestesista") varía su posición por
+    página, así que las columnas se anclan en cada página a ese header.
+
 Uso:
-    python3 scripts/extraer-nomenclador-pdf.py ~/Descargas/Gilsa-Integral-Salud.pdf \
-        --capitulos 00,01 --out prisma/seed-data/nomenclador_nacional_subset.csv
-    (sin --capitulos: extrae todo el nomenclador; revisar columnas ambiguas
-     antes de cargar el set completo)
+    python3 scripts/extraer-nomenclador-pdf.py ~/Descargas/Gilsa-Integral-Salud-1.pdf \
+        --out prisma/seed-data/nomenclador_nacional.csv
 
 Columnas de salida (separador ';', decimales con punto):
-    codigo;descripcion;capitulo;seccion;uEspecialista;uAyudantes;uAnestesista;cantidadAyudantes;total;notas
+    codigo;descripcion;capitulo;seccion;uEspecialista;uAyudantes;uAnestesista;cantidadAyudantes;gastos;total;notas
 
 Notas de fiabilidad:
-- uEspecialista: valor tras "U." (confiable)
-- uAyudantes + cantidadAyudantes: patron "1x"/"2x" (confiable)
-- total: último número de la fila (columna TOTAL, confiable cuando existe)
-- uAnestesista: el PDF muestra notas "(nn)" en esa columna, rara vez un número;
-  no se parsea (queda vacío) — revisión humana en la carga completa.
-- seccion: los encabezados de sección no llevan código; se deja vacío.
+- uEspecialista/uAyudantes/uAnestesista/gastos/total: números alineados a las
+  columnas del header de cada página (confiable; columna vacía -> campo vacío)
+- cantidadAyudantes: patrón "Nx" (confiable); sin "Nx" con valor en columna
+  Ayudantes -> 1 ayudante implícito
+- notas: referencias "(nn)" de las columnas anestesista/gastos/total, unidas
+- seccion: título de sección (ej "OPERACIONES EN EL CRANEO") del encabezado
+  NN.NN que precede a los ítems
+- capitulo: 2 primeros dígitos del código
 """
 import argparse
 import re
@@ -25,10 +30,11 @@ import sys
 import tempfile
 from pathlib import Path
 
-CODIGO_RE = re.compile(r"(\d{2}\.\d{2}\.\d{2})\.(?:\s|$)")
-VALORES_RE = re.compile(r"U\.\s*([\d.,]+)|(\d)x\s*([\d.,]+)|\((\d+)\)")
-NUMERO_RE = re.compile(r"\d[\d.,]*")
-HEADERS = {"CODIGO", "NOMENCLADOR", "Página"}
+CODIGO_RE = re.compile(r"^\s*(\d{2}\.\d{2}\.\d{2})\.\s")
+SECCION_RE = re.compile(r"^\s*(\d{2}\.\d{2})\s{2,}([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9.,/\- ]*)$")
+NOTA_RE = re.compile(r"\((\d{1,2})\)")
+NUMERO_RE = re.compile(r"(\d[\d.,]*)")
+MARGEN = 3
 
 
 def normalizar_num(txt: str):
@@ -39,6 +45,19 @@ def normalizar_num(txt: str):
         return f"{float(txt):g}" if txt else None
     except ValueError:
         return None
+
+
+def num_col(linea: str, rango: tuple[int, int], saltar: list[int]) -> str | None:
+    """Primer número cuya posición absoluta cae en [ini, fin)."""
+    ini, fin = rango
+    for m in NUMERO_RE.finditer(linea):
+        if m.start() < ini:
+            continue
+        if m.start() >= fin:
+            break
+        if m.start() not in saltar:
+            return m.group(1)
+    return None
 
 
 def extraer(archivo: Path, capitulos: list[str] | None):
@@ -52,12 +71,39 @@ def extraer(archivo: Path, capitulos: list[str] | None):
     finally:
         Path(tmp_path).unlink(missing_ok=True)
 
+    # columnas actuales: se actualizan con el header de cada página
+    cols = {"esp": 72, "ayu": 95, "anest": 117, "gastos": 131, "total": 145}
+
+    def rango(nombre: str) -> tuple[int, int]:
+        nombres = ["esp", "ayu", "anest", "gastos", "total"]
+        ini = cols[nombre] - MARGEN
+        i = nombres.index(nombre)
+        fin = cols[nombres[i + 1]] if i + 1 < len(nombres) else 10**6
+        return (ini, fin)
+
     items = []
+    seccion_actual = None
     i = 0
     while i < len(lineas):
         linea = lineas[i]
-        m = CODIGO_RE.search(linea)
-        if not m or not linea.strip():
+        if "GASTOS" in linea and "TOTAL" in linea and "CODIGO" in linea[:20]:
+            cols["gastos"] = linea.find("GASTOS")
+            cols["total"] = linea.find("TOTAL")
+            if i + 1 < len(lineas) and "NOMENCLADOR" in lineas[i + 1]:
+                l2 = lineas[i + 1]
+                cols["esp"] = l2.find("Especialista")
+                cols["ayu"] = l2.find("Ayudantes")
+                cols["anest"] = l2.find("Anestesista")
+            i += 2
+            continue
+        # título de sección: "NN.NN   TITULO" sin código de ítem
+        sm = SECCION_RE.match(linea)
+        if sm and not CODIGO_RE.match(linea):
+            seccion_actual = sm.group(2).strip()
+            i += 1
+            continue
+        m = CODIGO_RE.match(linea)
+        if not m or "U." not in linea:
             i += 1
             continue
         codigo = m.group(1)
@@ -68,48 +114,32 @@ def extraer(archivo: Path, capitulos: list[str] | None):
         j = i + 1
         while j < len(lineas):
             sig = lineas[j].strip()
-            if not sig or CODIGO_RE.search(sig) or any(sig.startswith(h) for h in HEADERS):
+            if not sig or CODIGO_RE.match(lineas[j]) or SECCION_RE.match(lineas[j]):
                 break
-            if "0177" in sig and "GILSA" in sig:
+            if "GASTOS" in lineas[j] and "TOTAL" in lineas[j]:
                 break
             bloque.append(lineas[j])
             j += 1
-        texto = " ".join(l.strip() for l in bloque)
-        m2 = re.search(r"U\.", texto)
-        parte_valores = texto[m2.start():] if m2 else ""
-        parte_desc = texto[m.start() + len(m.group(1)) + 1: m2.start()] if m2 else texto[m.start() + len(m.group(1)) + 1:]
+        primero = bloque[0]
+        # descripción: entre el código y el primer "U."
+        ud = primero.find("U.")
+        parte_desc = primero[m.end(): ud] if ud >= 0 else primero[m.end():]
         descripcion = re.sub(r"\s+", " ", parte_desc).strip()
         if not descripcion:
             descripcion = "SIN DESCRIPCION"
-        u_esp = u_ayu = u_ane = total = None
-        cant_ayu = None
-        notas = None
-        for v in VALORES_RE.finditer(parte_valores):
-            if v.group(1):
-                u_esp = normalizar_num(v.group(1))
-            if v.group(2) and v.group(3):
-                cant_ayu = int(v.group(2))
-                u_ayu = normalizar_num(v.group(3))
-            if v.group(4):
-                notas = v.group(4)
-        numeros_reales = []
-        for n in NUMERO_RE.finditer(parte_valores):
-            val = n.group(0)
-            pre = parte_valores[max(0, n.start() - 1): n.start()]
-            pos = parte_valores[n.end(): n.end() + 1]
-            if "(" in pre or ")" in pos:
-                continue  # notas "(nn)" de la columna anestesista
-            if val in {"1", "2"} and "x" in parte_valores[max(0, n.start() - 2): n.start() + 2]:
-                continue  # cantidad del patron "1x"/"2x"
-            numeros_reales.append(val)
-        if len(numeros_reales) >= 3:
-            total = normalizar_num(numeros_reales[-1])
-        elif len(numeros_reales) == 2:
-            primero, ultimo = (normalizar_num(numeros_reales[0]), normalizar_num(numeros_reales[1]))
-            if primero and ultimo and float(ultimo) >= 5 * float(primero):
-                total = ultimo
+        # valores: solo el primer renglón (columna U.); filas "$" se ignoran
+        saltar = [mm.start() for mm in re.finditer(r"(\d{1,2})x\s", primero)]
+        u_esp = normalizar_num(num_col(primero, rango("esp"), saltar))
+        u_ayu = normalizar_num(num_col(primero, rango("ayu"), saltar))
+        u_ane = normalizar_num(num_col(primero, rango("anest"), saltar))
+        gastos = normalizar_num(num_col(primero, rango("gastos"), saltar))
+        total = normalizar_num(num_col(primero, rango("total"), saltar))
+        mx = re.search(r"(\d{1,2})x\s", primero)
+        cant_ayu = int(mx.group(1)) if mx else (1 if u_ayu else None)
+        notas = ",".join(NOTA_RE.findall(" ".join(l.strip() for l in bloque))) or None
         items.append(
-            (codigo, descripcion, codigo[:2], "", u_esp, u_ayu, u_ane, cant_ayu, total, notas)
+            (codigo, descripcion, codigo[:2], seccion_actual or "",
+             u_esp, u_ayu, u_ane, cant_ayu, gastos, total, notas)
         )
         i = j
     return items
@@ -124,7 +154,7 @@ def main():
     capitulos = args.capitulos.split(",") if args.capitulos else None
     items = extraer(args.pdf, capitulos)
     with args.out.open("w", encoding="utf-8") as f:
-        f.write("codigo;descripcion;capitulo;seccion;uEspecialista;uAyudantes;uAnestesista;cantidadAyudantes;total;notas\n")
+        f.write("codigo;descripcion;capitulo;seccion;uEspecialista;uAyudantes;uAnestesista;cantidadAyudantes;gastos;total;notas\n")
         for it in items:
             f.write(";".join("" if v is None else str(v) for v in it) + "\n")
     print(f"extraidos {len(items)} items -> {args.out}")
