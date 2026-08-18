@@ -31,9 +31,7 @@ interface ItemNacional {
   uEspecialista: number | null;
   uAyudantes: number | null;
   uAnestesista: number | null;
-  cantidadAyudantes: number | null;
   gastos: number | null;
-  total: number | null;
   notas: string | null;
   activo: boolean;
 }
@@ -335,9 +333,7 @@ export default function NomencladoresPage() {
       uEspecialista: "",
       uAyudantes: "",
       uAnestesista: "",
-      cantidadAyudantes: "",
       gastos: "",
-      total: "",
       notas: "",
       activo: "true",
     });
@@ -356,9 +352,7 @@ export default function NomencladoresPage() {
       uEspecialista: fmtNum(item.uEspecialista),
       uAyudantes: fmtNum(item.uAyudantes),
       uAnestesista: fmtNum(item.uAnestesista),
-      cantidadAyudantes: fmtNum(item.cantidadAyudantes),
       gastos: fmtNum(item.gastos),
-      total: fmtNum(item.total),
       notas: item.notas ?? "",
       activo: String(item.activo),
     });
@@ -379,9 +373,7 @@ export default function NomencladoresPage() {
         uEspecialista: num(form.uEspecialista ?? ""),
         uAyudantes: num(form.uAyudantes ?? ""),
         uAnestesista: num(form.uAnestesista ?? ""),
-        cantidadAyudantes: num(form.cantidadAyudantes ?? ""),
         gastos: num(form.gastos ?? ""),
-        total: num(form.total ?? ""),
         notas: form.notas?.trim() || null,
         activo: form.activo === "true",
       };
@@ -481,9 +473,7 @@ export default function NomencladoresPage() {
                 <CampoForm label="U. Especialista" valor={form.uEspecialista ?? ""} set={(v) => setForm({ ...form, uEspecialista: v })} mono />
                 <CampoForm label="U. Ayudantes" valor={form.uAyudantes ?? ""} set={(v) => setForm({ ...form, uAyudantes: v })} mono />
                 <CampoForm label="U. Anestesista" valor={form.uAnestesista ?? ""} set={(v) => setForm({ ...form, uAnestesista: v })} mono />
-                <CampoForm label="Cant. ayudantes" valor={form.cantidadAyudantes ?? ""} set={(v) => setForm({ ...form, cantidadAyudantes: v })} mono />
                 <CampoForm label="Gastos ($)" valor={form.gastos ?? ""} set={(v) => setForm({ ...form, gastos: v })} mono />
-                <CampoForm label="Total ($)" valor={form.total ?? ""} set={(v) => setForm({ ...form, total: v })} mono />
                 <CampoForm label="Notas" valor={form.notas ?? ""} set={(v) => setForm({ ...form, notas: v })} />
                 <label className="flex items-center gap-2 text-[13px]">
                   <input
@@ -523,10 +513,9 @@ export default function NomencladoresPage() {
                   <th className="px-4 py-2.5 text-left">Código</th>
                   <th className="px-4 py-2.5 text-left">Descripción</th>
                   <th className="px-4 py-2.5 text-left">U. Esp.</th>
-                  <th className="px-4 py-2.5 text-left">Ayud.</th>
-                  <th className="px-4 py-2.5 text-left">Anest.</th>
+                  <th className="px-4 py-2.5 text-left">Ayudantes</th>
+                  <th className="px-4 py-2.5 text-left">Anestesista</th>
                   <th className="px-4 py-2.5 text-left">Gastos</th>
-                  <th className="px-4 py-2.5 text-left">Total</th>
                   <th className="px-4 py-2.5 text-left">Estado</th>
                   <th className="px-4 py-2.5 text-right">Acciones</th>
                 </tr>
@@ -540,12 +529,9 @@ export default function NomencladoresPage() {
                       {it.seccion && <div className="text-[11px] text-muted">{it.seccion}</div>}
                     </td>
                     <td className="px-4 py-2 font-mono text-[12px]">{fmtNum(it.uEspecialista)}</td>
-                    <td className="px-4 py-2 font-mono text-[12px]">
-                      {it.cantidadAyudantes ? `${it.cantidadAyudantes}x ${fmtNum(it.uAyudantes)}` : fmtNum(it.uAyudantes)}
-                    </td>
+                    <td className="px-4 py-2 font-mono text-[12px]">{fmtNum(it.uAyudantes)}</td>
                     <td className="px-4 py-2 font-mono text-[12px]">{fmtNum(it.uAnestesista)}</td>
                     <td className="px-4 py-2 font-mono text-[12px]">{fmtNum(it.gastos)}</td>
-                    <td className="px-4 py-2 font-mono text-[12px]">{fmtNum(it.total)}</td>
                     <td className="px-4 py-2">
                       <StatusBadge tone={it.activo ? "success" : "neutral"} label={it.activo ? "Activo" : "Inactivo"} />
                     </td>
@@ -706,8 +692,8 @@ export default function NomencladoresPage() {
               actualiza sus valores (descripción, unidades y notas). El maestro no se edita manualmente.
             </p>
             <div className="text-[12px] text-muted font-mono bg-surface-hover rounded-md p-3 whitespace-pre-wrap">
-              {`codigo;descripcion;capitulo;seccion;uEspecialista;uAyudantes;uAnestesista;cantidadAyudantes;notas
-00.00.01;COMPLEJIDAD 1;00;;80;;;;`}
+              {`codigo;descripcion;capitulo;seccion;uEspecialista;uAyudantes;uAnestesista;cantidadAyudantes;gastos;total;notas
+00.00.01;COMPLEJIDAD 1;00;;80;;;;;;;;`}
             </div>
             <label className="btn-primary inline-flex items-center gap-1.5 text-[13px] cursor-pointer">
               <Upload size={14} /> {busyImportNac ? "Importando…" : "Seleccionar CSV nacional"}
