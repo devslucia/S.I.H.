@@ -717,6 +717,8 @@ model ProtocoloAnestesia {
   clasificacionASA       String?
   esEmergencia           Boolean @default(false)
   grupoSangre            String?
+  ayunoHoras             Int?
+  // Legacy (migrados a ayunoHoras con GREATEST(sólidos, líquidos); se conservan para lectura de protocolos viejos)
   ayunoSolidos           Int?
   ayunoLiquidos          Int?
   ultimaIngesta          String?
@@ -735,6 +737,8 @@ model ProtocoloAnestesia {
 
   // Bloque 3 - Técnica
   tecnicaAnestesia      String[]
+  tipoAnestesia         String?
+  tipoAnestesiaDetalle  String?
   // Conductiva
   tipoConductiva        String?
   posicionPuncion       String?

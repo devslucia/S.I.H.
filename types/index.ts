@@ -226,6 +226,7 @@ export interface ProtocoloAnestesiaData {
   clasificacionASA?: string | null;
   esEmergencia?: boolean;
   grupoSangre?: string | null;
+  ayunoHoras?: number | null;
   ayunoSolidos?: number | null;
   ayunoLiquidos?: number | null;
   ultimaIngesta?: string | null;
@@ -244,6 +245,8 @@ export interface ProtocoloAnestesiaData {
 
   // Bloque 3
   tecnicaAnestesia?: string[];
+  tipoAnestesia?: string | null;
+  tipoAnestesiaDetalle?: string | null;
   tipoConductiva?: string | null;
   posicionPuncion?: string | null;
   sitioPuncion?: string | null;

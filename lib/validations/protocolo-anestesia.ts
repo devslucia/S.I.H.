@@ -46,6 +46,7 @@ export const protocoloAnestesiaSchema = z.object({
   clasificacionASA: z.string().nullable().optional(),
   esEmergencia: z.boolean().optional(),
   grupoSangre: z.string().nullable().optional(),
+  ayunoHoras: z.number().int().min(0).nullable().optional(),
   ayunoSolidos: z.number().int().min(0).nullable().optional(),
   ayunoLiquidos: z.number().int().min(0).nullable().optional(),
   ultimaIngesta: z.string().nullable().optional(),
@@ -64,6 +65,8 @@ export const protocoloAnestesiaSchema = z.object({
 
   // Bloque 3
   tecnicaAnestesia: z.array(z.string()).optional(),
+  tipoAnestesia: z.string().nullable().optional(),
+  tipoAnestesiaDetalle: z.string().nullable().optional(),
   tipoConductiva: z.string().nullable().optional(),
   posicionPuncion: z.string().nullable().optional(),
   sitioPuncion: z.string().nullable().optional(),

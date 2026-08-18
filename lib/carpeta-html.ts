@@ -201,6 +201,7 @@ export interface ProtocoloAnestesiaCarpeta {
   fechaCirugia?: string | null;
   alergiaDetalle?: string | null;
   clasificacionASA?: string | null;
+  ayunoHoras?: number | null;
   ayunoSolidos?: number | null;
   ayunoLiquidos?: number | null;
   estadoPsiquico?: string | null;
@@ -210,6 +211,8 @@ export interface ProtocoloAnestesiaCarpeta {
   peso?: number | null;
   talla?: number | null;
   tecnicaAnestesia?: string[] | string | null;
+  tipoAnestesia?: string | null;
+  tipoAnestesiaDetalle?: string | null;
   viaInduccion?: string | null;
   manejoViaAerea?: string | null;
   nroTubo?: string | null;
@@ -677,8 +680,7 @@ export function generarHTMLCarpeta(data: DatosCarpeta, usuarios: Usuario[]): str
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
               <div><strong>Alergias:</strong> ${pa.alergiaDetalle ?? '—'}</div>
               <div><strong>Clasificación ASA:</strong> ${pa.clasificacionASA ?? '—'}</div>
-              <div><strong>Ayuno sólidos:</strong> ${pa.ayunoSolidos ?? '—'}</div>
-              <div><strong>Ayuno líquidos:</strong> ${pa.ayunoLiquidos ?? '—'}</div>
+              <div><strong>Ayuno:</strong> ${pa.ayunoHoras ?? '—'} h</div>
               <div><strong>Estado psíquico:</strong> ${pa.estadoPsiquico ?? '—'}</div>
               <div><strong>Mallampati:</strong> ${pa.mallampati ?? '—'}</div>
               <div><strong>Dist. Tiromentoniana:</strong> ${pa.distTiromentoniana ?? '—'}</div>
@@ -701,6 +703,7 @@ export function generarHTMLCarpeta(data: DatosCarpeta, usuarios: Usuario[]): str
 
           <strong style="margin-top:8px;display:block">TÉCNICA ANESTÉSICA</strong>
           <div style="border:1px solid #000;padding:8px;margin:6px 0">
+            <div><strong>Tipo de anestesia:</strong> ${pa.tipoAnestesia ? (pa.tipoAnestesia === 'Otra' && pa.tipoAnestesiaDetalle ? `${pa.tipoAnestesia}: ${pa.tipoAnestesiaDetalle}` : pa.tipoAnestesia) : '—'}</div>
             <div><strong>Técnica:</strong> ${Array.isArray(pa.tecnicaAnestesia) ? pa.tecnicaAnestesia.join(', ') : (pa.tecnicaAnestesia ?? '—')}</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px">
               <div><strong>Vía de inducción:</strong> ${pa.viaInduccion ?? '—'}</div>

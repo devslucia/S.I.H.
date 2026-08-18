@@ -75,8 +75,7 @@ interface ProtocoloPdfData {
   antecedentesImportancia: string | null;
   clasificacionASA: string | null;
   esEmergencia: boolean;
-  ayunoSolidos: number | null;
-  ayunoLiquidos: number | null;
+  ayunoHoras: number | null;
   ultimaIngesta: string | null;
   estadoPsiquico: string | null;
   premedicacion: unknown;
@@ -87,6 +86,8 @@ interface ProtocoloPdfData {
   distTiromentoniana: number | null;
   aperturaBucal: string | null;
   tecnicaAnestesia: string[];
+  tipoAnestesia: string | null;
+  tipoAnestesiaDetalle: string | null;
   tipoConductiva: string | null;
   posicionPuncion: string | null;
   sitioPuncion: string | null;
@@ -192,8 +193,7 @@ function ProtocoloPDF({ protocolo, paciente, internacion, cirugia }: ProtocoloPD
         <Field label="Alergias" value={p.alergiaDetalle || "No especificadas"} />
         {p.antecedentesImportancia && <Field label="Antecedentes de importancia" value={p.antecedentesImportancia} />}
         <Field label="ASA" value={`${p.clasificacionASA || "—"}${p.esEmergencia ? " (E) Emergencia" : ""}`} />
-        <Field label="Ayuno sólidos" value={p.ayunoSolidos != null ? `${p.ayunoSolidos}h` : "—"} />
-        <Field label="Ayuno líquidos" value={p.ayunoLiquidos != null ? `${p.ayunoLiquidos}h` : "—"} />
+        <Field label="Ayuno" value={p.ayunoHoras != null ? `${p.ayunoHoras}h` : "—"} />
         <Field label="Última ingesta" value={p.ultimaIngesta} />
         <Field label="Estado psíquico" value={p.estadoPsiquico} />
         {premedicacion && premedicacion.length > 0 && (
@@ -209,6 +209,7 @@ function ProtocoloPDF({ protocolo, paciente, internacion, cirugia }: ProtocoloPD
 
         {/* Bloque 3 */}
         <SectionTitle>3. Técnica Anestésica</SectionTitle>
+        <Field label="Tipo de anestesia" value={p.tipoAnestesia ? (p.tipoAnestesia === "Otra" && p.tipoAnestesiaDetalle ? `${p.tipoAnestesia}: ${p.tipoAnestesiaDetalle}` : p.tipoAnestesia) : "—"} />
         <Field label="Técnica" value={(p.tecnicaAnestesia || []).join(" + ") || "—"} />
         {p.tecnicaAnestesia?.includes("conductiva") && (
           <>
