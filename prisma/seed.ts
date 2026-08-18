@@ -60,10 +60,10 @@ async function main() {
   await prisma.medicamentoCirugia.deleteMany();
   await prisma.practicaCirugia.deleteMany();
   await prisma.cirugia.deleteMany();
+  await prisma.movimientoStock.deleteMany();
   await prisma.internacion.deleteMany();
   await prisma.alergia.deleteMany();
   await prisma.paciente.deleteMany();
-  await prisma.movimientoStock.deleteMany();
   await prisma.convenio.deleteMany();
   await prisma.obraSocial.deleteMany();
   await prisma.nomencladorItem.deleteMany();
@@ -116,7 +116,6 @@ async function main() {
   const delgadoPablo = users["pablo"];
   const acosta = users["florencia"];
   const sosa = users["carlos sergio"];
-  const marquez = users["ana"];
   const enfermero = users["laura"];
   const enfermero2 = users["jorge"];
   const vanina = users["vanina"];
@@ -321,7 +320,7 @@ async function main() {
   const stockByName = Object.fromEntries(items.map((i) => [i.nombre, i]));
   console.log("✓ Stock items creados (16)");
 
-  // ── 6. PACIENTES (3 nuevos, HC completa) ──
+  // ── 6. PACIENTES (2 nuevos, HC completa) ──
 
   // ── PACIENTE 1: Clínico internado en UTI ──
   const ferreyra = await prisma.paciente.create({
@@ -345,17 +344,7 @@ async function main() {
     },
   });
 
-  // ── PACIENTE 3: Ambulatorio (consultorio, sin internación) ──
-  const benitez = await prisma.paciente.create({
-    data: {
-      dni: "38551234", apellido: "Benítez", nombre: "Martina", sexo: "FEMENINO",
-      fechaNac: new Date("1993-02-17"), cuil: "27-38551234-2",
-      domicilio: "Lavalle 845", localidad: "Posadas", provincia: "Misiones",
-      telefono: "3764556677", email: "martinabenitez93@gmail.com", grupoSangre: "0-", estadoCivil: "UNION_CONVIVENCIAL",
-    },
-  });
-
-  console.log("✓ Pacientes creados (3)");
+  console.log("✓ Pacientes creados (2)");
 
   // ── 7. INTERNACIONES ──
   const intFerreyra = await prisma.internacion.create({
@@ -390,11 +379,9 @@ async function main() {
   // ── 8. HISTORIAS CLÍNICAS + EPISODIOS ──
   const hcFerreyra = await prisma.historiaClinica.create({ data: { internacionId: intFerreyra.id, pacienteId: ferreyra.id } });
   const hcVillalba = await prisma.historiaClinica.create({ data: { internacionId: intVillalba.id, pacienteId: villalba.id } });
-  const hcBenitez = await prisma.historiaClinica.create({ data: { pacienteId: benitez.id } });
 
   const epFerreyra = await prisma.episodio.create({ data: { hcId: hcFerreyra.id, tipo: "INTERNACION", internacionId: intFerreyra.id, motivoIngreso: "Neumonía adquirida en la comunidad", diagnostico: "Neumonía bilateral con hipoxemia", estado: "EN_CURSO", fechaInicio: addDays(-5, 9, 45) } });
   const epVillalba = await prisma.episodio.create({ data: { hcId: hcVillalba.id, tipo: "INTERNACION", internacionId: intVillalba.id, motivoIngreso: "Colelitiasis sintomática", diagnostico: "Colelitiasis — colecistectomía laparoscópica", estado: "FINALIZADO", fechaInicio: addDays(-3, 8, 15), fechaFin: addDays(0, 12, 30) } });
-  const epBenitezConsulta = await prisma.episodio.create({ data: { hcId: hcBenitez.id, tipo: "CONSULTA", motivoIngreso: "Cefalea tensional recidivante", diagnostico: "Cefalea tensional", estado: "FINALIZADO", fechaInicio: addDays(-14, 10, 0), fechaFin: addDays(-14, 10, 30) } });
   console.log("✓ Historias clínicas y episodios creados");
 
   // ── 9. ANAMNESIS Y EVOLUCIONES ──
@@ -447,27 +434,6 @@ async function main() {
   await prisma.evolucion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-2, 18, 0), contenido: "Ingresa para cirugía programada de mañana. Ayuno desde las 22hs. Valoración preanestésica realizada y protocolo firmado. Antibiótico profiláctico indicado.", usuarioId: delgadoPablo.id } });
   await prisma.evolucion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(-1, 12, 30), contenido: "Postoperatorio inmediato de colecistectomía laparoscópica sin complicaciones. Dolor controlado con analgesia EV. Afebril. Deambulación precoz. Dieta liviana tolerada.", usuarioId: delgadoPablo.id, firmada: true, firmadaAt: addDays(-1, 12, 45) } });
   await prisma.evolucion.create({ data: { hcId: hcVillalba.id, episodioId: epVillalba.id, fecha: addDays(0, 12, 30), contenido: "Egreso hospitalario. Cicatrices en buenas condiciones, afebril, tolerando dieta. Se entrega epicrisis y indicaciones por escrito. Curación de heridas cada 48 hs en consultorio. Turno de control con cirugía general en 7 días.", usuarioId: delgadoPablo.id } });
-
-  await prisma.anamnesis.create({
-    data: {
-      hcId: hcBenitez.id, episodioId: epBenitezConsulta.id,
-      motivoConsulta: "Cefalea frontal bilateral de 3 meses de evolución",
-      enfermedadActual: "Paciente de 33 años que consulta por cefalea de carácter opresivo, bilateral, que empeora a fin de jornada laboral, sin fotofobia ni náuseas. Se autoadministra ibuprofeno cada 2 días con alivio parcial.",
-      antecPatologicos: "Sin antecedentes crónicos. Sin cirugías.",
-      antecFamiliares: "Madre con migraña.",
-      habitosToxicos: "No fuma. No consume alcohol.",
-      factoresRiesgoCV: "Ninguno.",
-      estadoGeneral: "Buen estado general, lúcida, normohidratada, afebril.",
-      signosVitalesIngreso: { "PA": "112/72", "FC": "72", "FR": "14", "T°": "36.4", "SpO2": "99%" },
-      snervioso: "Sin signos focales. Fondo de ojo normal. Cerebeloso normal.",
-      diagPresuntivo: "Cefalea tensional recidivante",
-      diagDiferencial: "Cefalea por abuso de analgésicos / Migraña sin aura",
-      planEvaluacion: "Se indica diario de cefaleas y controles periódicos",
-      planTerapeutico: "Ajuste de analgesia (evitar ibuprofeno diario), paracetamol a demanda, técnicas de relajación",
-      firmadoAt: addDays(-14, 10, 30), firmadoPor: "Ana Márquez",
-    },
-  });
-  await prisma.evolucion.create({ data: { hcId: hcBenitez.id, episodioId: epBenitezConsulta.id, fecha: addDays(-14, 10, 0), contenido: "Consulta ambulatoria por cefalea tensional recidivante. Examen neurológico normal. Se recomienda reducir consumo de AINE, paracetamol a demanda y control en 1 mes.", usuarioId: marquez.id, firmada: true, firmadaAt: addDays(-14, 10, 30) } });
   console.log("✓ Anamnesis y evoluciones creadas");
 
   // ── 10. PRESCRIPCIONES + APLICACIONES ──
@@ -551,23 +517,28 @@ async function main() {
       clasificacionASA: "ASA II",
       esEmergencia: false,
       grupoSangre: "A-",
-      ayunoSolidos: 8, ayunoLiquidos: 6, ultimaIngesta: "Cena liviana - 8hs previas",
+      ayunoSolidos: 8, ayunoLiquidos: 6, ayunoHoras: 8, ultimaIngesta: "Cena liviana - 8hs previas",
       estadoPsiquico: "Cooperativo, tranquilo",
       premedicacion: [{ droga: "Midazolam 5mg", dosis: "5mg", hora: "08:30" }],
       signosVitaPreop: { pas: 120, pad: 76, fc: 78, fr: 15, temp: 36.4 },
       mallampati: "II", distTiromentoniana: 6.0, aperturaBucal: "+3",
       checklistEquipoAnes: true, checklistReanimacion: true, checklistMonitores: true, checklistPosicion: true,
       tecnicaAnestesia: ["GENERAL"],
+      tipoAnestesia: "General",
       viaInduccion: "EV", manejoViaAerea: "IOT", intubacionSubtipo: "Sencilla",
       nroTubo: "7.5", conManguito: true, dificultadViaAerea: false,
       modalidadVentilatoria: "Ventilación mecánica", modalidadVentFranja: [],
       fio2: 0.5, oxigenoFlujo: 2,
       signosVitales: [
-        { minuto: 0, hora: "09:00", pas: 120, pad: 76, fc: 78, fr: 12, spo2: 99, temp: 36.4 },
+        { minuto: 0, hora: "09:00", pas: 120, pad: 76, fc: 78, fr: 12, spo2: 99, temp: 36.4, eventos: ["inicio_anestesia"] },
+        { minuto: 5, hora: "09:05", eventos: ["intubacion"] },
+        { minuto: 10, hora: "09:10", eventos: ["inicio_cirugia"] },
         { minuto: 30, hora: "09:30", pas: 118, pad: 74, fc: 76, fr: 12, spo2: 99, temp: 36.5 },
         { minuto: 70, hora: "10:10", pas: 122, pad: 78, fc: 74, spo2: 100, temp: 36.5 },
+        { minuto: 85, hora: "10:25", eventos: ["fin_cirugia"] },
+        { minuto: 90, hora: "10:30", eventos: ["fin_anestesia"] },
       ],
-      peso: 71, talla: 1.63,
+      peso: 71, talla: 1.63, imc: 26.7,
       liquidosIngresados: [
         { tipo: "Solución Fisiológica (NaCl 0.9%)", volumen: 1200, lote: "" },
         { tipo: "Ringer Lactato", volumen: 500, lote: "" },
@@ -741,14 +712,9 @@ async function main() {
     { secretariaId: secretaria.id, medicoId: delgadoPablo.id, fechaAsignacion: addDays(-30) },
   ]});
 
-  // Turnos: Villalba (control post-alta confirmado), Benítez (ambulatoria con historial completo de estados)
+  // Turno: Villalba (control post-alta confirmado)
   await prisma.turnoConsultorio.createMany({ data: [
     { medicoId: delgadoPablo.id, pacienteId: villalba.id, secretariaId: secretaria.id, obraSocialId: ioma.id, fecha: onWeekday("VIERNES", 0, 10, 0), hora: "10:00", motivo: "Control post alta - colecistectomía", estado: "CONFIRMADO" },
-    { medicoId: marquez.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: inssjp.id, fecha: addDays(-14, 10, 0), hora: "10:00", motivo: "Consulta por cefalea tensional", estado: "COMPLETADO", asistio: true, episodioId: epBenitezConsulta.id },
-    { medicoId: marquez.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: inssjp.id, fecha: addDays(-10, 10, 30), hora: "10:30", motivo: "Consulta por cefalea - paciente no concurrió", estado: "NO_ASISTIO" },
-    { medicoId: marquez.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: inssjp.id, fecha: onWeekday("MIERCOLES", 0, 11, 0), hora: "11:00", motivo: "Control - cefalea", estado: "CONFIRMADO" },
-    { medicoId: marquez.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: inssjp.id, fecha: onWeekday("JUEVES", 0, 11, 0), hora: "11:00", motivo: "Control - cefalea", estado: "PENDIENTE" },
-    { medicoId: marquez.id, pacienteId: benitez.id, secretariaId: secretaria.id, obraSocialId: inssjp.id, fecha: onWeekday("LUNES", 0, 11, 0), hora: "11:00", motivo: "Control - cefalea", estado: "CANCELADO" },
   ]});
   console.log("✓ Consultorio: horarios, secretaria-médico y turnos creados");
 
