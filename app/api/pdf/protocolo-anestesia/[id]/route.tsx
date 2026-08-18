@@ -88,6 +88,12 @@ interface ProtocoloPdfData {
   tecnicaAnestesia: string[];
   tipoAnestesia: string | null;
   tipoAnestesiaDetalle: string | null;
+  nivelBloqueo: string | null;
+  lateralidad: string | null;
+  nervioPlexo: string | null;
+  tecnicaBloqueo: string | null;
+  zonaLocal: string | null;
+  nivelSedacion: string | null;
   tipoConductiva: string | null;
   posicionPuncion: string | null;
   sitioPuncion: string | null;
@@ -210,6 +216,12 @@ function ProtocoloPDF({ protocolo, paciente, internacion, cirugia }: ProtocoloPD
         {/* Bloque 3 */}
         <SectionTitle>3. Técnica Anestésica</SectionTitle>
         <Field label="Tipo de anestesia" value={p.tipoAnestesia ? (p.tipoAnestesia === "Otra" && p.tipoAnestesiaDetalle ? `${p.tipoAnestesia}: ${p.tipoAnestesiaDetalle}` : p.tipoAnestesia) : "—"} />
+        <Field label="Nivel de bloqueo / espacio" value={p.nivelBloqueo} />
+        <Field label="Lateralidad" value={p.lateralidad} />
+        <Field label="Nervio / plexo" value={p.nervioPlexo} />
+        <Field label="Técnica de bloqueo" value={p.tecnicaBloqueo} />
+        <Field label="Zona" value={p.zonaLocal} />
+        <Field label="Nivel de sedación" value={p.nivelSedacion} />
         <Field label="Técnica" value={(p.tecnicaAnestesia || []).join(" + ") || "—"} />
         {p.tecnicaAnestesia?.includes("conductiva") && (
           <>

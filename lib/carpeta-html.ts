@@ -213,6 +213,12 @@ export interface ProtocoloAnestesiaCarpeta {
   tecnicaAnestesia?: string[] | string | null;
   tipoAnestesia?: string | null;
   tipoAnestesiaDetalle?: string | null;
+  nivelBloqueo?: string | null;
+  lateralidad?: string | null;
+  nervioPlexo?: string | null;
+  tecnicaBloqueo?: string | null;
+  zonaLocal?: string | null;
+  nivelSedacion?: string | null;
   viaInduccion?: string | null;
   manejoViaAerea?: string | null;
   nroTubo?: string | null;
@@ -704,6 +710,14 @@ export function generarHTMLCarpeta(data: DatosCarpeta, usuarios: Usuario[]): str
           <strong style="margin-top:8px;display:block">TÉCNICA ANESTÉSICA</strong>
           <div style="border:1px solid #000;padding:8px;margin:6px 0">
             <div><strong>Tipo de anestesia:</strong> ${pa.tipoAnestesia ? (pa.tipoAnestesia === 'Otra' && pa.tipoAnestesiaDetalle ? `${pa.tipoAnestesia}: ${pa.tipoAnestesiaDetalle}` : pa.tipoAnestesia) : '—'}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px">
+              <div><strong>Nivel de bloqueo / espacio:</strong> ${pa.nivelBloqueo ?? '—'}</div>
+              <div><strong>Lateralidad:</strong> ${pa.lateralidad ?? '—'}</div>
+              <div><strong>Nervio / plexo:</strong> ${pa.nervioPlexo ?? '—'}</div>
+              <div><strong>Técnica de bloqueo:</strong> ${pa.tecnicaBloqueo ?? '—'}</div>
+              <div><strong>Zona:</strong> ${pa.zonaLocal ?? '—'}</div>
+              <div><strong>Nivel de sedación:</strong> ${pa.nivelSedacion ?? '—'}</div>
+            </div>
             <div><strong>Técnica:</strong> ${Array.isArray(pa.tecnicaAnestesia) ? pa.tecnicaAnestesia.join(', ') : (pa.tecnicaAnestesia ?? '—')}</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px">
               <div><strong>Vía de inducción:</strong> ${pa.viaInduccion ?? '—'}</div>

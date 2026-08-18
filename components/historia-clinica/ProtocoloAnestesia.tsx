@@ -93,7 +93,9 @@ const TIPOS_ANESTESIA = [
   "Combinada (general + regional)",
   "Otra",
 ];
-const TIPOS_CONDUCTIVA = ["Peridural", "Raquídea", "Troncular", "Plexual", "Local", "Regional I.V."];
+const LATERALIDADES = ["No aplica", "Derecha", "Izquierda", "Bilateral"];
+const TECNICAS_BLOQUEO = ["Ecoguiado", "Neuroestimulación", "Parestesia", "Referencias anatómicas"];
+const NIVELES_SEDACION = ["Leve", "Moderada", "Profunda"];
 const VIA_AEREA = ["Intubación traqueal", "Máscara facial", "Máscara laríngea", "Cánula faríngea", "Cánula nasal (bigotera)"];
 const INTUBACION_SUBTIPO = ["OR (orotraqueal)", "NS (nasotraqueal)", "Pack F."];
 const CANULA_FARINGEAL = ["Oral", "Nasal"];
@@ -159,6 +161,12 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
       ayunoHoras: null,
       tipoAnestesia: "",
       tipoAnestesiaDetalle: "",
+      nivelBloqueo: null,
+      lateralidad: null,
+      nervioPlexo: null,
+      tecnicaBloqueo: null,
+      zonaLocal: null,
+      nivelSedacion: null,
       modalidadVentFranja: [],
       preoxigenacion: false,
       intubacion: false,
@@ -232,6 +240,12 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
               tecnicaAnestesia: p.tecnicaAnestesia || [],
               tipoAnestesia: p.tipoAnestesia || "",
               tipoAnestesiaDetalle: p.tipoAnestesiaDetalle || "",
+              nivelBloqueo: p.nivelBloqueo || null,
+              lateralidad: p.lateralidad || null,
+              nervioPlexo: p.nervioPlexo || null,
+              tecnicaBloqueo: p.tecnicaBloqueo || null,
+              zonaLocal: p.zonaLocal || null,
+              nivelSedacion: p.nivelSedacion || null,
               tipoConductiva: p.tipoConductiva || "",
               posicionPuncion: p.posicionPuncion || "",
               sitioPuncion: p.sitioPuncion || "",
@@ -571,20 +585,21 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
     return <p className="text-muted text-sm">Cargando protocolo de anestesia...</p>;
   }
 
-  const toggleTecnica = (val: string) => {
-    const current = form.getValues("tecnicaAnestesia") || [];
-    const updated = current.includes(val) ? current.filter((v) => v !== val) : [...current, val];
-    form.setValue("tecnicaAnestesia", updated, { shouldDirty: true });
-  };
-
   const toggleEgreso = (val: string) => {
     const current = form.getValues("estadoEgreso") || [];
     const updated = current.includes(val) ? current.filter((v) => v !== val) : [...current, val];
     form.setValue("estadoEgreso", updated, { shouldDirty: true });
   };
 
-  const tecnicaConductiva = (form.watch("tecnicaAnestesia") || []).includes("conductiva");
-  const tecnicaGeneral = (form.watch("tecnicaAnestesia") || []).includes("general");
+  const tipoAnestesia = form.watch("tipoAnestesia") ?? "";
+  const esGeneral = tipoAnestesia === "General" || tipoAnestesia === "Combinada (general + regional)";
+  const esRaquidea = tipoAnestesia === "Regional raquídea (espinal)";
+  const esPeridural = tipoAnestesia === "Regional peridural (epidural)";
+  const esCombinadaRegional = tipoAnestesia === "Regional combinada (espinal + epidural)";
+  const esRegional = esRaquidea || esPeridural || esCombinadaRegional;
+  const esBloqueo = tipoAnestesia === "Bloqueo de nervio periférico";
+  const esLocal = tipoAnestesia === "Local";
+  const esSedacion = tipoAnestesia === "Sedación";
   const manejoViaAerea = form.watch("manejoViaAerea");
 
   return (
@@ -991,57 +1006,147 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                       />
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm text-muted">Técnica anestésica</label>
-                    <div className="flex gap-3">
-                      {["conductiva", "general"].map((t) => (
-                        <label key={t} className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={(form.watch("tecnicaAnestesia") || []).includes(t)}
-                            onChange={() => toggleTecnica(t)}
-                            disabled={firmado}
-                            className="accent-accent"
-                          />
-                          {t === "conductiva" ? "Conductiva/Regional" : "General"}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Conductiva */}
-                  {tecnicaConductiva && (
+                  {/* Regional (raquídea / peridural / combinada) */}
+                  {esRegional && (
                     <div className="space-y-3 p-3 rounded-lg bg-background border border-border/50">
-                      <h4 className="text-sm font-medium text-text-secondary">Anestesia Conductiva/Regional</h4>
+                      <h4 className="text-sm font-medium text-text-secondary">
+                        Anestesia Regional{" "}
+                        {esRaquidea ? "(raquídea)" : esPeridural ? "(peridural)" : "(combinada espinal + epidural)"}
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <Input label={esRaquidea ? "Nivel de bloqueo" : "Espacio / nivel"} {...form.register("nivelBloqueo")} disabled={firmado} />
+                        <div className="space-y-1">
+                          <label className="block text-xs text-muted">Lateralidad</label>
+                          <select
+                            value={form.watch("lateralidad") ?? ""}
+                            onChange={(e) => form.setValue("lateralidad", e.target.value, { shouldDirty: true })}
+                            disabled={firmado}
+                            className="w-full rounded-lg border border-border bg-background px-3 py-2.5 min-h-[40px] text-sm text-text focus:outline-none focus:border-brand disabled:opacity-60"
+                          >
+                            <option value="">—</option>
+                            {LATERALIDADES.map((l) => (
+                              <option key={l} value={l}>
+                                {l}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <Input label="Droga y dosis" {...form.register("farmacoConductiva")} disabled={firmado} />
+                        <Input label="Tipo y calibre de aguja" {...form.register("agujaDetalle")} disabled={firmado} />
+                      </div>
+                      {(esPeridural || esCombinadaRegional) && (
+                        <label className="flex items-center gap-2 text-sm text-text-secondary">
+                          <input type="checkbox" {...form.register("cateter")} disabled={firmado} className="accent-accent" />
+                          Catéter peridural
+                        </label>
+                      )}
+                      {esCombinadaRegional && (
+                        <p className="text-[11px] text-muted italic">Raquídea + peridural en el mismo procedimiento.</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Bloqueo de nervio periférico */}
+                  {esBloqueo && (
+                    <div className="space-y-3 p-3 rounded-lg bg-background border border-border/50">
+                      <h4 className="text-sm font-medium text-text-secondary">Bloqueo de nervio periférico</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <Input label="Nervio / plexo" placeholder="Ej.: plexo braquial, femoral…" {...form.register("nervioPlexo")} disabled={firmado} />
+                        <div className="space-y-1">
+                          <label className="block text-xs text-muted">Lateralidad</label>
+                          <select
+                            value={form.watch("lateralidad") ?? ""}
+                            onChange={(e) => form.setValue("lateralidad", e.target.value, { shouldDirty: true })}
+                            disabled={firmado}
+                            className="w-full rounded-lg border border-border bg-background px-3 py-2.5 min-h-[40px] text-sm text-text focus:outline-none focus:border-brand disabled:opacity-60"
+                          >
+                            <option value="">—</option>
+                            {LATERALIDADES.map((l) => (
+                              <option key={l} value={l}>
+                                {l}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <Input label="Droga local y dosis" {...form.register("farmacoConductiva")} disabled={firmado} />
+                        <Input label="Tipo y calibre de aguja" {...form.register("agujaDetalle")} disabled={firmado} />
+                      </div>
                       <div className="space-y-2">
-                        <label className="block text-xs text-muted">Tipo</label>
+                        <label className="block text-xs text-muted">Técnica de bloqueo</label>
                         <div className="flex flex-wrap gap-2">
-                          {TIPOS_CONDUCTIVA.map((tc) => (
-                            <button key={tc} type="button" disabled={firmado}
-                              onClick={() => form.setValue("tipoConductiva", tc, { shouldDirty: true })}
-                              className={`px-3 py-1 rounded-lg text-xs ${
-                                form.watch("tipoConductiva") === tc
+                          {TECNICAS_BLOQUEO.map((tb) => (
+                            <button key={tb} type="button" disabled={firmado}
+                              onClick={() => form.setValue("tecnicaBloqueo", tb, { shouldDirty: true })}
+                              className={`px-3 py-1.5 min-h-[36px] rounded-lg text-xs ${
+                                form.watch("tecnicaBloqueo") === tb
                                   ? "bg-accent/15 text-accent"
                                   : "bg-border text-text-secondary hover:bg-surface-active"
-                              }`}>{tc}</button>
+                              }`}>{tb}</button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Local */}
+                  {esLocal && (
+                    <div className="space-y-3 p-3 rounded-lg bg-background border border-border/50">
+                      <h4 className="text-sm font-medium text-text-secondary">Anestesia Local</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <Input label="Zona" placeholder="Ej.: drenaje, sutura…" {...form.register("zonaLocal")} disabled={firmado} />
+                        <Input label="Droga local y dosis" {...form.register("farmacoConductiva")} disabled={firmado} />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sedación */}
+                  {esSedacion && (
+                    <div className="space-y-3 p-3 rounded-lg bg-background border border-border/50">
+                      <h4 className="text-sm font-medium text-text-secondary">Sedación</h4>
+                      <div className="space-y-2">
+                        <label className="block text-xs text-muted">Nivel de sedación</label>
+                        <div className="flex flex-wrap gap-2">
+                          {NIVELES_SEDACION.map((ns) => (
+                            <button key={ns} type="button" disabled={firmado}
+                              onClick={() => form.setValue("nivelSedacion", ns, { shouldDirty: true })}
+                              className={`px-3 py-1.5 min-h-[36px] rounded-lg text-xs ${
+                                form.watch("nivelSedacion") === ns
+                                  ? "bg-accent/15 text-accent"
+                                  : "bg-border text-text-secondary hover:bg-surface-active"
+                              }`}>{ns}</button>
                           ))}
                         </div>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <Input label="Posición durante punción" {...form.register("posicionPuncion")} disabled={firmado} />
-                        <Input label="Sitio de punción" {...form.register("sitioPuncion")} disabled={firmado} />
-                        <Input label="Tipo y calibre de aguja" {...form.register("agujaDetalle")} disabled={firmado} />
-                        <Input label="Fármaco y dosis" {...form.register("farmacoConductiva")} disabled={firmado} />
+                        <Input label="FiO₂ administrada (%)" type="number" min={0} max={100} step={1} {...form.register("fio2", { valueAsNumber: true })} disabled={firmado} />
+                        <Input label="Oxígeno flujo (L/min)" type="number" min={0} step={0.5} {...form.register("oxigenoFlujo", { valueAsNumber: true })} disabled={firmado} />
                       </div>
-                      <label className="flex items-center gap-2 text-sm text-text-secondary">
-                        <input type="checkbox" {...form.register("cateter")} disabled={firmado} className="accent-accent" />
-                        Catéter
-                      </label>
+                      <div className="space-y-2">
+                        <label className="block text-xs text-muted">Manejo de vía aérea (si hiciera falta)</label>
+                        <div className="flex flex-wrap gap-2">
+                          {VIA_AEREA.map((va) => (
+                            <button key={va} type="button" disabled={firmado}
+                              onClick={() => form.setValue("manejoViaAerea", va, { shouldDirty: true })}
+                              className={`px-3 py-1.5 min-h-[36px] rounded-lg text-xs ${
+                                form.watch("manejoViaAerea") === va
+                                  ? "bg-accent/15 text-accent"
+                                  : "bg-border text-text-secondary hover:bg-surface-active"
+                              }`}>{va}</button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
 
+                  {/* Otra: detalle libre + monitoreo */}
+                  {tipoAnestesia === "Otra" && (
+                    <p className="text-[11px] text-muted italic">
+                      Monitoreo y registro continuo en la sección Intraoperatorio.
+                    </p>
+                  )}
+
                   {/* General */}
-                  {tecnicaGeneral && (
+                  {esGeneral && (
                     <div className="space-y-3 p-3 rounded-lg bg-background border border-border/50">
                       <h4 className="text-sm font-medium text-text-secondary">Anestesia General</h4>
                       <div className="space-y-2">

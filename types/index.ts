@@ -247,6 +247,12 @@ export interface ProtocoloAnestesiaData {
   tecnicaAnestesia?: string[];
   tipoAnestesia?: string | null;
   tipoAnestesiaDetalle?: string | null;
+  nivelBloqueo?: string | null;
+  lateralidad?: string | null;
+  nervioPlexo?: string | null;
+  tecnicaBloqueo?: string | null;
+  zonaLocal?: string | null;
+  nivelSedacion?: string | null;
   tipoConductiva?: string | null;
   posicionPuncion?: string | null;
   sitioPuncion?: string | null;
