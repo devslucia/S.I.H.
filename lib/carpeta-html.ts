@@ -335,7 +335,7 @@ export function generarHTMLCarpeta(data: DatosCarpeta, usuarios: Usuario[]): str
     <div style="display:flex;align-items:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:16px">
       <span style="font-size:24px;margin-right:12px">✚</span>
       <div>
-        <div style="font-size:16pt;font-weight:bold">SANATORIO SIMES</div>
+        <div style="font-size:16pt;font-weight:bold">SIH — Sistema Informático Hospitalario</div>
         <div style="font-size:9pt">Córdoba N° 2344 — Posadas, Misiones | Tel: 03765-430280 / 430283</div>
       </div>
     </div>
