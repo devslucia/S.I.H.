@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatZodError } from "@/lib/validations/format-zod-error";
 import {errorMessage} from "@/lib/errors";
+import { assertObraSocialUsable } from "@/lib/obra-social";
 
 const admitirSchema = z.object({
   dni: z.string().min(7).max(11),
@@ -39,6 +40,11 @@ export async function POST(req: NextRequest) {
   }
 
   const data = parsed.data;
+
+  if (data.obraSocialId) {
+    const { error: osError } = await assertObraSocialUsable(prisma, data.obraSocialId, "INTERNACION");
+    if (osError) return NextResponse.json({ error: osError }, { status: 400 });
+  }
 
   const existe = await prisma.paciente.findUnique({ where: { dni: data.dni } });
   if (existe) {

@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { assertObraSocialUsable } from "@/lib/obra-social";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatZodError } from "@/lib/validations/format-zod-error";
@@ -94,6 +95,11 @@ export async function POST(req: NextRequest) {
   const data = parsed.data;
   const rol = session.user.rol as string;
   const userId = session.user.id as string;
+
+  if (data.obraSocialId) {
+    const { error: osError } = await assertObraSocialUsable(prisma, data.obraSocialId, "AMBULATORIO");
+    if (osError) return NextResponse.json({ error: osError }, { status: 400 });
+  }
 
   // SECRETARIA: verificar que el médico esté asignado
   if (rol === "SECRETARIA") {

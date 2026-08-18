@@ -174,7 +174,7 @@ export default function AdmisionPage() {
   const fetchLookups = useCallback(async () => {
     const [camasRes, osRes, medRes, esperaRes] = await Promise.all([
       fetch("/api/camas"),
-      fetch("/api/obras-sociales"),
+      fetch("/api/obras-sociales?contexto=INTERNACION"),
       fetch("/api/usuarios/medicos"),
       fetch("/api/internaciones?estado=ACTIVA"),
     ]);
