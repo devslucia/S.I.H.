@@ -82,6 +82,17 @@ const SECCIONES = [
 
 const ESTADO_PSICOS = ["Normal", "Ansioso", "Hiperemotivo", "Excitado", "Deprimido", "Comatoso"];
 const MALLAMPATI = ["I", "II", "III", "IV"];
+const TIPOS_ANESTESIA = [
+  "General",
+  "Regional raquídea (espinal)",
+  "Regional peridural (epidural)",
+  "Regional combinada (espinal + epidural)",
+  "Bloqueo de nervio periférico",
+  "Local",
+  "Sedación",
+  "Combinada (general + regional)",
+  "Otra",
+];
 const TIPOS_CONDUCTIVA = ["Peridural", "Raquídea", "Troncular", "Plexual", "Local", "Regional I.V."];
 const VIA_AEREA = ["Intubación traqueal", "Máscara facial", "Máscara laríngea", "Cánula faríngea", "Cánula nasal (bigotera)"];
 const INTUBACION_SUBTIPO = ["OR (orotraqueal)", "NS (nasotraqueal)", "Pack F."];
@@ -145,6 +156,9 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
       sondaVesical: false,
       estadoEgreso: [],
       premedicacion: [],
+      ayunoHoras: null,
+      tipoAnestesia: "",
+      tipoAnestesiaDetalle: "",
       modalidadVentFranja: [],
       preoxigenacion: false,
       intubacion: false,
@@ -199,8 +213,9 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
               clasificacionASA: p.clasificacionASA || "",
               esEmergencia: p.esEmergencia || false,
               grupoSangre: p.grupoSangre || "",
-              ayunoSolidos: p.ayunoSolidos ?? null,
-              ayunoLiquidos: p.ayunoLiquidos ?? null,
+              ayunoHoras: p.ayunoHoras ?? (Math.max(p.ayunoSolidos ?? 0, p.ayunoLiquidos ?? 0) || null),
+              ayunoSolidos: null,
+              ayunoLiquidos: null,
               ultimaIngesta: p.ultimaIngesta || "",
               estadoPsiquico: p.estadoPsiquico || "",
               premedicacion: onlyArray<PremedicacionItem>(p.premedicacion),
@@ -215,6 +230,8 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
               checklistMonitores: p.checklistMonitores || false,
               checklistPosicion: p.checklistPosicion || false,
               tecnicaAnestesia: p.tecnicaAnestesia || [],
+              tipoAnestesia: p.tipoAnestesia || "",
+              tipoAnestesiaDetalle: p.tipoAnestesiaDetalle || "",
               tipoConductiva: p.tipoConductiva || "",
               posicionPuncion: p.posicionPuncion || "",
               sitioPuncion: p.sitioPuncion || "",
@@ -787,8 +804,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Ayuno */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label="Último ayuno - Sólidos (horas)" type="number" min={0} {...form.register("ayunoSolidos", { valueAsNumber: true })} disabled={firmado} />
-                    <Input label="Último ayuno - Líquidos (horas)" type="number" min={0} {...form.register("ayunoLiquidos", { valueAsNumber: true })} disabled={firmado} />
+                    <Input label="Ayuno (horas)" type="number" min={0} {...form.register("ayunoHoras", { valueAsNumber: true })} disabled={firmado} />
                   </div>
 
                   {/* Estado psíquico */}
@@ -949,6 +965,32 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
               {/* === SECCIÓN 3: Técnica Anestésica === */}
               {sec.key === "tecnica" && (
                 <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="block text-sm text-muted">Tipo de anestesia</label>
+                      <select
+                        value={form.watch("tipoAnestesia") ?? ""}
+                        onChange={(e) => form.setValue("tipoAnestesia", e.target.value, { shouldDirty: true })}
+                        disabled={firmado}
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 min-h-[40px] text-sm text-text focus:outline-none focus:border-brand disabled:opacity-60"
+                      >
+                        <option value="">— seleccionar —</option>
+                        {TIPOS_ANESTESIA.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {form.watch("tipoAnestesia") === "Otra" && (
+                      <Input
+                        label="Detalle de tipo de anestesia"
+                        placeholder="Especificar…"
+                        {...form.register("tipoAnestesiaDetalle")}
+                        disabled={firmado}
+                      />
+                    )}
+                  </div>
                   <div className="space-y-2">
                     <label className="block text-sm text-muted">Técnica anestésica</label>
                     <div className="flex gap-3">

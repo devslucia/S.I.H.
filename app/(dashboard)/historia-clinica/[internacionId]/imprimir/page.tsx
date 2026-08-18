@@ -74,10 +74,11 @@ interface CarpetaCompleta {
       ayudantes: string | null; fechaCirugia: string | null;
       alergiaDetalle: string | null;
       clasificacionASA: string | null; esEmergencia: boolean;
-      ayunoSolidos: number | null; ayunoLiquidos: number | null;
+      ayunoHoras: number | null;
       estadoPsiquico: string | null; mallampati: string | null;
       distTiromentoniana: number | null; aperturaBucal: number | null;
       tecnicaAnestesia: string[];
+      tipoAnestesia: string | null; tipoAnestesiaDetalle: string | null;
       viaInduccion: string | null; manejoViaAerea: string | null;
       nroTubo: string | null; dificultadViaAerea: boolean | null;
       modalidadVentilatoria: string | null; fio2: number | null;
@@ -593,8 +594,7 @@ export default function ImprimirCarpetaPage() {
               <p style={{ fontSize: '10pt', fontWeight: 'bold', marginTop: '8px', marginBottom: '4px' }}>Evaluación Preanestésica</p>
               <Field label="Alergias" value={hc.protocoloAnestesia.alergiaDetalle || 'No especificadas'} />
               <Field label="ASA" value={`${hc.protocoloAnestesia.clasificacionASA || '—'}${hc.protocoloAnestesia.esEmergencia ? ' (E) Emergencia' : ''}`} />
-              <Field label="Ayuno sólidos" value={hc.protocoloAnestesia.ayunoSolidos != null ? `${hc.protocoloAnestesia.ayunoSolidos}h` : null} />
-              <Field label="Ayuno líquidos" value={hc.protocoloAnestesia.ayunoLiquidos != null ? `${hc.protocoloAnestesia.ayunoLiquidos}h` : null} />
+              <Field label="Ayuno" value={hc.protocoloAnestesia.ayunoHoras != null ? `${hc.protocoloAnestesia.ayunoHoras}h` : null} />
               <Field label="Estado psíquico" value={hc.protocoloAnestesia.estadoPsiquico} />
               <Field label="Mallampati" value={hc.protocoloAnestesia.mallampati} />
               <Field label="Dist. tiromentoniana" value={hc.protocoloAnestesia.distTiromentoniana != null ? `${hc.protocoloAnestesia.distTiromentoniana} cm` : null} />
@@ -603,6 +603,7 @@ export default function ImprimirCarpetaPage() {
               <Field label="Talla" value={hc.protocoloAnestesia.talla ? `${hc.protocoloAnestesia.talla} cm` : null} />
 
               <p style={{ fontSize: '10pt', fontWeight: 'bold', marginTop: '8px', marginBottom: '4px' }}>Técnica Anestésica</p>
+              <Field label="Tipo de anestesia" value={hc.protocoloAnestesia.tipoAnestesia ? (hc.protocoloAnestesia.tipoAnestesia === 'Otra' && hc.protocoloAnestesia.tipoAnestesiaDetalle ? `${hc.protocoloAnestesia.tipoAnestesia}: ${hc.protocoloAnestesia.tipoAnestesiaDetalle}` : hc.protocoloAnestesia.tipoAnestesia) : null} />
               <Field label="Técnica" value={hc.protocoloAnestesia.tecnicaAnestesia?.join(' + ') || null} />
               <Field label="Vía inducción" value={hc.protocoloAnestesia.viaInduccion} />
               <Field label="Vía aérea" value={hc.protocoloAnestesia.manejoViaAerea} />
