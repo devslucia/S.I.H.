@@ -269,6 +269,7 @@ model ObraSocial {
   activa                     Boolean                 @default(true)
   convenios                  Convenio[]
   nomencladores              NomencladorObraSocial[]
+  galenos                    GalenoObraSocial[]
   internaciones              Internacion[]
   turnosConsultorio          TurnoConsultorio[]
 }
@@ -1055,6 +1056,24 @@ model NomencladorItem {
   updatedAt                  DateTime                    @updatedAt
 
   @@index([capitulo, seccion])
+  cargos CargoFacturacion[]
+}
+
+model GalenoObraSocial {
+  id            String   @id @default(uuid())
+  obraSocialId  String
+  obraSocial    ObraSocial @relation(fields: [obraSocialId], references: [id], onDelete: Restrict)
+  galenoQx      Decimal  @default(0) @db.Decimal(12, 2)
+  gastosQx      Decimal  @default(0) @db.Decimal(12, 2)
+  gastosPension Decimal  @default(0) @db.Decimal(12, 2)
+  otrosGastos   Decimal  @default(0) @db.Decimal(12, 2)
+  vigenciaDesde DateTime @db.Date
+  vigenciaHasta DateTime? @db.Date
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([obraSocialId, vigenciaDesde])
 }
 
 model NomencladorObraSocial {
@@ -1094,20 +1113,27 @@ model NomencladorObraSocialItem {
 }
 
 model CargoFacturacion {
-  id               String                 @id @default(uuid())
-  internacionId    String
-  internacion      Internacion            @relation(fields: [internacionId], references: [id])
-  concepto         String
-  cantidad         Decimal
-  precioUnitario   Decimal
-  total            Decimal
-  origen           OrigenCargo
-  aplicacionId     String?                @unique
-  aplicacion       AplicacionMedicamento? @relation(fields: [aplicacionId], references: [id])
-  hojaEnfermeriaId String?
-  hojaEnfermeria   HojaEnfermeria?        @relation(fields: [hojaEnfermeriaId], references: [id])
-  fecha            DateTime               @default(now())
-  facturado        Boolean                @default(false)
+  id                    String                 @id @default(uuid())
+  internacionId         String
+  internacion           Internacion            @relation(fields: [internacionId], references: [id])
+  concepto              String
+  cantidad              Decimal
+  precioUnitario        Decimal
+  total                 Decimal
+  origen                OrigenCargo
+  aplicacionId          String?                @unique
+  aplicacion            AplicacionMedicamento? @relation(fields: [aplicacionId], references: [id])
+  hojaEnfermeriaId      String?
+  hojaEnfermeria        HojaEnfermeria?        @relation(fields: [hojaEnfermeriaId], references: [id])
+  fecha                 DateTime               @default(now())
+  facturado             Boolean                @default(false)
+  nomencladorId         String?
+  nomenclador           NomencladorItem?       @relation(fields: [nomencladorId], references: [id])
+  galenoQx              Decimal?
+  honorariosEspecialista Decimal?
+  honorariosAyudantes    Decimal?
+  honorariosAnestesista  Decimal?
+  gastosPractica         Decimal?
 
   @@index([internacionId])
   @@index([facturado])
