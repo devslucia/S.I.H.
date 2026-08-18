@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
   let itemsGenerados = 0;
   if (generarDesdeNacional) {
     const maestro = await prisma.nomencladorItem.findMany({
-      where: { activo: true },
+      where: { activo: true, alcance: "NACIONAL" },
       select: { id: true, codigo: true },
     });
     if (maestro.length > 0) {

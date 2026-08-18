@@ -2,9 +2,9 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { nomencladorItemSchema } from "@/lib/nomenclador-schemas";
+import { nomencladorItemFields } from "@/lib/nomenclador-schemas";
 
-const updateSchema = nomencladorItemSchema.partial().extend({
+const updateSchema = nomencladorItemFields.partial().extend({
   codigo: z.string().trim().min(1, "codigo requerido").optional(),
 });
 
@@ -23,10 +23,29 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: "Práctica no encontrada" }, { status: 404 });
   }
 
-  if (parsed.data.codigo && parsed.data.codigo !== existe.codigo) {
-    const duplicado = await prisma.nomencladorItem.findUnique({ where: { codigo: parsed.data.codigo } });
+  const alcanceFinal = parsed.data.alcance ?? existe.alcance;
+  const osIdFinal = parsed.data.obraSocialId !== undefined ? parsed.data.obraSocialId ?? null : existe.obraSocialId;
+  if (alcanceFinal === "ESPECIFICA" && !osIdFinal) {
+    return NextResponse.json({ error: "obra social requerida para práctica específica" }, { status: 400 });
+  }
+  if (alcanceFinal === "NACIONAL" && osIdFinal) {
+    return NextResponse.json({ error: "una práctica nacional no puede tener obra social" }, { status: 400 });
+  }
+  if (alcanceFinal === "ESPECIFICA") {
+    const os = await prisma.obraSocial.findUnique({ where: { id: osIdFinal! } });
+    if (!os) return NextResponse.json({ error: "Obra social no encontrada" }, { status: 404 });
+  }
+
+  const codigoFinal = parsed.data.codigo ?? existe.codigo;
+  if ((parsed.data.codigo && parsed.data.codigo !== existe.codigo) || (parsed.data.obraSocialId !== undefined && (osIdFinal ?? null) !== existe.obraSocialId) || (parsed.data.alcance && alcanceFinal !== existe.alcance)) {
+    const duplicado = await prisma.nomencladorItem.findFirst({
+      where: { codigo: codigoFinal, obraSocialId: osIdFinal ?? null, id: { not: params.id } },
+    });
     if (duplicado) {
-      return NextResponse.json({ error: `Ya existe la práctica ${parsed.data.codigo}` }, { status: 409 });
+      return NextResponse.json(
+        { error: alcanceFinal === "ESPECIFICA" ? `Ya existe la práctica ${codigoFinal} para esta obra social` : `Ya existe la práctica ${codigoFinal}` },
+        { status: 409 }
+      );
     }
   }
 
@@ -45,11 +64,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     "total",
     "notas",
     "activo",
+    "alcance",
+    "obraSocialId",
   ] as const) {
     if (k in parsed.data) data[k] = (parsed.data as Record<string, unknown>)[k] ?? null;
   }
 
-  const item = await prisma.nomencladorItem.update({ where: { id: params.id }, data });
+  const item = await prisma.nomencladorItem.update({
+    where: { id: params.id },
+    data,
+    include: { obraSocial: { select: { id: true, sigla: true, nombre: true } } },
+  });
 
   return NextResponse.json({
     ...item,
