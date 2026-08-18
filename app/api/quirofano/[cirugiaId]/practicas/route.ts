@@ -1,6 +1,9 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { calcularImportesNomenclador, getGalenoVigente, normalizarItemNacional } from "@/lib/galeno";
+
+const CODIGO_NACIONAL_RE = /^\d{2}\.\d{2}\.\d{2}$/;
 
 async function checkAssignment(userId: string, cirugiaId: string) {
   const cirugia = await prisma.cirugia.findUnique({
@@ -40,14 +43,62 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
       select: { internacionId: true },
     });
     if (cirugia) {
+      // Cálculo automático por galeno: si la práctica es un código del
+      // Nomenclador Nacional, se resuelve el ítem y el galeno vigente de la
+      // obra social de la internación en la fecha de la práctica.
+      const codigo = String(body.practica ?? "").trim();
+      let precioUnitario = 0;
+      let total = 0;
+      const desglose: {
+        nomencladorId?: string;
+        galenoQx?: number;
+        honorariosEspecialista?: number;
+        honorariosAyudantes?: number;
+        honorariosAnestesista?: number;
+        gastosPractica?: number;
+      } = {};
+
+      if (CODIGO_NACIONAL_RE.test(codigo)) {
+        const item = await tx.nomencladorItem.findUnique({ where: { codigo } });
+        const internacion = await tx.internacion.findUnique({
+          where: { id: cirugia.internacionId },
+          select: { obraSocialId: true },
+        });
+
+        if (item && internacion?.obraSocialId) {
+          const fechaPrestacion = new Date(body.fecha);
+          const galeno = await getGalenoVigente(tx, internacion.obraSocialId, fechaPrestacion);
+          if (!galeno) {
+            return NextResponse.json(
+              {
+                error: "Falta configurar galeno para esta obra social en la fecha de la práctica. Revisá Configuración → Galenos por obra social.",
+              },
+              { status: 400 }
+            );
+          }
+          const importes = calcularImportesNomenclador(normalizarItemNacional(item), galeno);
+          precioUnitario = importes.total;
+          total = precioUnitario;
+          Object.assign(desglose, {
+            nomencladorId: item.id,
+            galenoQx: Number(galeno.galenoQx),
+            honorariosEspecialista: importes.honorariosEspecialista,
+            honorariosAyudantes: importes.honorariosAyudantes,
+            honorariosAnestesista: importes.honorariosAnestesista,
+            gastosPractica: importes.gastosPractica,
+          });
+        }
+      }
+
       await tx.cargoFacturacion.create({
         data: {
           internacionId: cirugia.internacionId,
           concepto: `Práctica: ${body.practica}`,
           cantidad: 1,
-          precioUnitario: 0,
-          total: 0,
+          precioUnitario,
+          total,
           origen: "PRACTICA",
+          ...desglose,
         },
       });
     }

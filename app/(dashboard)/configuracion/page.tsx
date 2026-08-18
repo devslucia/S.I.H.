@@ -40,6 +40,13 @@ const adminModules = [
     icon: FileSpreadsheet,
     href: "/configuracion/nomencladores",
   },
+  {
+    id: 5,
+    name: "Galenos por obra social",
+    description: "Valor de la unidad del nomenclador por OS y vigencia para facturación automática",
+    icon: FileSpreadsheet,
+    href: "/configuracion/galenos",
+  },
 ];
 
 export default function ConfiguracionPage() {

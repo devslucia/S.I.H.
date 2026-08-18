@@ -15,6 +15,12 @@ interface Cargo {
   total: number;
   origen: string;
   facturado: boolean;
+  nomencladorId: string | null;
+  galenoQx: number | null;
+  honorariosEspecialista: number | null;
+  honorariosAyudantes: number | null;
+  honorariosAnestesista: number | null;
+  gastosPractica: number | null;
 }
 
 interface Liquidacion {
@@ -30,6 +36,7 @@ interface Liquidacion {
 }
 
 const money = (n: unknown) => `$${toMoney(n)}`;
+const moneyO = (n: number | null | undefined) => (n === null || n === undefined ? "—" : `$${toMoney(n)}`);
 const th = "px-4 py-2.5 text-left text-[11px] font-mono uppercase tracking-widest text-muted whitespace-nowrap";
 const td = "px-4 py-2.5";
 
@@ -143,7 +150,21 @@ export default function FacturacionPage() {
                         <tbody>
                           {cargos.map((cargo) => (
                             <tr key={cargo.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
-                              <td className={td + " text-text"}>{cargo.concepto}</td>
+                              <td className={td + " text-text"}>
+                            {cargo.concepto}
+                            {cargo.nomencladorId && (
+                              <div className="text-[11px] font-mono text-muted mt-1 space-y-0.5">
+                                <span>
+                                  {cargo.galenoQx !== null && `Galeno Qx $${toMoney(cargo.galenoQx)}`}
+                                </span>
+                                <div>
+                                  Esp {moneyO(cargo.honorariosEspecialista)} · Ayud {moneyO(cargo.honorariosAyudantes)} · Anest{" "}
+                                  {moneyO(cargo.honorariosAnestesista)}
+                                  {cargo.gastosPractica ? ` · Gastos ${moneyO(cargo.gastosPractica)}` : ""}
+                                </div>
+                              </div>
+                            )}
+                          </td>
                               <td className={td + " text-muted text-[12px]"}>{cargo.origen}</td>
                               <td className={td + " text-muted tabular-nums"}>{cargo.cantidad}</td>
                               <td className={td + " text-muted tabular-nums hidden md:table-cell"}>{money(cargo.precioUnitario)}</td>
