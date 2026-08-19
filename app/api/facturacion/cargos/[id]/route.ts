@@ -3,9 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { calcularMedicacion } from "@/lib/facturacion-medicacion";
 import { calcularHonorario } from "@/lib/facturacion-honorarios";
+import { calcularGasto } from "@/lib/facturacion-gastos";
 
 const MED_FUNCIONES = ["60", "92"] as const;
 const HON_FUNCIONES = ["10", "20", "30", "92"] as const;
+const GAS_FUNCIONES = ["60", "92"] as const;
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const { error } = await requireRole("ADMIN", "FACTURACION");
@@ -18,8 +20,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   const existe = await prisma.cargoFacturacion.findUnique({ where: { id: params.id } });
   if (!existe) return NextResponse.json({ error: "Cargo no encontrado" }, { status: 404 });
-  if (existe.origen !== "MEDICACION" && existe.origen !== "PRACTICA") {
-    return NextResponse.json({ error: "Solo se pueden editar ítems manuales de medicación u honorarios" }, { status: 400 });
+  if (existe.origen !== "MEDICACION" && existe.origen !== "PRACTICA" && existe.origen !== "OTRO") {
+    return NextResponse.json({ error: "Solo se pueden editar ítems manuales de medicación, honorarios o gastos" }, { status: 400 });
   }
   if (existe.funcionCodigo === null) {
     return NextResponse.json({ error: "No se pueden editar ítems generados automáticamente" }, { status: 400 });
@@ -61,6 +63,51 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           precioUnitario: calc.data.importe,
           total: calc.data.importe,
           funcionCodigo: calc.data.funcionCodigo,
+          valorBase: calc.data.valorBase,
+          galenoAplicado: calc.data.galenoAplicado,
+          observacion: calc.data.observacion,
+        },
+      });
+      return { status: 200, data: cargo };
+    }
+
+    if (existe.origen === "OTRO") {
+      const funcionCodigo = (GAS_FUNCIONES as readonly string[]).includes(String(body.funcionCodigo ?? ""))
+        ? (String(body.funcionCodigo) as (typeof GAS_FUNCIONES)[number])
+        : null;
+      if (!funcionCodigo) return { status: 400, data: { error: "Función inválida (60 o 92)" } };
+
+      let codigo = body.codigo ? String(body.codigo).trim() : "";
+      if (funcionCodigo === "60" && !codigo) {
+        if (existe.nomencladorId) {
+          const item = await tx.nomencladorItem.findUnique({ where: { id: existe.nomencladorId } });
+          if (item) codigo = item.codigo;
+        }
+        if (!codigo) {
+          return { status: 400, data: { error: "Reintentá la búsqueda de la práctica para editarla" } };
+        }
+      }
+
+      const calc = await calcularGasto(tx, {
+        internacionId: existe.internacionId,
+        funcionCodigo,
+        codigo: funcionCodigo === "60" ? codigo : undefined,
+        descripcion: body.descripcion ? String(body.descripcion) : undefined,
+        importeManual: funcionCodigo === "92" ? num(body.importeManual) : undefined,
+        observacion,
+        fecha: existe.fecha,
+      });
+      if (!calc.ok) return { status: 400, data: { error: calc.error } };
+
+      const cargo = await tx.cargoFacturacion.update({
+        where: { id: params.id },
+        data: {
+          concepto: calc.data.concepto,
+          cantidad: 1,
+          precioUnitario: calc.data.importe,
+          total: calc.data.importe,
+          funcionCodigo: calc.data.funcionCodigo,
+          nomencladorId: calc.data.nomencladorId,
           valorBase: calc.data.valorBase,
           galenoAplicado: calc.data.galenoAplicado,
           observacion: calc.data.observacion,
