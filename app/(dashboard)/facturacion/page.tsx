@@ -42,6 +42,7 @@ interface Cargo {
   valorBase: number | null;
   galenoAplicado: number | null;
   observacion: string | null;
+  esConsumo: boolean;
 }
 
 interface Liquidacion {
@@ -327,12 +328,18 @@ function RubroDetalle({
   const rubro = RUBROS.find((r) => r.id === rubroId);
   const esMed = rubroId === "MED";
   const esHon = rubroId === "HON";
+  const esGas = rubroId === "GAS";
 
-  const FUNCIONES = esMed
-    ? [
-        { id: "60", label: "60 — Valor × galeno" },
-        { id: "92", label: "92 — Importe manual" },
-      ]
+  const FUNCIONES = esMed || esGas
+    ? esGas
+      ? [
+          { id: "60", label: "60 — Nomenclador × gastos" },
+          { id: "92", label: "92 — Importe manual" },
+        ]
+      : [
+          { id: "60", label: "60 — Valor × galeno" },
+          { id: "92", label: "92 — Importe manual" },
+        ]
     : [
         { id: "10", label: "10 — Especialista × galenoQx" },
         { id: "20", label: "20 — Ayudante × galenoQx" },
@@ -351,6 +358,11 @@ function RubroDetalle({
   const [err, setErr] = useState<string | null>(null);
   const [indiceVigente, setIndiceVigente] = useState<number | null>(null);
   const [galenoLabel, setGalenoLabel] = useState("");
+  const [practicaSel, setPracticaSel] = useState<{ codigo: string; descripcion: string; gastos: number | null } | null>(null);
+  const [busqueda, setBusqueda] = useState("");
+  const [resultados, setResultados] = useState<{ codigo: string; descripcion: string; gastos: number | null; origen: string }[]>([]);
+  const [buscando, setBuscando] = useState(false);
+  const [busquedaAbierta, setBusquedaAbierta] = useState(false);
 
   const parseMonto = (v: string): number | null => {
     const t = v.trim();
@@ -360,7 +372,7 @@ function RubroDetalle({
   };
 
   useEffect(() => {
-    if (!(esMed || esHon) || !obraSocialId) {
+    if (!(esMed || esHon || esGas) || !obraSocialId) {
       setIndiceVigente(null);
       setGalenoLabel("");
       return;
@@ -368,20 +380,47 @@ function RubroDetalle({
     let vivo = true;
     fetch(`/api/galenos?obraSocialId=${encodeURIComponent(obraSocialId)}&incluirInactivos=true`)
       .then((r) => r.json())
-      .then((d: { activo: boolean; vigenciaDesde: string; vigenciaHasta: string | null; galenoMedicacion: number; galenoQx: number; obraSocial: { sigla: string } }[]) => {
+      .then((d: { activo: boolean; vigenciaDesde: string; vigenciaHasta: string | null; galenoMedicacion: number; galenoQx: number; gastosQx: number; obraSocial: { sigla: string } }[]) => {
         if (!vivo || !Array.isArray(d)) return;
         const hoy = new Date().toISOString().slice(0, 10);
         const vigente = d
           .filter((g) => g.activo && g.vigenciaDesde <= hoy && (!g.vigenciaHasta || g.vigenciaHasta >= hoy))
           .sort((a, b) => b.vigenciaDesde.localeCompare(a.vigenciaDesde))[0];
-        setIndiceVigente(vigente ? Number(esHon ? vigente.galenoQx : vigente.galenoMedicacion) : null);
+        const indice = vigente ? (esHon ? vigente.galenoQx : esGas ? vigente.gastosQx : vigente.galenoMedicacion) : null;
+        setIndiceVigente(indice !== null && indice !== undefined ? Number(indice) : null);
         setGalenoLabel(vigente ? `${vigente.obraSocial.sigla} · vig ${vigente.vigenciaDesde}` : "");
       })
       .catch(() => {});
     return () => {
       vivo = false;
     };
-  }, [esMed, esHon, obraSocialId]);
+  }, [esMed, esHon, esGas, obraSocialId]);
+
+  useEffect(() => {
+    if (!esGas || !obraSocialId || !busqueda.trim()) {
+      setResultados([]);
+      return;
+    }
+    let vivo = true;
+    setBuscando(true);
+    const t = setTimeout(() => {
+      fetch(`/api/facturacion/nomenclador?obraSocialId=${encodeURIComponent(obraSocialId)}&q=${encodeURIComponent(busqueda.trim())}`)
+        .then((r) => r.json())
+        .then((d: { codigo: string; descripcion: string; gastos: number | null; origen: string }[]) => {
+          if (vivo) setResultados(Array.isArray(d) ? d : []);
+        })
+        .catch(() => {
+          if (vivo) setResultados([]);
+        })
+        .finally(() => {
+          if (vivo) setBuscando(false);
+        });
+    }, 300);
+    return () => {
+      vivo = false;
+      clearTimeout(t);
+    };
+  }, [esGas, obraSocialId, busqueda]);
 
   const abrirNuevo = () => {
     setEditandoId(null);
@@ -391,6 +430,8 @@ function RubroDetalle({
     setImporteManual("");
     setObservacion("");
     setErr(null);
+    setPracticaSel(null);
+    setBusqueda("");
     setFormAbierto(true);
   };
 
@@ -402,6 +443,8 @@ function RubroDetalle({
     setImporteManual(c.funcionCodigo === "92" ? String(c.total) : "");
     setObservacion(c.observacion ?? "");
     setErr(null);
+    setPracticaSel(c.funcionCodigo === "60" ? { codigo: c.concepto.split(" · ")[0] ?? "", descripcion: c.concepto.split(" · ").slice(1).join(" · ") || c.concepto, gastos: c.valorBase } : null);
+    setBusqueda("");
     setFormAbierto(true);
   };
 
@@ -409,35 +452,45 @@ function RubroDetalle({
     setGuardando(true);
     setErr(null);
     try {
-      if (!concepto.trim()) {
-        setErr("Ingresá el concepto del ítem");
-        return;
-      }
       const payload: Record<string, unknown> = {
         [esMed ? "modo" : "funcionCodigo"]: funcion,
         concepto: concepto.trim(),
         observacion: observacion.trim() || null,
       };
-      if (funcion !== "92") {
-        const v = parseMonto(valorBase);
-        if (v === null) {
-          setErr(esMed ? "Ingresá el valor (cantidad) para la función 60" : "Ingresá el valor (unidades) del honorario");
+      if (funcion === "92") {
+        if (!concepto.trim()) {
+          setErr("Ingresá el concepto del ítem");
           return;
         }
-        payload.valorBase = v;
-      } else {
         const m = parseMonto(importeManual);
         if (m === null) {
           setErr("Ingresá el importe manual para la función 92");
           return;
         }
         payload.importeManual = m;
+      } else if (esGas) {
+        if (!practicaSel) {
+          setErr("Buscá y elegí una práctica del nomenclador");
+          return;
+        }
+        payload.codigo = practicaSel.codigo;
+        payload.descripcion = practicaSel.descripcion;
+        delete payload.concepto;
+      } else {
+        const v = parseMonto(valorBase);
+        if (v === null) {
+          setErr(esMed ? "Ingresá el valor (cantidad) para la función 60" : "Ingresá el valor (unidades) del honorario");
+          return;
+        }
+        payload.valorBase = v;
       }
       const endpoint = editandoId
         ? `/api/facturacion/cargos/${editandoId}`
         : esHon
           ? "/api/facturacion/honorarios"
-          : "/api/facturacion/medicacion";
+          : esGas
+            ? "/api/facturacion/gastos"
+            : "/api/facturacion/medicacion";
       const res = await fetch(endpoint, {
         method: editandoId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -457,8 +510,11 @@ function RubroDetalle({
   };
 
   const esFormula = funcion !== "92";
-  const importeCalculado =
-    esFormula && indiceVigente !== null
+  const importeCalculado = esGas
+    ? esFormula && indiceVigente !== null && practicaSel
+      ? (practicaSel.gastos ?? 0) * indiceVigente
+      : null
+    : esFormula && indiceVigente !== null
       ? (parseMonto(valorBase) ?? 0) * (funcion === "30" ? 2 : 1) * indiceVigente
       : null;
 
@@ -468,9 +524,9 @@ function RubroDetalle({
         <p className="text-[13px] text-muted">
           Sin ítems de {rubro?.descripcion.toLowerCase() ?? rubroId} en el período.
         </p>
-        {(esMed || esHon) && (
+        {(esMed || esHon || esGas) && (
           <button onClick={abrirNuevo} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
-            <Plus size={14} /> {esHon ? "Agregar honorario" : "Agregar medicación"}
+            <Plus size={14} /> {esHon ? "Agregar honorario" : esGas ? "Agregar gasto" : "Agregar medicación"}
           </button>
         )}
       </div>
@@ -478,19 +534,21 @@ function RubroDetalle({
   }
   return (
     <div className="space-y-3">
-      {(esMed || esHon) && !formAbierto && (
+      {(esMed || esHon || esGas) && !formAbierto && (
         <div className="flex justify-end">
           <button onClick={abrirNuevo} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
-            <Plus size={14} /> {esHon ? "Agregar honorario" : "Agregar medicación"}
+            <Plus size={14} /> {esHon ? "Agregar honorario" : esGas ? "Agregar gasto" : "Agregar medicación"}
           </button>
         </div>
       )}
 
-      {(esMed || esHon) && formAbierto && (
+      {(esMed || esHon || esGas) && formAbierto && (
         <div className="border border-border rounded-lg bg-surface p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-[13px] font-semibold">
-              {editandoId ? `Editar ${esHon ? "honorario" : "medicación"}` : `Agregar ${esHon ? "honorario" : "medicación"}`}
+              {editandoId
+                ? `Editar ${esHon ? "honorario" : esGas ? "gasto" : "medicación"}`
+                : `Agregar ${esHon ? "honorario" : esGas ? "gasto" : "medicación"}`}
             </h4>
             <button
               onClick={() => {
@@ -518,16 +576,104 @@ function RubroDetalle({
             ))}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <label className="block md:col-span-3">
-              <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Concepto</span>
-              <input
-                value={concepto}
-                onChange={(e) => setConcepto(e.target.value)}
-                placeholder="Ej: Amoxicilina 500 mg"
-                className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
-              />
-            </label>
-            {esFormula ? (
+            {(!esGas || funcion === "92") && (
+              <label className="block md:col-span-3">
+                <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Concepto</span>
+                <input
+                  value={concepto}
+                  onChange={(e) => setConcepto(e.target.value)}
+                  placeholder="Ej: Amoxicilina 500 mg"
+                  className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
+                />
+              </label>
+            )}
+            {esGas && esFormula ? (
+              <>
+                <div className="block md:col-span-3">
+                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">
+                    Práctica del nomenclador {practicaSel && <span className="text-success">· elegida ✓</span>}
+                  </span>
+                  {practicaSel ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono">
+                        <span className="text-brand font-semibold">{practicaSel.codigo}</span>
+                        <span className="text-text"> · {practicaSel.descripcion}</span>
+                        <span className="text-muted"> · Gastos {practicaSel.gastos === null ? "—" : practicaSel.gastos}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setPracticaSel(null);
+                          setBusqueda("");
+                        }}
+                        className="px-2 py-2 text-[12px] text-muted hover:text-brand transition-colors rounded-md border border-border"
+                      >
+                        Cambiar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <input
+                        value={busqueda}
+                        onChange={(e) => {
+                          setBusqueda(e.target.value);
+                          setBusquedaAbierta(true);
+                        }}
+                        onFocus={() => setBusquedaAbierta(true)}
+                        onBlur={() => setTimeout(() => setBusquedaAbierta(false), 150)}
+                        placeholder="Código o descripción (ej: 01.01.01, tomografía)…"
+                        className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
+                      />
+                      {busquedaAbierta && busqueda.trim() && (
+                        <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto border border-border rounded-md bg-surface shadow-sm">
+                          {buscando ? (
+                            <div className="px-3 py-2 text-[12px] text-muted">Buscando…</div>
+                          ) : resultados.length === 0 ? (
+                            <div className="px-3 py-2 text-[12px] text-muted">Sin resultados</div>
+                          ) : (
+                            resultados.map((r) => (
+                              <button
+                                key={`${r.origen}-${r.codigo}`}
+                                onMouseDown={() => {
+                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, gastos: r.gastos });
+                                  setBusqueda("");
+                                  setBusquedaAbierta(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-surface-hover transition-colors border-b border-border/30 last:border-0"
+                              >
+                                <span className="font-mono text-[12px] text-brand">{r.codigo}</span>
+                                <span className="text-[13px] text-text ml-2">{r.descripcion}</span>
+                                <span className="text-[11px] text-muted ml-2">Gastos: {r.gastos === null ? "—" : r.gastos}</span>
+                                <span className="float-right text-[10px] font-mono uppercase tracking-wider text-muted mt-1">
+                                  {r.origen === "COPIA_OS" ? "Copia OS" : r.origen === "ESPECIFICA" ? "Específica" : "Nacional"}
+                                </span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="block">
+                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Gastos Qx vigente</span>
+                  <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border">
+                    {indiceVigente === null ? (
+                      <span className="text-warning">Sin índice configurado (Configuración → Galenos)</span>
+                    ) : (
+                      <span className="text-text">
+                        ${toMoney(indiceVigente)} {galenoLabel && <span className="text-muted">· {galenoLabel}</span>}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="block">
+                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Importe (solo lectura)</span>
+                  <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border text-brand font-semibold">
+                    {importeCalculado === null ? "—" : money(importeCalculado)}
+                  </div>
+                </div>
+              </>
+            ) : esFormula ? (
               <>
                 <label className="block">
                   <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">
@@ -599,11 +745,12 @@ function RubroDetalle({
             <tr className="border-b border-border text-muted">
               <th className={th}>Concepto</th>
               <th className={th}>Función</th>
-              {(esMed || esHon) && <th className={th}>Cálculo</th>}
+              {(esMed || esHon || esGas) && <th className={th}>Cálculo</th>}
+              {esMed && <th className={th}>Cantidad</th>}
               <th className={th}>Fecha</th>
               <th className={th}>Importe</th>
               <th className={th}>Estado</th>
-              {(esMed || esHon) && <th className={th + " text-right"}>Acciones</th>}
+              {(esMed || esHon || esGas) && <th className={th + " text-right"}>Acciones</th>}
             </tr>
           </thead>
           <tbody>
@@ -625,15 +772,21 @@ function RubroDetalle({
                   )}
                 </td>
                 <td className={td + " text-muted text-[12px]"}>
-                  {esMed || esHon ? (
-                    <span className="inline-block border border-border rounded px-1.5 py-0.5 font-mono text-[11px]">
-                      {cargo.funcionCodigo ?? "—"}
-                    </span>
+                  {esMed || esHon || esGas ? (
+                    esMed && cargo.esConsumo ? (
+                      <span className="inline-block border border-success/30 bg-success/10 text-success rounded px-1.5 py-0.5 font-mono text-[11px]">
+                        Consumo
+                      </span>
+                    ) : (
+                      <span className="inline-block border border-border rounded px-1.5 py-0.5 font-mono text-[11px]">
+                        {cargo.funcionCodigo ?? "—"}
+                      </span>
+                    )
                   ) : (
                     cargo.origen
                   )}
                 </td>
-                {(esMed || esHon) && (
+                {(esMed || esHon || esGas) && (
                   <td className={td + " text-muted font-mono text-[12px]"}>
                     {cargo.funcionCodigo === "60" && cargo.valorBase !== null && cargo.galenoAplicado !== null
                       ? `${cargo.valorBase} × $${toMoney(cargo.galenoAplicado)}`
@@ -646,12 +799,15 @@ function RubroDetalle({
                             : "—"}
                   </td>
                 )}
+                {esMed && (
+                  <td className={td + " text-muted tabular-nums text-[12px]"}>{cargo.cantidad}</td>
+                )}
                 <td className={td + " text-muted font-mono text-[12px] whitespace-nowrap"}>{formatDate(cargo.fecha)}</td>
                 <td className={td + " font-medium text-text tabular-nums"}>{money(cargo.total)}</td>
                 <td className={td}>
                   <StatusBadge tone={cargo.facturado ? "success" : "warning"} label={cargo.facturado ? "Facturado" : "Pendiente"} dot />
                 </td>
-                {esMed || esHon ? (
+                {esMed || esHon || esGas ? (
                   <td className={td}>
                     <div className="flex items-center justify-end">
                       {!cargo.facturado && cargo.funcionCodigo !== null && (
