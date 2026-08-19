@@ -2,6 +2,10 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { calcularMedicacion } from "@/lib/facturacion-medicacion";
+import { calcularHonorario } from "@/lib/facturacion-honorarios";
+
+const MED_FUNCIONES = ["60", "92"] as const;
+const HON_FUNCIONES = ["10", "20", "30", "92"] as const;
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const { error } = await requireRole("ADMIN", "FACTURACION");
@@ -14,15 +18,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   const existe = await prisma.cargoFacturacion.findUnique({ where: { id: params.id } });
   if (!existe) return NextResponse.json({ error: "Cargo no encontrado" }, { status: 404 });
-  if (existe.origen !== "MEDICACION") {
-    return NextResponse.json({ error: "Solo se pueden editar ítems de medicación" }, { status: 400 });
+  if (existe.origen !== "MEDICACION" && existe.origen !== "PRACTICA") {
+    return NextResponse.json({ error: "Solo se pueden editar ítems manuales de medicación u honorarios" }, { status: 400 });
+  }
+  if (existe.funcionCodigo === null) {
+    return NextResponse.json({ error: "No se pueden editar ítems generados automáticamente" }, { status: 400 });
   }
   if (existe.facturado) return NextResponse.json({ error: "No se puede editar un cargo facturado" }, { status: 400 });
 
   const concepto = String(body.concepto ?? existe.concepto).trim() || existe.concepto;
-  const modo = body.modo === "92" ? "92" : body.modo === "60" ? "60" : null;
-  if (!modo) return NextResponse.json({ error: "Modo inválido (60 o 92)" }, { status: 400 });
-
   const num = (v: unknown) => {
     if (typeof v === "number" && Number.isFinite(v)) return v;
     if (typeof v === "string" && v.trim() !== "") {
@@ -31,15 +35,52 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
     return NaN;
   };
+  const observacion = body.observacion !== undefined ? String(body.observacion) : existe.observacion;
 
   const res = await prisma.$transaction(async (tx) => {
-    const calc = await calcularMedicacion(tx, {
+    if (existe.origen === "MEDICACION") {
+      const modo = body.modo === "92" ? "92" : body.modo === "60" ? "60" : null;
+      if (!modo) return { status: 400, data: { error: "Modo inválido (60 o 92)" } };
+
+      const calc = await calcularMedicacion(tx, {
+        internacionId: existe.internacionId,
+        concepto,
+        modo,
+        valorBase: modo === "60" ? num(body.valorBase) : undefined,
+        importeManual: modo === "92" ? num(body.importeManual) : undefined,
+        observacion,
+        fecha: existe.fecha,
+      });
+      if (!calc.ok) return { status: 400, data: { error: calc.error } };
+
+      const cargo = await tx.cargoFacturacion.update({
+        where: { id: params.id },
+        data: {
+          concepto,
+          cantidad: 1,
+          precioUnitario: calc.data.importe,
+          total: calc.data.importe,
+          funcionCodigo: calc.data.funcionCodigo,
+          valorBase: calc.data.valorBase,
+          galenoAplicado: calc.data.galenoAplicado,
+          observacion: calc.data.observacion,
+        },
+      });
+      return { status: 200, data: cargo };
+    }
+
+    const funcionCodigo = (HON_FUNCIONES as readonly string[]).includes(String(body.funcionCodigo ?? ""))
+      ? (String(body.funcionCodigo) as (typeof HON_FUNCIONES)[number])
+      : null;
+    if (!funcionCodigo) return { status: 400, data: { error: "Función inválida (10, 20, 30 o 92)" } };
+
+    const calc = await calcularHonorario(tx, {
       internacionId: existe.internacionId,
       concepto,
-      modo,
-      valorBase: modo === "60" ? num(body.valorBase) : undefined,
-      importeManual: modo === "92" ? num(body.importeManual) : undefined,
-      observacion: body.observacion !== undefined ? String(body.observacion) : existe.observacion,
+      funcionCodigo,
+      valorBase: funcionCodigo !== "92" ? num(body.valorBase) : undefined,
+      importeManual: funcionCodigo === "92" ? num(body.importeManual) : undefined,
+      observacion,
       fecha: existe.fecha,
     });
     if (!calc.ok) return { status: 400, data: { error: calc.error } };
