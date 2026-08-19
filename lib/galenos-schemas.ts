@@ -25,6 +25,7 @@ export const galenoObraSocialSchema = z
     gastosQx: monto,
     gastosPension: monto,
     otrosGastos: monto,
+    galenoMedicacion: monto,
     vigenciaDesde: z.coerce.date({ message: "vigencia desde requerida" }),
     vigenciaHasta: z.coerce.date().optional().nullable(),
   })

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ChevronDown, ChevronRight, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Pencil, Plus, Search } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { OpsStat } from "@/components/ui/OpsStat";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -38,6 +38,10 @@ interface Cargo {
   honorariosAyudantes: number | null;
   honorariosAnestesista: number | null;
   gastosPractica: number | null;
+  funcionCodigo: string | null;
+  valorBase: number | null;
+  galenoAplicado: number | null;
+  observacion: string | null;
 }
 
 interface Liquidacion {
@@ -287,7 +291,13 @@ export default function FacturacionPage() {
                         <div className="px-4 py-2.5 border-b border-border text-[12px] text-muted">
                           {RUBROS.find((r) => r.id === rubroAbierto)?.descripcion} · {liq.internacion?.paciente?.apellido}, {liq.internacion?.paciente?.nombre}
                         </div>
-                        <RubroDetalle cargos={cargos.filter((c) => c.rubro === rubroAbierto)} rubroId={rubroAbierto} />
+                        <RubroDetalle
+                          cargos={cargos.filter((c) => c.rubro === rubroAbierto)}
+                          rubroId={rubroAbierto}
+                          internacionId={liq.internacionId}
+                          obraSocialId={liq.internacion?.obraSocial?.id ?? ""}
+                          onCambio={fetchLiquidaciones}
+                        />
                       </div>
                     )}
                   </div>
@@ -301,60 +311,338 @@ export default function FacturacionPage() {
   );
 }
 
-function RubroDetalle({ cargos, rubroId }: { cargos: Cargo[]; rubroId: string }) {
+function RubroDetalle({
+  cargos,
+  rubroId,
+  internacionId,
+  obraSocialId,
+  onCambio,
+}: {
+  cargos: Cargo[];
+  rubroId: string;
+  internacionId: string;
+  obraSocialId: string;
+  onCambio: () => void;
+}) {
   const rubro = RUBROS.find((r) => r.id === rubroId);
-  if (cargos.length === 0) {
+  const esMed = rubroId === "MED";
+
+  const [formAbierto, setFormAbierto] = useState(false);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [modo, setModo] = useState<"60" | "92">("60");
+  const [concepto, setConcepto] = useState("");
+  const [valorBase, setValorBase] = useState("");
+  const [importeManual, setImporteManual] = useState("");
+  const [observacion, setObservacion] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [indiceVigente, setIndiceVigente] = useState<number | null>(null);
+  const [galenoLabel, setGalenoLabel] = useState("");
+
+  const parseMonto = (v: string): number | null => {
+    const t = v.trim();
+    if (t === "") return null;
+    const n = Number(t.replace(/,/g, "."));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+
+  useEffect(() => {
+    if (!esMed || !obraSocialId) {
+      setIndiceVigente(null);
+      setGalenoLabel("");
+      return;
+    }
+    let vivo = true;
+    fetch(`/api/galenos?obraSocialId=${encodeURIComponent(obraSocialId)}&incluirInactivos=true`)
+      .then((r) => r.json())
+      .then((d: { activo: boolean; vigenciaDesde: string; vigenciaHasta: string | null; galenoMedicacion: number; obraSocial: { sigla: string } }[]) => {
+        if (!vivo || !Array.isArray(d)) return;
+        const hoy = new Date().toISOString().slice(0, 10);
+        const vigente = d
+          .filter((g) => g.activo && g.vigenciaDesde <= hoy && (!g.vigenciaHasta || g.vigenciaHasta >= hoy))
+          .sort((a, b) => b.vigenciaDesde.localeCompare(a.vigenciaDesde))[0];
+        setIndiceVigente(vigente ? Number(vigente.galenoMedicacion) : null);
+        setGalenoLabel(vigente ? `${vigente.obraSocial.sigla} · vig ${vigente.vigenciaDesde}` : "");
+      })
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, [esMed, obraSocialId]);
+
+  const abrirNuevo = () => {
+    setEditandoId(null);
+    setModo("60");
+    setConcepto("");
+    setValorBase("");
+    setImporteManual("");
+    setObservacion("");
+    setErr(null);
+    setFormAbierto(true);
+  };
+
+  const abrirEdicion = (c: Cargo) => {
+    setEditandoId(c.id);
+    setModo(c.funcionCodigo === "60" ? "60" : c.funcionCodigo === "92" ? "92" : "60");
+    setConcepto(c.concepto);
+    setValorBase(c.funcionCodigo === "60" && c.valorBase !== null ? String(c.valorBase) : "");
+    setImporteManual(c.funcionCodigo === "92" ? String(c.total) : "");
+    setObservacion(c.observacion ?? "");
+    setErr(null);
+    setFormAbierto(true);
+  };
+
+  const guardar = async () => {
+    setGuardando(true);
+    setErr(null);
+    try {
+      if (!concepto.trim()) {
+        setErr("Ingresá el concepto del ítem");
+        return;
+      }
+      const payload = { concepto: concepto.trim(), modo, observacion: observacion.trim() || null };
+      if (modo === "60") {
+        const v = parseMonto(valorBase);
+        if (v === null) {
+          setErr("Ingresá el valor (cantidad) para la función 60");
+          return;
+        }
+        (payload as Record<string, unknown>).valorBase = v;
+      } else {
+        const m = parseMonto(importeManual);
+        if (m === null) {
+          setErr("Ingresá el importe manual para la función 92");
+          return;
+        }
+        (payload as Record<string, unknown>).importeManual = m;
+      }
+      const res = await fetch(
+        editandoId ? `/api/facturacion/cargos/${editandoId}` : "/api/facturacion/medicacion",
+        {
+          method: editandoId ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            editandoId ? payload : { ...payload, internacionId }
+          ),
+        }
+      );
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErr(d.error ?? "Error al guardar");
+        return;
+      }
+      setFormAbierto(false);
+      setEditandoId(null);
+      onCambio();
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const importeCalculado60 = modo === "60" && indiceVigente !== null ? (parseMonto(valorBase) ?? 0) * indiceVigente : null;
+
+  if (cargos.length === 0 && !formAbierto) {
     return (
-      <div className="py-10 text-center">
+      <div className="py-10 text-center space-y-3">
         <p className="text-[13px] text-muted">
           Sin ítems de {rubro?.descripcion.toLowerCase() ?? rubroId} en el período.
         </p>
+        {esMed && (
+          <button onClick={abrirNuevo} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
+            <Plus size={14} /> Agregar medicación
+          </button>
+        )}
       </div>
     );
   }
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[13px]">
-        <thead>
-          <tr className="border-b border-border text-muted">
-            <th className={th}>Concepto</th>
-            <th className={th}>Origen</th>
-            <th className={th}>Fecha</th>
-            <th className={th}>Cantidad</th>
-            <th className={th}>P. unitario</th>
-            <th className={th}>Total</th>
-            <th className={th}>Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          {cargos.map((cargo) => (
-            <tr key={cargo.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
-              <td className={td + " text-text"}>
-                {cargo.concepto}
-                {cargo.nomencladorId && (
-                  <div className="text-[11px] font-mono text-muted mt-1 space-y-0.5">
-                    {cargo.galenoQx !== null && <span>Galeno Qx ${toMoney(cargo.galenoQx)}</span>}
-                    {(cargo.honorariosEspecialista !== null || cargo.honorariosAnestesista !== null) && (
-                      <div>
-                        Esp {moneyO(cargo.honorariosEspecialista)} · Ayud {moneyO(cargo.honorariosAyudantes)} · Anest {moneyO(cargo.honorariosAnestesista)}
-                        {cargo.gastosPractica ? ` · Gastos ${moneyO(cargo.gastosPractica)}` : ""}
-                      </div>
+    <div className="space-y-3">
+      {esMed && !formAbierto && (
+        <div className="flex justify-end">
+          <button onClick={abrirNuevo} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
+            <Plus size={14} /> Agregar medicación
+          </button>
+        </div>
+      )}
+
+      {esMed && formAbierto && (
+        <div className="border border-border rounded-lg bg-surface p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-[13px] font-semibold">{editandoId ? "Editar medicación" : "Agregar medicación"}</h4>
+            <button
+              onClick={() => {
+                setFormAbierto(false);
+                setEditandoId(null);
+              }}
+              className="text-[12px] text-muted hover:text-text transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+          <div className="flex gap-4 flex-wrap">
+            <button
+              onClick={() => setModo("60")}
+              className={cn(
+                "border rounded-md px-3 py-2 text-[13px] transition-colors",
+                modo === "60" ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:text-text"
+              )}
+            >
+              <span className="font-mono">60</span> — Valor × galeno
+            </button>
+            <button
+              onClick={() => setModo("92")}
+              className={cn(
+                "border rounded-md px-3 py-2 text-[13px] transition-colors",
+                modo === "92" ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:text-text"
+              )}
+            >
+              <span className="font-mono">92</span> — Importe manual
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <label className="block md:col-span-3">
+              <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Concepto</span>
+              <input
+                value={concepto}
+                onChange={(e) => setConcepto(e.target.value)}
+                placeholder="Ej: Amoxicilina 500 mg"
+                className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
+              />
+            </label>
+            {modo === "60" ? (
+              <>
+                <label className="block">
+                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Valor (cantidad)</span>
+                  <input
+                    value={valorBase}
+                    onChange={(e) => setValorBase(e.target.value)}
+                    placeholder="Ej: 10"
+                    className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono"
+                  />
+                </label>
+                <div className="block">
+                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Índice de galeno vigente</span>
+                  <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border">
+                    {indiceVigente === null ? (
+                      <span className="text-warning">Sin índice configurado (Configuración → Galenos)</span>
+                    ) : (
+                      <span className="text-text">
+                        ${toMoney(indiceVigente)} {galenoLabel && <span className="text-muted">· {galenoLabel}</span>}
+                      </span>
                     )}
                   </div>
-                )}
-              </td>
-              <td className={td + " text-muted text-[12px]"}>{cargo.origen}</td>
-              <td className={td + " text-muted font-mono text-[12px] whitespace-nowrap"}>{formatDate(cargo.fecha)}</td>
-              <td className={td + " text-muted tabular-nums"}>{cargo.cantidad}</td>
-              <td className={td + " text-muted tabular-nums hidden md:table-cell"}>{money(cargo.precioUnitario)}</td>
-              <td className={td + " font-medium text-text tabular-nums"}>{money(cargo.total)}</td>
-              <td className={td}>
-                <StatusBadge tone={cargo.facturado ? "success" : "warning"} label={cargo.facturado ? "Facturado" : "Pendiente"} dot />
-              </td>
+                </div>
+                <div className="block">
+                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Importe (solo lectura)</span>
+                  <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border text-brand font-semibold">
+                    {importeCalculado60 === null ? "—" : money(importeCalculado60)}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <label className="block">
+                <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Importe manual ($)</span>
+                <input
+                  value={importeManual}
+                  onChange={(e) => setImporteManual(e.target.value)}
+                  placeholder="Ej: 1500"
+                  className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono"
+                />
+              </label>
+            )}
+            <label className="block md:col-span-3">
+              <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Observación (opcional)</span>
+              <input
+                value={observacion}
+                onChange={(e) => setObservacion(e.target.value)}
+                placeholder="Ej: indicación médica Nº…"
+                className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
+              />
+            </label>
+          </div>
+          {err && <p className="text-[12px] text-error">{err}</p>}
+          <div className="flex items-center gap-2">
+            <button onClick={guardar} disabled={guardando} className="btn-primary text-[13px]">
+              {guardando ? "Guardando…" : editandoId ? "Guardar cambios" : "Agregar ítem"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="border-b border-border text-muted">
+              <th className={th}>Concepto</th>
+              <th className={th}>Función</th>
+              {esMed && <th className={th}>Cálculo</th>}
+              <th className={th}>Fecha</th>
+              <th className={th}>Importe</th>
+              <th className={th}>Estado</th>
+              {esMed && <th className={th + " text-right"}>Acciones</th>}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {cargos.map((cargo) => (
+              <tr key={cargo.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
+                <td className={td + " text-text"}>
+                  {cargo.concepto}
+                  {cargo.observacion && <div className="text-[11px] text-muted mt-0.5">{cargo.observacion}</div>}
+                  {!esMed && cargo.nomencladorId && (
+                    <div className="text-[11px] font-mono text-muted mt-1 space-y-0.5">
+                      {cargo.galenoQx !== null && <span>Galeno Qx ${toMoney(cargo.galenoQx)}</span>}
+                      {(cargo.honorariosEspecialista !== null || cargo.honorariosAnestesista !== null) && (
+                        <div>
+                          Esp {moneyO(cargo.honorariosEspecialista)} · Ayud {moneyO(cargo.honorariosAyudantes)} · Anest {moneyO(cargo.honorariosAnestesista)}
+                          {cargo.gastosPractica ? ` · Gastos ${moneyO(cargo.gastosPractica)}` : ""}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </td>
+                <td className={td + " text-muted text-[12px]"}>
+                  {esMed ? (
+                    <span className="inline-block border border-border rounded px-1.5 py-0.5 font-mono text-[11px]">
+                      {cargo.funcionCodigo ?? "—"}
+                    </span>
+                  ) : (
+                    cargo.origen
+                  )}
+                </td>
+                {esMed && (
+                  <td className={td + " text-muted font-mono text-[12px]"}>
+                    {cargo.funcionCodigo === "60" && cargo.valorBase !== null && cargo.galenoAplicado !== null
+                      ? `${cargo.valorBase} × $${toMoney(cargo.galenoAplicado)}`
+                      : cargo.funcionCodigo === "92"
+                        ? "Manual"
+                        : "—"}
+                  </td>
+                )}
+                <td className={td + " text-muted font-mono text-[12px] whitespace-nowrap"}>{formatDate(cargo.fecha)}</td>
+                <td className={td + " font-medium text-text tabular-nums"}>{money(cargo.total)}</td>
+                <td className={td}>
+                  <StatusBadge tone={cargo.facturado ? "success" : "warning"} label={cargo.facturado ? "Facturado" : "Pendiente"} dot />
+                </td>
+                {esMed && (
+                  <td className={td}>
+                    <div className="flex items-center justify-end">
+                      {!cargo.facturado && (
+                        <button
+                          onClick={() => abrirEdicion(cargo)}
+                          className="p-1.5 rounded-md text-muted hover:text-brand hover:bg-brand-soft transition-colors"
+                          title="Editar"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

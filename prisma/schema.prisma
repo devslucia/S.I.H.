@@ -1078,6 +1078,7 @@ model GalenoObraSocial {
   gastosQx      Decimal  @default(0) @db.Decimal(12, 2)
   gastosPension Decimal  @default(0) @db.Decimal(12, 2)
   otrosGastos   Decimal  @default(0) @db.Decimal(12, 2)
+  galenoMedicacion Decimal @default(0) @db.Decimal(12, 2)
   vigenciaDesde DateTime @db.Date
   vigenciaHasta DateTime? @db.Date
   activo        Boolean  @default(true)
@@ -1144,6 +1145,10 @@ model CargoFacturacion {
   honorariosAyudantes    Decimal?
   honorariosAnestesista  Decimal?
   gastosPractica         Decimal?
+  funcionCodigo         String?
+  valorBase             Decimal?                @db.Decimal(12, 2)
+  galenoAplicado        Decimal?                @db.Decimal(12, 2)
+  observacion           String?
 
   @@index([internacionId])
   @@index([facturado])
