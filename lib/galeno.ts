@@ -19,6 +19,55 @@ export interface UnidadesNomenclador {
   gastos: number | null;
 }
 
+export interface PracticaResuelta {
+  id: string;
+  origen: "COPIA_OS" | "ESPECIFICA" | "NACIONAL";
+  unidades: UnidadesNomenclador;
+  nomencladorId: string | null;
+}
+
+/**
+ * Resuelve una práctica para facturar contra una obra social:
+ * 1. Copia del nomenclador de la OS (NomencladorObraSocialItem activo).
+ * 2. Práctica ESPECIFICA del maestro para esa OS.
+ * 3. Práctica NACIONAL (visible para todas las OS).
+ * Devuelve null si el código no corresponde a ninguna práctica activa.
+ */
+export async function resolverPractica(tx: Tx, codigo: string, obraSocialId: string): Promise<PracticaResuelta | null> {
+  const itemCopia = await tx.nomencladorObraSocialItem.findFirst({
+    where: {
+      codigo,
+      activo: true,
+      nomencladorObraSocial: { obraSocialId },
+    },
+    orderBy: { origen: "desc" },
+  });
+  if (itemCopia) {
+    return {
+      id: itemCopia.id,
+      origen: "COPIA_OS",
+      unidades: normalizarUnidades(itemCopia),
+      nomencladorId: itemCopia.nomencladorItemId,
+    };
+  }
+
+  const especifica = await tx.nomencladorItem.findFirst({
+    where: { codigo, obraSocialId, activo: true },
+  });
+  if (especifica) {
+    return { id: especifica.id, origen: "ESPECIFICA", unidades: normalizarItemNacional(especifica), nomencladorId: especifica.id };
+  }
+
+  const nacional = await tx.nomencladorItem.findFirst({
+    where: { codigo, obraSocialId: null, activo: true },
+  });
+  if (nacional) {
+    return { id: nacional.id, origen: "NACIONAL", unidades: normalizarItemNacional(nacional), nomencladorId: nacional.id };
+  }
+
+  return null;
+}
+
 export interface ImportesCalculados {
   honorariosEspecialista: number;
   honorariosAyudantes: number;
@@ -26,22 +75,6 @@ export interface ImportesCalculados {
   gastosPractica: number;
   honorariosTotal: number;
   total: number;
-}
-
-/**
- * Resuelve una práctica para facturar contra una obra social:
- * 1. Práctica ESPECIFICA de esa OS (si existe, pisa al nacional).
- * 2. Práctica NACIONAL (visible para todas las OS).
- * Devuelve null si el código no corresponde a ninguna práctica activa.
- */
-export async function resolverPractica(tx: Tx, codigo: string, obraSocialId: string): Promise<NomencladorItem | null> {
-  const especifica = await tx.nomencladorItem.findFirst({
-    where: { codigo, obraSocialId, activo: true },
-  });
-  if (especifica) return especifica;
-  return tx.nomencladorItem.findFirst({
-    where: { codigo, obraSocialId: null, activo: true },
-  });
 }
 
 /**
@@ -107,6 +140,20 @@ export function normalizarItemNacional(item: NomencladorItem): UnidadesNomenclad
     uAyudantes: item.uAyudantes === null ? null : Number(item.uAyudantes),
     uAnestesista: item.uAnestesista === null ? null : Number(item.uAnestesista),
     gastos: item.gastos === null ? null : Number(item.gastos),
+  };
+}
+
+export function normalizarUnidades(item: {
+  uEspecialista: unknown;
+  uAyudantes: unknown;
+  uAnestesista: unknown;
+  gastos: unknown;
+}): UnidadesNomenclador {
+  return {
+    uEspecialista: item.uEspecialista === null || item.uEspecialista === undefined ? null : Number(item.uEspecialista),
+    uAyudantes: item.uAyudantes === null || item.uAyudantes === undefined ? null : Number(item.uAyudantes),
+    uAnestesista: item.uAnestesista === null || item.uAnestesista === undefined ? null : Number(item.uAnestesista),
+    gastos: item.gastos === null || item.gastos === undefined ? null : Number(item.gastos),
   };
 }
 
