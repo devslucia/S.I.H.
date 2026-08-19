@@ -1,7 +1,7 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { calcularImportesNomenclador, getGalenoVigente, normalizarItemNacional, resolverPractica } from "@/lib/galeno";
+import { calcularImportesNomenclador, getGalenoVigente, resolverPractica } from "@/lib/galeno";
 
 async function checkAssignment(userId: string, cirugiaId: string) {
   const cirugia = await prisma.cirugia.findUnique({
@@ -75,11 +75,11 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
                 { status: 400 }
               );
             }
-            const importes = calcularImportesNomenclador(normalizarItemNacional(item), galeno);
+            const importes = calcularImportesNomenclador(item.unidades, galeno);
             precioUnitario = importes.total;
             total = precioUnitario;
             Object.assign(desglose, {
-              nomencladorId: item.id,
+              nomencladorId: item.nomencladorId ?? undefined,
               galenoQx: Number(galeno.galenoQx),
               honorariosEspecialista: importes.honorariosEspecialista,
               honorariosAyudantes: importes.honorariosAyudantes,

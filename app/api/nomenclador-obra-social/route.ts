@@ -5,26 +5,53 @@ import { z } from "zod";
 
 const LECTURA = ["ADMIN", "FACTURACION"];
 
-const createSchema = z.object({
+const altaSchema = z.object({
   obraSocialId: z.string().trim().min(1, "obraSocialId requerido"),
-  nombre: z.string().trim().optional().nullable(),
-  vigenciaDesde: z.string().trim().optional().nullable(),
-  vigenciaHasta: z.string().trim().optional().nullable(),
-  generarDesdeNacional: z.boolean().optional().default(true),
+  codigo: z.string().trim().min(1, "codigo requerido"),
+  descripcion: z.string().trim().min(1, "descripcion requerida"),
+  uEspecialista: z.coerce.number().nonnegative().optional().nullable(),
+  uAyudantes: z.coerce.number().nonnegative().optional().nullable(),
+  uAnestesista: z.coerce.number().nonnegative().optional().nullable(),
+  gastos: z.coerce.number().nonnegative().optional().nullable(),
 });
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const { error } = await requireRole(...LECTURA);
   if (error) return error;
+
+  const obraSocialId = req.nextUrl.searchParams.get("obraSocialId");
+  if (obraSocialId) {
+    const offset = Number(req.nextUrl.searchParams.get("offset") ?? "0") || 0;
+    const limit = Math.min(Number(req.nextUrl.searchParams.get("limit") ?? "200") || 200, 500);
+
+    const copia = await prisma.nomencladorObraSocial.findUnique({
+      where: { obraSocialId },
+      include: {
+        obraSocial: { select: { id: true, nombre: true, sigla: true } },
+        _count: { select: { items: true } },
+      },
+    });
+    if (!copia) return NextResponse.json({ copia: null, items: [], total: 0 });
+
+    const [items, total] = await Promise.all([
+      prisma.nomencladorObraSocialItem.findMany({
+        where: { nomencladorObraSocialId: copia.id },
+        orderBy: { codigo: "asc" },
+        skip: offset,
+        take: limit,
+      }),
+      prisma.nomencladorObraSocialItem.count({ where: { nomencladorObraSocialId: copia.id } }),
+    ]);
+    return NextResponse.json({ copia, items, total });
+  }
 
   const copias = await prisma.nomencladorObraSocial.findMany({
     include: {
       obraSocial: { select: { id: true, nombre: true, sigla: true } },
       _count: { select: { items: true } },
     },
-    orderBy: [{ obraSocial: { nombre: "asc" } }, { createdAt: "desc" }],
+    orderBy: { obraSocial: { nombre: "asc" } },
   });
-
   return NextResponse.json(copias);
 }
 
@@ -33,64 +60,40 @@ export async function POST(req: NextRequest) {
   if (error) return error;
 
   const body = await req.json().catch(() => null);
-  const parsed = createSchema.safeParse(body);
+  const parsed = altaSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.errors[0]?.message ?? "payload inválido" }, { status: 400 });
   }
 
-  const { obraSocialId, nombre, vigenciaDesde, vigenciaHasta, generarDesdeNacional } = parsed.data;
+  const { obraSocialId, codigo, descripcion, uEspecialista, uAyudantes, uAnestesista, gastos } = parsed.data;
 
-  const obraSocial = await prisma.obraSocial.findUnique({ where: { id: obraSocialId } });
-  if (!obraSocial) {
-    return NextResponse.json({ error: "Obra social no encontrada" }, { status: 404 });
-  }
-
-  if (nombre) {
-    const duplicado = await prisma.nomencladorObraSocial.findUnique({
-      where: { obraSocialId_nombre: { obraSocialId, nombre } },
-    });
-    if (duplicado) {
-      return NextResponse.json({ error: "Ya existe una copia con ese nombre para esta obra social" }, { status: 409 });
-    }
-  }
-
-  const activa = await prisma.nomencladorObraSocial.findFirst({
-    where: { obraSocialId, activo: true, vigenciaHasta: null },
-  });
-  if (activa) {
+  const copia = await prisma.nomencladorObraSocial.findUnique({ where: { obraSocialId } });
+  if (!copia) {
     return NextResponse.json(
-      { error: "La obra social ya tiene un nomenclador activo sin fin de vigencia" },
-      { status: 409 }
+      { error: "Primero creá la copia del nomenclador nacional para esta obra social" },
+      { status: 400 }
     );
   }
 
-  const copia = await prisma.nomencladorObraSocial.create({
+  const duplicado = await prisma.nomencladorObraSocialItem.findUnique({
+    where: { nomencladorObraSocialId_codigo: { nomencladorObraSocialId: copia.id, codigo } },
+  });
+  if (duplicado) {
+    return NextResponse.json({ error: `Ya existe la práctica ${codigo} en el nomenclador de esta obra social` }, { status: 409 });
+  }
+
+  const item = await prisma.nomencladorObraSocialItem.create({
     data: {
-      obraSocialId,
-      nombre: nombre ?? `${obraSocial.nombre} ${new Date().getFullYear()}`,
-      vigenciaDesde: vigenciaDesde ? new Date(vigenciaDesde) : null,
-      vigenciaHasta: vigenciaHasta ? new Date(vigenciaHasta) : null,
-      activo: true,
+      nomencladorObraSocialId: copia.id,
+      codigo,
+      descripcion,
+      uEspecialista: uEspecialista ?? null,
+      uAyudantes: uAyudantes ?? null,
+      uAnestesista: uAnestesista ?? null,
+      gastos: gastos ?? null,
+      origen: "PROPIA_OS",
     },
   });
 
-  let itemsGenerados = 0;
-  if (generarDesdeNacional) {
-    const maestro = await prisma.nomencladorItem.findMany({
-      where: { activo: true, alcance: "NACIONAL" },
-      select: { id: true, codigo: true },
-    });
-    if (maestro.length > 0) {
-      const creados = await prisma.nomencladorObraSocialItem.createMany({
-        data: maestro.map((m) => ({
-          nomencladorObraSocialId: copia.id,
-          nomencladorItemId: m.id,
-          codigo: m.codigo,
-        })),
-      });
-      itemsGenerados = creados.count;
-    }
-  }
-
-  return NextResponse.json({ copia, itemsGenerados }, { status: 201 });
+  return NextResponse.json({ item }, { status: 201 });
 }

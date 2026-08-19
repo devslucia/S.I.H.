@@ -268,7 +268,7 @@ model ObraSocial {
   porcentajeDescMedicamentos Decimal                 @default(0) @db.Decimal(5, 2)
   activa                     Boolean                 @default(true)
   convenios                  Convenio[]
-  nomencladores              NomencladorObraSocial[]
+  nomencladorObraSocial     NomencladorObraSocial?
   galenos                    GalenoObraSocial[]
   nomencladorEspecifico      NomencladorItem[]
   internaciones              Internacion[]
@@ -1089,38 +1089,37 @@ model GalenoObraSocial {
 
 model NomencladorObraSocial {
   id            String                      @id @default(uuid())
-  obraSocialId  String
+  obraSocialId  String                      @unique
   obraSocial    ObraSocial                  @relation(fields: [obraSocialId], references: [id], onDelete: Cascade)
-  nombre        String?
-  vigenciaDesde DateTime?
-  vigenciaHasta DateTime?
-  activo        Boolean                     @default(true)
   items         NomencladorObraSocialItem[]
   createdAt     DateTime                    @default(now())
   updatedAt     DateTime                    @updatedAt
-
-  @@unique([obraSocialId, nombre])
-  @@index([obraSocialId])
 }
 
 model NomencladorObraSocialItem {
-  id                      String                @id @default(uuid())
+  id                      String                  @id @default(uuid())
   nomencladorObraSocialId String
-  nomencladorObraSocial   NomencladorObraSocial @relation(fields: [nomencladorObraSocialId], references: [id], onDelete: Cascade)
+  nomencladorObraSocial   NomencladorObraSocial   @relation(fields: [nomencladorObraSocialId], references: [id], onDelete: Cascade)
   nomencladorItemId       String?
-  nomencladorItem         NomencladorItem?      @relation(fields: [nomencladorItemId], references: [id], onDelete: SetNull)
+  nomencladorItem         NomencladorItem?        @relation(fields: [nomencladorItemId], references: [id], onDelete: SetNull)
   codigo                  String
-  honorarioEspecialista   Decimal?
-  honorarioAyudantes      Decimal?
-  honorarioAnestesista    Decimal?
+  descripcion             String
+  uEspecialista           Decimal?
+  uAyudantes              Decimal?
+  uAnestesista            Decimal?
   gastos                  Decimal?
-  total                   Decimal?
-  activo                  Boolean               @default(true)
-  createdAt               DateTime              @default(now())
-  updatedAt               DateTime              @updatedAt
+  activo                  Boolean                 @default(true)
+  origen                  OrigenNomencladorOS     @default(COPIA_NACIONAL)
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
 
   @@unique([nomencladorObraSocialId, codigo])
   @@index([codigo])
+}
+
+enum OrigenNomencladorOS {
+  COPIA_NACIONAL
+  PROPIA_OS
 }
 
 model CargoFacturacion {

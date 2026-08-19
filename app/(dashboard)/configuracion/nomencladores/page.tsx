@@ -9,11 +9,10 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertTriangle,
-  ChevronDown,
-  ChevronUp,
   Plus,
   Pencil,
   Power,
+  Copy,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -41,10 +40,6 @@ interface ItemNacional {
 
 interface Copia {
   id: string;
-  nombre: string | null;
-  vigenciaDesde: string | null;
-  vigenciaHasta: string | null;
-  activo: boolean;
   obraSocial: { id: string; nombre: string; sigla: string };
   _count: { items: number };
 }
@@ -52,13 +47,13 @@ interface Copia {
 interface ItemCopia {
   id: string;
   codigo: string;
-  activo: boolean;
-  honorarioEspecialista: number | null;
-  honorarioAyudantes: number | null;
-  honorarioAnestesista: number | null;
+  descripcion: string;
+  uEspecialista: number | null;
+  uAyudantes: number | null;
+  uAnestesista: number | null;
   gastos: number | null;
-  total: number | null;
-  nomencladorItem: { descripcion: string; capitulo: string | null; seccion: string | null } | null;
+  activo: boolean;
+  origen: "COPIA_NACIONAL" | "PROPIA_OS";
 }
 
 interface ObraSocialSel {
@@ -110,29 +105,34 @@ export default function NomencladoresPage() {
   const [offsetNac, setOffsetNac] = useState(0);
 
   const [obrasSociales, setObrasSociales] = useState<ObraSocialSel[]>([]);
-  const [copias, setCopias] = useState<Copia[]>([]);
   const [osSel, setOsSel] = useState("");
   const [copiaSel, setCopiaSel] = useState<Copia | null>(null);
   const [itemsCopia, setItemsCopia] = useState<ItemCopia[]>([]);
+  const [totalCopia, setTotalCopia] = useState(0);
+  const [offsetCopia, setOffsetCopia] = useState(0);
+  const [busyCopiar, setBusyCopiar] = useState(false);
+  const [busySincronizar, setBusySincronizar] = useState(false);
   const [edits, setEdits] = useState<Record<string, Partial<ItemCopia>>>({});
   const [guardandoItem, setGuardandoItem] = useState<string | null>(null);
+  const [toggleId, setToggleId] = useState<string | null>(null);
+
+  const [formPropiaAbierto, setFormPropiaAbierto] = useState(false);
+  const [formPropia, setFormPropia] = useState<Record<string, string>>({});
+  const [formPropiaErr, setFormPropiaErr] = useState<string | null>(null);
+  const [guardandoPropia, setGuardandoPropia] = useState(false);
 
   const [reporteNac, setReporteNac] = useState<Reporte | null>(null);
-  const [reporteCopia, setReporteCopia] = useState<Reporte | null>(null);
   const [mensajeNac, setMensajeNac] = useState<string | null>(null);
   const [mensajeCopia, setMensajeCopia] = useState<string | null>(null);
+  const [errorCopia, setErrorCopia] = useState<string | null>(null);
 
-  const [busyGenerar, setBusyGenerar] = useState(false);
   const [busyImportNac, setBusyImportNac] = useState(false);
-  const [busyImportCopia, setBusyImportCopia] = useState(false);
-  const [detalleAbierto, setDetalleAbierto] = useState<string | null>(null);
 
   const [formAbierto, setFormAbierto] = useState(false);
   const [editando, setEditando] = useState<ItemNacional | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState<string | null>(null);
   const [guardandoForm, setGuardandoForm] = useState(false);
-  const [toggleId, setToggleId] = useState<string | null>(null);
 
   const cargarNacional = useCallback(async (qAct: string, offset: number, alcance: "" | "NACIONAL" | "ESPECIFICA" = "") => {
     setLoading(true);
@@ -167,20 +167,20 @@ export default function NomencladoresPage() {
     if (res.ok) setObrasSociales(await res.json());
   }, []);
 
-  const cargarCopias = useCallback(async () => {
-    const res = await fetch("/api/nomenclador-obra-social");
-    if (!res.ok) throw new Error("No autorizado");
-    const data = await res.json();
-    setCopias(data);
-  }, []);
-
-  const cargarDetalle = useCallback(async (id: string) => {
+  const cargarCopia = useCallback(async (osId: string, offset = 0) => {
     setLoading(true);
+    setErrorCopia(null);
     try {
-      const res = await fetch(`/api/nomenclador-obra-social/${id}`);
+      const params = new URLSearchParams({ obraSocialId: osId, offset: String(offset), limit: "200" });
+      const res = await fetch(`/api/nomenclador-obra-social?${params}`);
       if (!res.ok) throw new Error("error");
       const data = await res.json();
+      setCopiaSel(data.copia);
       setItemsCopia(data.items);
+      setTotalCopia(data.total);
+      setOffsetCopia(offset);
+    } catch {
+      setErrorCopia("Error al cargar la copia de la obra social");
     } finally {
       setLoading(false);
     }
@@ -193,13 +193,20 @@ export default function NomencladoresPage() {
 
   useEffect(() => {
     if (tab !== "por-os") return;
-    Promise.all([
-      fetch("/api/obras-sociales").then((r) => r.json()),
-      cargarCopias(),
-    ])
-      .then(([os]) => setObrasSociales(os))
-      .catch(() => setError("Error al cargar obras sociales"));
-  }, [tab, cargarCopias]);
+    cargarObrasParaForm();
+  }, [tab, cargarObrasParaForm]);
+
+  useEffect(() => {
+    if (!osSel) {
+      setCopiaSel(null);
+      setItemsCopia([]);
+      setTotalCopia(0);
+      return;
+    }
+    cargarCopia(osSel, 0);
+    setMensajeCopia(null);
+    setErrorCopia(null);
+  }, [osSel, cargarCopia]);
 
   const buscarNacional = () => {
     setOffsetNac(0);
@@ -246,45 +253,68 @@ export default function NomencladoresPage() {
     }
   };
 
-  const generarCopia = async () => {
+  const crearCopia = async () => {
     if (!osSel) return;
-    setBusyGenerar(true);
+    setBusyCopiar(true);
     setMensajeCopia(null);
+    setErrorCopia(null);
     try {
-      const res = await fetch("/api/nomenclador-obra-social", {
+      const res = await fetch("/api/nomenclador-obra-social/copiar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ obraSocialId: osSel, generarDesdeNacional: true }),
+        body: JSON.stringify({ obraSocialId: osSel }),
       });
       const d = await res.json();
       if (!res.ok) {
-        setMensajeCopia(d.error ?? "Error al generar la copia");
+        setErrorCopia(d.error ?? "Error al crear la copia");
         return;
       }
-      setMensajeCopia(`Copia generada con ${d.itemsGenerados} ítems`);
-      await cargarCopias();
+      setMensajeCopia(`Copia creada con ${d.copiados} prácticas del nacional`);
+      await cargarCopia(osSel, 0);
     } finally {
-      setBusyGenerar(false);
+      setBusyCopiar(false);
     }
   };
 
-  const abrirDetalle = async (c: Copia) => {
-    setCopiaSel(c);
-    setDetalleAbierto(detalleAbierto === c.id ? null : c.id);
-    if (detalleAbierto !== c.id) await cargarDetalle(c.id);
+  const sincronizar = async () => {
+    if (!osSel) return;
+    setBusySincronizar(true);
+    setMensajeCopia(null);
+    setErrorCopia(null);
+    try {
+      const res = await fetch("/api/nomenclador-obra-social/sincronizar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ obraSocialId: osSel }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setErrorCopia(d.error ?? "Error al sincronizar");
+        return;
+      }
+      setMensajeCopia(d.agregados === 0 ? "La copia ya está al día con el nacional" : `Se agregaron ${d.agregados} prácticas nuevas del nacional`);
+      await cargarCopia(osSel, offsetCopia);
+    } finally {
+      setBusySincronizar(false);
+    }
   };
 
-  const guardarItem = async (item: ItemCopia) => {
+  const guardarItemCopia = async (item: ItemCopia) => {
     setGuardandoItem(item.id);
     try {
       const e = edits[item.id] ?? {};
-      const res = await fetch(`/api/nomenclador-obra-social/${copiaSel?.id}/items/${item.id}`, {
+      const payload: Record<string, unknown> = {};
+      if (e.descripcion !== undefined) payload.descripcion = e.descripcion;
+      for (const k of ["uEspecialista", "uAyudantes", "uAnestesista", "gastos"] as const) {
+        if (k in e) payload[k] = num(String(e[k] ?? ""));
+      }
+      const res = await fetch(`/api/nomenclador-obra-social/items/${item.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(e),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) return;
-      await cargarDetalle(copiaSel?.id ?? "");
+      await cargarCopia(osSel, offsetCopia);
       setEdits((prev) => {
         const next = { ...prev };
         delete next[item.id];
@@ -298,47 +328,53 @@ export default function NomencladoresPage() {
   const setEdit = (itemId: string, key: keyof ItemCopia, val: string) => {
     setEdits((prev) => ({
       ...prev,
-      [itemId]: { ...prev[itemId], [key]: num(val) },
+      [itemId]: { ...prev[itemId], [key]: val },
     }));
   };
 
-  const importarValores = async (file: File) => {
-    if (!copiaSel) return;
-    setBusyImportCopia(true);
-    setReporteCopia(null);
-    setMensajeCopia(null);
+  const toggleItemCopia = async (item: ItemCopia) => {
+    setToggleId(item.id);
     try {
-      const filas = parseCSV(await file.text());
-      const items = filas
-        .filter((f) => f.codigo)
-        .map((f) => ({
-          codigo: f.codigo,
-          honorarioEspecialista: num(f.honorioespecialista ?? f.honorarioespecialista) ?? undefined,
-          honorarioAyudantes: num(f.honorioayudantes ?? f.honorarioayudantes) ?? undefined,
-          honorarioAnestesista: num(f.honorioanestesista ?? f.honorarioanestesista) ?? undefined,
-          gastos: num(f.gastos) ?? undefined,
-          total: num(f.total) ?? undefined,
-        }));
-      if (items.length === 0) {
-        setMensajeCopia("CSV inválido: columna codigo requerida");
-        return;
-      }
-      const res = await fetch(`/api/nomenclador-obra-social/${copiaSel.id}/importar`, {
+      await fetch(`/api/nomenclador-obra-social/items/${item.id}`, { method: "DELETE" });
+      await cargarCopia(osSel, offsetCopia);
+    } finally {
+      setToggleId(null);
+    }
+  };
+
+  const abrirAltaPropia = () => {
+    setFormPropia({ codigo: "", descripcion: "", uEspecialista: "", uAyudantes: "", uAnestesista: "", gastos: "" });
+    setFormPropiaErr(null);
+    setFormPropiaAbierto(true);
+  };
+
+  const guardarPropia = async () => {
+    if (!osSel) return;
+    setGuardandoPropia(true);
+    setFormPropiaErr(null);
+    try {
+      const res = await fetch("/api/nomenclador-obra-social", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, crearHuerfanos: false }),
+        body: JSON.stringify({
+          obraSocialId: osSel,
+          codigo: formPropia.codigo?.trim(),
+          descripcion: formPropia.descripcion?.trim(),
+          uEspecialista: num(formPropia.uEspecialista ?? ""),
+          uAyudantes: num(formPropia.uAyudantes ?? ""),
+          uAnestesista: num(formPropia.uAnestesista ?? ""),
+          gastos: num(formPropia.gastos ?? ""),
+        }),
       });
+      const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        setMensajeCopia(d.error ?? "Error al importar");
+        setFormPropiaErr(d.error ?? "Error al guardar");
         return;
       }
-      setReporteCopia(await res.json());
-      await cargarDetalle(copiaSel.id);
-    } catch {
-      setMensajeCopia("No se pudo leer el archivo");
+      setFormPropiaAbierto(false);
+      await cargarCopia(osSel, 0);
     } finally {
-      setBusyImportCopia(false);
+      setGuardandoPropia(false);
     }
   };
 
@@ -431,7 +467,8 @@ export default function NomencladoresPage() {
     }
   };
 
-  const tabs: { id: Tab; label: string; icon: typeof BookOpen }[] = [    { id: "nacional", label: "Nacional", icon: BookOpen },
+  const tabs: { id: Tab; label: string; icon: typeof BookOpen }[] = [
+    { id: "nacional", label: "Nacional", icon: BookOpen },
     { id: "por-os", label: "Por obra social", icon: Building2 },
     { id: "importar", label: "Importar", icon: Upload },
   ];
@@ -441,7 +478,7 @@ export default function NomencladoresPage() {
       <PageHeader
         eyebrow="Configuración · Nomencladores"
         title="Nomencladores de prácticas"
-        description="Maestro nacional (GILSA, editable por ADMIN) y copias por obra social con importación de valores."
+        description="Maestro nacional (GILSA) y copia editable por obra social: los valores se copian y se ajustan por OS, sin tocar el nacional."
       />
 
       {error && <div className="text-[13px] text-error bg-error/5 border border-error/20 rounded-md px-3 py-2">{error}</div>}
@@ -453,7 +490,7 @@ export default function NomencladoresPage() {
             onClick={() => {
               setTab(t.id);
               setMensajeCopia(null);
-              setReporteCopia(null);
+              setErrorCopia(null);
             }}
             className={cn(
               "border rounded-md px-3 py-1.5 text-[13px] inline-flex items-center gap-1.5 transition-colors",
@@ -694,72 +731,178 @@ export default function NomencladoresPage() {
                 ))}
               </select>
             </div>
-            <button onClick={generarCopia} disabled={!osSel || busyGenerar} className="btn-primary text-[13px]">
-              <RefreshCw size={13} className={cn(busyGenerar && "animate-spin")} /> Generar copia desde nacional
-            </button>
+            {!copiaSel && (
+              <button onClick={crearCopia} disabled={!osSel || busyCopiar} className="btn-primary text-[13px]">
+                <Copy size={13} className={cn(busyCopiar && "animate-pulse")} />
+                {busyCopiar ? "Copiando…" : "Crear copia del nomenclador nacional"}
+              </button>
+            )}
+            {copiaSel && (
+              <button onClick={sincronizar} disabled={busySincronizar} className="btn-secondary text-[13px]">
+                <RefreshCw size={13} className={cn(busySincronizar && "animate-spin")} />
+                {busySincronizar ? "Sincronizando…" : "Sincronizar nuevas del nacional"}
+              </button>
+            )}
           </div>
 
+          {errorCopia && (
+            <div className="flex items-center gap-2 text-[13px] text-error border border-error/20 bg-error/5 rounded-md px-3 py-2">
+              <AlertTriangle size={14} /> {errorCopia}
+            </div>
+          )}
           {mensajeCopia && (
             <div className="flex items-center gap-2 text-[13px] text-success border border-success/25 bg-success/10 rounded-md px-3 py-2">
               <CheckCircle2 size={14} /> {mensajeCopia}
             </div>
           )}
 
-          {copias.length === 0 ? (
+          {!osSel ? (
             <div className="border border-dashed border-border rounded-lg py-12 text-center text-muted text-[13px]">
-              Sin nomencladores de obra social. Generá la primera copia desde el nacional.
+              Seleccioná una obra social para ver o crear su copia del nomenclador.
             </div>
-          ) : (
-            <div className="border border-border rounded-lg overflow-hidden bg-surface">
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
-                    <th className="px-4 py-2.5 text-left">Obra social</th>
-                    <th className="px-4 py-2.5 text-left">Nombre</th>
-                    <th className="px-4 py-2.5 text-left">Ítems</th>
-                    <th className="px-4 py-2.5 text-left">Vigencia</th>
-                    <th className="px-4 py-2.5 text-left">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {copias.map((c) => (
-                    <>
-                      <tr key={c.id} className="border-b border-border last:border-0 cursor-pointer hover:bg-surface-hover" onClick={() => abrirDetalle(c)}>
-                        <td className="px-4 py-2">{c.obraSocial.nombre} <span className="text-muted font-mono text-[11px]">({c.obraSocial.sigla})</span></td>
-                        <td className="px-4 py-2">{c.nombre}</td>
-                        <td className="px-4 py-2 font-mono text-[12px]">{c._count.items}</td>
-                        <td className="px-4 py-2 font-mono text-[12px]">
-                          {c.vigenciaDesde ? new Date(c.vigenciaDesde).toLocaleDateString() : "—"}
-                          {c.vigenciaHasta ? ` → ${new Date(c.vigenciaHasta).toLocaleDateString()}` : ""}
-                        </td>
-                        <td className="px-4 py-2">
-                          <StatusBadge tone={c.activo ? "success" : "neutral"} label={c.activo ? "Activa" : "Inactiva"} />
-                        </td>
-                      </tr>
-                      {detalleAbierto === c.id && (
-                        <tr key={`${c.id}-det`}>
-                          <td colSpan={5} className="px-4 py-4 bg-surface-hover/50">
-                            <DetalleCopia
-                              copia={c}
-                              items={itemsCopia}
-                              loading={loading}
-                              edits={edits}
-                              guardandoItem={guardandoItem}
-                              busyImportCopia={busyImportCopia}
-                              reporteCopia={reporteCopia}
-                              setEdit={setEdit}
-                              guardarItem={guardarItem}
-                              importarValores={importarValores}
+          ) : !copiaSel && !loading ? (
+            <div className="border border-dashed border-border rounded-lg py-12 text-center text-muted text-[13px] space-y-2">
+              <div>Esta obra social aún no tiene copia del nomenclador nacional.</div>
+              <div className="text-[12px]">Al crearla se copian todas las prácticas activas con sus valores (unidades). Después se editan acá, sin tocar el nacional.</div>
+            </div>
+          ) : copiaSel ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="text-[13px]">
+                  <span className="font-semibold">Copia de {copiaSel.obraSocial.nombre}</span>
+                  <span className="text-muted"> · {totalCopia} prácticas</span>
+                  <span className="text-muted text-[12px]"> · facturación usa estos valores si existen</span>
+                </div>
+                <button onClick={abrirAltaPropia} className="btn-primary text-[13px]">
+                  <Plus size={14} /> Agregar práctica propia
+                </button>
+              </div>
+
+              {formPropiaAbierto && (
+                <div className="border border-border rounded-lg bg-surface p-4 space-y-3">
+                  <h3 className="text-[13px] font-semibold">Nueva práctica de {copiaSel.obraSocial.nombre}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <CampoForm label="Código *" valor={formPropia.codigo ?? ""} set={(v) => setFormPropia({ ...formPropia, codigo: v })} mono />
+                    <CampoForm label="Descripción *" valor={formPropia.descripcion ?? ""} set={(v) => setFormPropia({ ...formPropia, descripcion: v })} wide />
+                    <CampoForm label="U. Especialista" valor={formPropia.uEspecialista ?? ""} set={(v) => setFormPropia({ ...formPropia, uEspecialista: v })} mono />
+                    <CampoForm label="U. Ayudantes" valor={formPropia.uAyudantes ?? ""} set={(v) => setFormPropia({ ...formPropia, uAyudantes: v })} mono />
+                    <CampoForm label="U. Anestesista" valor={formPropia.uAnestesista ?? ""} set={(v) => setFormPropia({ ...formPropia, uAnestesista: v })} mono />
+                    <CampoForm label="Gastos ($)" valor={formPropia.gastos ?? ""} set={(v) => setFormPropia({ ...formPropia, gastos: v })} mono />
+                  </div>
+                  {formPropiaErr && <div className="text-[13px] text-error">{formPropiaErr}</div>}
+                  <div className="flex gap-2">
+                    <button onClick={guardarPropia} disabled={guardandoPropia} className="btn-primary text-[13px]">
+                      {guardandoPropia ? "Guardando…" : "Guardar"}
+                    </button>
+                    <button onClick={() => setFormPropiaAbierto(false)} className="btn-secondary text-[13px]">Cancelar</button>
+                  </div>
+                </div>
+              )}
+
+              <div className="border border-border rounded-lg overflow-hidden bg-surface">
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
+                      <th className="px-4 py-2.5 text-left">Código</th>
+                      <th className="px-4 py-2.5 text-left">Descripción</th>
+                      <th className="px-4 py-2.5 text-left">Origen</th>
+                      <th className="px-4 py-2.5 text-left">U. Esp.</th>
+                      <th className="px-4 py-2.5 text-left">Ayudantes</th>
+                      <th className="px-4 py-2.5 text-left">Anestesista</th>
+                      <th className="px-4 py-2.5 text-left">Gastos</th>
+                      <th className="px-4 py-2.5 text-left">Estado</th>
+                      <th className="px-4 py-2.5 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {itemsCopia.map((it) => {
+                      const e = edits[it.id] ?? {};
+                      const dirty = Object.keys(e).length > 0;
+                      return (
+                        <tr key={it.id} className="border-b border-border last:border-0">
+                          <td className="px-4 py-1.5 font-mono text-[12px]">{it.codigo}</td>
+                          <td className="px-4 py-1.5 max-w-[300px]">
+                            <input
+                              value={e.descripcion ?? it.descripcion}
+                              onChange={(ev) => setEdit(it.id, "descripcion", ev.target.value)}
+                              className="w-full border border-transparent hover:border-border focus:border-brand rounded-md bg-transparent focus:bg-surface px-2 py-1 text-[13px]"
                             />
                           </td>
+                          <td className="px-4 py-1.5">
+                            {it.origen === "COPIA_NACIONAL" ? (
+                              <StatusBadge tone="neutral" label="NACIONAL" />
+                            ) : (
+                              <StatusBadge tone="success" label="PROPIA" />
+                            )}
+                          </td>
+                          {(["uEspecialista", "uAyudantes", "uAnestesista", "gastos"] as const).map((k) => (
+                            <td key={k} className="px-1 py-1.5">
+                              <input
+                                value={k in e ? String(e[k]) : fmtNum(it[k])}
+                                onChange={(ev) => setEdit(it.id, k, ev.target.value)}
+                                className="w-[76px] border border-border rounded-md bg-surface px-2 py-1 text-[12px] font-mono text-right"
+                                placeholder={fmtNum(it[k])}
+                              />
+                            </td>
+                          ))}
+                          <td className="px-4 py-1.5">
+                            <StatusBadge tone={it.activo ? "success" : "neutral"} label={it.activo ? "Activo" : "Inactivo"} />
+                          </td>
+                          <td className="px-4 py-1.5">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => guardarItemCopia(it)}
+                                disabled={!dirty || guardandoItem === it.id}
+                                className="btn-primary text-[12px] px-2.5 py-1 disabled:opacity-40"
+                              >
+                                {guardandoItem === it.id ? "…" : "Guardar"}
+                              </button>
+                              <button
+                                onClick={() => toggleItemCopia(it)}
+                                disabled={toggleId === it.id}
+                                className={cn(
+                                  "p-1.5 rounded-md transition-colors",
+                                  it.activo ? "text-muted hover:text-error hover:bg-error/5" : "text-muted hover:text-success hover:bg-success/10"
+                                )}
+                                title={it.activo ? "Desactivar" : "Activar"}
+                              >
+                                {it.activo ? <Power size={13} /> : <RefreshCw size={13} />}
+                              </button>
+                            </div>
+                          </td>
                         </tr>
-                      )}
-                    </>
-                  ))}
-                </tbody>
-              </table>
+                      );
+                    })}
+                    {!loading && itemsCopia.length === 0 && (
+                      <tr>
+                        <td colSpan={9} className="px-4 py-8 text-center text-muted text-[13px]">Sin prácticas</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {totalCopia > 200 && (
+                <div className="flex items-center gap-2 text-[13px]">
+                  <button
+                    className="btn-secondary text-[13px] disabled:opacity-40"
+                    disabled={offsetCopia === 0}
+                    onClick={() => cargarCopia(osSel, Math.max(offsetCopia - 200, 0))}
+                  >
+                    Anterior
+                  </button>
+                  <span className="text-muted font-mono text-[12px]">{offsetCopia + 1}–{Math.min(offsetCopia + 200, totalCopia)}</span>
+                  <button
+                    className="btn-secondary text-[13px] disabled:opacity-40"
+                    disabled={offsetCopia + 200 >= totalCopia}
+                    onClick={() => cargarCopia(osSel, offsetCopia + 200)}
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+          ) : null}
         </div>
       )}
 
@@ -769,7 +912,7 @@ export default function NomencladoresPage() {
             <h3 className="text-[14px] font-semibold">Importar CSV del nomenclador nacional</h3>
             <p className="text-[13px] text-muted">
               Actualiza el maestro por <span className="font-mono text-[12px]">codigo</span>. Re-importar un código existente
-              actualiza sus valores (descripción, unidades y notas). El maestro no se edita manualmente.
+              actualiza sus valores (descripción, unidades y notas). Las copias por obra social ya creadas no se ven afectadas.
             </p>
             <div className="text-[12px] text-muted font-mono bg-surface-hover rounded-md p-3 whitespace-pre-wrap">
               {`codigo;descripcion;capitulo;seccion;uEspecialista;uAyudantes;uAnestesista;cantidadAyudantes;gastos;total;notas
@@ -821,139 +964,6 @@ function CampoForm(props: { label: string; valor: string; set: (v: string) => vo
           mono && "font-mono text-[12px]"
         )}
       />
-    </div>
-  );
-}
-
-function DetalleCopia(props: {
-  copia: Copia;
-  items: ItemCopia[];
-  loading: boolean;
-  edits: Record<string, Partial<ItemCopia>>;
-  guardandoItem: string | null;
-  busyImportCopia: boolean;
-  reporteCopia: Reporte | null;
-  setEdit: (itemId: string, key: keyof ItemCopia, val: string) => void;
-  guardarItem: (item: ItemCopia) => void;
-  importarValores: (file: File) => void;
-}) {
-  const { copia, items, loading, edits, guardandoItem, busyImportCopia, reporteCopia, setEdit, guardarItem, importarValores } = props;
-  const [abierto, setAbierto] = useState(false);
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="text-[13px]">
-          <span className="font-semibold">{copia.nombre}</span>
-          <span className="text-muted"> · {items.length} ítems</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="btn-secondary inline-flex items-center gap-1.5 text-[13px] cursor-pointer">
-            <Upload size={13} /> Importar valores (CSV)
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              disabled={busyImportCopia}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) importarValores(f);
-                e.target.value = "";
-              }}
-            />
-          </label>
-          <button onClick={() => setAbierto(!abierto)} className="btn-secondary inline-flex items-center gap-1 text-[13px]">
-            {abierto ? <ChevronUp size={13} /> : <ChevronDown size={13} />} {abierto ? "Ocultar formato" : "Formato CSV"}
-          </button>
-        </div>
-      </div>
-
-      {abierto && (
-        <div className="text-[12px] text-muted font-mono bg-surface rounded-md border border-border p-3 whitespace-pre-wrap">
-          {`codigo;honorarioEspecialista;honorarioAyudantes;honorarioAnestesista;gastos;total
-00.01.01;1200;300;;100;1600`}
-          <div className="text-[11px] text-muted mt-1">
-            El match es por código contra la copia (y contra el nacional si el código no existe en la copia). Los códigos
-            inexistentes se reportan como “no encontrados” y no se crean.
-          </div>
-        </div>
-      )}
-
-      {reporteCopia && (
-        <div className="text-[13px] space-y-1 border border-border rounded-md p-3 bg-surface">
-          <div className="flex items-center gap-2 text-success">
-            <CheckCircle2 size={14} />
-            {reporteCopia.actualizados} actualizados · {reporteCopia.creados} creados
-            {typeof reporteCopia.huerfanos === "number" && reporteCopia.huerfanos > 0 ? ` · ${reporteCopia.huerfanos} huérfanos` : ""}
-          </div>
-          {reporteCopia.noEncontrados && reporteCopia.noEncontrados.length > 0 && (
-            <div className="flex items-start gap-2 text-error">
-              <AlertTriangle size={14} className="mt-0.5" />
-              <div>No encontrados: {reporteCopia.noEncontrados.join(", ")}</div>
-            </div>
-          )}
-          {reporteCopia.errores && reporteCopia.errores.length > 0 && (
-            <div className="text-error">{reporteCopia.errores.map((e) => `${e.codigo}: ${e.razon}`).join(" · ")}</div>
-          )}
-        </div>
-      )}
-
-      <div className="border border-border rounded-lg overflow-hidden bg-surface max-h-[420px] overflow-y-auto">
-        <table className="w-full text-[13px]">
-          <thead className="sticky top-0 bg-surface">
-            <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
-              <th className="px-4 py-2 text-left">Código</th>
-              <th className="px-4 py-2 text-left">Descripción</th>
-              <th className="px-4 py-2 text-left">Hon. Esp.</th>
-              <th className="px-4 py-2 text-left">Hon. Ayud.</th>
-              <th className="px-4 py-2 text-left">Hon. Anest.</th>
-              <th className="px-4 py-2 text-left">Gastos</th>
-              <th className="px-4 py-2 text-left">Total</th>
-              <th className="px-4 py-2 text-left"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it) => {
-              const e = edits[it.id] ?? {};
-              return (
-                <tr key={it.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-1.5 font-mono text-[12px]">{it.codigo}</td>
-                  <td className="px-4 py-1.5 max-w-[260px]">
-                    <div className="truncate">{it.nomencladorItem?.descripcion ?? "(sin referencia al nacional)"}</div>
-                    {it.nomencladorItem?.capitulo && <div className="text-[11px] text-muted">Cap. {it.nomencladorItem.capitulo}</div>}
-                  </td>
-                  {(["honorarioEspecialista", "honorarioAyudantes", "honorarioAnestesista", "gastos", "total"] as const).map((k) => (
-                    <td key={k} className="px-1 py-1.5">
-                      <input
-                        value={fmtNum(k in e ? e[k] : it[k])}
-                        onChange={(ev) => setEdit(it.id, k, ev.target.value)}
-                        className="w-[84px] border border-border rounded-md bg-surface px-2 py-1 text-[12px] font-mono text-right"
-                        placeholder={fmtNum(it[k])}
-                      />
-                    </td>
-                  ))}
-                  <td className="px-3 py-1.5">
-                    <button
-                      onClick={() => guardarItem(it)}
-                      disabled={!e || guardandoItem === it.id}
-                      className="btn-primary text-[12px] px-2.5 py-1 disabled:opacity-40"
-                    >
-                      {guardandoItem === it.id ? "…" : "Guardar"}
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-            {!loading && items.length === 0 && (
-              <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-muted text-[13px]">
-                  Sin ítems. Generá la copia desde el nacional o importá valores por CSV.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
