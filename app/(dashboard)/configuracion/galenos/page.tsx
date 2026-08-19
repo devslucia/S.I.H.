@@ -138,12 +138,29 @@ export default function GalenosPage() {
     setGuardando(true);
     setFormErr(null);
     try {
+      const parseMonto = (v: string | undefined): number | null => {
+        const t = (v ?? "").trim();
+        if (t === "") return 0;
+        const n = Number(t.replace(/,/g, "."));
+        return Number.isFinite(n) && n >= 0 ? n : null;
+      };
+      const montos = {
+        galenoQx: parseMonto(form.galenoQx),
+        gastosQx: parseMonto(form.gastosQx),
+        gastosPension: parseMonto(form.gastosPension),
+        otrosGastos: parseMonto(form.otrosGastos),
+      };
+      const invalido = Object.entries(montos).find(([, v]) => v === null);
+      if (invalido) {
+        setFormErr(`El monto de ${invalido[0]} no es un número válido (usá coma o punto decimal)`);
+        return;
+      }
       const payload = {
         obraSocialId: form.obraSocialId,
-        galenoQx: form.galenoQx === "" ? 0 : Number(form.galenoQx),
-        gastosQx: form.gastosQx === "" ? 0 : Number(form.gastosQx),
-        gastosPension: form.gastosPension === "" ? 0 : Number(form.gastosPension),
-        otrosGastos: form.otrosGastos === "" ? 0 : Number(form.otrosGastos),
+        galenoQx: montos.galenoQx,
+        gastosQx: montos.gastosQx,
+        gastosPension: montos.gastosPension,
+        otrosGastos: montos.otrosGastos,
         vigenciaDesde: form.vigenciaDesde,
         vigenciaHasta: form.vigenciaHasta || null,
       };
