@@ -26,7 +26,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!existe) return NextResponse.json({ error: "Galeno no encontrado" }, { status: 404 });
 
   const data: Record<string, unknown> = {};
-  for (const k of ["obraSocialId", "galenoQx", "gastosQx", "gastosPension", "otrosGastos", "vigenciaDesde", "vigenciaHasta"] as const) {
+  for (const k of ["obraSocialId", "galenoQx", "gastosQx", "gastosPension", "otrosGastos", "galenoMedicacion", "vigenciaDesde", "vigenciaHasta"] as const) {
     if (k in parsed.data) data[k] = (parsed.data as Record<string, unknown>)[k] ?? null;
   }
 
@@ -42,6 +42,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     gastosQx: Number(galeno.gastosQx),
     gastosPension: Number(galeno.gastosPension),
     otrosGastos: Number(galeno.otrosGastos),
+    galenoMedicacion: Number(galeno.galenoMedicacion),
     vigenciaDesde: galeno.vigenciaDesde.toISOString().slice(0, 10),
     vigenciaHasta: galeno.vigenciaHasta ? galeno.vigenciaHasta.toISOString().slice(0, 10) : null,
   });

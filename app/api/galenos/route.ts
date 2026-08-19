@@ -10,6 +10,7 @@ function serializar(g: {
   gastosQx: { toString(): string } | null;
   gastosPension: { toString(): string } | null;
   otrosGastos: { toString(): string } | null;
+  galenoMedicacion: { toString(): string } | null;
   vigenciaDesde: Date;
   vigenciaHasta: Date | null;
 }) {
@@ -19,6 +20,7 @@ function serializar(g: {
     gastosQx: Number(g.gastosQx),
     gastosPension: Number(g.gastosPension),
     otrosGastos: Number(g.otrosGastos),
+    galenoMedicacion: Number(g.galenoMedicacion),
     vigenciaDesde: g.vigenciaDesde.toISOString().slice(0, 10),
     vigenciaHasta: g.vigenciaHasta ? g.vigenciaHasta.toISOString().slice(0, 10) : null,
   };
@@ -74,6 +76,7 @@ export async function POST(req: NextRequest) {
       gastosQx: parsed.data.gastosQx,
       gastosPension: parsed.data.gastosPension,
       otrosGastos: parsed.data.otrosGastos,
+      galenoMedicacion: parsed.data.galenoMedicacion,
       vigenciaDesde: parsed.data.vigenciaDesde,
       vigenciaHasta: parsed.data.vigenciaHasta ?? null,
     },

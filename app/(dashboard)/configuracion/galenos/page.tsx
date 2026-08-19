@@ -22,6 +22,7 @@ interface Galeno {
   gastosQx: number;
   gastosPension: number;
   otrosGastos: number;
+  galenoMedicacion: number;
   vigenciaDesde: string;
   vigenciaHasta: string | null;
   activo: boolean;
@@ -112,6 +113,7 @@ export default function GalenosPage() {
       gastosQx: "",
       gastosPension: "",
       otrosGastos: "",
+      galenoMedicacion: "",
       vigenciaDesde: new Date().toISOString().slice(0, 10),
       vigenciaHasta: "",
     });
@@ -127,6 +129,7 @@ export default function GalenosPage() {
       gastosQx: String(g.gastosQx),
       gastosPension: String(g.gastosPension),
       otrosGastos: String(g.otrosGastos),
+      galenoMedicacion: String(g.galenoMedicacion),
       vigenciaDesde: g.vigenciaDesde.slice(0, 10),
       vigenciaHasta: g.vigenciaHasta ? g.vigenciaHasta.slice(0, 10) : "",
     });
@@ -149,6 +152,7 @@ export default function GalenosPage() {
         gastosQx: parseMonto(form.gastosQx),
         gastosPension: parseMonto(form.gastosPension),
         otrosGastos: parseMonto(form.otrosGastos),
+        galenoMedicacion: parseMonto(form.galenoMedicacion),
       };
       const invalido = Object.entries(montos).find(([, v]) => v === null);
       if (invalido) {
@@ -161,6 +165,7 @@ export default function GalenosPage() {
         gastosQx: montos.gastosQx,
         gastosPension: montos.gastosPension,
         otrosGastos: montos.otrosGastos,
+        galenoMedicacion: montos.galenoMedicacion,
         vigenciaDesde: form.vigenciaDesde,
         vigenciaHasta: form.vigenciaHasta || null,
       };
@@ -244,6 +249,7 @@ export default function GalenosPage() {
             <CampoForm label="Gastos Qx ($)" valor={form.gastosQx ?? ""} set={(v) => setForm({ ...form, gastosQx: v })} mono />
             <CampoForm label="Gastos pensión ($)" valor={form.gastosPension ?? ""} set={(v) => setForm({ ...form, gastosPension: v })} mono />
             <CampoForm label="Otros gastos ($)" valor={form.otrosGastos ?? ""} set={(v) => setForm({ ...form, otrosGastos: v })} mono />
+            <CampoForm label="Índice medicación ($)" valor={form.galenoMedicacion ?? ""} set={(v) => setForm({ ...form, galenoMedicacion: v })} mono />
             <CampoForm label="Vigencia desde" valor={form.vigenciaDesde ?? ""} set={(v) => setForm({ ...form, vigenciaDesde: v })} type="date" />
             <CampoForm label="Vigencia hasta (opcional)" valor={form.vigenciaHasta ?? ""} set={(v) => setForm({ ...form, vigenciaHasta: v })} type="date" />
           </div>
@@ -277,6 +283,7 @@ export default function GalenosPage() {
                 <th className={th}>Gastos Qx</th>
                 <th className={th}>Gastos pensión</th>
                 <th className={th}>Otros gastos</th>
+                <th className={th}>Índ. medicación</th>
                 <th className={th}>Vigencia</th>
                 <th className={th}>Estado</th>
                 <th className={th + " text-right"}>Acciones</th>
@@ -285,7 +292,7 @@ export default function GalenosPage() {
             <tbody>
               {galenos.length === 0 && !loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-muted text-[13px]">
+                  <td colSpan={9} className="px-4 py-8 text-center text-muted text-[13px]">
                     Sin galenos configurados
                   </td>
                 </tr>
@@ -300,6 +307,7 @@ export default function GalenosPage() {
                     <td className={td + " font-mono tabular-nums"}>{money(g.gastosQx)}</td>
                     <td className={td + " font-mono tabular-nums"}>{money(g.gastosPension)}</td>
                     <td className={td + " font-mono tabular-nums"}>{money(g.otrosGastos)}</td>
+                    <td className={td + " font-mono tabular-nums"}>{money(g.galenoMedicacion)}</td>
                     <td className={td + " font-mono text-[12px] text-muted"}>
                       {g.vigenciaDesde}
                       {g.vigenciaHasta ? ` → ${g.vigenciaHasta}` : " → ∞"}
