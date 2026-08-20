@@ -121,11 +121,24 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       : null;
     if (!funcionCodigo) return { status: 400, data: { error: "Función inválida (10, 20, 30 o 92)" } };
 
+    let codigo = body.codigo ? String(body.codigo).trim() : "";
+    if (funcionCodigo !== "92" && !codigo) {
+      if (existe.nomencladorId) {
+        const item = await tx.nomencladorItem.findUnique({ where: { id: existe.nomencladorId } });
+        if (item) codigo = item.codigo;
+      }
+      if (!codigo) {
+        return { status: 400, data: { error: "Reintentá la búsqueda de la práctica para editarla" } };
+      }
+    }
+
     const calc = await calcularHonorario(tx, {
       internacionId: existe.internacionId,
       concepto,
       funcionCodigo,
-      valorBase: funcionCodigo !== "92" ? num(body.valorBase) : undefined,
+      codigo: funcionCodigo !== "92" ? codigo : undefined,
+      descripcion: body.descripcion ? String(body.descripcion) : undefined,
+      valorBase: funcionCodigo !== "92" && !codigo ? num(body.valorBase) : undefined,
       importeManual: funcionCodigo === "92" ? num(body.importeManual) : undefined,
       observacion,
       fecha: existe.fecha,
@@ -135,11 +148,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const cargo = await tx.cargoFacturacion.update({
       where: { id: params.id },
       data: {
-        concepto,
+        concepto: calc.data.concepto,
         cantidad: 1,
         precioUnitario: calc.data.importe,
         total: calc.data.importe,
         funcionCodigo: calc.data.funcionCodigo,
+        nomencladorId: calc.data.nomencladorId,
         valorBase: calc.data.valorBase,
         galenoAplicado: calc.data.galenoAplicado,
         observacion: calc.data.observacion,

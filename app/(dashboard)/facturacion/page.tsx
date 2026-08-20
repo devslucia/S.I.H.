@@ -358,9 +358,9 @@ function RubroDetalle({
   const [err, setErr] = useState<string | null>(null);
   const [indiceVigente, setIndiceVigente] = useState<number | null>(null);
   const [galenoLabel, setGalenoLabel] = useState("");
-  const [practicaSel, setPracticaSel] = useState<{ codigo: string; descripcion: string; gastos: number | null } | null>(null);
+  const [practicaSel, setPracticaSel] = useState<{ codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; gastos: number | null } | null>(null);
   const [busqueda, setBusqueda] = useState("");
-  const [resultados, setResultados] = useState<{ codigo: string; descripcion: string; gastos: number | null; origen: string }[]>([]);
+  const [resultados, setResultados] = useState<{ codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; gastos: number | null; origen: string }[]>([]);
   const [buscando, setBuscando] = useState(false);
   const [busquedaAbierta, setBusquedaAbierta] = useState(false);
 
@@ -397,7 +397,7 @@ function RubroDetalle({
   }, [esMed, esHon, esGas, obraSocialId]);
 
   useEffect(() => {
-    if (!esGas || !obraSocialId || !busqueda.trim()) {
+    if (!(esGas || esHon) || !obraSocialId || !busqueda.trim()) {
       setResultados([]);
       return;
     }
@@ -406,7 +406,7 @@ function RubroDetalle({
     const t = setTimeout(() => {
       fetch(`/api/facturacion/nomenclador?obraSocialId=${encodeURIComponent(obraSocialId)}&q=${encodeURIComponent(busqueda.trim())}`)
         .then((r) => r.json())
-        .then((d: { codigo: string; descripcion: string; gastos: number | null; origen: string }[]) => {
+        .then((d: { codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; gastos: number | null; origen: string }[]) => {
           if (vivo) setResultados(Array.isArray(d) ? d : []);
         })
         .catch(() => {
@@ -420,7 +420,7 @@ function RubroDetalle({
       vivo = false;
       clearTimeout(t);
     };
-  }, [esGas, obraSocialId, busqueda]);
+  }, [esGas, esHon, obraSocialId, busqueda]);
 
   const abrirNuevo = () => {
     setEditandoId(null);
@@ -443,7 +443,25 @@ function RubroDetalle({
     setImporteManual(c.funcionCodigo === "92" ? String(c.total) : "");
     setObservacion(c.observacion ?? "");
     setErr(null);
-    setPracticaSel(c.funcionCodigo === "60" ? { codigo: c.concepto.split(" · ")[0] ?? "", descripcion: c.concepto.split(" · ").slice(1).join(" · ") || c.concepto, gastos: c.valorBase } : null);
+    const partes = c.concepto.split(" · ");
+    const conPractica = (esGas || esHon) && c.funcionCodigo !== null && c.funcionCodigo !== "92" && partes[0]?.trim() !== "" && c.concepto.includes(" · ");
+    const codigo = partes[0] ?? "";
+    setPracticaSel(
+      conPractica
+        ? { codigo, descripcion: partes.slice(1).join(" · ") || c.concepto, uEspecialista: null, uAyudantes: null, gastos: esGas ? c.valorBase : null }
+        : null
+    );
+    if (conPractica) {
+      fetch(`/api/facturacion/nomenclador?obraSocialId=${encodeURIComponent(obraSocialId)}&q=${encodeURIComponent(codigo)}`)
+        .then((r) => r.json())
+        .then((d: { codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; gastos: number | null }[]) => {
+          const hit = Array.isArray(d) ? (d.find((x) => x.codigo === codigo) ?? d[0]) : undefined;
+          if (hit) {
+            setPracticaSel({ codigo: hit.codigo, descripcion: hit.descripcion, uEspecialista: hit.uEspecialista, uAyudantes: hit.uAyudantes, gastos: hit.gastos });
+          }
+        })
+        .catch(() => {});
+    }
     setBusqueda("");
     setFormAbierto(true);
   };
@@ -468,9 +486,9 @@ function RubroDetalle({
           return;
         }
         payload.importeManual = m;
-      } else if (esGas) {
+      } else if (esGas || esHon) {
         if (!practicaSel) {
-          setErr("Buscá y elegí una práctica del nomenclador");
+          setErr(esGas ? "Buscá y elegí una práctica del nomenclador" : "Buscá y elegí la práctica del nomenclador");
           return;
         }
         payload.codigo = practicaSel.codigo;
@@ -510,12 +528,14 @@ function RubroDetalle({
   };
 
   const esFormula = funcion !== "92";
-  const importeCalculado = esGas
-    ? esFormula && indiceVigente !== null && practicaSel
-      ? (practicaSel.gastos ?? 0) * indiceVigente
-      : null
-    : esFormula && indiceVigente !== null
-      ? (parseMonto(valorBase) ?? 0) * (funcion === "30" ? 2 : 1) * indiceVigente
+  const unidadesFormula = esGas
+    ? (practicaSel?.gastos ?? null)
+    : esHon && practicaSel
+      ? (funcion === "10" ? practicaSel.uEspecialista : practicaSel.uAyudantes) ?? null
+      : parseMonto(valorBase);
+  const importeCalculado =
+    esFormula && indiceVigente !== null && unidadesFormula !== null
+      ? unidadesFormula * (funcion === "30" ? 2 : 1) * indiceVigente
       : null;
 
   if (cargos.length === 0 && !formAbierto) {
@@ -576,7 +596,7 @@ function RubroDetalle({
             ))}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {(!esGas || funcion === "92") && (
+            {(!(esGas || esHon) || funcion === "92") && (
               <label className="block md:col-span-3">
                 <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Concepto</span>
                 <input
@@ -587,7 +607,7 @@ function RubroDetalle({
                 />
               </label>
             )}
-            {esGas && esFormula ? (
+            {(esGas || esHon) && esFormula ? (
               <>
                 <div className="block md:col-span-3">
                   <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">
@@ -598,7 +618,17 @@ function RubroDetalle({
                       <div className="flex-1 border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono">
                         <span className="text-brand font-semibold">{practicaSel.codigo}</span>
                         <span className="text-text"> · {practicaSel.descripcion}</span>
-                        <span className="text-muted"> · Gastos {practicaSel.gastos === null ? "—" : practicaSel.gastos}</span>
+                        {esGas ? (
+                          <span className="text-muted"> · Gastos {practicaSel.gastos === null ? "—" : practicaSel.gastos}</span>
+                        ) : (
+                          <span className="text-muted">
+                            {" "}
+                            · U. {funcion === "10" ? "Esp" : "Ayud"}{" "}
+                            {(funcion === "10" ? practicaSel.uEspecialista : practicaSel.uAyudantes) === null
+                              ? "—"
+                              : (funcion === "10" ? practicaSel.uEspecialista : practicaSel.uAyudantes)}
+                          </span>
+                        )}
                       </div>
                       <button
                         onClick={() => {
@@ -634,7 +664,7 @@ function RubroDetalle({
                               <button
                                 key={`${r.origen}-${r.codigo}`}
                                 onMouseDown={() => {
-                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, gastos: r.gastos });
+                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, gastos: r.gastos });
                                   setBusqueda("");
                                   setBusquedaAbierta(false);
                                 }}
@@ -642,7 +672,13 @@ function RubroDetalle({
                               >
                                 <span className="font-mono text-[12px] text-brand">{r.codigo}</span>
                                 <span className="text-[13px] text-text ml-2">{r.descripcion}</span>
-                                <span className="text-[11px] text-muted ml-2">Gastos: {r.gastos === null ? "—" : r.gastos}</span>
+                                {esGas ? (
+                                  <span className="text-[11px] text-muted ml-2">Gastos: {r.gastos === null ? "—" : r.gastos}</span>
+                                ) : (
+                                  <span className="text-[11px] text-muted ml-2">
+                                    Esp {r.uEspecialista === null ? "—" : r.uEspecialista} · Ayud {r.uAyudantes === null ? "—" : r.uAyudantes}
+                                  </span>
+                                )}
                                 <span className="float-right text-[10px] font-mono uppercase tracking-wider text-muted mt-1">
                                   {r.origen === "COPIA_OS" ? "Copia OS" : r.origen === "ESPECIFICA" ? "Específica" : "Nacional"}
                                 </span>
@@ -655,13 +691,17 @@ function RubroDetalle({
                   )}
                 </div>
                 <div className="block">
-                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Gastos Qx vigente</span>
+                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">
+                    {esGas ? "Gastos Qx vigente" : "Galeno Qx vigente"}
+                  </span>
                   <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border">
                     {indiceVigente === null ? (
                       <span className="text-warning">Sin índice configurado (Configuración → Galenos)</span>
                     ) : (
                       <span className="text-text">
-                        ${toMoney(indiceVigente)} {galenoLabel && <span className="text-muted">· {galenoLabel}</span>}
+                        ${toMoney(indiceVigente)}
+                        {!esGas && funcion === "30" && <span className="text-muted"> × 2</span>}
+                        {galenoLabel && <span className="text-muted"> · {galenoLabel}</span>}
                       </span>
                     )}
                   </div>
@@ -672,6 +712,80 @@ function RubroDetalle({
                     {importeCalculado === null ? "—" : money(importeCalculado)}
                   </div>
                 </div>
+              </>
+            ) : (esGas || esHon) ? (
+              <>
+                <div className="block md:col-span-3">
+                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Práctica (opcional, solo referencia)</span>
+                  {practicaSel ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono">
+                        <span className="text-brand font-semibold">{practicaSel.codigo}</span>
+                        <span className="text-text"> · {practicaSel.descripcion}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setPracticaSel(null);
+                          setBusqueda("");
+                        }}
+                        className="px-2 py-2 text-[12px] text-muted hover:text-brand transition-colors rounded-md border border-border"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <input
+                        value={busqueda}
+                        onChange={(e) => {
+                          setBusqueda(e.target.value);
+                          setBusquedaAbierta(true);
+                        }}
+                        onFocus={() => setBusquedaAbierta(true)}
+                        onBlur={() => setTimeout(() => setBusquedaAbierta(false), 150)}
+                        placeholder="Buscar por código o descripción (opcional)…"
+                        className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
+                      />
+                      {busquedaAbierta && busqueda.trim() && (
+                        <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto border border-border rounded-md bg-surface shadow-sm">
+                          {buscando ? (
+                            <div className="px-3 py-2 text-[12px] text-muted">Buscando…</div>
+                          ) : resultados.length === 0 ? (
+                            <div className="px-3 py-2 text-[12px] text-muted">Sin resultados</div>
+                          ) : (
+                            resultados.map((r) => (
+                              <button
+                                key={`${r.origen}-${r.codigo}`}
+                                onMouseDown={() => {
+                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, gastos: r.gastos });
+                                  setConcepto(`${r.codigo} · ${r.descripcion}`);
+                                  setBusqueda("");
+                                  setBusquedaAbierta(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-surface-hover transition-colors border-b border-border/30 last:border-0"
+                              >
+                                <span className="font-mono text-[12px] text-brand">{r.codigo}</span>
+                                <span className="text-[13px] text-text ml-2">{r.descripcion}</span>
+                                <span className="float-right text-[10px] font-mono uppercase tracking-wider text-muted mt-1">
+                                  {r.origen === "COPIA_OS" ? "Copia OS" : r.origen === "ESPECIFICA" ? "Específica" : "Nacional"}
+                                </span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <label className="block">
+                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Importe manual ($)</span>
+                  <input
+                    value={importeManual}
+                    onChange={(e) => setImporteManual(e.target.value)}
+                    placeholder="Ej: 1500"
+                    className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono"
+                  />
+                </label>
               </>
             ) : esFormula ? (
               <>
