@@ -1,5 +1,5 @@
 import type { Tx } from "@/lib/utils/stock";
-import { getGalenoVigente, resolverPractica } from "@/lib/galeno";
+import { resolverImportePractica } from "@/lib/galeno";
 
 export type FuncionGasto = "60" | "92";
 
@@ -11,6 +11,7 @@ export interface GastoCalculado {
   valorBase: number | null;
   galenoAplicado: number | null;
   importe: number;
+  origenImporte: "FIJO" | "CALCULADO" | null;
   observacion: string | null;
 }
 
@@ -31,7 +32,7 @@ function redondear(n: number): number {
 /**
  * Cálculo de cargos de gastos.
  * - Función 60: se elige una práctica del nomenclador (copia de la OS → específica → nacional)
- *   y el importe = unidades de gastos del ítem x gastosQx del galeno vigente de la OS.
+ *   y el importe = fijoGastos ?? (unidades de gastos del ítem x gastosQx del galeno vigente).
  * - Función 92: importe = monto manual (sin multiplicar por galeno), con concepto/observación.
  */
 export async function calcularGasto(
@@ -49,21 +50,8 @@ export async function calcularGasto(
     const codigo = input.codigo?.trim() ?? "";
     if (!codigo) return { ok: false, error: "Elegí una práctica del nomenclador" };
 
-    const resuelta = await resolverPractica(tx, codigo, internacion.obraSocialId);
-    if (!resuelta) {
-      return { ok: false, error: `La práctica ${codigo} no existe en el nomenclador de la obra social` };
-    }
-
-    const gastos = resuelta.unidades.gastos ?? 0;
-    if (!(gastos > 0)) {
-      return { ok: false, error: `La práctica ${codigo} no tiene gastos definidos` };
-    }
-
-    const galeno = await getGalenoVigente(tx, internacion.obraSocialId, input.fecha ?? new Date());
-    const indiceGastos = galeno ? Number(galeno.gastosQx) : 0;
-    if (!galeno || !(indiceGastos > 0)) {
-      return { ok: false, error: "Falta configurar el galeno de gastos (gastosQx) vigente para la obra social" };
-    }
+    const resuelto = await resolverImportePractica(tx, codigo, internacion.obraSocialId, "60", input.fecha ?? new Date());
+    if (!resuelto.ok) return resuelto;
 
     return {
       ok: true,
@@ -71,10 +59,11 @@ export async function calcularGasto(
         funcionCodigo: "60",
         codigo,
         concepto: input.descripcion?.trim() ? `${codigo} · ${input.descripcion.trim()}` : `Gasto: ${codigo}`,
-        nomencladorId: resuelta.nomencladorId,
-        valorBase: redondear(gastos),
-        galenoAplicado: indiceGastos,
-        importe: redondear(gastos * indiceGastos),
+        nomencladorId: resuelto.data.nomencladorId,
+        valorBase: redondear(resuelto.data.unidades),
+        galenoAplicado: resuelto.data.galenoAplicado,
+        importe: resuelto.data.importe,
+        origenImporte: resuelto.data.origenImporte,
         observacion: input.observacion?.trim() || null,
       },
     };
@@ -93,6 +82,7 @@ export async function calcularGasto(
       valorBase: null,
       galenoAplicado: null,
       importe: redondear(monto),
+      origenImporte: null,
       observacion: input.observacion?.trim() || null,
     },
   };

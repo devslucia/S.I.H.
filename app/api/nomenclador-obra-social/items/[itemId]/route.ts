@@ -9,6 +9,10 @@ const updateSchema = z.object({
   uAyudantes: z.coerce.number().nonnegative().nullable().optional(),
   uAnestesista: z.coerce.number().nonnegative().nullable().optional(),
   gastos: z.coerce.number().nonnegative().nullable().optional(),
+  fijoEspecialista: z.coerce.number().nonnegative().nullable().optional(),
+  fijoAyudantes: z.coerce.number().nonnegative().nullable().optional(),
+  fijoAnestesista: z.coerce.number().nonnegative().nullable().optional(),
+  fijoGastos: z.coerce.number().nonnegative().nullable().optional(),
   activo: z.boolean().optional(),
 });
 
@@ -29,7 +33,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ item
   }
 
   const data = { ...parsed.data };
-  for (const campo of ["uEspecialista", "uAyudantes", "uAnestesista", "gastos"] as const) {
+  for (const campo of ["uEspecialista", "uAyudantes", "uAnestesista", "gastos", "fijoEspecialista", "fijoAyudantes", "fijoAnestesista", "fijoGastos"] as const) {
     if (campo in data && data[campo] === null) data[campo] = null;
   }
 

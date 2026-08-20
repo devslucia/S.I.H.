@@ -46,6 +46,52 @@ interface Cargo {
   stockItemId: string | null;
 }
 
+interface RubroImporteUI {
+  unidad: number | null;
+  importe: number | null;
+  origen: "FIJO" | "CALCULADO" | null;
+}
+
+interface ImportesUI {
+  especialista: RubroImporteUI;
+  ayudante: RubroImporteUI;
+  anestesista: RubroImporteUI;
+  gastos: RubroImporteUI;
+  honorariosTotal: number;
+  total: number;
+}
+
+interface FijosUI {
+  fijoEspecialista: number | null;
+  fijoAyudantes: number | null;
+  fijoAnestesista: number | null;
+  fijoGastos: number | null;
+}
+
+interface ResultadoNomenclador {
+  codigo: string;
+  descripcion: string;
+  uEspecialista: number | null;
+  uAyudantes: number | null;
+  uAnestesista: number | null;
+  gastos: number | null;
+  fijos: FijosUI;
+  importes: ImportesUI;
+  origen: "COPIA_OS" | "ESPECIFICA" | "NACIONAL";
+  nomencladorId: string | null;
+}
+
+interface PracticaSel {
+  codigo: string;
+  descripcion: string;
+  uEspecialista: number | null;
+  uAyudantes: number | null;
+  uAnestesista: number | null;
+  gastos: number | null;
+  fijos?: FijosUI;
+  importes?: ImportesUI;
+}
+
 interface Liquidacion {
   internacionId: string;
   internacion: {
@@ -360,9 +406,9 @@ function RubroDetalle({
   const [err, setErr] = useState<string | null>(null);
   const [indiceVigente, setIndiceVigente] = useState<number | null>(null);
   const [galenoLabel, setGalenoLabel] = useState("");
-  const [practicaSel, setPracticaSel] = useState<{ codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; uAnestesista: number | null; gastos: number | null } | null>(null);
+  const [practicaSel, setPracticaSel] = useState<PracticaSel | null>(null);
   const [busqueda, setBusqueda] = useState("");
-  const [resultados, setResultados] = useState<{ codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; uAnestesista: number | null; gastos: number | null; origen: string }[]>([]);
+  const [resultados, setResultados] = useState<ResultadoNomenclador[]>([]);
   const [buscando, setBuscando] = useState(false);
   const [busquedaAbierta, setBusquedaAbierta] = useState(false);
   const [stockItemSel, setStockItemSel] = useState<{ id: string; nTroquel: string | null; nombre: string; presentacion: string | null; laboratorio: string | null; precio: number } | null>(null);
@@ -414,8 +460,8 @@ function RubroDetalle({
     const t = setTimeout(() => {
       fetch(`/api/facturacion/nomenclador?obraSocialId=${encodeURIComponent(obraSocialId)}&q=${encodeURIComponent(busqueda.trim())}`)
         .then((r) => r.json())
-        .then((d: { codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; uAnestesista: number | null; gastos: number | null; origen: string }[]) => {
-          if (vivo) setResultados(Array.isArray(d) ? d : []);
+        .then((d: { items?: ResultadoNomenclador[] }) => {
+          if (vivo) setResultados(d.items ?? []);
         })
         .catch(() => {
           if (vivo) setResultados([]);
@@ -496,10 +542,11 @@ function RubroDetalle({
     if (conPractica) {
       fetch(`/api/facturacion/nomenclador?obraSocialId=${encodeURIComponent(obraSocialId)}&q=${encodeURIComponent(codigo)}`)
         .then((r) => r.json())
-        .then((d: { codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; uAnestesista: number | null; gastos: number | null }[]) => {
-          const hit = Array.isArray(d) ? (d.find((x) => x.codigo === codigo) ?? d[0]) : undefined;
+        .then((d: { items?: ResultadoNomenclador[] }) => {
+          const hits = d.items ?? [];
+          const hit = hits.find((x) => x.codigo === codigo) ?? hits[0];
           if (hit) {
-            setPracticaSel({ codigo: hit.codigo, descripcion: hit.descripcion, uEspecialista: hit.uEspecialista, uAyudantes: hit.uAyudantes, uAnestesista: hit.uAnestesista, gastos: hit.gastos });
+            setPracticaSel({ codigo: hit.codigo, descripcion: hit.descripcion, uEspecialista: hit.uEspecialista, uAyudantes: hit.uAyudantes, uAnestesista: hit.uAnestesista, gastos: hit.gastos, fijos: hit.fijos, importes: hit.importes });
           }
         })
         .catch(() => {});
@@ -603,14 +650,29 @@ function RubroDetalle({
     : esHon && practicaSel
       ? (funcion === "10" ? practicaSel.uEspecialista : funcion === "20" ? practicaSel.uAyudantes : practicaSel.uAnestesista) ?? null
       : parseMonto(valorBase);
+  const rubroFormula = esGas
+    ? "gastos"
+    : esHon
+      ? funcion === "10"
+        ? "especialista"
+        : funcion === "20"
+          ? "ayudante"
+          : "anestesista"
+      : null;
+  const importeResuelto =
+    esFormula && rubroFormula !== null && practicaSel?.importes
+      ? (practicaSel.importes[rubroFormula]?.importe ?? null)
+      : null;
   const importeCalculado =
     funcion === "stock"
       ? stockItemSel && parseMonto(cantidadMed) !== null
         ? (parseMonto(cantidadMed) ?? 0) * stockItemSel.precio
         : null
-      : esFormula && indiceVigente !== null && unidadesFormula !== null
-        ? unidadesFormula * indiceVigente
-        : null;
+      : importeResuelto !== null
+        ? importeResuelto
+        : esFormula && indiceVigente !== null && unidadesFormula !== null
+          ? unidadesFormula * indiceVigente
+          : null;
 
   if (cargos.length === 0 && !formAbierto) {
     return (
@@ -785,7 +847,15 @@ function RubroDetalle({
                         <span className="text-brand font-semibold">{practicaSel.codigo}</span>
                         <span className="text-text"> · {practicaSel.descripcion}</span>
                         {esGas ? (
-                          <span className="text-muted"> · Gastos {practicaSel.gastos === null ? "—" : practicaSel.gastos}</span>
+                          <span className="text-muted">
+                            {" "}
+                            · Gastos {practicaSel.gastos === null ? "—" : practicaSel.gastos}
+                            {practicaSel.importes?.gastos.importe !== null && practicaSel.importes?.gastos.importe !== undefined && (
+                              <span className={cn("ml-2", practicaSel.importes.gastos.origen === "FIJO" ? "text-success" : "text-brand")}>
+                                · ${money(practicaSel.importes.gastos.importe)} {practicaSel.importes.gastos.origen === "FIJO" ? "(fijo)" : "(calc)"}
+                              </span>
+                            )}
+                          </span>
                         ) : (
                           <span className="text-muted">
                             {" "}
@@ -793,6 +863,12 @@ function RubroDetalle({
                             {(funcion === "10" ? practicaSel.uEspecialista : funcion === "20" ? practicaSel.uAyudantes : practicaSel.uAnestesista) === null
                               ? "—"
                               : (funcion === "10" ? practicaSel.uEspecialista : funcion === "20" ? practicaSel.uAyudantes : practicaSel.uAnestesista)}
+                            {practicaSel.importes && rubroFormula && (
+                              <span className={cn("ml-2", practicaSel.importes[rubroFormula].origen === "FIJO" ? "text-success" : "text-brand")}>
+                                · ${money(practicaSel.importes[rubroFormula].importe ?? 0)}{" "}
+                                {practicaSel.importes[rubroFormula].origen === "FIJO" ? "(fijo)" : "(calc)"}
+                              </span>
+                            )}
                           </span>
                         )}
                       </div>
@@ -830,7 +906,7 @@ function RubroDetalle({
                               <button
                                 key={`${r.origen}-${r.codigo}`}
                                 onMouseDown={() => {
-                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, uAnestesista: r.uAnestesista, gastos: r.gastos });
+                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, uAnestesista: r.uAnestesista, gastos: r.gastos, fijos: r.fijos, importes: r.importes });
                                   setBusqueda("");
                                   setBusquedaAbierta(false);
                                 }}
@@ -839,10 +915,28 @@ function RubroDetalle({
                                 <span className="font-mono text-[12px] text-brand">{r.codigo}</span>
                                 <span className="text-[13px] text-text ml-2">{r.descripcion}</span>
                                 {esGas ? (
-                                  <span className="text-[11px] text-muted ml-2">Gastos: {r.gastos === null ? "—" : r.gastos}</span>
+                                  <span className="text-[11px] text-muted ml-2">
+                                    Gastos: {r.gastos === null ? "—" : r.gastos} ·{" "}
+                                    <span className="font-mono">
+                                      ${r.importes.gastos.importe === null ? "—" : money(r.importes.gastos.importe)}
+                                    </span>{" "}
+                                    {r.importes.gastos.origen && (
+                                      <span className={cn("font-mono", r.importes.gastos.origen === "FIJO" ? "text-success" : "text-muted")}>
+                                        {r.importes.gastos.origen === "FIJO" ? "FIJO" : "CALC"}
+                                      </span>
+                                    )}
+                                  </span>
                                 ) : (
                                   <span className="text-[11px] text-muted ml-2">
-                                    Esp {r.uEspecialista === null ? "—" : r.uEspecialista} · Ayud {r.uAyudantes === null ? "—" : r.uAyudantes} · Anest {r.uAnestesista === null ? "—" : r.uAnestesista}
+                                    Esp {r.uEspecialista === null ? "—" : r.uEspecialista} · Ayud {r.uAyudantes === null ? "—" : r.uAyudantes} · Anest {r.uAnestesista === null ? "—" : r.uAnestesista} ·{" "}
+                                    <span className="font-mono">
+                                      ${r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].importe === null ? "—" : money(r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].importe ?? 0)}
+                                    </span>{" "}
+                                    {r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].origen && (
+                                      <span className={cn("font-mono", r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].origen === "FIJO" ? "text-success" : "text-muted")}>
+                                        {r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].origen === "FIJO" ? "FIJO" : "CALC"}
+                                      </span>
+                                    )}
                                   </span>
                                 )}
                                 <span className="float-right text-[10px] font-mono uppercase tracking-wider text-muted mt-1">
@@ -922,7 +1016,7 @@ function RubroDetalle({
                               <button
                                 key={`${r.origen}-${r.codigo}`}
                                 onMouseDown={() => {
-                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, uAnestesista: r.uAnestesista, gastos: r.gastos });
+                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, uAnestesista: r.uAnestesista, gastos: r.gastos, fijos: r.fijos, importes: r.importes });
                                   setConcepto(`${r.codigo} · ${r.descripcion}`);
                                   setBusqueda("");
                                   setBusquedaAbierta(false);

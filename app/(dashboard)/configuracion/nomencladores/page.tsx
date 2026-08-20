@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import {
   BookOpen,
   Building2,
@@ -17,6 +17,7 @@ import {
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { cn } from "@/lib/utils";
+import { calcularImportesConFijos, normalizarFijos, type FijosNomenclador } from "@/lib/galeno";
 
 type Tab = "nacional" | "por-os" | "importar";
 
@@ -52,8 +53,20 @@ interface ItemCopia {
   uAyudantes: number | null;
   uAnestesista: number | null;
   gastos: number | null;
+  fijoEspecialista: number | null;
+  fijoAyudantes: number | null;
+  fijoAnestesista: number | null;
+  fijoGastos: number | null;
   activo: boolean;
   origen: "COPIA_NACIONAL" | "PROPIA_OS";
+}
+
+interface GalenoVigenteSel {
+  id: string;
+  galenoQx: number;
+  gastosQx: number;
+  vigenciaDesde: string;
+  vigenciaHasta: string | null;
 }
 
 interface ObraSocialSel {
@@ -93,6 +106,16 @@ function num(v: string): number | null {
 
 const fmtNum = (v: number | null | undefined) => (v === null || v === undefined ? "" : String(v));
 
+const money = (n: number | null | undefined) =>
+  n === null || n === undefined ? "—" : n.toLocaleString("es-AR", { style: "currency", currency: "ARS" });
+
+const RUBROS_COPIA = [
+  { unidad: "uEspecialista", fijo: "fijoEspecialista", rubro: "especialista", label: "Esp" },
+  { unidad: "uAyudantes", fijo: "fijoAyudantes", rubro: "ayudante", label: "Ayud" },
+  { unidad: "uAnestesista", fijo: "fijoAnestesista", rubro: "anestesista", label: "Anest" },
+  { unidad: "gastos", fijo: "fijoGastos", rubro: "gastos", label: "Gastos" },
+] as const;
+
 export default function NomencladoresPage() {
   const [tab, setTab] = useState<Tab>("nacional");
   const [loading, setLoading] = useState(false);
@@ -108,6 +131,7 @@ export default function NomencladoresPage() {
   const [osSel, setOsSel] = useState("");
   const [copiaSel, setCopiaSel] = useState<Copia | null>(null);
   const [itemsCopia, setItemsCopia] = useState<ItemCopia[]>([]);
+  const [galenoVigente, setGalenoVigente] = useState<GalenoVigenteSel | null>(null);
   const [totalCopia, setTotalCopia] = useState(0);
   const [offsetCopia, setOffsetCopia] = useState(0);
   const [busyCopiar, setBusyCopiar] = useState(false);
@@ -177,6 +201,7 @@ export default function NomencladoresPage() {
       const data = await res.json();
       setCopiaSel(data.copia);
       setItemsCopia(data.items);
+      setGalenoVigente(data.galenoVigente ?? null);
       setTotalCopia(data.total);
       setOffsetCopia(offset);
     } catch {
@@ -305,7 +330,7 @@ export default function NomencladoresPage() {
       const e = edits[item.id] ?? {};
       const payload: Record<string, unknown> = {};
       if (e.descripcion !== undefined) payload.descripcion = e.descripcion;
-      for (const k of ["uEspecialista", "uAyudantes", "uAnestesista", "gastos"] as const) {
+      for (const k of ["uEspecialista", "uAyudantes", "uAnestesista", "gastos", "fijoEspecialista", "fijoAyudantes", "fijoAnestesista", "fijoGastos"] as const) {
         if (k in e) payload[k] = num(String(e[k] ?? ""));
       }
       const res = await fetch(`/api/nomenclador-obra-social/items/${item.id}`, {
@@ -343,7 +368,7 @@ export default function NomencladoresPage() {
   };
 
   const abrirAltaPropia = () => {
-    setFormPropia({ codigo: "", descripcion: "", uEspecialista: "", uAyudantes: "", uAnestesista: "", gastos: "" });
+    setFormPropia({ codigo: "", descripcion: "", uEspecialista: "", uAyudantes: "", uAnestesista: "", gastos: "", fijoEspecialista: "", fijoAyudantes: "", fijoAnestesista: "", fijoGastos: "" });
     setFormPropiaErr(null);
     setFormPropiaAbierto(true);
   };
@@ -364,6 +389,10 @@ export default function NomencladoresPage() {
           uAyudantes: num(formPropia.uAyudantes ?? ""),
           uAnestesista: num(formPropia.uAnestesista ?? ""),
           gastos: num(formPropia.gastos ?? ""),
+          fijoEspecialista: num(formPropia.fijoEspecialista ?? ""),
+          fijoAyudantes: num(formPropia.fijoAyudantes ?? ""),
+          fijoAnestesista: num(formPropia.fijoAnestesista ?? ""),
+          fijoGastos: num(formPropia.fijoGastos ?? ""),
         }),
       });
       const d = await res.json().catch(() => ({}));
@@ -773,9 +802,20 @@ export default function NomencladoresPage() {
                   <span className="text-muted"> · {totalCopia} prácticas</span>
                   <span className="text-muted text-[12px]"> · facturación usa estos valores si existen</span>
                 </div>
-                <button onClick={abrirAltaPropia} className="btn-primary text-[13px]">
-                  <Plus size={14} /> Agregar práctica propia
-                </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {galenoVigente && (
+                    <div className="px-3 py-1.5 text-[12px] font-mono rounded-md bg-surface border border-border">
+                      <span className="text-muted">Galeno vigente · Qx </span>
+                      <span className="text-brand font-semibold">${money(galenoVigente.galenoQx)}</span>
+                      <span className="text-muted"> · Gastos </span>
+                      <span className="text-brand font-semibold">${money(galenoVigente.gastosQx)}</span>
+                      <span className="text-muted"> · {galenoVigente.vigenciaDesde.slice(0, 10)}</span>
+                    </div>
+                  )}
+                  <button onClick={abrirAltaPropia} className="btn-primary text-[13px]">
+                    <Plus size={14} /> Agregar práctica propia
+                  </button>
+                </div>
               </div>
 
               {formPropiaAbierto && (
@@ -788,6 +828,10 @@ export default function NomencladoresPage() {
                     <CampoForm label="U. Ayudantes" valor={formPropia.uAyudantes ?? ""} set={(v) => setFormPropia({ ...formPropia, uAyudantes: v })} mono />
                     <CampoForm label="U. Anestesista" valor={formPropia.uAnestesista ?? ""} set={(v) => setFormPropia({ ...formPropia, uAnestesista: v })} mono />
                     <CampoForm label="Gastos ($)" valor={formPropia.gastos ?? ""} set={(v) => setFormPropia({ ...formPropia, gastos: v })} mono />
+                    <CampoForm label="$ Fijo Esp." valor={formPropia.fijoEspecialista ?? ""} set={(v) => setFormPropia({ ...formPropia, fijoEspecialista: v })} mono />
+                    <CampoForm label="$ Fijo Ayud." valor={formPropia.fijoAyudantes ?? ""} set={(v) => setFormPropia({ ...formPropia, fijoAyudantes: v })} mono />
+                    <CampoForm label="$ Fijo Anest." valor={formPropia.fijoAnestesista ?? ""} set={(v) => setFormPropia({ ...formPropia, fijoAnestesista: v })} mono />
+                    <CampoForm label="$ Fijo Gastos" valor={formPropia.fijoGastos ?? ""} set={(v) => setFormPropia({ ...formPropia, fijoGastos: v })} mono />
                   </div>
                   {formPropiaErr && <div className="text-[13px] text-error">{formPropiaErr}</div>}
                   <div className="flex gap-2">
@@ -799,17 +843,19 @@ export default function NomencladoresPage() {
                 </div>
               )}
 
-              <div className="border border-border rounded-lg overflow-hidden bg-surface">
-                <table className="w-full text-[13px]">
+              <div className="border border-border rounded-lg overflow-x-auto bg-surface">
+                <table className="w-full text-[13px] min-w-[1100px]">
                   <thead>
                     <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
                       <th className="px-4 py-2.5 text-left">Código</th>
                       <th className="px-4 py-2.5 text-left">Descripción</th>
                       <th className="px-4 py-2.5 text-left">Origen</th>
-                      <th className="px-4 py-2.5 text-left">U. Esp.</th>
-                      <th className="px-4 py-2.5 text-left">Ayudantes</th>
-                      <th className="px-4 py-2.5 text-left">Anestesista</th>
-                      <th className="px-4 py-2.5 text-left">Gastos</th>
+                      {RUBROS_COPIA.map((r) => (
+                        <Fragment key={r.rubro}>
+                          <th className="px-2 py-2.5 text-left">U. {r.label}</th>
+                          <th className="px-2 py-2.5 text-left">$ {r.label}</th>
+                        </Fragment>
+                      ))}
                       <th className="px-4 py-2.5 text-left">Estado</th>
                       <th className="px-4 py-2.5 text-right">Acciones</th>
                     </tr>
@@ -818,6 +864,11 @@ export default function NomencladoresPage() {
                     {itemsCopia.map((it) => {
                       const e = edits[it.id] ?? {};
                       const dirty = Object.keys(e).length > 0;
+                      const importes = calcularImportesConFijos(
+                        { uEspecialista: it.uEspecialista, uAyudantes: it.uAyudantes, uAnestesista: it.uAnestesista, gastos: it.gastos },
+                        normalizarFijos(it),
+                        galenoVigente ? { galenoQx: galenoVigente.galenoQx, gastosQx: galenoVigente.gastosQx } : null
+                      );
                       return (
                         <tr key={it.id} className="border-b border-border last:border-0">
                           <td className="px-4 py-1.5 font-mono text-[12px]">{it.codigo}</td>
@@ -835,16 +886,45 @@ export default function NomencladoresPage() {
                               <StatusBadge tone="success" label="PROPIA" />
                             )}
                           </td>
-                          {(["uEspecialista", "uAyudantes", "uAnestesista", "gastos"] as const).map((k) => (
-                            <td key={k} className="px-1 py-1.5">
-                              <input
-                                value={k in e ? String(e[k]) : fmtNum(it[k])}
-                                onChange={(ev) => setEdit(it.id, k, ev.target.value)}
-                                className="w-[76px] border border-border rounded-md bg-surface px-2 py-1 text-[12px] font-mono text-right"
-                                placeholder={fmtNum(it[k])}
-                              />
-                            </td>
-                          ))}
+                          {RUBROS_COPIA.map((r) => {
+                            const imp = importes[r.rubro];
+                            return (
+                              <Fragment key={r.rubro}>
+                                <td className="px-1 py-1.5">
+                                  <input
+                                    value={r.unidad in e ? String(e[r.unidad]) : fmtNum(it[r.unidad])}
+                                    onChange={(ev) => setEdit(it.id, r.unidad, ev.target.value)}
+                                    className="w-[64px] border border-border rounded-md bg-surface px-2 py-1 text-[12px] font-mono text-right"
+                                    placeholder={fmtNum(it[r.unidad])}
+                                  />
+                                </td>
+                                <td className="px-1 py-1.5">
+                                  <div className="flex items-center gap-1">
+                                    {imp.origen && (
+                                      <span
+                                        className={cn(
+                                          "text-[9px] font-mono uppercase tracking-wider px-1 rounded",
+                                          imp.origen === "FIJO" ? "bg-success/10 text-success" : "bg-surface-hover text-muted"
+                                        )}
+                                      >
+                                        {imp.origen === "FIJO" ? "Fijo" : "Calc"}
+                                      </span>
+                                    )}
+                                    <span className={cn("font-mono text-[12px]", imp.origen === "FIJO" ? "text-success" : imp.origen === "CALCULADO" ? "text-brand" : "text-muted")}>
+                                      {money(imp.importe)}
+                                    </span>
+                                  </div>
+                                  <input
+                                    value={r.fijo in e ? String(e[r.fijo]) : fmtNum(it[r.fijo])}
+                                    onChange={(ev) => setEdit(it.id, r.fijo, ev.target.value)}
+                                    placeholder="fijo $"
+                                    title="Importe fijo pactado por la OS (vacío = usa calculado)"
+                                    className="mt-1 w-[64px] border border-dashed border-border rounded-md bg-surface px-2 py-1 text-[12px] font-mono text-right"
+                                  />
+                                </td>
+                              </Fragment>
+                            );
+                          })}
                           <td className="px-4 py-1.5">
                             <StatusBadge tone={it.activo ? "success" : "neutral"} label={it.activo ? "Activo" : "Inactivo"} />
                           </td>
@@ -875,7 +955,7 @@ export default function NomencladoresPage() {
                     })}
                     {!loading && itemsCopia.length === 0 && (
                       <tr>
-                        <td colSpan={9} className="px-4 py-8 text-center text-muted text-[13px]">Sin prácticas</td>
+                        <td colSpan={13} className="px-4 py-8 text-center text-muted text-[13px]">Sin prácticas</td>
                       </tr>
                     )}
                   </tbody>

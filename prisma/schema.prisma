@@ -1110,6 +1110,10 @@ model NomencladorObraSocialItem {
   uAyudantes              Decimal?
   uAnestesista            Decimal?
   gastos                  Decimal?
+  fijoEspecialista        Decimal?  @db.Decimal(12, 2)
+  fijoAyudantes           Decimal?  @db.Decimal(12, 2)
+  fijoAnestesista         Decimal?  @db.Decimal(12, 2)
+  fijoGastos              Decimal?  @db.Decimal(12, 2)
   activo                  Boolean                 @default(true)
   origen                  OrigenNomencladorOS     @default(COPIA_NACIONAL)
   createdAt               DateTime                @default(now())
