@@ -19,10 +19,18 @@ export interface UnidadesNomenclador {
   gastos: number | null;
 }
 
+export interface FijosNomenclador {
+  fijoEspecialista: number | null;
+  fijoAyudantes: number | null;
+  fijoAnestesista: number | null;
+  fijoGastos: number | null;
+}
+
 export interface PracticaResuelta {
   id: string;
   origen: "COPIA_OS" | "ESPECIFICA" | "NACIONAL";
   unidades: UnidadesNomenclador;
+  fijos: FijosNomenclador;
   nomencladorId: string | null;
 }
 
@@ -47,6 +55,7 @@ export async function resolverPractica(tx: Tx, codigo: string, obraSocialId: str
       id: itemCopia.id,
       origen: "COPIA_OS",
       unidades: normalizarUnidades(itemCopia),
+      fijos: normalizarFijos(itemCopia),
       nomencladorId: itemCopia.nomencladorItemId,
     };
   }
@@ -55,18 +64,25 @@ export async function resolverPractica(tx: Tx, codigo: string, obraSocialId: str
     where: { codigo, obraSocialId, activo: true },
   });
   if (especifica) {
-    return { id: especifica.id, origen: "ESPECIFICA", unidades: normalizarItemNacional(especifica), nomencladorId: especifica.id };
+    return { id: especifica.id, origen: "ESPECIFICA", unidades: normalizarItemNacional(especifica), fijos: SIN_FIJOS, nomencladorId: especifica.id };
   }
 
   const nacional = await tx.nomencladorItem.findFirst({
     where: { codigo, obraSocialId: null, activo: true },
   });
   if (nacional) {
-    return { id: nacional.id, origen: "NACIONAL", unidades: normalizarItemNacional(nacional), nomencladorId: nacional.id };
+    return { id: nacional.id, origen: "NACIONAL", unidades: normalizarItemNacional(nacional), fijos: SIN_FIJOS, nomencladorId: nacional.id };
   }
 
   return null;
 }
+
+const SIN_FIJOS: FijosNomenclador = {
+  fijoEspecialista: null,
+  fijoAyudantes: null,
+  fijoAnestesista: null,
+  fijoGastos: null,
+};
 
 export interface ImportesCalculados {
   honorariosEspecialista: number;
@@ -143,6 +159,21 @@ export function normalizarItemNacional(item: NomencladorItem): UnidadesNomenclad
   };
 }
 
+export function normalizarFijos(item: {
+  fijoEspecialista: unknown;
+  fijoAyudantes: unknown;
+  fijoAnestesista: unknown;
+  fijoGastos: unknown;
+}): FijosNomenclador {
+  const n = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+  return {
+    fijoEspecialista: n(item.fijoEspecialista),
+    fijoAyudantes: n(item.fijoAyudantes),
+    fijoAnestesista: n(item.fijoAnestesista),
+    fijoGastos: n(item.fijoGastos),
+  };
+}
+
 export function normalizarUnidades(item: {
   uEspecialista: unknown;
   uAyudantes: unknown;
@@ -154,6 +185,146 @@ export function normalizarUnidades(item: {
     uAyudantes: item.uAyudantes === null || item.uAyudantes === undefined ? null : Number(item.uAyudantes),
     uAnestesista: item.uAnestesista === null || item.uAnestesista === undefined ? null : Number(item.uAnestesista),
     gastos: item.gastos === null || item.gastos === undefined ? null : Number(item.gastos),
+  };
+}
+
+export interface RubroImporte {
+  unidad: number | null;
+  importe: number | null;
+  origen: "FIJO" | "CALCULADO" | null;
+}
+
+export interface ImportesConFijos {
+  especialista: RubroImporte;
+  ayudante: RubroImporte;
+  anestesista: RubroImporte;
+  gastos: RubroImporte;
+  honorariosTotal: number;
+  total: number;
+}
+
+/**
+ * Importes en $ por rubro de una práctica contra el galeno vigente de la OS.
+ * Regla: fijo pactado si está cargado; si no, unidades x valor del galeno.
+ * Sin galeno (null), los rubros sin fijo muestran importe null (solo fijos).
+ */
+export function calcularImportesConFijos(
+  unidades: UnidadesNomenclador,
+  fijos: FijosNomenclador,
+  galeno: { galenoQx: number; gastosQx: number } | null
+): ImportesConFijos {
+  const qx = galeno ? Number(galeno.galenoQx) : 0;
+  const gqx = galeno ? Number(galeno.gastosQx) : 0;
+
+  const rubro = (
+    unidad: number | null,
+    fijo: number | null,
+    indice: number
+  ): RubroImporte => {
+    const u = unidad ?? 0;
+    if (fijo !== null) return { unidad: u, importe: redondear(fijo), origen: "FIJO" };
+    if (!(u > 0) || !galeno || !(indice > 0)) return { unidad: unidad, importe: null, origen: null };
+    return { unidad: u, importe: redondear(u * indice), origen: "CALCULADO" };
+  };
+
+  const especialista = rubro(unidades.uEspecialista, fijos.fijoEspecialista, qx);
+  const ayudante = rubro(unidades.uAyudantes, fijos.fijoAyudantes, qx);
+  const anestesista = rubro(unidades.uAnestesista, fijos.fijoAnestesista, qx);
+  const gastos = rubro(unidades.gastos, fijos.fijoGastos, gqx);
+
+  const honorariosTotal = redondear(
+    [especialista, ayudante, anestesista].reduce((acc, r) => acc + (r.importe ?? 0), 0)
+  );
+
+  return {
+    especialista,
+    ayudante,
+    anestesista,
+    gastos,
+    honorariosTotal,
+    total: redondear(honorariosTotal + (gastos.importe ?? 0)),
+  };
+}
+
+export type FuncionImporte = "10" | "20" | "30" | "60";
+
+const RUBROS_POR_FUNCION: Record<
+  "10" | "20" | "30" | "60",
+  { campo: keyof UnidadesNomenclador; fijo: keyof FijosNomenclador; indice: "galenoQx" | "gastosQx"; label: string }
+> = {
+  "10": { campo: "uEspecialista", fijo: "fijoEspecialista", indice: "galenoQx", label: "especialista" },
+  "20": { campo: "uAyudantes", fijo: "fijoAyudantes", indice: "galenoQx", label: "ayudante" },
+  "30": { campo: "uAnestesista", fijo: "fijoAnestesista", indice: "galenoQx", label: "anestesista" },
+  "60": { campo: "gastos", fijo: "fijoGastos", indice: "gastosQx", label: "gastos" },
+};
+
+export interface ImporteResuelto {
+  funcionCodigo: FuncionImporte;
+  rubro: string;
+  unidades: number;
+  importe: number;
+  galenoAplicado: number | null;
+  origenImporte: "FIJO" | "CALCULADO";
+  nomencladorId: string | null;
+}
+
+/**
+ * Resuelve el importe de una práctica para facturar (HON 10/20/30 y GAS 60).
+ * Regla: fijo pactado (copia de la OS) si está cargado; si no, unidades x galeno vigente.
+ * Si el importe es FIJO no se exige galeno configurado; el calculado sí lo exige.
+ */
+export async function resolverImportePractica(
+  tx: Tx,
+  codigo: string,
+  obraSocialId: string,
+  funcion: FuncionImporte,
+  fecha: Date
+): Promise<{ ok: true; data: ImporteResuelto } | { ok: false; error: string }> {
+  const resuelta = await resolverPractica(tx, codigo, obraSocialId);
+  if (!resuelta) {
+    return { ok: false, error: `La práctica ${codigo} no existe en el nomenclador de la obra social` };
+  }
+
+  const { campo, fijo: campoFijo, indice, label } = RUBROS_POR_FUNCION[funcion];
+  const unidades = resuelta.unidades[campo] ?? 0;
+  const fijo = resuelta.fijos[campoFijo];
+
+  if (fijo !== null) {
+    return {
+      ok: true,
+      data: {
+        funcionCodigo: funcion,
+        rubro: label,
+        unidades,
+        importe: redondear(fijo),
+        galenoAplicado: null,
+        origenImporte: "FIJO",
+        nomencladorId: resuelta.nomencladorId,
+      },
+    };
+  }
+
+  if (!(unidades > 0)) {
+    return { ok: false, error: `La práctica ${codigo} no tiene unidades de ${label} definidas` };
+  }
+
+  const galeno = await getGalenoVigente(tx, obraSocialId, fecha);
+  const indiceGaleno = galeno ? Number(galeno[indice]) : 0;
+  if (!galeno || !(indiceGaleno > 0)) {
+    return { ok: false, error: `Falta configurar el galeno de ${label === "gastos" ? "gastos (gastosQx)" : "Qx"} vigente para la obra social` };
+  }
+
+  return {
+    ok: true,
+    data: {
+      funcionCodigo: funcion,
+      rubro: label,
+      unidades,
+      importe: redondear(unidades * indiceGaleno),
+      galenoAplicado: indiceGaleno,
+      origenImporte: "CALCULADO",
+      nomencladorId: resuelta.nomencladorId,
+    },
   };
 }
 

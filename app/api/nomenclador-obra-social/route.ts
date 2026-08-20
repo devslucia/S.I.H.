@@ -13,6 +13,10 @@ const altaSchema = z.object({
   uAyudantes: z.coerce.number().nonnegative().optional().nullable(),
   uAnestesista: z.coerce.number().nonnegative().optional().nullable(),
   gastos: z.coerce.number().nonnegative().optional().nullable(),
+  fijoEspecialista: z.coerce.number().nonnegative().optional().nullable(),
+  fijoAyudantes: z.coerce.number().nonnegative().optional().nullable(),
+  fijoAnestesista: z.coerce.number().nonnegative().optional().nullable(),
+  fijoGastos: z.coerce.number().nonnegative().optional().nullable(),
 });
 
 export async function GET(req: NextRequest) {
@@ -31,9 +35,9 @@ export async function GET(req: NextRequest) {
         _count: { select: { items: true } },
       },
     });
-    if (!copia) return NextResponse.json({ copia: null, items: [], total: 0 });
+    if (!copia) return NextResponse.json({ copia: null, items: [], total: 0, galenoVigente: null });
 
-    const [items, total] = await Promise.all([
+    const [items, total, galenoVigente] = await Promise.all([
       prisma.nomencladorObraSocialItem.findMany({
         where: { nomencladorObraSocialId: copia.id },
         orderBy: { codigo: "asc" },
@@ -41,8 +45,25 @@ export async function GET(req: NextRequest) {
         take: limit,
       }),
       prisma.nomencladorObraSocialItem.count({ where: { nomencladorObraSocialId: copia.id } }),
+      prisma.galenoObraSocial.findFirst({
+        where: { obraSocialId, activo: true },
+        orderBy: { vigenciaDesde: "desc" },
+      }),
     ]);
-    return NextResponse.json({ copia, items, total });
+    return NextResponse.json({
+      copia,
+      items,
+      total,
+      galenoVigente: galenoVigente
+        ? {
+            id: galenoVigente.id,
+            galenoQx: Number(galenoVigente.galenoQx),
+            gastosQx: Number(galenoVigente.gastosQx),
+            vigenciaDesde: galenoVigente.vigenciaDesde,
+            vigenciaHasta: galenoVigente.vigenciaHasta,
+          }
+        : null,
+    });
   }
 
   const copias = await prisma.nomencladorObraSocial.findMany({
@@ -65,7 +86,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.errors[0]?.message ?? "payload inválido" }, { status: 400 });
   }
 
-  const { obraSocialId, codigo, descripcion, uEspecialista, uAyudantes, uAnestesista, gastos } = parsed.data;
+  const { obraSocialId, codigo, descripcion, uEspecialista, uAyudantes, uAnestesista, gastos, fijoEspecialista, fijoAyudantes, fijoAnestesista, fijoGastos } = parsed.data;
 
   const copia = await prisma.nomencladorObraSocial.findUnique({ where: { obraSocialId } });
   if (!copia) {
@@ -91,6 +112,10 @@ export async function POST(req: NextRequest) {
       uAyudantes: uAyudantes ?? null,
       uAnestesista: uAnestesista ?? null,
       gastos: gastos ?? null,
+      fijoEspecialista: fijoEspecialista ?? null,
+      fijoAyudantes: fijoAyudantes ?? null,
+      fijoAnestesista: fijoAnestesista ?? null,
+      fijoGastos: fijoGastos ?? null,
       origen: "PROPIA_OS",
     },
   });
