@@ -550,7 +550,6 @@ export default function AdmisionPage() {
                       <label className="text-sm text-text-secondary">Tipo de Ingreso *</label>
                       <select name="tipoIngreso" value={newPatientForm.tipoIngreso} onChange={handleNewPatientChange} className="select-field">
                         <option value="PROGRAMADO">Programado</option>
-                        <option value="URGENCIA">Urgencia</option>
                         <option value="GUARDIA">Guardia</option>
                         <option value="DERIVACION">Derivación</option>
                       </select>
@@ -643,7 +642,6 @@ export default function AdmisionPage() {
                   <label className="text-sm text-text-secondary">Tipo de Ingreso *</label>
                   <select name="tipoIngreso" value={internacionForm.tipoIngreso} onChange={handleInternacionChange} className="select-field">
                     <option value="PROGRAMADO">Programado</option>
-                    <option value="URGENCIA">Urgencia</option>
                     <option value="GUARDIA">Guardia</option>
                     <option value="DERIVACION">Derivación</option>
                   </select>

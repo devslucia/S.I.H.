@@ -402,7 +402,6 @@ export default function PacienteDetailPage() {
               <label className={label}>Tipo de ingreso</label>
               <select className="select-field text-[13px]" name="tipoIngreso" value={form.tipoIngreso} onChange={(e) => setForm((p) => ({ ...p, tipoIngreso: e.target.value }))}>
                 <option value="PROGRAMADO">Programado</option>
-                <option value="URGENCIA">Urgencia</option>
                 <option value="GUARDIA">Guardia</option>
                 <option value="DERIVACION">Derivación</option>
               </select>
