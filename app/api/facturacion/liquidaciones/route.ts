@@ -90,6 +90,7 @@ export async function GET(req: NextRequest) {
       galenoAplicado: c.galenoAplicado === null ? null : Number(c.galenoAplicado),
       observacion: c.observacion,
       esConsumo: c.aplicacionId !== null,
+      stockItemId: c.stockItemId,
       nomencladorId: c.nomencladorId,
       galenoQx: c.galenoQx,
       honorariosEspecialista: c.honorariosEspecialista,

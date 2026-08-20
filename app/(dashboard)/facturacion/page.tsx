@@ -43,6 +43,7 @@ interface Cargo {
   galenoAplicado: number | null;
   observacion: string | null;
   esConsumo: boolean;
+  stockItemId: string | null;
 }
 
 interface Liquidacion {
@@ -337,6 +338,7 @@ function RubroDetalle({
           { id: "92", label: "92 — Importe manual" },
         ]
       : [
+          { id: "stock", label: "Stock — Medicamento" },
           { id: "60", label: "60 — Valor × galeno" },
           { id: "92", label: "92 — Importe manual" },
         ]
@@ -363,6 +365,12 @@ function RubroDetalle({
   const [resultados, setResultados] = useState<{ codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; gastos: number | null; origen: string }[]>([]);
   const [buscando, setBuscando] = useState(false);
   const [busquedaAbierta, setBusquedaAbierta] = useState(false);
+  const [stockItemSel, setStockItemSel] = useState<{ id: string; nTroquel: string | null; nombre: string; presentacion: string | null; laboratorio: string | null; precio: number } | null>(null);
+  const [stockBusqueda, setStockBusqueda] = useState("");
+  const [stockResultados, setStockResultados] = useState<{ id: string; nTroquel: string | null; nombre: string; presentacion: string | null; laboratorio: string | null; precio: number }[]>([]);
+  const [stockBuscando, setStockBuscando] = useState(false);
+  const [stockBusquedaAbierta, setStockBusquedaAbierta] = useState(false);
+  const [cantidadMed, setCantidadMed] = useState("");
 
   const parseMonto = (v: string): number | null => {
     const t = v.trim();
@@ -422,6 +430,37 @@ function RubroDetalle({
     };
   }, [esGas, esHon, obraSocialId, busqueda]);
 
+  useEffect(() => {
+    if (!esMed || !busqueda.trim()) {
+      setStockResultados([]);
+      return;
+    }
+    let vivo = true;
+    setStockBuscando(true);
+    const t = setTimeout(() => {
+      fetch(`/api/facturacion/stock?q=${encodeURIComponent(stockBusqueda.trim())}`)
+        .then((r) => r.json())
+        .then((d: { id: string; nTroquel: string | null; nombre: string; presentacion: string | null; laboratorio: string | null; precioVenta: number | null; precioUnidadVenta: number | null }[]) => {
+          if (!vivo) return;
+          setStockResultados(
+            Array.isArray(d)
+              ? d.map((i) => ({ id: i.id, nTroquel: i.nTroquel, nombre: i.nombre, presentacion: i.presentacion, laboratorio: i.laboratorio, precio: i.precioUnidadVenta ?? i.precioVenta ?? 0 }))
+              : []
+          );
+        })
+        .catch(() => {
+          if (vivo) setStockResultados([]);
+        })
+        .finally(() => {
+          if (vivo) setStockBuscando(false);
+        });
+    }, 300);
+    return () => {
+      vivo = false;
+      clearTimeout(t);
+    };
+  }, [esMed, stockBusqueda]);
+
   const abrirNuevo = () => {
     setEditandoId(null);
     setFuncion(FUNCIONES[0].id);
@@ -432,6 +471,9 @@ function RubroDetalle({
     setErr(null);
     setPracticaSel(null);
     setBusqueda("");
+    setStockItemSel(null);
+    setStockBusqueda("");
+    setCantidadMed("");
     setFormAbierto(true);
   };
 
@@ -462,6 +504,21 @@ function RubroDetalle({
         })
         .catch(() => {});
     }
+    if (esMed && c.stockItemId) {
+      setStockItemSel({
+        id: c.stockItemId,
+        nTroquel: c.concepto.split(" · ")[0] ?? null,
+        nombre: c.concepto.split(" · ").slice(1).join(" · ") || c.concepto,
+        presentacion: null,
+        laboratorio: null,
+        precio: Number(c.precioUnitario),
+      });
+      setCantidadMed(String(c.cantidad));
+    } else {
+      setStockItemSel(null);
+      setCantidadMed("");
+    }
+    setStockBusqueda("");
     setBusqueda("");
     setFormAbierto(true);
   };
@@ -475,7 +532,20 @@ function RubroDetalle({
         concepto: concepto.trim(),
         observacion: observacion.trim() || null,
       };
-      if (funcion === "92") {
+      if (funcion === "stock") {
+        if (!stockItemSel) {
+          setErr("Buscá y elegí un medicamento del stock");
+          return;
+        }
+        const cant = parseMonto(cantidadMed);
+        if (cant === null) {
+          setErr("Ingresá la cantidad");
+          return;
+        }
+        payload.stockItemId = stockItemSel.id;
+        payload.cantidad = cant;
+        delete payload.concepto;
+      } else if (funcion === "92") {
         if (!concepto.trim()) {
           setErr("Ingresá el concepto del ítem");
           return;
@@ -527,16 +597,20 @@ function RubroDetalle({
     }
   };
 
-  const esFormula = funcion !== "92";
+  const esFormula = funcion !== "92" && funcion !== "stock";
   const unidadesFormula = esGas
     ? (practicaSel?.gastos ?? null)
     : esHon && practicaSel
       ? (funcion === "10" ? practicaSel.uEspecialista : practicaSel.uAyudantes) ?? null
       : parseMonto(valorBase);
   const importeCalculado =
-    esFormula && indiceVigente !== null && unidadesFormula !== null
-      ? unidadesFormula * (funcion === "30" ? 2 : 1) * indiceVigente
-      : null;
+    funcion === "stock"
+      ? stockItemSel && parseMonto(cantidadMed) !== null
+        ? (parseMonto(cantidadMed) ?? 0) * stockItemSel.precio
+        : null
+      : esFormula && indiceVigente !== null && unidadesFormula !== null
+        ? unidadesFormula * (funcion === "30" ? 2 : 1) * indiceVigente
+        : null;
 
   if (cargos.length === 0 && !formAbierto) {
     return (
@@ -596,7 +670,99 @@ function RubroDetalle({
             ))}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {(!(esGas || esHon) || funcion === "92") && (
+            {esMed && funcion === "stock" ? (
+              <>
+                <div className="block md:col-span-3">
+                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">
+                    Medicamento de stock {stockItemSel && <span className="text-success">· elegido ✓</span>}
+                  </span>
+                  {stockItemSel ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 border border-border rounded-md bg-surface px-3 py-2 text-[13px]">
+                        <span className="font-mono text-brand font-semibold">{stockItemSel.nTroquel ?? "—"}</span>
+                        <span className="text-text"> · {stockItemSel.nombre}</span>
+                        {stockItemSel.presentacion && <span className="text-muted"> · {stockItemSel.presentacion}</span>}
+                        {stockItemSel.laboratorio && <span className="text-muted"> · {stockItemSel.laboratorio}</span>}
+                        <span className="text-muted"> · $ {toMoney(stockItemSel.precio)}/unidad</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setStockItemSel(null);
+                          setStockBusqueda("");
+                        }}
+                        className="px-2 py-2 text-[12px] text-muted hover:text-brand transition-colors rounded-md border border-border"
+                      >
+                        Cambiar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <input
+                        value={stockBusqueda}
+                        onChange={(e) => {
+                          setStockBusqueda(e.target.value);
+                          setStockBusquedaAbierta(true);
+                        }}
+                        onFocus={() => setStockBusquedaAbierta(true)}
+                        onBlur={() => setTimeout(() => setStockBusquedaAbierta(false), 150)}
+                        placeholder="Buscar por troquel o nombre…"
+                        className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
+                      />
+                      {stockBusquedaAbierta && stockBusqueda.trim() && (
+                        <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto border border-border rounded-md bg-surface shadow-sm">
+                          {stockBuscando ? (
+                            <div className="px-3 py-2 text-[12px] text-muted">Buscando…</div>
+                          ) : stockResultados.length === 0 ? (
+                            <div className="px-3 py-2 text-[12px] text-muted">Sin resultados</div>
+                          ) : (
+                            stockResultados.map((r) => (
+                              <button
+                                key={r.id}
+                                onMouseDown={() => {
+                                  setStockItemSel({ id: r.id, nTroquel: r.nTroquel, nombre: r.nombre, presentacion: r.presentacion, laboratorio: r.laboratorio, precio: r.precio });
+                                  setStockBusqueda("");
+                                  setStockBusquedaAbierta(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-surface-hover transition-colors border-b border-border/30 last:border-0"
+                              >
+                                <span className="font-mono text-[12px] text-brand">{r.nTroquel ?? "—"}</span>
+                                <span className="text-[13px] text-text ml-2">{r.nombre}</span>
+                                {r.presentacion && <span className="text-[11px] text-muted ml-2">{r.presentacion}</span>}
+                                {r.laboratorio && <span className="text-[11px] text-muted ml-2">{r.laboratorio}</span>}
+                                <span className="float-right text-[11px] font-mono text-muted mt-1">$ {toMoney(r.precio)}/unidad</span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <label className="block">
+                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Cantidad</span>
+                  <input
+                    value={cantidadMed}
+                    onChange={(e) => setCantidadMed(e.target.value)}
+                    placeholder="Ej: 10"
+                    className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono"
+                  />
+                </label>
+                <div className="block">
+                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Precio unitario</span>
+                  <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border">
+                    {stockItemSel ? `$ ${toMoney(stockItemSel.precio)}` : "—"}
+                  </div>
+                </div>
+                <div className="block">
+                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Importe (solo lectura)</span>
+                  <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border text-brand font-semibold">
+                    {importeCalculado === null ? "—" : money(importeCalculado)}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+            {(!(esGas || esHon) || funcion === "92") && funcion !== "stock" && (
               <label className="block md:col-span-3">
                 <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Concepto</span>
                 <input
@@ -834,6 +1000,8 @@ function RubroDetalle({
                 />
               </label>
             )}
+              </>
+            )}
             <label className="block md:col-span-3">
               <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Observación (opcional)</span>
               <input
@@ -891,6 +1059,10 @@ function RubroDetalle({
                       <span className="inline-block border border-success/30 bg-success/10 text-success rounded px-1.5 py-0.5 font-mono text-[11px]">
                         Consumo
                       </span>
+                    ) : esMed && cargo.stockItemId !== null ? (
+                      <span className="inline-block border border-brand/30 bg-brand-soft text-brand rounded px-1.5 py-0.5 font-mono text-[11px]">
+                        Stock
+                      </span>
                     ) : (
                       <span className="inline-block border border-border rounded px-1.5 py-0.5 font-mono text-[11px]">
                         {cargo.funcionCodigo ?? "—"}
@@ -902,8 +1074,10 @@ function RubroDetalle({
                 </td>
                 {(esMed || esHon || esGas) && (
                   <td className={td + " text-muted font-mono text-[12px]"}>
-                    {cargo.funcionCodigo === "60" && cargo.valorBase !== null && cargo.galenoAplicado !== null
-                      ? `${cargo.valorBase} × $${toMoney(cargo.galenoAplicado)}`
+                    {cargo.stockItemId !== null
+                      ? `${cargo.cantidad} × $${toMoney(cargo.precioUnitario)}`
+                      : cargo.funcionCodigo === "60" && cargo.valorBase !== null && cargo.galenoAplicado !== null
+                        ? `${cargo.valorBase} × $${toMoney(cargo.galenoAplicado)}`
                       : (cargo.funcionCodigo === "10" || cargo.funcionCodigo === "20") && cargo.valorBase !== null && cargo.galenoAplicado !== null
                         ? `${cargo.valorBase} × $${toMoney(cargo.galenoAplicado)}`
                         : cargo.funcionCodigo === "30" && cargo.valorBase !== null && cargo.galenoAplicado !== null
@@ -924,7 +1098,7 @@ function RubroDetalle({
                 {esMed || esHon || esGas ? (
                   <td className={td}>
                     <div className="flex items-center justify-end">
-                      {!cargo.facturado && cargo.funcionCodigo !== null && (
+                      {!cargo.facturado && (cargo.funcionCodigo !== null || cargo.stockItemId !== null) && (
                         <button
                           onClick={() => abrirEdicion(cargo)}
                           className="p-1.5 rounded-md text-muted hover:text-brand hover:bg-brand-soft transition-colors"

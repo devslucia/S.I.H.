@@ -5,7 +5,7 @@ import { calcularMedicacion } from "@/lib/facturacion-medicacion";
 import { calcularHonorario } from "@/lib/facturacion-honorarios";
 import { calcularGasto } from "@/lib/facturacion-gastos";
 
-const MED_FUNCIONES = ["60", "92"] as const;
+const MED_FUNCIONES = ["stock", "60", "92"] as const;
 const HON_FUNCIONES = ["10", "20", "30", "92"] as const;
 const GAS_FUNCIONES = ["60", "92"] as const;
 
@@ -23,7 +23,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (existe.origen !== "MEDICACION" && existe.origen !== "PRACTICA" && existe.origen !== "OTRO") {
     return NextResponse.json({ error: "Solo se pueden editar ítems manuales de medicación, honorarios o gastos" }, { status: 400 });
   }
-  if (existe.funcionCodigo === null) {
+  if (existe.aplicacionId !== null) {
+    return NextResponse.json({ error: "No se pueden editar ítems generados automáticamente" }, { status: 400 });
+  }
+  if (existe.funcionCodigo === null && existe.stockItemId === null) {
     return NextResponse.json({ error: "No se pueden editar ítems generados automáticamente" }, { status: 400 });
   }
   if (existe.facturado) return NextResponse.json({ error: "No se puede editar un cargo facturado" }, { status: 400 });
@@ -41,13 +44,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   const res = await prisma.$transaction(async (tx) => {
     if (existe.origen === "MEDICACION") {
-      const modo = body.modo === "92" ? "92" : body.modo === "60" ? "60" : null;
-      if (!modo) return { status: 400, data: { error: "Modo inválido (60 o 92)" } };
+      const modo = body.modo === "stock" ? "stock" : body.modo === "92" ? "92" : body.modo === "60" ? "60" : null;
+      if (!modo) return { status: 400, data: { error: "Modo inválido (stock, 60 o 92)" } };
 
       const calc = await calcularMedicacion(tx, {
         internacionId: existe.internacionId,
         concepto,
         modo,
+        stockItemId: modo === "stock" ? String(body.stockItemId ?? existe.stockItemId ?? "") : undefined,
+        cantidad: modo === "stock" ? num(body.cantidad) : undefined,
         valorBase: modo === "60" ? num(body.valorBase) : undefined,
         importeManual: modo === "92" ? num(body.importeManual) : undefined,
         observacion,
@@ -58,11 +63,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       const cargo = await tx.cargoFacturacion.update({
         where: { id: params.id },
         data: {
-          concepto,
-          cantidad: 1,
-          precioUnitario: calc.data.importe,
+          concepto: calc.data.concepto,
+          cantidad: calc.data.cantidad,
+          precioUnitario: calc.data.precioUnitario,
           total: calc.data.importe,
           funcionCodigo: calc.data.funcionCodigo,
+          stockItemId: calc.data.stockItemId,
           valorBase: calc.data.valorBase,
           galenoAplicado: calc.data.galenoAplicado,
           observacion: calc.data.observacion,
