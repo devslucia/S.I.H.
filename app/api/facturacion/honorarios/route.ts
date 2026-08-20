@@ -16,11 +16,12 @@ export async function POST(req: NextRequest) {
 
   const internacionId = String(body.internacionId ?? "");
   const concepto = String(body.concepto ?? "").trim();
+  const codigo = body.codigo ? String(body.codigo).trim() : "";
   const funcionCodigo = (FUNCIONES as readonly string[]).includes(String(body.funcionCodigo ?? ""))
     ? (String(body.funcionCodigo) as (typeof FUNCIONES)[number])
     : null;
   if (!internacionId) return NextResponse.json({ error: "Internación requerida" }, { status: 400 });
-  if (!concepto) return NextResponse.json({ error: "Concepto requerido" }, { status: 400 });
+  if (!codigo && !concepto) return NextResponse.json({ error: "Concepto requerido" }, { status: 400 });
   if (!funcionCodigo) return NextResponse.json({ error: "Función inválida (10, 20, 30 o 92)" }, { status: 400 });
 
   const num = (v: unknown) => {
@@ -37,7 +38,9 @@ export async function POST(req: NextRequest) {
       internacionId,
       concepto,
       funcionCodigo,
-      valorBase: funcionCodigo !== "92" ? num(body.valorBase) : undefined,
+      codigo: funcionCodigo !== "92" ? codigo || undefined : undefined,
+      descripcion: body.descripcion ? String(body.descripcion) : undefined,
+      valorBase: funcionCodigo !== "92" && !codigo ? num(body.valorBase) : undefined,
       importeManual: funcionCodigo === "92" ? num(body.importeManual) : undefined,
       observacion: body.observacion ? String(body.observacion) : null,
       fecha: body.fecha ? new Date(String(body.fecha)) : undefined,
@@ -47,12 +50,13 @@ export async function POST(req: NextRequest) {
     const cargo = await tx.cargoFacturacion.create({
       data: {
         internacionId,
-        concepto,
+        concepto: calc.data.concepto,
         cantidad: 1,
         precioUnitario: calc.data.importe,
         total: calc.data.importe,
         origen: "PRACTICA",
         funcionCodigo: calc.data.funcionCodigo,
+        nomencladorId: calc.data.nomencladorId,
         valorBase: calc.data.valorBase,
         galenoAplicado: calc.data.galenoAplicado,
         observacion: calc.data.observacion,
