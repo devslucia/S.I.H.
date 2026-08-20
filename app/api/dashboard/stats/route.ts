@@ -73,6 +73,13 @@ export async function GET() {
   const prescripcionesPendientes = await prisma.prescripcion.count({ where: { estado: "ACTIVA" } });
   const usuariosActivos = await prisma.usuario.count({ where: { activo: true } });
 
+  const guardiaEnEspera = await prisma.episodioGuardiaMeta.count({
+    where: { estadoGuardia: "EN_ESPERA", episodio: { fechaInicio: { gte: today, lt: tomorrow } } },
+  });
+  const guardiaEnAtencion = await prisma.episodioGuardiaMeta.count({
+    where: { estadoGuardia: "EN_ATENCION", episodio: { fechaInicio: { gte: today, lt: tomorrow } } },
+  });
+
   const ultimasInternaciones = await prisma.internacion.findMany({
     orderBy: { fechaIngreso: "desc" },
     take: 6,
@@ -210,6 +217,7 @@ export async function GET() {
     consultorio: { turnosHoy, enConsulta: turnosEnConsulta },
     pacientesEnEspera: pacientesEspera,
     prescripcionesPendientes,
+    guardia: { enEspera: guardiaEnEspera, enAtencion: guardiaEnAtencion },
     usuariosActivos,
     actividadReciente: ultimasInternaciones.map((i) => ({
       id: i.id,
