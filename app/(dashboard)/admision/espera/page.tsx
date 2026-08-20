@@ -50,7 +50,6 @@ export default function EsperaCamaPage() {
 
       <section className="grid grid-cols-2 gap-5">
         <OpsStat label="En espera" value={internaciones.length} sub="Sin cama asignada" tone={internaciones.length > 0 ? "warning" : "success"} />
-        <OpsStat label="Urgencias" value={internaciones.filter((i) => i.tipoIngreso === "URGENCIA").length} sub="Requieren prioridad" tone="neutral" />
       </section>
 
       {loading ? (
