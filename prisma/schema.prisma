@@ -154,12 +154,27 @@ enum OrigenCargo {
 enum TipoEpisodio {
   INTERNACION
   CONSULTA
+  GUARDIA
 }
 
 enum EstadoEpisodio {
   EN_CURSO
   FINALIZADO
   CANCELADO
+}
+
+enum EstadoGuardia {
+  EN_ESPERA
+  EN_ATENCION
+  ATENDIDO
+  ANULADO
+}
+
+enum DisposicionEgresoGuardia {
+  ALTA
+  INTERNACION
+  DERIVACION
+  OBITO
 }
 
 enum EstadoInterconsulta {
@@ -215,6 +230,8 @@ model Usuario {
   solicitudesInterconsulta Interconsulta[]                @relation("SolicitanteInterconsultas")
   interconsultasAsignadas  Interconsulta[]                @relation("EspecialistaInterconsultas")
   notificaciones           Notificacion[]
+  guardiasAtendidas        EpisodioGuardiaMeta[]          @relation("MedicoGuardia")
+  guardiasRegistradas      EpisodioGuardiaMeta[]          @relation("RegistroIngresoGuardia")
 }
 
 model Paciente {
@@ -252,27 +269,28 @@ model Alergia {
 }
 
 model ObraSocial {
-  id                         String                  @id @default(uuid())
-  codigo                     String                  @unique
+  id                         String                 @id @default(uuid())
+  codigo                     String                 @unique
   nombre                     String
   sigla                      String
   descripcion                String
   razonSocial                String
   domicilio                  String?
   localidad                  String?
-  tipoContribucion           TipoContribucion        @default(CONSUMIDOR_FINAL)
-  tipoIva                    TipoIva                 @default(IVA_21)
+  tipoContribucion           TipoContribucion       @default(CONSUMIDOR_FINAL)
+  tipoIva                    TipoIva                @default(IVA_21)
   cuit                       String
-  estadoAmbulatorio          EstadoCobertura         @default(ACTIVA)
-  estadoInternacion          EstadoCobertura         @default(ACTIVA)
-  porcentajeDescMedicamentos Decimal                 @default(0) @db.Decimal(5, 2)
-  activa                     Boolean                 @default(true)
+  estadoAmbulatorio          EstadoCobertura        @default(ACTIVA)
+  estadoInternacion          EstadoCobertura        @default(ACTIVA)
+  porcentajeDescMedicamentos Decimal                @default(0) @db.Decimal(5, 2)
+  activa                     Boolean                @default(true)
   convenios                  Convenio[]
-  nomencladorObraSocial     NomencladorObraSocial?
+  nomencladorObraSocial      NomencladorObraSocial?
   galenos                    GalenoObraSocial[]
   nomencladorEspecifico      NomencladorItem[]
   internaciones              Internacion[]
   turnosConsultorio          TurnoConsultorio[]
+  episodiosGuardia           EpisodioGuardiaMeta[]
 }
 
 enum TipoContribucion {
@@ -432,9 +450,33 @@ model Episodio {
   epicrisis              Epicrisis?
   turnoConsultorio       TurnoConsultorio?
   interconsultas         Interconsulta[]
+  guardiaMeta            EpisodioGuardiaMeta?
 
   @@index([hcId, fechaInicio])
   @@index([tipo])
+}
+
+model EpisodioGuardiaMeta {
+  id                      String                    @id @default(uuid())
+  episodioId              String                    @unique
+  episodio                Episodio                  @relation(fields: [episodioId], references: [id], onDelete: Cascade)
+  estadoGuardia           EstadoGuardia             @default(EN_ESPERA)
+  prioridad               Int                       @default(4)
+  fechaHoraInicioAtencion DateTime?
+  fechaHoraEgreso         DateTime?
+  diagnosticoIngreso      String?
+  diagnosticoEgreso       String?
+  disposicionEgreso       DisposicionEgresoGuardia?
+  motivoAnulacion         String?
+  medicoId                String?
+  medico                  Usuario?                  @relation("MedicoGuardia", fields: [medicoId], references: [id])
+  usuarioIngresoId        String
+  usuarioIngreso          Usuario                   @relation("RegistroIngresoGuardia", fields: [usuarioIngresoId], references: [id])
+  obraSocialId            String?
+  obraSocial              ObraSocial?               @relation(fields: [obraSocialId], references: [id])
+
+  @@index([estadoGuardia])
+  @@index([episodioId, fechaHoraInicioAtencion])
 }
 
 model Interconsulta {
@@ -719,28 +761,28 @@ model ProtocoloAnestesia {
   fechaCirugia           DateTime?
 
   // Bloque 2 - Evaluación preanestésica
-  alergiaDetalle         String?
+  alergiaDetalle          String?
   antecedentesImportancia String?
-  clasificacionASA       String?
-  esEmergencia           Boolean @default(false)
-  grupoSangre            String?
-  ayunoHoras             Int?
+  clasificacionASA        String?
+  esEmergencia            Boolean @default(false)
+  grupoSangre             String?
+  ayunoHoras              Int?
   // Legacy (migrados a ayunoHoras con GREATEST(sólidos, líquidos); se conservan para lectura de protocolos viejos)
-  ayunoSolidos           Int?
-  ayunoLiquidos          Int?
-  ultimaIngesta          String?
-  estadoPsiquico         String?
-  premedicacion          Json?
-  preoxigenacion         Boolean @default(false)
-  preoxigenacionDetalle  String?
-  signosVitaPreop        Json?
-  mallampati             String?
-  distTiromentoniana     Float?
-  aperturaBucal          String?
-  checklistEquipoAnes    Boolean @default(false)
-  checklistReanimacion   Boolean @default(false)
-  checklistMonitores     Boolean @default(false)
-  checklistPosicion      Boolean @default(false)
+  ayunoSolidos            Int?
+  ayunoLiquidos           Int?
+  ultimaIngesta           String?
+  estadoPsiquico          String?
+  premedicacion           Json?
+  preoxigenacion          Boolean @default(false)
+  preoxigenacionDetalle   String?
+  signosVitaPreop         Json?
+  mallampati              String?
+  distTiromentoniana      Float?
+  aperturaBucal           String?
+  checklistEquipoAnes     Boolean @default(false)
+  checklistReanimacion    Boolean @default(false)
+  checklistMonitores      Boolean @default(false)
+  checklistPosicion       Boolean @default(false)
 
   // Bloque 3 - Técnica
   tecnicaAnestesia      String[]
@@ -762,9 +804,9 @@ model ProtocoloAnestesia {
   // General
   viaInduccion          String?
   manejoViaAerea        String?
-  intubacion            Boolean @default(false)
+  intubacion            Boolean  @default(false)
   intubacionSubtipo     String?
-  entubacionEsofagica   Boolean @default(false)
+  entubacionEsofagica   Boolean  @default(false)
   canulaFaringealTipo   String?
   nroTubo               String?
   conManguito           Boolean?
@@ -1064,60 +1106,60 @@ model NomencladorItem {
   nomencladorObraSocialItems NomencladorObraSocialItem[]
   createdAt                  DateTime                    @default(now())
   updatedAt                  DateTime                    @updatedAt
+  cargos                     CargoFacturacion[]
 
   @@unique([codigo, obraSocialId])
   @@index([alcance])
   @@index([capitulo, seccion])
-  cargos CargoFacturacion[]
 }
 
 model GalenoObraSocial {
-  id            String   @id @default(uuid())
-  obraSocialId  String
-  obraSocial    ObraSocial @relation(fields: [obraSocialId], references: [id], onDelete: Restrict)
-  galenoQx      Decimal  @default(0) @db.Decimal(12, 2)
-  gastosQx      Decimal  @default(0) @db.Decimal(12, 2)
-  gastosPension Decimal  @default(0) @db.Decimal(12, 2)
-  otrosGastos   Decimal  @default(0) @db.Decimal(12, 2)
-  galenoMedicacion Decimal @default(0) @db.Decimal(12, 2)
-  vigenciaDesde DateTime @db.Date
-  vigenciaHasta DateTime? @db.Date
-  activo        Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String     @id @default(uuid())
+  obraSocialId     String
+  obraSocial       ObraSocial @relation(fields: [obraSocialId], references: [id], onDelete: Restrict)
+  galenoQx         Decimal    @default(0) @db.Decimal(12, 2)
+  gastosQx         Decimal    @default(0) @db.Decimal(12, 2)
+  gastosPension    Decimal    @default(0) @db.Decimal(12, 2)
+  otrosGastos      Decimal    @default(0) @db.Decimal(12, 2)
+  galenoMedicacion Decimal    @default(0) @db.Decimal(12, 2)
+  vigenciaDesde    DateTime   @db.Date
+  vigenciaHasta    DateTime?  @db.Date
+  activo           Boolean    @default(true)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
   @@index([obraSocialId, vigenciaDesde])
 }
 
 model NomencladorObraSocial {
-  id            String                      @id @default(uuid())
-  obraSocialId  String                      @unique
-  obraSocial    ObraSocial                  @relation(fields: [obraSocialId], references: [id], onDelete: Cascade)
-  items         NomencladorObraSocialItem[]
-  createdAt     DateTime                    @default(now())
-  updatedAt     DateTime                    @updatedAt
+  id           String                      @id @default(uuid())
+  obraSocialId String                      @unique
+  obraSocial   ObraSocial                  @relation(fields: [obraSocialId], references: [id], onDelete: Cascade)
+  items        NomencladorObraSocialItem[]
+  createdAt    DateTime                    @default(now())
+  updatedAt    DateTime                    @updatedAt
 }
 
 model NomencladorObraSocialItem {
-  id                      String                  @id @default(uuid())
+  id                      String                @id @default(uuid())
   nomencladorObraSocialId String
-  nomencladorObraSocial   NomencladorObraSocial   @relation(fields: [nomencladorObraSocialId], references: [id], onDelete: Cascade)
+  nomencladorObraSocial   NomencladorObraSocial @relation(fields: [nomencladorObraSocialId], references: [id], onDelete: Cascade)
   nomencladorItemId       String?
-  nomencladorItem         NomencladorItem?        @relation(fields: [nomencladorItemId], references: [id], onDelete: SetNull)
+  nomencladorItem         NomencladorItem?      @relation(fields: [nomencladorItemId], references: [id], onDelete: SetNull)
   codigo                  String
   descripcion             String
   uEspecialista           Decimal?
   uAyudantes              Decimal?
   uAnestesista            Decimal?
   gastos                  Decimal?
-  fijoEspecialista        Decimal?  @db.Decimal(12, 2)
-  fijoAyudantes           Decimal?  @db.Decimal(12, 2)
-  fijoAnestesista         Decimal?  @db.Decimal(12, 2)
-  fijoGastos              Decimal?  @db.Decimal(12, 2)
-  activo                  Boolean                 @default(true)
-  origen                  OrigenNomencladorOS     @default(COPIA_NACIONAL)
-  createdAt               DateTime                @default(now())
-  updatedAt               DateTime                @updatedAt
+  fijoEspecialista        Decimal?              @db.Decimal(12, 2)
+  fijoAyudantes           Decimal?              @db.Decimal(12, 2)
+  fijoAnestesista         Decimal?              @db.Decimal(12, 2)
+  fijoGastos              Decimal?              @db.Decimal(12, 2)
+  activo                  Boolean               @default(true)
+  origen                  OrigenNomencladorOS   @default(COPIA_NACIONAL)
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
 
   @@unique([nomencladorObraSocialId, codigo])
   @@index([codigo])
@@ -1129,33 +1171,33 @@ enum OrigenNomencladorOS {
 }
 
 model CargoFacturacion {
-  id                    String                 @id @default(uuid())
-  internacionId         String
-  internacion           Internacion            @relation(fields: [internacionId], references: [id])
-  concepto              String
-  cantidad              Decimal
-  precioUnitario        Decimal
-  total                 Decimal
-  origen                OrigenCargo
-  aplicacionId          String?                @unique
-  aplicacion            AplicacionMedicamento? @relation(fields: [aplicacionId], references: [id])
-  stockItemId           String?
-  stockItem             StockItem?             @relation(fields: [stockItemId], references: [id], onDelete: SetNull)
-  hojaEnfermeriaId      String?
-  hojaEnfermeria        HojaEnfermeria?        @relation(fields: [hojaEnfermeriaId], references: [id])
-  fecha                 DateTime               @default(now())
-  facturado             Boolean                @default(false)
-  nomencladorId         String?
-  nomenclador           NomencladorItem?       @relation(fields: [nomencladorId], references: [id])
-  galenoQx              Decimal?
+  id                     String                 @id @default(uuid())
+  internacionId          String
+  internacion            Internacion            @relation(fields: [internacionId], references: [id])
+  concepto               String
+  cantidad               Decimal
+  precioUnitario         Decimal
+  total                  Decimal
+  origen                 OrigenCargo
+  aplicacionId           String?                @unique
+  aplicacion             AplicacionMedicamento? @relation(fields: [aplicacionId], references: [id])
+  stockItemId            String?
+  stockItem              StockItem?             @relation(fields: [stockItemId], references: [id], onDelete: SetNull)
+  hojaEnfermeriaId       String?
+  hojaEnfermeria         HojaEnfermeria?        @relation(fields: [hojaEnfermeriaId], references: [id])
+  fecha                  DateTime               @default(now())
+  facturado              Boolean                @default(false)
+  nomencladorId          String?
+  nomenclador            NomencladorItem?       @relation(fields: [nomencladorId], references: [id])
+  galenoQx               Decimal?
   honorariosEspecialista Decimal?
   honorariosAyudantes    Decimal?
   honorariosAnestesista  Decimal?
   gastosPractica         Decimal?
-  funcionCodigo         String?
-  valorBase             Decimal?                @db.Decimal(12, 2)
-  galenoAplicado        Decimal?                @db.Decimal(12, 2)
-  observacion           String?
+  funcionCodigo          String?
+  valorBase              Decimal?               @db.Decimal(12, 2)
+  galenoAplicado         Decimal?               @db.Decimal(12, 2)
+  observacion            String?
 
   @@index([internacionId])
   @@index([facturado])

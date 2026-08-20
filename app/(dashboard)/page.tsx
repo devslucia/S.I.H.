@@ -30,6 +30,7 @@ interface StatsData {
   consultorio: { turnosHoy: number; enConsulta: number };
   pacientesEnEspera: number;
   prescripcionesPendientes: number;
+  guardia: { enEspera: number; enAtencion: number };
   usuariosActivos: number;
   actividadReciente: {
     id: string;
@@ -198,6 +199,13 @@ function KPISection({ data }: { data: StatsData }) {
           href="/historia-clinica"
         />
         <OpsStat
+          label="Guardia en espera"
+          value={data.guardia.enEspera}
+          sub={`${data.guardia.enAtencion} en atención`}
+          tone={data.guardia.enEspera > 0 ? "warning" : "neutral"}
+          href="/guardia"
+        />
+        <OpsStat
           label="Cirugías de hoy"
           value={rd.cirugiasAsignadas ?? 0}
           sub={`${data.cirugias.enCurso} en curso`}
@@ -281,6 +289,13 @@ function KPISection({ data }: { data: StatsData }) {
             sub="sin cama asignada"
             tone={data.pacientesEnEspera > 0 ? "warning" : "neutral"}
             href="/admision"
+          />
+          <OpsStat
+            label="Guardia en espera"
+            value={data.guardia.enEspera}
+            sub={`${data.guardia.enAtencion} en atención`}
+            tone={data.guardia.enEspera > 0 ? "warning" : "neutral"}
+            href="/guardia"
           />
         </section>
 
@@ -424,6 +439,13 @@ function KPISection({ data }: { data: StatsData }) {
         sub={`${data.consultorio.enConsulta} en consulta`}
         tone={data.consultorio.enConsulta > 0 ? "success" : "neutral"}
         href="/consultorio"
+      />
+      <OpsStat
+        label="Guardia en espera"
+        value={data.guardia.enEspera}
+        sub={`${data.guardia.enAtencion} en atención`}
+        tone={data.guardia.enEspera > 0 ? "warning" : "neutral"}
+        href="/guardia"
       />
     </section>
   );
