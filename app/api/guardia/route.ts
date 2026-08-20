@@ -55,7 +55,15 @@ export async function GET(req: NextRequest) {
     where: { tipo: "GUARDIA", fechaInicio: { gte: desde, lte: hasta } },
   });
 
-  return NextResponse.json({ episodios, totales, fecha });
+  const porEstadoRows = await prisma.episodioGuardiaMeta.groupBy({
+    by: ["estadoGuardia"],
+    where: { episodio: { tipo: "GUARDIA", fechaInicio: { gte: desde, lte: hasta } } },
+    _count: { _all: true },
+  });
+  const porEstado = { EN_ESPERA: 0, EN_ATENCION: 0, ATENDIDO: 0, ANULADO: 0 };
+  for (const r of porEstadoRows) porEstado[r.estadoGuardia] = r._count._all;
+
+  return NextResponse.json({ episodios, totales, porEstado, fecha });
 }
 
 export async function POST(req: NextRequest) {

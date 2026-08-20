@@ -76,6 +76,7 @@ function formatEspera(min: number): string {
 export default function GuardiaPage() {
   const [episodios, setEpisodios] = useState<GuardiaEpisodio[]>([]);
   const [totales, setTotales] = useState(0);
+  const [porEstado, setPorEstado] = useState({ EN_ESPERA: 0, EN_ATENCION: 0, ATENDIDO: 0, ANULADO: 0 });
   const [tab, setTab] = useState<"EN_ESPERA" | "EN_ATENCION" | "ATENDIDO" | "ANULADO">("EN_ESPERA");
   const [fecha, setFecha] = useState(hoyISO());
   const [loading, setLoading] = useState(true);
@@ -95,6 +96,9 @@ export default function GuardiaPage() {
       const data = await res.json();
       setEpisodios(data.episodios ?? []);
       setTotales(data.totales ?? 0);
+      setPorEstado(
+        data.porEstado ?? { EN_ESPERA: 0, EN_ATENCION: 0, ATENDIDO: 0, ANULADO: 0 }
+      );
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error de red");
@@ -112,22 +116,10 @@ export default function GuardiaPage() {
     return () => clearInterval(iv);
   }, [fetchEpisodios]);
 
-  const enEspera = useMemo(
-    () => episodios.filter((e) => e.guardiaMeta.estadoGuardia === "EN_ESPERA").length,
-    [episodios]
-  );
-  const enAtencion = useMemo(
-    () => episodios.filter((e) => e.guardiaMeta.estadoGuardia === "EN_ATENCION").length,
-    [episodios]
-  );
-  const atendidos = useMemo(
-    () => episodios.filter((e) => e.guardiaMeta.estadoGuardia === "ATENDIDO").length,
-    [episodios]
-  );
-  const anulados = useMemo(
-    () => episodios.filter((e) => e.guardiaMeta.estadoGuardia === "ANULADO").length,
-    [episodios]
-  );
+  const enEspera = porEstado.EN_ESPERA;
+  const enAtencion = porEstado.EN_ATENCION;
+  const atendidos = porEstado.ATENDIDO;
+  const anulados = porEstado.ANULADO;
 
   const patch = async (id: string, body: unknown): Promise<GuardiaEpisodio | { sugerirInternacion?: boolean; pacienteId?: string } | null> => {
     setAccionando(id);
