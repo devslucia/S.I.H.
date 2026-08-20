@@ -6,7 +6,7 @@ import { calcularHonorario } from "@/lib/facturacion-honorarios";
 import { calcularGasto } from "@/lib/facturacion-gastos";
 
 const MED_FUNCIONES = ["stock", "60", "92"] as const;
-const HON_FUNCIONES = ["10", "20", "30", "92"] as const;
+const HON_FUNCIONES = ["10", "20", "30", "91"] as const;
 const GAS_FUNCIONES = ["60", "92"] as const;
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
@@ -125,10 +125,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const funcionCodigo = (HON_FUNCIONES as readonly string[]).includes(String(body.funcionCodigo ?? ""))
       ? (String(body.funcionCodigo) as (typeof HON_FUNCIONES)[number])
       : null;
-    if (!funcionCodigo) return { status: 400, data: { error: "Función inválida (10, 20, 30 o 92)" } };
+    if (!funcionCodigo) return { status: 400, data: { error: "Función inválida (10, 20, 30 o 91)" } };
 
     let codigo = body.codigo ? String(body.codigo).trim() : "";
-    if (funcionCodigo !== "92" && !codigo) {
+    if (funcionCodigo !== "91" && !codigo) {
       if (existe.nomencladorId) {
         const item = await tx.nomencladorItem.findUnique({ where: { id: existe.nomencladorId } });
         if (item) codigo = item.codigo;
@@ -142,10 +142,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       internacionId: existe.internacionId,
       concepto,
       funcionCodigo,
-      codigo: funcionCodigo !== "92" ? codigo : undefined,
+      codigo: funcionCodigo !== "91" ? codigo : undefined,
       descripcion: body.descripcion ? String(body.descripcion) : undefined,
-      valorBase: funcionCodigo !== "92" && !codigo ? num(body.valorBase) : undefined,
-      importeManual: funcionCodigo === "92" ? num(body.importeManual) : undefined,
+      valorBase: funcionCodigo !== "91" && !codigo ? num(body.valorBase) : undefined,
+      importeManual: funcionCodigo === "91" ? num(body.importeManual) : undefined,
       observacion,
       fecha: existe.fecha,
     });

@@ -343,10 +343,10 @@ function RubroDetalle({
           { id: "92", label: "92 — Importe manual" },
         ]
     : [
-        { id: "10", label: "10 — Especialista × galenoQx" },
+        { id: "10", label: "10 — Especialista (cirujano) × galenoQx" },
         { id: "20", label: "20 — Ayudante × galenoQx" },
-        { id: "30", label: "30 — Ayudante ×2 × galenoQx" },
-        { id: "92", label: "92 — Importe manual" },
+        { id: "30", label: "30 — Anestesista × galenoQx" },
+        { id: "91", label: "91 — Manual" },
       ];
 
   const [formAbierto, setFormAbierto] = useState(false);
@@ -360,9 +360,9 @@ function RubroDetalle({
   const [err, setErr] = useState<string | null>(null);
   const [indiceVigente, setIndiceVigente] = useState<number | null>(null);
   const [galenoLabel, setGalenoLabel] = useState("");
-  const [practicaSel, setPracticaSel] = useState<{ codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; gastos: number | null } | null>(null);
+  const [practicaSel, setPracticaSel] = useState<{ codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; uAnestesista: number | null; gastos: number | null } | null>(null);
   const [busqueda, setBusqueda] = useState("");
-  const [resultados, setResultados] = useState<{ codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; gastos: number | null; origen: string }[]>([]);
+  const [resultados, setResultados] = useState<{ codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; uAnestesista: number | null; gastos: number | null; origen: string }[]>([]);
   const [buscando, setBuscando] = useState(false);
   const [busquedaAbierta, setBusquedaAbierta] = useState(false);
   const [stockItemSel, setStockItemSel] = useState<{ id: string; nTroquel: string | null; nombre: string; presentacion: string | null; laboratorio: string | null; precio: number } | null>(null);
@@ -414,7 +414,7 @@ function RubroDetalle({
     const t = setTimeout(() => {
       fetch(`/api/facturacion/nomenclador?obraSocialId=${encodeURIComponent(obraSocialId)}&q=${encodeURIComponent(busqueda.trim())}`)
         .then((r) => r.json())
-        .then((d: { codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; gastos: number | null; origen: string }[]) => {
+        .then((d: { codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; uAnestesista: number | null; gastos: number | null; origen: string }[]) => {
           if (vivo) setResultados(Array.isArray(d) ? d : []);
         })
         .catch(() => {
@@ -481,25 +481,25 @@ function RubroDetalle({
     setEditandoId(c.id);
     setFuncion(FUNCIONES.some((f) => f.id === c.funcionCodigo) ? (c.funcionCodigo ?? FUNCIONES[0].id) : FUNCIONES[0].id);
     setConcepto(c.concepto);
-    setValorBase(c.funcionCodigo !== "92" && c.valorBase !== null ? String(c.valorBase) : "");
-    setImporteManual(c.funcionCodigo === "92" ? String(c.total) : "");
+    setValorBase(c.funcionCodigo !== "92" && c.funcionCodigo !== "91" && c.valorBase !== null ? String(c.valorBase) : "");
+    setImporteManual(c.funcionCodigo === "92" || c.funcionCodigo === "91" ? String(c.total) : "");
     setObservacion(c.observacion ?? "");
     setErr(null);
     const partes = c.concepto.split(" · ");
-    const conPractica = (esGas || esHon) && c.funcionCodigo !== null && c.funcionCodigo !== "92" && partes[0]?.trim() !== "" && c.concepto.includes(" · ");
+    const conPractica = (esGas || esHon) && c.funcionCodigo !== null && c.funcionCodigo !== "92" && c.funcionCodigo !== "91" && partes[0]?.trim() !== "" && c.concepto.includes(" · ");
     const codigo = partes[0] ?? "";
     setPracticaSel(
       conPractica
-        ? { codigo, descripcion: partes.slice(1).join(" · ") || c.concepto, uEspecialista: null, uAyudantes: null, gastos: esGas ? c.valorBase : null }
+        ? { codigo, descripcion: partes.slice(1).join(" · ") || c.concepto, uEspecialista: null, uAyudantes: null, uAnestesista: null, gastos: esGas ? c.valorBase : null }
         : null
     );
     if (conPractica) {
       fetch(`/api/facturacion/nomenclador?obraSocialId=${encodeURIComponent(obraSocialId)}&q=${encodeURIComponent(codigo)}`)
         .then((r) => r.json())
-        .then((d: { codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; gastos: number | null }[]) => {
+        .then((d: { codigo: string; descripcion: string; uEspecialista: number | null; uAyudantes: number | null; uAnestesista: number | null; gastos: number | null }[]) => {
           const hit = Array.isArray(d) ? (d.find((x) => x.codigo === codigo) ?? d[0]) : undefined;
           if (hit) {
-            setPracticaSel({ codigo: hit.codigo, descripcion: hit.descripcion, uEspecialista: hit.uEspecialista, uAyudantes: hit.uAyudantes, gastos: hit.gastos });
+            setPracticaSel({ codigo: hit.codigo, descripcion: hit.descripcion, uEspecialista: hit.uEspecialista, uAyudantes: hit.uAyudantes, uAnestesista: hit.uAnestesista, gastos: hit.gastos });
           }
         })
         .catch(() => {});
@@ -545,14 +545,14 @@ function RubroDetalle({
         payload.stockItemId = stockItemSel.id;
         payload.cantidad = cant;
         delete payload.concepto;
-      } else if (funcion === "92") {
+      } else if (funcion === "92" || funcion === "91") {
         if (!concepto.trim()) {
           setErr("Ingresá el concepto del ítem");
           return;
         }
         const m = parseMonto(importeManual);
         if (m === null) {
-          setErr("Ingresá el importe manual para la función 92");
+          setErr("Ingresá el importe manual");
           return;
         }
         payload.importeManual = m;
@@ -597,11 +597,11 @@ function RubroDetalle({
     }
   };
 
-  const esFormula = funcion !== "92" && funcion !== "stock";
+  const esFormula = funcion !== "92" && funcion !== "91" && funcion !== "stock";
   const unidadesFormula = esGas
     ? (practicaSel?.gastos ?? null)
     : esHon && practicaSel
-      ? (funcion === "10" ? practicaSel.uEspecialista : practicaSel.uAyudantes) ?? null
+      ? (funcion === "10" ? practicaSel.uEspecialista : funcion === "20" ? practicaSel.uAyudantes : practicaSel.uAnestesista) ?? null
       : parseMonto(valorBase);
   const importeCalculado =
     funcion === "stock"
@@ -609,7 +609,7 @@ function RubroDetalle({
         ? (parseMonto(cantidadMed) ?? 0) * stockItemSel.precio
         : null
       : esFormula && indiceVigente !== null && unidadesFormula !== null
-        ? unidadesFormula * (funcion === "30" ? 2 : 1) * indiceVigente
+        ? unidadesFormula * indiceVigente
         : null;
 
   if (cargos.length === 0 && !formAbierto) {
@@ -762,7 +762,7 @@ function RubroDetalle({
               </>
             ) : (
               <>
-            {(!(esGas || esHon) || funcion === "92") && funcion !== "stock" && (
+            {(!(esGas || esHon) || funcion === "92" || funcion === "91") && funcion !== "stock" && (
               <label className="block md:col-span-3">
                 <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Concepto</span>
                 <input
@@ -789,10 +789,10 @@ function RubroDetalle({
                         ) : (
                           <span className="text-muted">
                             {" "}
-                            · U. {funcion === "10" ? "Esp" : "Ayud"}{" "}
-                            {(funcion === "10" ? practicaSel.uEspecialista : practicaSel.uAyudantes) === null
+                            · U. {funcion === "10" ? "Esp" : funcion === "20" ? "Ayud" : "Anest"}{" "}
+                            {(funcion === "10" ? practicaSel.uEspecialista : funcion === "20" ? practicaSel.uAyudantes : practicaSel.uAnestesista) === null
                               ? "—"
-                              : (funcion === "10" ? practicaSel.uEspecialista : practicaSel.uAyudantes)}
+                              : (funcion === "10" ? practicaSel.uEspecialista : funcion === "20" ? practicaSel.uAyudantes : practicaSel.uAnestesista)}
                           </span>
                         )}
                       </div>
@@ -830,7 +830,7 @@ function RubroDetalle({
                               <button
                                 key={`${r.origen}-${r.codigo}`}
                                 onMouseDown={() => {
-                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, gastos: r.gastos });
+                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, uAnestesista: r.uAnestesista, gastos: r.gastos });
                                   setBusqueda("");
                                   setBusquedaAbierta(false);
                                 }}
@@ -842,7 +842,7 @@ function RubroDetalle({
                                   <span className="text-[11px] text-muted ml-2">Gastos: {r.gastos === null ? "—" : r.gastos}</span>
                                 ) : (
                                   <span className="text-[11px] text-muted ml-2">
-                                    Esp {r.uEspecialista === null ? "—" : r.uEspecialista} · Ayud {r.uAyudantes === null ? "—" : r.uAyudantes}
+                                    Esp {r.uEspecialista === null ? "—" : r.uEspecialista} · Ayud {r.uAyudantes === null ? "—" : r.uAyudantes} · Anest {r.uAnestesista === null ? "—" : r.uAnestesista}
                                   </span>
                                 )}
                                 <span className="float-right text-[10px] font-mono uppercase tracking-wider text-muted mt-1">
@@ -866,7 +866,6 @@ function RubroDetalle({
                     ) : (
                       <span className="text-text">
                         ${toMoney(indiceVigente)}
-                        {!esGas && funcion === "30" && <span className="text-muted"> × 2</span>}
                         {galenoLabel && <span className="text-muted"> · {galenoLabel}</span>}
                       </span>
                     )}
@@ -923,7 +922,7 @@ function RubroDetalle({
                               <button
                                 key={`${r.origen}-${r.codigo}`}
                                 onMouseDown={() => {
-                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, gastos: r.gastos });
+                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, uAnestesista: r.uAnestesista, gastos: r.gastos });
                                   setConcepto(`${r.codigo} · ${r.descripcion}`);
                                   setBusqueda("");
                                   setBusquedaAbierta(false);
@@ -1065,7 +1064,17 @@ function RubroDetalle({
                       </span>
                     ) : (
                       <span className="inline-block border border-border rounded px-1.5 py-0.5 font-mono text-[11px]">
-                        {cargo.funcionCodigo ?? "—"}
+                        {cargo.funcionCodigo === "91"
+                          ? "Manual"
+                          : cargo.funcionCodigo === "30" && esHon
+                            ? "30 · Anest"
+                            : cargo.funcionCodigo === "10" && esHon
+                              ? "10 · Esp"
+                              : cargo.funcionCodigo === "20" && esHon
+                                ? "20 · Ayud"
+                                : cargo.funcionCodigo === "92"
+                                  ? "Manual"
+                                  : (cargo.funcionCodigo ?? "—")}
                       </span>
                     )
                   ) : (
@@ -1076,15 +1085,11 @@ function RubroDetalle({
                   <td className={td + " text-muted font-mono text-[12px]"}>
                     {cargo.stockItemId !== null
                       ? `${cargo.cantidad} × $${toMoney(cargo.precioUnitario)}`
-                      : cargo.funcionCodigo === "60" && cargo.valorBase !== null && cargo.galenoAplicado !== null
+                      : (cargo.funcionCodigo === "60" || cargo.funcionCodigo === "10" || cargo.funcionCodigo === "20" || cargo.funcionCodigo === "30") && cargo.valorBase !== null && cargo.galenoAplicado !== null
                         ? `${cargo.valorBase} × $${toMoney(cargo.galenoAplicado)}`
-                      : (cargo.funcionCodigo === "10" || cargo.funcionCodigo === "20") && cargo.valorBase !== null && cargo.galenoAplicado !== null
-                        ? `${cargo.valorBase} × $${toMoney(cargo.galenoAplicado)}`
-                        : cargo.funcionCodigo === "30" && cargo.valorBase !== null && cargo.galenoAplicado !== null
-                          ? `${cargo.valorBase} × 2 × $${toMoney(cargo.galenoAplicado)}`
-                          : cargo.funcionCodigo === "92"
-                            ? "Manual"
-                            : "—"}
+                        : cargo.funcionCodigo === "92" || cargo.funcionCodigo === "91"
+                          ? "Manual"
+                          : "—"}
                   </td>
                 )}
                 {esMed && (
