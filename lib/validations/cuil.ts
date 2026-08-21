@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export function parseFechaSoloDia(isoDate: string): Date {
+  const [yy, mm, dd] = isoDate.slice(0, 10).split("-").map(Number);
+  return new Date(yy, mm - 1, dd, 12, 0, 0, 0);
+}
+
 export function normalizeCuil(cuil: string): string {
   return cuil.replace(/[-\s]/g, "");
 }
@@ -39,31 +44,25 @@ export function validarCuil(cuil: string): { valido: boolean; normalizado: strin
   return { valido: true, normalizado };
 }
 
-export function calcularEdad(fechaNac: Date | string): number {
-  const nacimiento = new Date(fechaNac);
-  const hoy = new Date();
-  let edad = hoy.getFullYear() - nacimiento.getFullYear();
-  const mesActual = hoy.getMonth();
-  const diaActual = hoy.getDate();
-  if (mesActual < nacimiento.getMonth() || (mesActual === nacimiento.getMonth() && diaActual < nacimiento.getDate())) {
-    edad--;
-  }
-  if (edad > 120) return 120; // cap máximo razonable
-  return edad;
+export function calcularEdad(fechaNac: Date | string, hoy = new Date()): number {
+  const nac = typeof fechaNac === "string" ? parseFechaSoloDia(fechaNac) : fechaNac;
+  const y = hoy.getFullYear() - nac.getFullYear();
+  const m = hoy.getMonth() - nac.getMonth();
+  const d = hoy.getDate() - nac.getDate();
+  let edad = y;
+  if (m < 0 || (m === 0 && d < 0)) edad--;
+  return Math.max(0, Math.min(edad, 120));
 }
 
-export const fechaNacSchema = z.string().transform((v) => new Date(v)).refine(
-  (date) => {
+export const fechaNacSchema = z.string().transform((v) => parseFechaSoloDia(v)).refine(
+  (nacimiento) => {
     const hoy = new Date();
-    const nacimiento = new Date(date);
     if (nacimiento > hoy) return false;
-    const edad = new Date().getFullYear() - nacimiento.getFullYear();
-    const mesActual = new Date().getMonth();
-    const diaActual = new Date().getDate();
-    if (mesActual < nacimiento.getMonth() || (mesActual === nacimiento.getMonth() && diaActual < nacimiento.getDate())) {
-      return edad - 1 >= 0 && edad - 1 <= 120;
-    }
-    return edad >= 0 && edad <= 120;
+    const edad = hoy.getFullYear() - nacimiento.getFullYear();
+    const m = hoy.getMonth() - nacimiento.getMonth();
+    const d = hoy.getDate() - nacimiento.getDate();
+    const edadReal = (m < 0 || (m === 0 && d < 0)) ? edad - 1 : edad;
+    return edadReal >= 0 && edadReal <= 120;
   },
   { message: "Fecha de nacimiento inválida (edad debe ser entre 0 y 120 años)" }
 );
