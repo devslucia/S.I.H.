@@ -13,6 +13,7 @@ import {
   View,
   StyleSheet,
 } from "@react-pdf/renderer";
+import { calcularEdad } from "@/lib/validations/cuil";
 
 const PROTOCOLO_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ADMISION"];
 
@@ -37,19 +38,6 @@ const styles = StyleSheet.create({
   footer: { marginTop: 20, borderTopWidth: 1, borderTopColor: "#000", paddingTop: 8, fontSize: 8 },
   firmLine: { marginTop: 40, borderTopWidth: 0.5, borderTopColor: "#000", width: 250, paddingTop: 4 },
 });
-
-const calcularEdad = (fechaNac?: string | Date | null): string => {
-  if (!fechaNac) return "—";
-  const nacimiento = new Date(fechaNac);
-  const hoy = new Date();
-  let edad = hoy.getFullYear() - nacimiento.getFullYear();
-  const mesActual = hoy.getMonth();
-  const diaActual = hoy.getDate();
-  if (mesActual < nacimiento.getMonth() || (mesActual === nacimiento.getMonth() && diaActual < nacimiento.getDate())) {
-    edad--;
-  }
-  return `${edad} años`;
-};
 
 function Membrete() {
   return (
