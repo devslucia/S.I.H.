@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatZodError } from "@/lib/validations/format-zod-error";
-import {errorMessage} from "@/lib/errors";
+import { errorMessage } from "@/lib/errors";
 import { assertObraSocialUsable } from "@/lib/obra-social";
+import { registrarEpisodioGuardiaDesdeAdmision } from "@/lib/guardia";
 
 const admitirSchema = z.object({
   dni: z.string().min(7).max(11),
@@ -30,7 +31,7 @@ const admitirSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const {error} = await requireRole("ADMIN", "ADMISION");
+  const { session, error } = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
   const body = await req.json();
@@ -118,6 +119,18 @@ export async function POST(req: NextRequest) {
           fechaInicio: internacion.fechaIngreso,
         },
       });
+
+      // Ingreso por guardia desde admisión: además de la internación, el paciente
+      // entra a la cola de /guardia (sin duplicar si ya tiene episodio GUARDIA hoy)
+      if (data.tipoIngreso === "GUARDIA") {
+        await registrarEpisodioGuardiaDesdeAdmision(tx, {
+          hcId: hcNueva.id,
+          motivoIngreso: internacion.motivoIngreso,
+          fechaInicio: internacion.fechaIngreso,
+          obraSocialId: data.obraSocialId ?? null,
+          usuarioIngresoId: session.user.id,
+        });
+      }
 
       if (data.camaId) {
         await tx.cama.update({
