@@ -5,8 +5,9 @@ import { getVisibleInternacionesWhere } from "@/lib/internaciones-visibility";
 import { createInternacionSchema } from "@/lib/validations/internacion.schema";
 import { NextRequest, NextResponse } from "next/server";
 import { formatZodError } from "@/lib/validations/format-zod-error";
-import {errorMessage} from "@/lib/errors";
+import { errorMessage } from "@/lib/errors";
 import { Prisma, type EstadoInternacion } from "@prisma/client";
+import { registrarEpisodioGuardiaDesdeAdmision } from "@/lib/guardia";
 
 const INTERNACIONES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION"];
 
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const {error} = await requireRole("ADMIN", "ADMISION");
+  const { session, error } = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
   const body = await req.json();
@@ -127,6 +128,18 @@ export async function POST(req: NextRequest) {
           fechaInicio: internacion.fechaIngreso,
         },
       });
+
+      // Ingreso por guardia desde admisión: además de la internación, el paciente
+      // entra a la cola de /guardia (sin duplicar si ya tiene episodio GUARDIA hoy)
+      if (parsed.data.tipoIngreso === "GUARDIA") {
+        await registrarEpisodioGuardiaDesdeAdmision(tx, {
+          hcId: hcNueva.id,
+          motivoIngreso: internacion.motivoIngreso,
+          fechaInicio: internacion.fechaIngreso,
+          obraSocialId: parsed.data.obraSocialId ?? null,
+          usuarioIngresoId: session.user.id,
+        });
+      }
 
       if (parsed.data.camaId) {
         // Ocupación atómica: solo si la cama sigue LIBRE (evita TOCTOU entre

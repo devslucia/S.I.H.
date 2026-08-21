@@ -1,7 +1,7 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { assertObraSocialUsable } from "@/lib/obra-social";
-import { esPrioridadValida } from "@/lib/guardia";
+import { esPrioridadValida, hoyART, rangoDiaART } from "@/lib/guardia";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -10,25 +10,6 @@ const GUARDIA_WRITE_ROLES = ["ADMIN", "ADMISION"] as const;
 
 const ESTADOS_GUARDIA = ["EN_ESPERA", "EN_ATENCION", "ATENDIDO", "ANULADO"] as const;
 const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-// El server corre en UTC; la fecha llega como día calendario ART (UTC-3, sin DST).
-function rangoDiaART(fecha: string): { desde: Date; hasta: Date } {
-  return {
-    desde: new Date(`${fecha}T00:00:00.000-03:00`),
-    hasta: new Date(`${fecha}T23:59:59.999-03:00`),
-  };
-}
-
-function hoyART(): string {
-  const parts = new Intl.DateTimeFormat("en", {
-    timeZone: "America/Argentina/Buenos_Aires",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  return `${get("year")}-${get("month")}-${get("day")}`;
-}
 
 const altaGuardiaSchema = z.object({
   pacienteId: z.string().trim().min(1, "pacienteId requerido"),
