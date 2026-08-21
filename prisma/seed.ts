@@ -65,6 +65,7 @@ async function main() {
   await prisma.internacion.deleteMany();
   await prisma.alergia.deleteMany();
   await prisma.paciente.deleteMany();
+  await prisma.galenoObraSocial.deleteMany();
   await prisma.convenio.deleteMany();
   await prisma.obraSocial.deleteMany();
   await prisma.nomencladorItem.deleteMany();
@@ -233,7 +234,7 @@ async function main() {
   const ferreyra = await prisma.paciente.create({
     data: {
       dni: "32110500", apellido: "Ferreyra", nombre: "Juan Carlos", sexo: "MASCULINO",
-      fechaNac: new Date("1975-03-14"), cuil: "20-32110500-8",
+      fechaNac: new Date("1975-03-14"), cuil: "20-32110500-9",
       domicilio: "Bolívar 567", localidad: "Posadas", provincia: "Misiones",
       telefono: "3764789012", email: "jcferreyra@gmail.com", grupoSangre: "O+", estadoCivil: "CASADO",
       alergias: { create: { sustancia: "Penicilina", tipo: "MEDICAMENTO", severidad: "MODERADA", observacion: "Urticaria generalizada con amoxicilina" } },
@@ -244,7 +245,7 @@ async function main() {
   const villalba = await prisma.paciente.create({
     data: {
       dni: "19003771", apellido: "Villalba", nombre: "Pedro Ernesto", sexo: "MASCULINO",
-      fechaNac: new Date("1958-05-08"), cuil: "20-19003771-3",
+      fechaNac: new Date("1958-05-08"), cuil: "20-19003771-2",
       domicilio: "Catamarca 890", localidad: "Posadas", provincia: "Misiones",
       telefono: "3764567890", email: "pevillalba@hotmail.com", grupoSangre: "A-", estadoCivil: "CASADO",
       alergias: { create: { sustancia: "AINE", tipo: "MEDICAMENTO", severidad: "LEVE", observacion: "Epigastralgia con diclofenac" } },
