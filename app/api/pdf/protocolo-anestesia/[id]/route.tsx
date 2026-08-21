@@ -38,6 +38,19 @@ const styles = StyleSheet.create({
   firmLine: { marginTop: 40, borderTopWidth: 0.5, borderTopColor: "#000", width: 250, paddingTop: 4 },
 });
 
+const calcularEdad = (fechaNac?: string | Date | null): string => {
+  if (!fechaNac) return "—";
+  const nacimiento = new Date(fechaNac);
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - nacimiento.getFullYear();
+  const mesActual = hoy.getMonth();
+  const diaActual = hoy.getDate();
+  if (mesActual < nacimiento.getMonth() || (mesActual === nacimiento.getMonth() && diaActual < nacimiento.getDate())) {
+    edad--;
+  }
+  return `${edad} años`;
+};
+
 function Membrete() {
   return (
     <View style={styles.header}>
@@ -138,7 +151,7 @@ interface ProtocoloPdfData {
 
 interface ProtocoloPDFProps {
   protocolo: ProtocoloPdfData;
-  paciente: { apellido: string; nombre: string; dni: string; grupoSangre?: string | null };
+  paciente: { apellido: string; nombre: string; dni: string; grupoSangre?: string | null; fechaNac?: string | Date | null; cuil?: string | null };
   internacion: { numero: number };
   cirugia: { horaInicio: string | null; horaFin: string | null } | null;
 }
@@ -173,6 +186,8 @@ function ProtocoloPDF({ protocolo, paciente, internacion, cirugia }: ProtocoloPD
           <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
             <Text style={{ width: "50%", fontSize: 8 }}><Text style={{ fontWeight: "bold" }}>Paciente:</Text> {paciente.apellido}, {paciente.nombre}</Text>
             <Text style={{ width: "50%", fontSize: 8 }}><Text style={{ fontWeight: "bold" }}>DNI:</Text> {paciente.dni}</Text>
+            <Text style={{ width: "50%", fontSize: 8 }}><Text style={{ fontWeight: "bold" }}>Edad:</Text> {paciente.fechaNac ? calcularEdad(paciente.fechaNac) : "—"}</Text>
+            <Text style={{ width: "50%", fontSize: 8 }}><Text style={{ fontWeight: "bold" }}>CUIL:</Text> {paciente.cuil || "—"}</Text>
             <Text style={{ width: "50%", fontSize: 8 }}><Text style={{ fontWeight: "bold" }}>HC N°:</Text> {internacion.numero}</Text>
             <Text style={{ width: "50%", fontSize: 8 }}><Text style={{ fontWeight: "bold" }}>Grupo sanguíneo:</Text> {paciente.grupoSangre || "—"}</Text>
             <Text style={{ width: "50%", fontSize: 8 }}><Text style={{ fontWeight: "bold" }}>Fecha:</Text> {p.fechaCirugia ? new Date(p.fechaCirugia).toLocaleDateString("es-AR") : "—"}</Text>

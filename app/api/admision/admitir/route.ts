@@ -6,14 +6,18 @@ import { formatZodError } from "@/lib/validations/format-zod-error";
 import { errorMessage } from "@/lib/errors";
 import { assertObraSocialUsable } from "@/lib/obra-social";
 import { registrarEpisodioGuardiaDesdeAdmision } from "@/lib/guardia";
+import { validarCuil, fechaNacSchema } from "@/lib/validations/cuil";
 
 const admitirSchema = z.object({
   dni: z.string().min(7).max(11),
   apellido: z.string().min(1),
   nombre: z.string().min(1),
   sexo: z.enum(["MASCULINO", "FEMENINO", "OTRO"]),
-  fechaNac: z.string().transform((v) => new Date(v)),
-  cuil: z.string().optional().nullable(),
+  fechaNac: fechaNacSchema,
+  cuil: z.string().refine(
+    (val) => validarCuil(val).valido,
+    { message: "CUIL inválido (formato o dígito verificador incorrecto)" }
+  ),
   domicilio: z.string().optional().nullable(),
   localidad: z.string().optional().nullable(),
   provincia: z.string().optional().nullable(),
