@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, formatDate } from "@/lib/utils";
 import { calcularEdad } from "@/lib/validations/cuil";
 import { useDebounce } from "@/hooks/useDebounce";
 import { protocoloAnestesiaSchema } from "@/lib/validations/protocolo-anestesia";
@@ -691,7 +691,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
             <div><span className="text-muted">Paciente:</span> <span className="text-text">{pacienteData.apellido}, {pacienteData.nombre}</span></div>
             <div><span className="text-muted">DNI:</span> <span className="text-text">{pacienteData.dni}</span></div>
             <div><span className="text-muted">Sexo:</span> <span className="text-text">{pacienteData.sexo}</span></div>
-            <div><span className="text-muted">Nac.:</span> <span className="text-text">{new Date(pacienteData.fechaNac).toLocaleDateString("es-AR")}</span></div>
+            <div><span className="text-muted">Nac.:</span> <span className="text-text">{formatDate(pacienteData.fechaNac)}</span></div>
             <div><span className="text-muted">Edad:</span> <span className="text-text">{pacienteData.fechaNac ? calcularEdad(pacienteData.fechaNac) : "—"} años</span></div>
             <div><span className="text-muted">CUIL:</span> <span className="text-text">{pacienteData.cuil || "—"}</span></div>
             <div><span className="text-muted">Grupo sanguíneo:</span> <span className="text-text font-medium">{pacienteData.grupoSangre || "—"}</span></div>
