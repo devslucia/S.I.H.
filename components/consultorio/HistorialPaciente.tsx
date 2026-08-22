@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import {History, ChevronDown, ChevronRight, Scissors} from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { formatDate } from "@/lib/utils";
 
 interface EpisodioHistorial {
   id: string;
@@ -27,10 +28,6 @@ interface EpisodioHistorial {
   internacion?: {
     cirugias: { procedimiento?: string | null; diagnosticoPreop?: string | null; estado: string }[];
   } | null;
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 function EpisodioCard({ ep }: { ep: EpisodioHistorial }) {

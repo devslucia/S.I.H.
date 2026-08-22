@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { User, AlertTriangle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PrimaryActionBar } from "@/components/ui/PrimaryActionBar";
 
@@ -122,7 +122,7 @@ export function CamaDetailPanel({
             {cama.internacionFechaIngreso && (
               <>
                 <span>Ingreso:</span>
-                <span className="text-text">{new Date(cama.internacionFechaIngreso).toLocaleDateString("es-AR")}</span>
+                <span className="text-text">{formatDate(cama.internacionFechaIngreso)}</span>
               </>
             )}
           </div>
