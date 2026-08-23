@@ -18,7 +18,10 @@ export function formatDate(value: Date | string | null | undefined): string {
 
 export function formatDateTime(value: Date | string | null | undefined): string {
   if (!value) return "—";
-  const d = typeof value === "string" ? parseFechaSoloDia(value.slice(0, 10)) : value;
+  if (typeof value === "string" && !value.includes("T")) {
+    return formatDate(value);
+  }
+  const d = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(d.getTime())) return "—";
   const dd = String(d.getDate()).padStart(2, "0");
   const mm = String(d.getMonth() + 1).padStart(2, "0");

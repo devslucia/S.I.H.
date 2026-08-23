@@ -583,7 +583,7 @@ export default function AdmisionPage() {
           </div>
 
           {/* ── Columna camas ── */}
-          <div className="lg:col-span-2 border border-border rounded-lg bg-surface p-4 space-y-4 sticky top-20">
+          <div className="lg:col-span-2 border border-border rounded-lg bg-surface p-4 space-y-4 lg:sticky lg:top-20">
             <div className="flex items-baseline justify-between">
               <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted">Disponibilidad de camas</h2>
               <StatusBadge tone={libres > 0 ? "success" : "danger"} label={`${libres} libres`} />
@@ -598,14 +598,14 @@ export default function AdmisionPage() {
           <BackToDesk onClick={backToDesk} />
 
           <div className="border border-border rounded-lg bg-surface p-5">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
                 <div className="w-12 h-12 rounded-full bg-brand-soft flex items-center justify-center text-brand font-medium text-lg shrink-0">
                   {selectedPaciente.nombre[0]}{selectedPaciente.apellido[0]}
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-xl font-medium text-text truncate">{selectedPaciente.apellido}, {selectedPaciente.nombre}</h2>
-                  <p className="text-muted text-sm">
+                  <p className="text-muted text-sm break-words">
                     DNI: {selectedPaciente.dni} | {selectedPaciente.sexo} | {selectedPaciente.telefono || "—"}
                   </p>
                   {selectedPaciente.domicilio && (
@@ -613,7 +613,7 @@ export default function AdmisionPage() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
                 {selectedPaciente.alergias && selectedPaciente.alergias.length > 0 && (
                   <Badge variant="error" className="flex items-center gap-1 whitespace-nowrap">
                     <AlertTriangle size={12} /> {selectedPaciente.alergias.length} alergia(s)

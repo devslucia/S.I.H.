@@ -68,8 +68,8 @@ async function main() {
   await prisma.galenoObraSocial.deleteMany();
   await prisma.convenio.deleteMany();
   await prisma.obraSocial.deleteMany();
-  await prisma.nomencladorItem.deleteMany();
-  await prisma.cama.deleteMany();
+   // await prisma.nomencladorItem.deleteMany(); // PROTEGIDO: No borrar nomenclador en seed demo
+   await prisma.cama.deleteMany();
   await prisma.sector.deleteMany();
   await prisma.stockItem.deleteMany();
   await prisma.quirofano.deleteMany();
