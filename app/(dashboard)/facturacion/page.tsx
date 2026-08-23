@@ -377,23 +377,21 @@ function RubroDetalle({
   const esHon = rubroId === "HON";
   const esGas = rubroId === "GAS";
 
-  const FUNCIONES = esMed || esGas
-    ? esGas
+  const FUNCIONES = esMed
+    ? [
+        { id: "stock", label: "Stock — Medicamento" },
+      ]
+    : esGas
       ? [
           { id: "60", label: "60 — Nomenclador × gastos" },
           { id: "92", label: "92 — Importe manual" },
         ]
       : [
-          { id: "stock", label: "Stock — Medicamento" },
-          { id: "60", label: "60 — Valor × galeno" },
-          { id: "92", label: "92 — Importe manual" },
-        ]
-    : [
-        { id: "10", label: "10 — Especialista (cirujano) × galenoQx" },
-        { id: "20", label: "20 — Ayudante × galenoQx" },
-        { id: "30", label: "30 — Anestesista × galenoQx" },
-        { id: "91", label: "91 — Manual" },
-      ];
+          { id: "10", label: "10 — Especialista (cirujano) × galenoQx" },
+          { id: "20", label: "20 — Ayudante × galenoQx" },
+          { id: "30", label: "30 — Anestesista × galenoQx" },
+          { id: "91", label: "91 — Manual" },
+        ];
 
   const [formAbierto, setFormAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -477,7 +475,7 @@ function RubroDetalle({
   }, [esGas, esHon, obraSocialId, busqueda]);
 
   useEffect(() => {
-    if (!esMed || !busqueda.trim()) {
+    if (!esMed || !stockBusqueda.trim()) {
       setStockResultados([]);
       return;
     }
@@ -678,7 +676,7 @@ function RubroDetalle({
     return (
       <div className="py-10 text-center space-y-3">
         <p className="text-[13px] text-muted">
-          Sin ítems de {rubro?.descripcion.toLowerCase() ?? rubroId} en el período.
+          {esMed ? "Sin medicamentos en el período" : `Sin ítems de ${rubro?.descripcion.toLowerCase() ?? rubroId} en el período.`}
         </p>
         {(esMed || esHon || esGas) && (
           <button onClick={abrirNuevo} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
@@ -716,21 +714,23 @@ function RubroDetalle({
               Cancelar
             </button>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {FUNCIONES.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFuncion(f.id)}
-                className={cn(
-                  "border rounded-md px-3 py-2 text-[13px] transition-colors",
-                  funcion === f.id ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:text-text"
-                )}
-              >
-                <span className="font-mono">{f.label.split(" — ")[0]}</span>
-                <span className="ml-1">— {f.label.split(" — ")[1]}</span>
-              </button>
-            ))}
-          </div>
+          {!esMed && (
+            <div className="flex gap-2 flex-wrap">
+              {FUNCIONES.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setFuncion(f.id)}
+                  className={cn(
+                    "border rounded-md px-3 py-2 text-[13px] transition-colors",
+                    funcion === f.id ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:text-text"
+                  )}
+                >
+                  <span className="font-mono">{f.label.split(" — ")[0]}</span>
+                  <span className="ml-1">— {f.label.split(" — ")[1]}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {esMed && funcion === "stock" ? (
               <>
