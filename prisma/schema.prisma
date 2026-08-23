@@ -1054,6 +1054,7 @@ model StockItem {
   vencimiento         DateTime?
   ubicacion           String?
   nomencladorCodigo   String?
+  codAlfabeta         String?
   precioCompra        Decimal?
   precioVenta         Decimal?
   fraccion            Int?
@@ -1067,6 +1068,8 @@ model StockItem {
   cargosFacturacion   CargoFacturacion[]
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
+
+  @@unique([nTroquel])
 }
 
 model MovimientoStock {
