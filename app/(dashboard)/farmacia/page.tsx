@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { AlertTriangle, Plus, ArrowUpDown, Trash2, Search, Pencil } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { AlertTriangle, Plus, ArrowUpDown, Trash2, Search, Pencil, Upload } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { OpsStat } from "@/components/ui/OpsStat";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
 import { formatDate } from "@/lib/utils";
 import { calcularPreciosUnitarios, formatearPrecio } from "@/lib/precios";
-import { matchesStockItem } from "@/lib/stock-item";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface StockItem {
   id: string;
@@ -220,6 +220,15 @@ export default function FarmaciaPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [selectedItem, setSelectedItem] = useState<StockItem | null>(null);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 400);
+  const [page, setPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const PAGE_SIZE = 50;
+  const [stats, setStats] = useState({ totalActivos: 0, stockBajo: 0, porVencer: 0, unidades: 0 });
+  const [importModal, setImportModal] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResultado, setImportResultado] = useState<{ procesados: number; creados: number; actualizados: number; omitidos: number; errores: string[] } | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const [movForm, setMovForm] = useState({ tipo: "INGRESO", cantidad: "1", motivo: "" });
   const [createForm, setCreateForm] = useState<FormState>({ ...FORM_INICIAL });
   const [editForm, setEditForm] = useState<FormState>({ ...FORM_INICIAL });
@@ -227,11 +236,25 @@ export default function FarmaciaPage() {
   const [saving, setSaving] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
 
-  const fetchStock = async () => {
+  const fetchStock = async (opts?: { page?: number; search?: string }) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/farmacia/stock");
-      if (res.ok) { const d = await res.json(); setStock(Array.isArray(d) ? d : []); }
+      const p = opts?.page ?? page;
+      const q = opts?.search ?? debouncedSearch;
+      const params = new URLSearchParams({ page: String(p), pageSize: String(PAGE_SIZE) });
+      if (q.trim()) params.set("search", q.trim());
+      const res = await fetch(`/api/farmacia/stock?${params.toString()}`);
+      if (res.ok) {
+        const d = await res.json();
+        if (Array.isArray(d)) {
+          setStock(d);
+          setTotalItems(d.length);
+        } else {
+          setStock(d.items ?? []);
+          setTotalItems(d.total ?? 0);
+          if (d.stats) setStats(d.stats);
+        }
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -240,9 +263,44 @@ export default function FarmaciaPage() {
   };
 
   useEffect(() => {
-    fetchStock();
+    fetchStock({ page: 1, search: "" });
     fetch("/api/auth/session").then(r => r.json()).then(d => setUserRole(d?.user?.rol || "")).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    fetchStock({ page: 1, search: debouncedSearch });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
+  const cambiarPagina = (nueva: number) => {
+    setPage(nueva);
+    fetchStock({ page: nueva });
+  };
+
+  const handleImportFile = async (file?: File | null) => {
+    if (!file) return;
+    setImporting(true);
+    setImportResultado(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/farmacia/stock/import", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setImportResultado(data);
+        setPage(1);
+        fetchStock({ page: 1, search: "" });
+      } else {
+        setImportResultado({ procesados: 0, creados: 0, actualizados: 0, omitidos: 0, errores: [data?.error || "Error al importar"] });
+      }
+    } catch {
+      setImportResultado({ procesados: 0, creados: 0, actualizados: 0, omitidos: 0, errores: ["Error de conexión al importar"] });
+    } finally {
+      setImporting(false);
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
+  };
 
   const openMovement = (item: StockItem) => {
     setSelectedItem(item);
@@ -365,15 +423,7 @@ export default function FarmaciaPage() {
     }
   };
 
-  const filtrados = useMemo(() => {
-    const q = search.trim();
-    if (!q) return stock;
-    return stock.filter((i) => matchesStockItem(i, q));
-  }, [stock, search]);
-
-  const stockBajo = stock.filter((i) => Number(i.stockActual) <= Number(i.stockMinimo)).length;
-  const porVencer = stock.filter((i) => fechaProximaVencimiento(i.vencimiento)).length;
-  const unidades = stock.reduce((acc, i) => acc + Number(i.stockActual), 0);
+  const totalPaginas = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
 
   return (
     <div className="space-y-7">
@@ -382,19 +432,35 @@ export default function FarmaciaPage() {
         title="Stock de farmacia"
         description="Medicamentos, presentaciones y movimientos de stock. El rol FARMACIA opera el inventario; ADMIN administra el alta de ítems."
         actions={
-          userRole === "ADMIN" && (
-            <button onClick={() => setCreateModal(true)} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
-              <Plus size={15} /> Nuevo medicamento
-            </button>
-          )
+          <div className="flex items-center gap-2 flex-wrap">
+            {(userRole === "ADMIN" || userRole === "FARMACIA") && (
+              <>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept=".xls,.xlsx"
+                  className="hidden"
+                  onChange={(e) => handleImportFile(e.target.files?.[0])}
+                />
+                <button onClick={() => { setImportResultado(null); setImportModal(true); }} className="btn-secondary inline-flex items-center gap-1.5 text-[13px]">
+                  <Upload size={15} /> Importar listado
+                </button>
+              </>
+            )}
+            {userRole === "ADMIN" && (
+              <button onClick={() => setCreateModal(true)} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
+                <Plus size={15} /> Nuevo medicamento
+              </button>
+            )}
+          </div>
         }
       />
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-5">
-        <OpsStat label="Ítems" value={stock.length} sub="Medicamentos y presentaciones" tone="info" />
-        <OpsStat label="Stock bajo" value={stockBajo} sub="En o por debajo del mínimo" tone={stockBajo > 0 ? "warning" : "neutral"} />
-        <OpsStat label="Por vencer" value={porVencer} sub="Vencimiento en 30 días" tone={porVencer > 0 ? "danger" : "neutral"} />
-        <OpsStat label="Unidades" value={unidades} sub="Stock acumulado" tone="neutral" />
+        <OpsStat label="Ítems" value={stats.totalActivos} sub="Medicamentos y presentaciones" tone="info" />
+        <OpsStat label="Stock bajo" value={stats.stockBajo} sub="En o por debajo del mínimo" tone={stats.stockBajo > 0 ? "warning" : "neutral"} />
+        <OpsStat label="Por vencer" value={stats.porVencer} sub="Vencimiento en 30 días" tone={stats.porVencer > 0 ? "danger" : "neutral"} />
+        <OpsStat label="Unidades" value={stats.unidades} sub="Stock acumulado" tone="neutral" />
       </section>
 
       <div className="flex justify-end">
@@ -414,7 +480,7 @@ export default function FarmaciaPage() {
           <div className="skeleton h-12" />
           <div className="skeleton h-48" />
         </div>
-      ) : filtrados.length === 0 ? (
+      ) : stock.length === 0 ? (
         <div className="border border-dashed border-border rounded-lg py-12 text-center">
           <p className="text-[13px] text-muted">
             {search ? "Ningún ítem coincide con la búsqueda." : "Sin medicamentos registrados."}
@@ -437,7 +503,7 @@ export default function FarmaciaPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtrados.map((item) => {
+                {stock.map((item) => {
                   const isLow = Number(item.stockActual) <= Number(item.stockMinimo);
                   const proximoVencimiento = fechaProximaVencimiento(item.vencimiento);
                   return (
@@ -519,6 +585,62 @@ export default function FarmaciaPage() {
           </div>
         </div>
       )}
+
+      {totalPaginas > 1 && (
+        <div className="flex items-center justify-between text-[12px] text-muted">
+          <span>
+            Página {page} de {totalPaginas} · {totalItems} ítems
+          </span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => cambiarPagina(page - 1)} disabled={page <= 1 || loading} className="btn-secondary text-[12px] px-3 py-1 disabled:opacity-40">
+              ‹ Anterior
+            </button>
+            <button onClick={() => cambiarPagina(page + 1)} disabled={page >= totalPaginas || loading} className="btn-secondary text-[12px] px-3 py-1 disabled:opacity-40">
+              Siguiente ›
+            </button>
+          </div>
+        </div>
+      )}
+
+      <Modal open={importModal} onClose={() => !importing && setImportModal(false)} title="Importar listado Alfabeta">
+        <div className="space-y-4">
+          {importResultado ? (
+            <div className="space-y-3">
+              <p className="text-[13px] text-text">Importación finalizada.</p>
+              <ul className="text-[13px] space-y-1">
+                <li>Procesados: <strong>{importResultado.procesados}</strong></li>
+                <li>Creados: <strong className="text-success">{importResultado.creados}</strong></li>
+                <li>Actualizados: <strong className="text-info">{importResultado.actualizados}</strong></li>
+                <li>Omitidos: <strong className="text-warning">{importResultado.omitidos}</strong></li>
+              </ul>
+              {importResultado.errores.length > 0 && (
+                <details className="text-[12px] text-muted">
+                  <summary className="cursor-pointer">Ver errores ({importResultado.errores.length})</summary>
+                  <ul className="mt-1 space-y-0.5 max-h-40 overflow-y-auto">
+                    {importResultado.errores.map((e, i) => <li key={i}>· {e}</li>)}
+                  </ul>
+                </details>
+              )}
+            </div>
+          ) : (
+            <>
+              <p className="text-[13px] text-muted">
+                Cargue el archivo .xls/.xlsx del listado (Alfabeta). El sistema actualiza precios y datos
+                por <strong className="text-text">troquel</strong>, agrega los medicamentos nuevos y
+                no elimina los ítems que no figuren en el archivo.
+              </p>
+              <button onClick={() => importInputRef.current?.click()} disabled={importing} className="btn-primary w-full text-[13px] inline-flex items-center justify-center gap-1.5">
+                <Upload size={15} /> {importing ? "Importando…" : "Seleccionar archivo…"}
+              </button>
+            </>
+          )}
+          <div className="flex justify-end pt-1">
+            <button type="button" onClick={() => setImportModal(false)} disabled={importing} className="btn-secondary text-[13px]">
+              {importResultado ? "Cerrar" : "Cancelar"}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal open={movementModal} onClose={() => setMovementModal(false)} title={`Movimiento · ${selectedItem?.nombre || ""}`}>
         <form onSubmit={handleMovement} className="space-y-4">
