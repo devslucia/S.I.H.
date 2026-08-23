@@ -29,13 +29,13 @@ export function PrimaryActionBar({
   className,
 }: PrimaryActionBarProps) {
   return (
-    <div className={cn("flex items-center justify-end gap-2 pt-4 border-t border-border", className)}>
+    <div className={cn("flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 pt-4 border-t border-border", className)}>
       {onCancel && (
         <button
           type="button"
           onClick={onCancel}
           disabled={cancelDisabled}
-          className="btn-secondary disabled:opacity-50"
+          className="btn-secondary disabled:opacity-50 w-full sm:w-auto"
         >
           {cancelLabel}
         </button>
@@ -44,7 +44,7 @@ export function PrimaryActionBar({
         type="submit"
         onClick={onConfirm}
         disabled={confirmDisabled || confirmLoading}
-        className="btn-primary disabled:opacity-50"
+        className="btn-primary disabled:opacity-50 w-full sm:w-auto"
       >
         {confirmLoading ? "Procesando…" : confirmLabel}
       </button>

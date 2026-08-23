@@ -156,7 +156,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
           <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted mb-4">Evolución Postoperatoria Inmediata</h3>
           <VoiceTextarea value={formData?.evolucionPostInt || ""} onChange={(v) => update("evolucionPostInt", v)}
             disabled={disabledEvolucion} rows={12}
-            placeholder={`[${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}]\nEscriba la evolución aquí...`} />
+            placeholder={`[${formatDateTime(new Date())}]\nEscriba la evolución aquí...`} />
         </div>
       )}
 
