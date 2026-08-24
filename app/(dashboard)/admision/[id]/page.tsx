@@ -49,7 +49,11 @@ interface Medico { id: string; nombre: string; matricula?: string | null }
 
 const estadoBadge: Record<string, { tone: "success" | "warning" | "info" | "danger" | "neutral"; label: string }> = {
   ACTIVA: { tone: "success", label: "Activa" },
+  EN_QUIROFANO: { tone: "warning", label: "En quirófano" },
+  POSTQUIRURGICO: { tone: "warning", label: "Post quirúrgico" },
   ALTA_MEDICA: { tone: "info", label: "Alta médica" },
+  ALTA_ENFERMERIA: { tone: "info", label: "Alta enfermería" },
+  ALTA_ADMINISTRATIVA: { tone: "neutral", label: "Alta administrativa" },
   FACTURADA: { tone: "neutral", label: "Facturada" },
   FALLECIDO: { tone: "danger", label: "Fallecido" },
 };

@@ -96,7 +96,12 @@ interface Liquidacion {
   internacionId: string;
   internacion: {
     numero: number;
+    estado: string;
     fechaIngreso: string;
+    fechaEgreso?: string | null;
+    altaMedicaAt?: string | null;
+    altaEnfermeriaAt?: string | null;
+    altaAdministrativaAt?: string | null;
     paciente: { apellido: string; nombre: string; dni: string } | null;
     obraSocial: { id: string; nombre: string; sigla: string } | null;
   };
@@ -123,6 +128,16 @@ const LABEL_ESTADO: Record<string, { label: string; tone: "success" | "warning" 
   FACTURADO: { label: "Facturado", tone: "success" },
 };
 
+const LABEL_ESTADO_INT: Record<string, { label: string; tone: "success" | "warning" | "info" | "neutral" }> = {
+  ACTIVA: { label: "Activa", tone: "success" },
+  EN_QUIROFANO: { label: "En quirófano", tone: "warning" },
+  POSTQUIRURGICO: { label: "Post quirúrgico", tone: "warning" },
+  ALTA_MEDICA: { label: "Alta médica", tone: "info" },
+  ALTA_ENFERMERIA: { label: "Alta enfermería", tone: "info" },
+  ALTA_ADMINISTRATIVA: { label: "Alta administrativa", tone: "neutral" },
+  FACTURADA: { label: "Facturada", tone: "neutral" },
+};
+
 export default function FacturacionPage() {
   const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,6 +151,7 @@ export default function FacturacionPage() {
   });
   const [q, setQ] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
+  const [estadoIntFiltro, setEstadoIntFiltro] = useState("");
   const [applied, setApplied] = useState<Record<string, string>>({});
 
   const [expandedPaciente, setExpandedPaciente] = useState<string | null>(null);
@@ -164,6 +180,7 @@ export default function FacturacionPage() {
       if (applied.os) params.set("obraSocialId", applied.os);
       if (applied.q) params.set("q", applied.q);
       if (applied.estado) params.set("estado", applied.estado);
+      if (applied.estadoInt) params.set("estadoInternacion", applied.estadoInt);
       const res = await fetch(`/api/facturacion/liquidaciones?${params}`);
       if (!res.ok) throw new Error("No autorizado");
       const d = await res.json();
@@ -182,7 +199,7 @@ export default function FacturacionPage() {
   }, [cargarObras, fetchLiquidaciones]);
 
   const aplicar = () => {
-    setApplied({ os: osSel, mes, q: q.trim(), estado: estadoFiltro });
+    setApplied({ os: osSel, mes, q: q.trim(), estado: estadoFiltro, estadoInt: estadoIntFiltro });
     setExpandedPaciente(null);
     setRubroAbierto(null);
   };
@@ -227,7 +244,7 @@ export default function FacturacionPage() {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Estado</label>
+            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Estado cargos</label>
             <select
               value={estadoFiltro}
               onChange={(e) => setEstadoFiltro(e.target.value)}
@@ -237,6 +254,19 @@ export default function FacturacionPage() {
               <option value="PENDIENTE">Pendiente</option>
               <option value="PARCIAL">Parcial</option>
               <option value="FACTURADO">Facturado</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Estado internación</label>
+            <select
+              value={estadoIntFiltro}
+              onChange={(e) => setEstadoIntFiltro(e.target.value)}
+              className="border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
+            >
+              <option value="">Todas</option>
+              <option value="activa">Internadas activas</option>
+              <option value="en_alta">En proceso de alta</option>
+              <option value="egresada">Egresadas / Facturadas</option>
             </select>
           </div>
           <div className="relative flex-1 min-w-[220px]">
@@ -296,6 +326,7 @@ export default function FacturacionPage() {
                       </p>
                       <p className="text-[12px] font-mono text-muted mt-0.5">
                         DNI {liq.internacion?.paciente?.dni || "—"} · Internación #{liq.internacion?.numero || "?"} · Ingreso {formatDate(liq.internacion?.fechaIngreso || "")}
+                        {liq.internacion?.fechaEgreso && <span className="ml-2">· Egreso {formatDate(liq.internacion.fechaEgreso)}</span>}
                         {liq.internacion?.obraSocial && (
                           <span className="ml-2">OS · {liq.internacion.obraSocial.sigla || liq.internacion.obraSocial.nombre}</span>
                         )}
@@ -305,10 +336,17 @@ export default function FacturacionPage() {
                   </div>
                   <div className="text-right shrink-0 ml-3">
                     <p className="text-[15px] font-medium text-text tabular-nums">{money(liq.totalCargos)}</p>
-                    <div className="mt-1">
+                    <div className="mt-1 flex items-center gap-1.5 justify-end flex-wrap">
+                      {liq.internacion?.estado && LABEL_ESTADO_INT[liq.internacion.estado] && (
+                        <StatusBadge
+                          tone={LABEL_ESTADO_INT[liq.internacion.estado].tone as "success" | "warning" | "info" | "neutral"}
+                          label={LABEL_ESTADO_INT[liq.internacion.estado].label}
+                        />
+                      )}
                       <StatusBadge tone={est.tone} label={est.label} dot={liq.estado !== "FACTURADO"} />
                     </div>
                   </div>
+
                 </button>
 
                 {abierto && (
@@ -379,19 +417,19 @@ function RubroDetalle({
 
   const FUNCIONES = esMed
     ? [
-        { id: "stock", label: "Stock — Medicamento" },
-      ]
+      { id: "stock", label: "Stock — Medicamento" },
+    ]
     : esGas
       ? [
-          { id: "60", label: "60 — Nomenclador × gastos" },
-          { id: "92", label: "92 — Importe manual" },
-        ]
+        { id: "60", label: "60 — Nomenclador × gastos" },
+        { id: "92", label: "92 — Importe manual" },
+      ]
       : [
-          { id: "10", label: "10 — Especialista (cirujano) × galenoQx" },
-          { id: "20", label: "20 — Ayudante × galenoQx" },
-          { id: "30", label: "30 — Anestesista × galenoQx" },
-          { id: "91", label: "91 — Manual" },
-        ];
+        { id: "10", label: "10 — Especialista (cirujano) × galenoQx" },
+        { id: "20", label: "20 — Ayudante × galenoQx" },
+        { id: "30", label: "30 — Anestesista × galenoQx" },
+        { id: "91", label: "91 — Manual" },
+      ];
 
   const [formAbierto, setFormAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -442,7 +480,7 @@ function RubroDetalle({
         setIndiceVigente(indice !== null && indice !== undefined ? Number(indice) : null);
         setGalenoLabel(vigente ? `${vigente.obraSocial.sigla} · vig ${vigente.vigenciaDesde}` : "");
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       vivo = false;
     };
@@ -547,7 +585,7 @@ function RubroDetalle({
             setPracticaSel({ codigo: hit.codigo, descripcion: hit.descripcion, uEspecialista: hit.uEspecialista, uAyudantes: hit.uAyudantes, uAnestesista: hit.uAnestesista, gastos: hit.gastos, fijos: hit.fijos, importes: hit.importes });
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
     if (esMed && c.stockItemId) {
       setStockItemSel({
@@ -824,275 +862,275 @@ function RubroDetalle({
               </>
             ) : (
               <>
-            {(!(esGas || esHon) || funcion === "92" || funcion === "91") && funcion !== "stock" && (
-              <label className="block md:col-span-3">
-                <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Concepto</span>
-                <input
-                  value={concepto}
-                  onChange={(e) => setConcepto(e.target.value)}
-                  placeholder="Ej: Amoxicilina 500 mg"
-                  className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
-                />
-              </label>
-            )}
-            {(esGas || esHon) && esFormula ? (
-              <>
-                <div className="block md:col-span-3">
-                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">
-                    Práctica del nomenclador {practicaSel && <span className="text-success">· elegida ✓</span>}
-                  </span>
-                  {practicaSel ? (
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono">
-                        <span className="text-brand font-semibold">{practicaSel.codigo}</span>
-                        <span className="text-text"> · {practicaSel.descripcion}</span>
-                        {esGas ? (
-                          <span className="text-muted">
-                            {" "}
-                            · Gastos {practicaSel.gastos === null ? "—" : practicaSel.gastos}
-                            {practicaSel.importes?.gastos.importe !== null && practicaSel.importes?.gastos.importe !== undefined && (
-                              <span className={cn("ml-2", practicaSel.importes.gastos.origen === "FIJO" ? "text-success" : "text-brand")}>
-                                · ${money(practicaSel.importes.gastos.importe)} {practicaSel.importes.gastos.origen === "FIJO" ? "(fijo)" : "(calc)"}
+                {(!(esGas || esHon) || funcion === "92" || funcion === "91") && funcion !== "stock" && (
+                  <label className="block md:col-span-3">
+                    <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Concepto</span>
+                    <input
+                      value={concepto}
+                      onChange={(e) => setConcepto(e.target.value)}
+                      placeholder="Ej: Amoxicilina 500 mg"
+                      className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
+                    />
+                  </label>
+                )}
+                {(esGas || esHon) && esFormula ? (
+                  <>
+                    <div className="block md:col-span-3">
+                      <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">
+                        Práctica del nomenclador {practicaSel && <span className="text-success">· elegida ✓</span>}
+                      </span>
+                      {practicaSel ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono">
+                            <span className="text-brand font-semibold">{practicaSel.codigo}</span>
+                            <span className="text-text"> · {practicaSel.descripcion}</span>
+                            {esGas ? (
+                              <span className="text-muted">
+                                {" "}
+                                · Gastos {practicaSel.gastos === null ? "—" : practicaSel.gastos}
+                                {practicaSel.importes?.gastos.importe !== null && practicaSel.importes?.gastos.importe !== undefined && (
+                                  <span className={cn("ml-2", practicaSel.importes.gastos.origen === "FIJO" ? "text-success" : "text-brand")}>
+                                    · ${money(practicaSel.importes.gastos.importe)} {practicaSel.importes.gastos.origen === "FIJO" ? "(fijo)" : "(calc)"}
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-muted">
+                                {" "}
+                                · U. {funcion === "10" ? "Esp" : funcion === "20" ? "Ayud" : "Anest"}{" "}
+                                {(funcion === "10" ? practicaSel.uEspecialista : funcion === "20" ? practicaSel.uAyudantes : practicaSel.uAnestesista) === null
+                                  ? "—"
+                                  : (funcion === "10" ? practicaSel.uEspecialista : funcion === "20" ? practicaSel.uAyudantes : practicaSel.uAnestesista)}
+                                {practicaSel.importes && rubroFormula && (
+                                  <span className={cn("ml-2", practicaSel.importes[rubroFormula].origen === "FIJO" ? "text-success" : "text-brand")}>
+                                    · ${money(practicaSel.importes[rubroFormula].importe ?? 0)}{" "}
+                                    {practicaSel.importes[rubroFormula].origen === "FIJO" ? "(fijo)" : "(calc)"}
+                                  </span>
+                                )}
                               </span>
                             )}
-                          </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setPracticaSel(null);
+                              setBusqueda("");
+                            }}
+                            className="px-2 py-2 text-[12px] text-muted hover:text-brand transition-colors rounded-md border border-border"
+                          >
+                            Cambiar
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <input
+                            value={busqueda}
+                            onChange={(e) => {
+                              setBusqueda(e.target.value);
+                              setBusquedaAbierta(true);
+                            }}
+                            onFocus={() => setBusquedaAbierta(true)}
+                            onBlur={() => setTimeout(() => setBusquedaAbierta(false), 150)}
+                            placeholder="Código o descripción (ej: 01.01.01, tomografía)…"
+                            className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
+                          />
+                          {busquedaAbierta && busqueda.trim() && (
+                            <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto border border-border rounded-md bg-surface shadow-sm">
+                              {buscando ? (
+                                <div className="px-3 py-2 text-[12px] text-muted">Buscando…</div>
+                              ) : resultados.length === 0 ? (
+                                <div className="px-3 py-2 text-[12px] text-muted">Sin resultados</div>
+                              ) : (
+                                resultados.map((r) => (
+                                  <button
+                                    key={`${r.origen}-${r.codigo}`}
+                                    onMouseDown={() => {
+                                      setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, uAnestesista: r.uAnestesista, gastos: r.gastos, fijos: r.fijos, importes: r.importes });
+                                      setBusqueda("");
+                                      setBusquedaAbierta(false);
+                                    }}
+                                    className="w-full text-left px-3 py-2 hover:bg-surface-hover transition-colors border-b border-border/30 last:border-0"
+                                  >
+                                    <span className="font-mono text-[12px] text-brand">{r.codigo}</span>
+                                    <span className="text-[13px] text-text ml-2">{r.descripcion}</span>
+                                    {esGas ? (
+                                      <span className="text-[11px] text-muted ml-2">
+                                        Gastos: {r.gastos === null ? "—" : r.gastos} ·{" "}
+                                        <span className="font-mono">
+                                          ${r.importes.gastos.importe === null ? "—" : money(r.importes.gastos.importe)}
+                                        </span>{" "}
+                                        {r.importes.gastos.origen && (
+                                          <span className={cn("font-mono", r.importes.gastos.origen === "FIJO" ? "text-success" : "text-muted")}>
+                                            {r.importes.gastos.origen === "FIJO" ? "FIJO" : "CALC"}
+                                          </span>
+                                        )}
+                                      </span>
+                                    ) : (
+                                      <span className="text-[11px] text-muted ml-2">
+                                        Esp {r.uEspecialista === null ? "—" : r.uEspecialista} · Ayud {r.uAyudantes === null ? "—" : r.uAyudantes} · Anest {r.uAnestesista === null ? "—" : r.uAnestesista} ·{" "}
+                                        <span className="font-mono">
+                                          ${r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].importe === null ? "—" : money(r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].importe ?? 0)}
+                                        </span>{" "}
+                                        {r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].origen && (
+                                          <span className={cn("font-mono", r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].origen === "FIJO" ? "text-success" : "text-muted")}>
+                                            {r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].origen === "FIJO" ? "FIJO" : "CALC"}
+                                          </span>
+                                        )}
+                                      </span>
+                                    )}
+                                    <span className="float-right text-[10px] font-mono uppercase tracking-wider text-muted mt-1">
+                                      {r.origen === "COPIA_OS" ? "Copia OS" : r.origen === "ESPECIFICA" ? "Específica" : "Nacional"}
+                                    </span>
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="block">
+                      <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">
+                        {esGas ? "Gastos Qx vigente" : "Galeno Qx vigente"}
+                      </span>
+                      <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border">
+                        {indiceVigente === null ? (
+                          <span className="text-warning">Sin índice configurado (Configuración → Galenos)</span>
                         ) : (
-                          <span className="text-muted">
-                            {" "}
-                            · U. {funcion === "10" ? "Esp" : funcion === "20" ? "Ayud" : "Anest"}{" "}
-                            {(funcion === "10" ? practicaSel.uEspecialista : funcion === "20" ? practicaSel.uAyudantes : practicaSel.uAnestesista) === null
-                              ? "—"
-                              : (funcion === "10" ? practicaSel.uEspecialista : funcion === "20" ? practicaSel.uAyudantes : practicaSel.uAnestesista)}
-                            {practicaSel.importes && rubroFormula && (
-                              <span className={cn("ml-2", practicaSel.importes[rubroFormula].origen === "FIJO" ? "text-success" : "text-brand")}>
-                                · ${money(practicaSel.importes[rubroFormula].importe ?? 0)}{" "}
-                                {practicaSel.importes[rubroFormula].origen === "FIJO" ? "(fijo)" : "(calc)"}
-                              </span>
-                            )}
+                          <span className="text-text">
+                            ${toMoney(indiceVigente)}
+                            {galenoLabel && <span className="text-muted"> · {galenoLabel}</span>}
                           </span>
                         )}
                       </div>
-                      <button
-                        onClick={() => {
-                          setPracticaSel(null);
-                          setBusqueda("");
-                        }}
-                        className="px-2 py-2 text-[12px] text-muted hover:text-brand transition-colors rounded-md border border-border"
-                      >
-                        Cambiar
-                      </button>
                     </div>
-                  ) : (
-                    <div className="relative">
-                      <input
-                        value={busqueda}
-                        onChange={(e) => {
-                          setBusqueda(e.target.value);
-                          setBusquedaAbierta(true);
-                        }}
-                        onFocus={() => setBusquedaAbierta(true)}
-                        onBlur={() => setTimeout(() => setBusquedaAbierta(false), 150)}
-                        placeholder="Código o descripción (ej: 01.01.01, tomografía)…"
-                        className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
-                      />
-                      {busquedaAbierta && busqueda.trim() && (
-                        <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto border border-border rounded-md bg-surface shadow-sm">
-                          {buscando ? (
-                            <div className="px-3 py-2 text-[12px] text-muted">Buscando…</div>
-                          ) : resultados.length === 0 ? (
-                            <div className="px-3 py-2 text-[12px] text-muted">Sin resultados</div>
-                          ) : (
-                            resultados.map((r) => (
-                              <button
-                                key={`${r.origen}-${r.codigo}`}
-                                onMouseDown={() => {
-                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, uAnestesista: r.uAnestesista, gastos: r.gastos, fijos: r.fijos, importes: r.importes });
-                                  setBusqueda("");
-                                  setBusquedaAbierta(false);
-                                }}
-                                className="w-full text-left px-3 py-2 hover:bg-surface-hover transition-colors border-b border-border/30 last:border-0"
-                              >
-                                <span className="font-mono text-[12px] text-brand">{r.codigo}</span>
-                                <span className="text-[13px] text-text ml-2">{r.descripcion}</span>
-                                {esGas ? (
-                                  <span className="text-[11px] text-muted ml-2">
-                                    Gastos: {r.gastos === null ? "—" : r.gastos} ·{" "}
-                                    <span className="font-mono">
-                                      ${r.importes.gastos.importe === null ? "—" : money(r.importes.gastos.importe)}
-                                    </span>{" "}
-                                    {r.importes.gastos.origen && (
-                                      <span className={cn("font-mono", r.importes.gastos.origen === "FIJO" ? "text-success" : "text-muted")}>
-                                        {r.importes.gastos.origen === "FIJO" ? "FIJO" : "CALC"}
-                                      </span>
-                                    )}
-                                  </span>
-                                ) : (
-                                  <span className="text-[11px] text-muted ml-2">
-                                    Esp {r.uEspecialista === null ? "—" : r.uEspecialista} · Ayud {r.uAyudantes === null ? "—" : r.uAyudantes} · Anest {r.uAnestesista === null ? "—" : r.uAnestesista} ·{" "}
-                                    <span className="font-mono">
-                                      ${r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].importe === null ? "—" : money(r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].importe ?? 0)}
-                                    </span>{" "}
-                                    {r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].origen && (
-                                      <span className={cn("font-mono", r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].origen === "FIJO" ? "text-success" : "text-muted")}>
-                                        {r.importes[rubroFormula === "especialista" ? "especialista" : rubroFormula === "ayudante" ? "ayudante" : "anestesista"].origen === "FIJO" ? "FIJO" : "CALC"}
-                                      </span>
-                                    )}
-                                  </span>
-                                )}
-                                <span className="float-right text-[10px] font-mono uppercase tracking-wider text-muted mt-1">
-                                  {r.origen === "COPIA_OS" ? "Copia OS" : r.origen === "ESPECIFICA" ? "Específica" : "Nacional"}
-                                </span>
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="block">
-                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">
-                    {esGas ? "Gastos Qx vigente" : "Galeno Qx vigente"}
-                  </span>
-                  <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border">
-                    {indiceVigente === null ? (
-                      <span className="text-warning">Sin índice configurado (Configuración → Galenos)</span>
-                    ) : (
-                      <span className="text-text">
-                        ${toMoney(indiceVigente)}
-                        {galenoLabel && <span className="text-muted"> · {galenoLabel}</span>}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="block">
-                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Importe (solo lectura)</span>
-                  <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border text-brand font-semibold">
-                    {importeCalculado === null ? "—" : money(importeCalculado)}
-                  </div>
-                </div>
-              </>
-            ) : (esGas || esHon) ? (
-              <>
-                <div className="block md:col-span-3">
-                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Práctica (opcional, solo referencia)</span>
-                  {practicaSel ? (
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono">
-                        <span className="text-brand font-semibold">{practicaSel.codigo}</span>
-                        <span className="text-text"> · {practicaSel.descripcion}</span>
+                    <div className="block">
+                      <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Importe (solo lectura)</span>
+                      <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border text-brand font-semibold">
+                        {importeCalculado === null ? "—" : money(importeCalculado)}
                       </div>
-                      <button
-                        onClick={() => {
-                          setPracticaSel(null);
-                          setBusqueda("");
-                        }}
-                        className="px-2 py-2 text-[12px] text-muted hover:text-brand transition-colors rounded-md border border-border"
-                      >
-                        Quitar
-                      </button>
                     </div>
-                  ) : (
-                    <div className="relative">
-                      <input
-                        value={busqueda}
-                        onChange={(e) => {
-                          setBusqueda(e.target.value);
-                          setBusquedaAbierta(true);
-                        }}
-                        onFocus={() => setBusquedaAbierta(true)}
-                        onBlur={() => setTimeout(() => setBusquedaAbierta(false), 150)}
-                        placeholder="Buscar por código o descripción (opcional)…"
-                        className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
-                      />
-                      {busquedaAbierta && busqueda.trim() && (
-                        <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto border border-border rounded-md bg-surface shadow-sm">
-                          {buscando ? (
-                            <div className="px-3 py-2 text-[12px] text-muted">Buscando…</div>
-                          ) : resultados.length === 0 ? (
-                            <div className="px-3 py-2 text-[12px] text-muted">Sin resultados</div>
-                          ) : (
-                            resultados.map((r) => (
-                              <button
-                                key={`${r.origen}-${r.codigo}`}
-                                onMouseDown={() => {
-                                  setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, uAnestesista: r.uAnestesista, gastos: r.gastos, fijos: r.fijos, importes: r.importes });
-                                  setConcepto(`${r.codigo} · ${r.descripcion}`);
-                                  setBusqueda("");
-                                  setBusquedaAbierta(false);
-                                }}
-                                className="w-full text-left px-3 py-2 hover:bg-surface-hover transition-colors border-b border-border/30 last:border-0"
-                              >
-                                <span className="font-mono text-[12px] text-brand">{r.codigo}</span>
-                                <span className="text-[13px] text-text ml-2">{r.descripcion}</span>
-                                <span className="float-right text-[10px] font-mono uppercase tracking-wider text-muted mt-1">
-                                  {r.origen === "COPIA_OS" ? "Copia OS" : r.origen === "ESPECIFICA" ? "Específica" : "Nacional"}
-                                </span>
-                              </button>
-                            ))
+                  </>
+                ) : (esGas || esHon) ? (
+                  <>
+                    <div className="block md:col-span-3">
+                      <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Práctica (opcional, solo referencia)</span>
+                      {practicaSel ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono">
+                            <span className="text-brand font-semibold">{practicaSel.codigo}</span>
+                            <span className="text-text"> · {practicaSel.descripcion}</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setPracticaSel(null);
+                              setBusqueda("");
+                            }}
+                            className="px-2 py-2 text-[12px] text-muted hover:text-brand transition-colors rounded-md border border-border"
+                          >
+                            Quitar
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <input
+                            value={busqueda}
+                            onChange={(e) => {
+                              setBusqueda(e.target.value);
+                              setBusquedaAbierta(true);
+                            }}
+                            onFocus={() => setBusquedaAbierta(true)}
+                            onBlur={() => setTimeout(() => setBusquedaAbierta(false), 150)}
+                            placeholder="Buscar por código o descripción (opcional)…"
+                            className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
+                          />
+                          {busquedaAbierta && busqueda.trim() && (
+                            <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto border border-border rounded-md bg-surface shadow-sm">
+                              {buscando ? (
+                                <div className="px-3 py-2 text-[12px] text-muted">Buscando…</div>
+                              ) : resultados.length === 0 ? (
+                                <div className="px-3 py-2 text-[12px] text-muted">Sin resultados</div>
+                              ) : (
+                                resultados.map((r) => (
+                                  <button
+                                    key={`${r.origen}-${r.codigo}`}
+                                    onMouseDown={() => {
+                                      setPracticaSel({ codigo: r.codigo, descripcion: r.descripcion, uEspecialista: r.uEspecialista, uAyudantes: r.uAyudantes, uAnestesista: r.uAnestesista, gastos: r.gastos, fijos: r.fijos, importes: r.importes });
+                                      setConcepto(`${r.codigo} · ${r.descripcion}`);
+                                      setBusqueda("");
+                                      setBusquedaAbierta(false);
+                                    }}
+                                    className="w-full text-left px-3 py-2 hover:bg-surface-hover transition-colors border-b border-border/30 last:border-0"
+                                  >
+                                    <span className="font-mono text-[12px] text-brand">{r.codigo}</span>
+                                    <span className="text-[13px] text-text ml-2">{r.descripcion}</span>
+                                    <span className="float-right text-[10px] font-mono uppercase tracking-wider text-muted mt-1">
+                                      {r.origen === "COPIA_OS" ? "Copia OS" : r.origen === "ESPECIFICA" ? "Específica" : "Nacional"}
+                                    </span>
+                                  </button>
+                                ))
+                              )}
+                            </div>
                           )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-                <label className="block">
-                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Importe manual ($)</span>
-                  <input
-                    value={importeManual}
-                    onChange={(e) => setImporteManual(e.target.value)}
-                    placeholder="Ej: 1500"
-                    className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono"
-                  />
-                </label>
-              </>
-            ) : esFormula ? (
-              <>
-                <label className="block">
-                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">
-                    {esMed ? "Valor (cantidad)" : "Valor (unidades)"}
-                  </span>
-                  <input
-                    value={valorBase}
-                    onChange={(e) => setValorBase(e.target.value)}
-                    placeholder="Ej: 10"
-                    className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono"
-                  />
-                </label>
-                <div className="block">
-                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">
-                    {esMed ? "Índice de galeno vigente" : "Galeno Qx vigente"}
-                  </span>
-                  <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border">
-                    {indiceVigente === null ? (
-                      <span className="text-warning">Sin índice configurado (Configuración → Galenos)</span>
-                    ) : (
-                      <span className="text-text">
-                        ${toMoney(indiceVigente)}
-                        {funcion === "30" && <span className="text-muted"> × 2</span>}
-                        {galenoLabel && <span className="text-muted"> · {galenoLabel}</span>}
+                    <label className="block">
+                      <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Importe manual ($)</span>
+                      <input
+                        value={importeManual}
+                        onChange={(e) => setImporteManual(e.target.value)}
+                        placeholder="Ej: 1500"
+                        className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono"
+                      />
+                    </label>
+                  </>
+                ) : esFormula ? (
+                  <>
+                    <label className="block">
+                      <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">
+                        {esMed ? "Valor (cantidad)" : "Valor (unidades)"}
                       </span>
-                    )}
-                  </div>
-                </div>
-                <div className="block">
-                  <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Importe (solo lectura)</span>
-                  <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border text-brand font-semibold">
-                    {importeCalculado === null ? "—" : money(importeCalculado)}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <label className="block">
-                <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Importe manual ($)</span>
-                <input
-                  value={importeManual}
-                  onChange={(e) => setImporteManual(e.target.value)}
-                  placeholder="Ej: 1500"
-                  className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono"
-                />
-              </label>
-            )}
+                      <input
+                        value={valorBase}
+                        onChange={(e) => setValorBase(e.target.value)}
+                        placeholder="Ej: 10"
+                        className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono"
+                      />
+                    </label>
+                    <div className="block">
+                      <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">
+                        {esMed ? "Índice de galeno vigente" : "Galeno Qx vigente"}
+                      </span>
+                      <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border">
+                        {indiceVigente === null ? (
+                          <span className="text-warning">Sin índice configurado (Configuración → Galenos)</span>
+                        ) : (
+                          <span className="text-text">
+                            ${toMoney(indiceVigente)}
+                            {funcion === "30" && <span className="text-muted"> × 2</span>}
+                            {galenoLabel && <span className="text-muted"> · {galenoLabel}</span>}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="block">
+                      <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Importe (solo lectura)</span>
+                      <div className="px-3 py-2 text-[13px] font-mono rounded-md bg-surface border border-border text-brand font-semibold">
+                        {importeCalculado === null ? "—" : money(importeCalculado)}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <label className="block">
+                    <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Importe manual ($)</span>
+                    <input
+                      value={importeManual}
+                      onChange={(e) => setImporteManual(e.target.value)}
+                      placeholder="Ej: 1500"
+                      className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px] font-mono"
+                    />
+                  </label>
+                )}
               </>
             )}
             <label className="block md:col-span-3">

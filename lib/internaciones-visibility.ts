@@ -5,12 +5,6 @@ import { prisma } from "@/lib/prisma";
 const ROLES_SIN_FILTRO = ["ADMIN"] as const;
 type RolSinFiltro = (typeof ROLES_SIN_FILTRO)[number];
 
-// Internaciones del ámbito operativo: excluye estados terminales
-// (alta médica, facturada, fallecido).
-const AMBITO_ACTIVO: Prisma.InternacionWhereInput = {
-  estado: { notIn: ["ALTA_MEDICA", "FACTURADA", "FALLECIDO"] },
-};
-
 export function getVisibleInternacionesWhere(userId: string, rol: string): Prisma.InternacionWhereInput {
   if (ROLES_SIN_FILTRO.includes(rol as RolSinFiltro)) {
     return {};
@@ -44,13 +38,33 @@ export function getVisibleInternacionesWhere(userId: string, rol: string): Prism
     };
   }
 
-  // ENFERMERO / ADMISION / FACTURACION / FARMACIA: ámbito operativo
-  // (camas, controles, despacho, facturación del episodio activo).
-  // Enfermería es hospital-wide por diseño; se acota a internaciones activas.
-  // ADMISION: datos administrativos de internación/cama — la carpeta
-  // clínica (anamnesis/epicrisis/protocolos) queda bloqueada por endpoint.
-  if (["ENFERMERO", "ADMISION", "FACTURACION", "FARMACIA"].includes(rol)) {
-    return AMBITO_ACTIVO;
+  // ENFERMERO: ve activas + ALTA_MEDICA (para registrar alta de enfermería).
+  if (rol === "ENFERMERO") {
+    return {
+      estado: { notIn: ["ALTA_ENFERMERIA", "ALTA_ADMINISTRATIVA", "FACTURADA", "FALLECIDO"] },
+    };
+  }
+
+  // ADMISION: ve activas + ALTA_MEDICA + ALTA_ENFERMERIA (para dar alta administrativa).
+  if (rol === "ADMISION") {
+    return {
+      estado: { notIn: ["ALTA_ADMINISTRATIVA", "FACTURADA", "FALLECIDO"] },
+    };
+  }
+
+  // FACTURACION: ve todo excepto FALLECIDO — puede facturar durante internación
+  // y también post-alta (ALTA_MEDICA, ALTA_ENFERMERIA, ALTA_ADMINISTRATIVA, FACTURADA).
+  if (rol === "FACTURACION") {
+    return {
+      estado: { notIn: ["FALLECIDO"] },
+    };
+  }
+
+  // FARMACIA: solo internaciones activas (despacho y stock).
+  if (rol === "FARMACIA") {
+    return {
+      estado: { notIn: ["ALTA_MEDICA", "ALTA_ENFERMERIA", "ALTA_ADMINISTRATIVA", "FACTURADA", "FALLECIDO"] },
+    };
   }
 
   // Por defecto: sin visibilidad de internaciones.

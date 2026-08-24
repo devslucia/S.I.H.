@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import {
   ArrowLeft, FileText, Activity, Pill, Syringe,
   Stethoscope, Thermometer, ClipboardList, BookOpen, Printer,
-  AlertCircle, Loader2, CalendarPlus, IdCard, MapPin, Users,
+  AlertCircle, Loader2, CalendarPlus, IdCard, MapPin, Users, LogOut,
 } from "lucide-react";
+
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
 import { Usuario, generarHTMLCarpeta } from "@/lib/carpeta-html";
@@ -52,7 +53,9 @@ const estadoTone: Record<string, "success" | "warning" | "info" | "danger" | "ne
   ACTIVA: "success",
   EN_QUIROFANO: "warning",
   POSTQUIRURGICO: "warning",
-  ALTA_MEDICA: "neutral",
+  ALTA_MEDICA: "info",
+  ALTA_ENFERMERIA: "info",
+  ALTA_ADMINISTRATIVA: "neutral",
   FACTURADA: "neutral",
   FALLECIDO: "danger",
 };
@@ -62,6 +65,8 @@ const estadoLabel: Record<string, string> = {
   EN_QUIROFANO: "En quirófano",
   POSTQUIRURGICO: "Post quirúrgico",
   ALTA_MEDICA: "Alta médica",
+  ALTA_ENFERMERIA: "Alta enfermería",
+  ALTA_ADMINISTRATIVA: "Alta administrativa",
   FACTURADA: "Facturada",
   FALLECIDO: "Fallecido",
 };
@@ -103,6 +108,48 @@ export default function HistoriaClinicaPage() {
   });
   const [savingCirugia, setSavingCirugia] = useState(false);
 
+  // Acciones de alta
+  const [altaMsg, setAltaMsg] = useState<string | null>(null);
+  const [altaErr, setAltaErr] = useState<string | null>(null);
+  const [savingAlta, setSavingAlta] = useState(false);
+  const [rolUsuario, setRolUsuario] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Obtener rol del usuario de la sesión
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((d: { user?: { rol?: string } }) => {
+        if (d?.user?.rol) setRolUsuario(d.user.rol);
+      })
+      .catch(() => { });
+  }, []);
+
+  const recargarInternacion = useCallback(async () => {
+    const res = await fetch(`/api/internaciones/${params.internacionId}`);
+    if (res.ok) setInternacion(await res.json());
+  }, [params.internacionId]);
+
+  const darAlta = async (tipo: "alta" | "alta-enfermeria" | "alta-administrativa") => {
+    setSavingAlta(true);
+    setAltaMsg(null);
+    setAltaErr(null);
+    try {
+      const res = await fetch(`/api/internaciones/${params.internacionId}/${tipo}`, { method: "POST" });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAltaErr((d as { error?: string }).error ?? "Error al registrar el alta");
+      } else {
+        setAltaMsg((d as { message?: string }).message ?? "Alta registrada");
+        await recargarInternacion();
+      }
+    } catch {
+      setAltaErr("Error de conexión");
+    } finally {
+      setSavingAlta(false);
+    }
+  };
+
+
   useEffect(() => {
     let cancelled = false;
 
@@ -135,11 +182,11 @@ export default function HistoriaClinicaPage() {
     fetch("/api/usuarios")
       .then((r) => r.json())
       .then((d) => setUsuarios(Array.isArray(d) ? d : []))
-      .catch(() => {});
+      .catch(() => { });
     fetch("/api/quirofanos")
       .then((r) => r.json())
       .then((d) => setQuirofanos(Array.isArray(d) ? d : []))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const handleCrearCirugia = async () => {
@@ -277,12 +324,56 @@ export default function HistoriaClinicaPage() {
           >
             <Stethoscope size={15} /> Panel médico
           </button>
+
+          {/* Acciones de alta según rol y estado */}
+          {(rolUsuario === "MEDICO" || rolUsuario === "ADMIN") &&
+            (internacion.estado === "ACTIVA" || internacion.estado === "POSTQUIRURGICO") && (
+              <button
+                onClick={() => darAlta("alta")}
+                disabled={savingAlta}
+                className="btn-secondary inline-flex items-center gap-2 border-warning/40 text-warning hover:bg-warning/5"
+              >
+                <LogOut size={15} /> {savingAlta ? "Procesando…" : "Alta médica"}
+              </button>
+            )}
+          {(rolUsuario === "ENFERMERO" || rolUsuario === "ADMIN") &&
+            internacion.estado === "ALTA_MEDICA" && (
+              <button
+                onClick={() => darAlta("alta-enfermeria")}
+                disabled={savingAlta}
+                className="btn-secondary inline-flex items-center gap-2 border-info/40 text-info hover:bg-info/5"
+              >
+                <LogOut size={15} /> {savingAlta ? "Procesando…" : "Alta enfermería"}
+              </button>
+            )}
+          {(rolUsuario === "ADMISION" || rolUsuario === "ADMIN") &&
+            internacion.estado === "ALTA_ENFERMERIA" && (
+              <button
+                onClick={() => darAlta("alta-administrativa")}
+                disabled={savingAlta}
+                className="btn-secondary inline-flex items-center gap-2 border-success/40 text-success hover:bg-success/5"
+              >
+                <LogOut size={15} /> {savingAlta ? "Procesando…" : "Alta administrativa (libera cama)"}
+              </button>
+            )}
         </div>
+        {altaMsg && (
+          <div className="flex items-center gap-1.5 px-4 pb-4 text-[12px] text-success">
+            <LogOut size={13} /> {altaMsg}
+          </div>
+        )}
+        {altaErr && (
+          <div className="flex items-center gap-1.5 px-4 pb-4 text-[12px] text-error">
+            <AlertCircle size={13} /> {altaErr}
+          </div>
+        )}
+
         {printError && (
           <div className="flex items-center gap-1.5 px-4 pb-4 text-[12px] text-error">
             <AlertCircle size={13} /> {printError}
           </div>
         )}
+
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
