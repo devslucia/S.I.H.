@@ -13,6 +13,7 @@ export const drogaAnestesiaSchema = z.object({
 
 export const premedicacionSchema = z.object({
   droga: z.string().min(1, "Requerido"),
+  nTroquel: z.string().nullable().optional(),
   dosis: z.string().nullable().optional(),
   hora: z.string().nullable().optional(),
 });

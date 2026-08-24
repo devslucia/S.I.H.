@@ -190,6 +190,7 @@ export interface SignoVitalRegistro {
 
 export interface PremedicacionItem {
   droga: string;
+  nTroquel?: string | null;
   dosis?: string | null;
   hora?: string | null;
 }

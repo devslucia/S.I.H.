@@ -262,15 +262,18 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
       }
     }
 
-    // Sync Premedicación → MedicamentoCirugia (libro de quirófano).
-    // Idempotente por firma nombre|hora|observacion([PREMEDICACIÓN] · dosis):
-    // re-guardar no duplica; borrar/editar en premedicación reconcilia la lista.
+    // Sync Medicación (sección "Medicación y firma") → MedicamentoCirugia (libro de quirófano).
+    // Idempotente por firma nombre|hora|observación: re-guardar no duplica;
+    // editar/borrar en la sección reconcilia la lista. El tag legacy [PREMEDICACIÓN]
+    // contiene el substring MEDICACIÓN, así que una sola consulta los cubre; se
+    // normaliza antes de comparar para no duplicar filas ya sincronizadas.
     if (cirugia) {
-      const TAG = "[PREMEDICACIÓN]";
-      const premedItems = (
+      const TAG = "[MEDICACIÓN]";
+      const TAG_LEGACY = "[PREMEDICACIÓN]";
+      const medItems = (
         Array.isArray(campos.premedicacion) ? campos.premedicacion : []
-      ) as { droga?: string | null; dosis?: string | null; hora?: string | null }[];
-      const deseadas = premedItems
+      ) as { droga?: string | null; nTroquel?: string | null; dosis?: string | null; hora?: string | null }[];
+      const deseadas = medItems
         .filter((it) => typeof it.droga === "string" && it.droga.trim())
         .map((it) => ({
           nombre: (it.droga as string).trim(),
@@ -279,17 +282,20 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
         }));
 
       const sincronizadas = await tx.medicamentoCirugia.findMany({
-        where: { cirugiaId: cirugia.id, observacion: { contains: TAG } },
+        where: { cirugiaId: cirugia.id, observacion: { contains: "MEDICACIÓN" } },
       });
+      const normalizarObs = (obs: string | null) =>
+        obs?.startsWith(TAG_LEGACY) ? `${TAG}${obs.slice(TAG_LEGACY.length)}` : obs ?? "";
       const porFirma = new Map(
-        sincronizadas.map((m) => [`${(m.nombre ?? "").trim()}|${m.horaAplicacion ?? ""}|${m.observacion ?? ""}`, m])
+        sincronizadas.map((m) => [`${(m.nombre ?? "").trim()}|${m.horaAplicacion ?? ""}|${normalizarObs(m.observacion)}`, m])
       );
       const firmasDeseadas = new Set<string>();
 
       for (const d of deseadas) {
         const firma = `${d.nombre}|${d.hora}|${d.obs}`;
         firmasDeseadas.add(firma);
-        if (!porFirma.has(firma)) {
+        const existente = porFirma.get(firma);
+        if (!existente) {
           await tx.medicamentoCirugia.create({
             data: {
               cirugiaId: cirugia.id,
