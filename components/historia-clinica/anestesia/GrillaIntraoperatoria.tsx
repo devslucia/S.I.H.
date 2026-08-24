@@ -321,7 +321,7 @@ function GrillaIntraoperatoria({
     return out;
   }, [minutosRegistrados, porMinuto]);
 
-  // Banda de fármacos: bolos (marcadores) e infusiones (spans inicio→fin)
+  // Banda de fármacos: bolos (marcadores legacy, solo lectura)
   const farmacos = useMemo(() => {
     const out: React.ReactNode[] = [];
     const cy = FARM_TOP + FARM_BAND_H / 2;
@@ -348,39 +348,8 @@ function GrillaIntraoperatoria({
       });
     }
 
-    const infusiones: (InfusionRegistro & { minuto: number })[] = [];
-    for (const r of sv) {
-      if (Array.isArray(r.infusiones)) {
-        for (const i of r.infusiones) infusiones.push({ ...i, minuto: r.minuto });
-      }
-    }
-    infusiones.forEach((inf, idx) => {
-      const color = colorDeDroga(inf.droga);
-      const x1 = xFor(inf.inicio);
-      const x2 = xFor(inf.fin != null ? inf.fin : maxMin);
-      const y = cy - 7;
-      out.push(
-        <g key={`inf-${inf.id ?? idx}`}>
-          <line x1={x1} y1={y} x2={Math.max(x2, x1 + 4)} y2={y} stroke={color} strokeWidth={3} opacity={0.85}>
-            <title>{`${inf.droga} · ${inf.velocidad} · desde ${inf.inicio}'${inf.fin != null ? ` · hasta ${inf.fin}'` : " · activa"}`}</title>
-          </line>
-          <polygon points={`${x1},${y - 4} ${x1 + 5},${y} ${x1},${y + 4}`} fill={color}>
-            <title>{`${inf.droga} · ${inf.velocidad} · desde ${inf.inicio}'`}</title>
-          </polygon>
-          {inf.fin != null && (
-            <line x1={x2} y1={y - 4} x2={x2} y2={y + 4} stroke={color} strokeWidth={1.5}>
-              <title>{`fin ${inf.fin}'`}</title>
-            </line>
-          )}
-          <text x={x1 + 8} y={y - 4} fontSize={7} fill={color} fontFamily="IBM Plex Mono, monospace">
-            {inf.droga.slice(0, 10)}
-          </text>
-        </g>
-      );
-    });
-
     return out;
-  }, [minutosRegistrados, porMinuto, sv, maxMin]);
+  }, [minutosRegistrados, porMinuto]);
 
   // Banda de balance de fluidos: barras por hora (ingresos / egresos)
   const balance = useMemo(() => {

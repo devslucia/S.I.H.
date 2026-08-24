@@ -4,26 +4,20 @@ import React, { useCallback, useMemo, useState } from "react";
 import { Clock, CornerDownLeft, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
-import type { BoloRegistro, InfusionRegistro, SignoVitalRegistro } from "@/types";
+import type { SignoVitalRegistro } from "@/types";
 import { GrillaIntraoperatoria } from "./GrillaIntraoperatoria";
 import {
-  DROGAS_BOLO,
-  DROGAS_INFUSION,
   EVENTOS_INTRAOP,
   EVENTO_SIMBOLOS,
   GASES_INTRAOP,
   GAS_FIO2,
-  MODALIDADES_VENT,
-  UNIDADES_BOLO,
+  VARIABLES_PANEL,
   VARIABLE_COLORES,
   VARIABLE_DEFAULT,
   VARIABLE_LABELS,
-  VARIABLES_PANEL,
   VARIABLE_UNIDADES,
-  VELOCIDADES_INFUSION,
   BAL_INGRESO_COLOR,
   BAL_EGRESO_COLOR,
-  colorDeDroga,
   type VariableIntraop,
 } from "./intraoperatorio";
 
@@ -33,9 +27,6 @@ interface GraficoSignosVitalesProps {
   horaInicio?: Date | null;
   onAddRegistro: (registro: SignoVitalRegistro) => void;
   onAddEvento: (minuto: number, evento: string) => void;
-  onAddBolo: (minuto: number, bolo: BoloRegistro) => void;
-  onAddInfusion: (infusion: InfusionRegistro) => void;
-  onUpdateInfusion: (id: string, fin: number) => void;
   readOnly?: boolean;
 }
 
@@ -45,9 +36,6 @@ function GraficoSignosVitales({
   horaInicio,
   onAddRegistro,
   onAddEvento,
-  onAddBolo,
-  onAddInfusion,
-  onUpdateInfusion,
   readOnly,
 }: GraficoSignosVitalesProps) {
   const sv = useMemo(() => (Array.isArray(signosVitales) ? signosVitales : []), [signosVitales]);
@@ -57,17 +45,6 @@ function GraficoSignosVitales({
   const [valorInput, setValorInput] = useState("");
   const [eventoCustom, setEventoCustom] = useState("");
   const [showEventoCustom, setShowEventoCustom] = useState(false);
-
-  // FASE 3: gases y fármacos
-  const [gasesInput, setGasesInput] = useState<Record<string, string>>({ sevo: "", iso: "", des: "", fio2: "" });
-  const [modalidadSel, setModalidadSel] = useState("");
-  const [boloDroga, setBoloDroga] = useState<string>(DROGAS_BOLO[0]);
-  const [boloDosis, setBoloDosis] = useState("");
-  const [boloUnidad, setBoloUnidad] = useState<string>(UNIDADES_BOLO[0]);
-  const [infDroga, setInfDroga] = useState<string>(DROGAS_INFUSION[0]);
-  const [infVelocidad, setInfVelocidad] = useState<string>(VELOCIDADES_INFUSION[2]);
-  const [balIngresos, setBalIngresos] = useState("");
-  const [balEgresos, setBalEgresos] = useState("");
 
   // Último valor registrado para una variable (prefill del input rápido, con default sugerido)
   const ultimoValor = useCallback(
@@ -151,83 +128,6 @@ function GraficoSignosVitales({
     setShowEventoCustom(false);
     setMinutoSeleccionado(null);
   };
-
-  const numOrNull = (s: string): number | null => {
-    if (!s.trim()) return null;
-    const n = parseFloat(s.replace(",", "."));
-    return Number.isFinite(n) ? n : null;
-  };
-
-  const guardarGases = () => {
-    if (readOnly) return;
-    const m = minutoSeleccionado ?? minutoActual;
-    const reg: SignoVitalRegistro = { minuto: m };
-    for (const g of GASES_INTRAOP) {
-      const v = numOrNull(gasesInput[g.key]);
-      if (v != null) reg[g.key] = v;
-    }
-    const fio2 = numOrNull(gasesInput.fio2);
-    if (fio2 != null) reg.fio2 = fio2;
-    if (Object.keys(reg).length === 1) return;
-    onAddRegistro(reg);
-    setGasesInput({ sevo: "", iso: "", des: "", fio2: "" });
-    setMinutoSeleccionado(null);
-  };
-
-  const aplicarModalidad = () => {
-    if (readOnly || !modalidadSel) return;
-    onAddRegistro({ minuto: minutoSeleccionado ?? minutoActual, modalidadVent: modalidadSel });
-    setModalidadSel("");
-    setMinutoSeleccionado(null);
-  };
-
-  const guardarBolo = () => {
-    if (readOnly) return;
-    const dosis = numOrNull(boloDosis);
-    if (dosis == null) return;
-    onAddBolo(minutoSeleccionado ?? minutoActual, { droga: boloDroga, dosis, unidad: boloUnidad });
-    setBoloDosis("");
-    setMinutoSeleccionado(null);
-  };
-
-  const iniciarInfusion = () => {
-    if (readOnly) return;
-    onAddInfusion({ droga: infDroga, velocidad: infVelocidad, inicio: minutoActual });
-  };
-
-  const detenerInfusion = (id?: string) => {
-    if (readOnly || !id) return;
-    onUpdateInfusion(id, minutoActual);
-  };
-
-  const guardarBalance = () => {
-    if (readOnly) return;
-    const m = Math.floor((minutoSeleccionado ?? minutoActual) / 60) * 60;
-    const ingresos = numOrNull(balIngresos);
-    const egresos = numOrNull(balEgresos);
-    if (ingresos == null && egresos == null) return;
-    onAddRegistro({ minuto: m, balance: { ingresos, egresos } });
-    setBalIngresos("");
-    setBalEgresos("");
-  };
-
-  const infusionesActivas = useMemo(() => {
-    const list: (InfusionRegistro & { minuto: number })[] = [];
-    for (const r of sv) {
-      if (Array.isArray(r.infusiones)) {
-        for (const i of r.infusiones) {
-          if (i.fin == null) list.push({ ...i, minuto: r.minuto });
-        }
-      }
-    }
-    return list.sort((a, b) => a.inicio - b.inicio);
-  }, [sv]);
-
-  const horaBalance = Math.floor((minutoSeleccionado ?? minutoActual) / 60) * 60;
-  const balanceHoraActual = useMemo(() => {
-    const r = sv.find((s) => s.minuto === horaBalance);
-    return r?.balance ?? null;
-  }, [sv, horaBalance]);
 
   const resumenMinuto = useMemo(() => {
     if (minutoSeleccionado == null) return null;
@@ -313,7 +213,6 @@ function GraficoSignosVitales({
       })),
       { simbolo: <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: GAS_FIO2.color }} />, label: "FiO₂" },
       { simbolo: <span className="inline-block w-2 h-2 rotate-45" style={{ backgroundColor: "#059669" }} />, label: "Bolo" },
-      { simbolo: <span className="inline-block w-4 h-1 rounded-sm" style={{ backgroundColor: "#7c3aed" }} />, label: "Infusión" },
       {
         simbolo: (
           <span className="inline-flex items-end gap-0.5 h-3">
@@ -444,196 +343,6 @@ function GraficoSignosVitales({
                 <p className="text-xs text-muted italic">Seleccioná un minuto en la grilla temporal…</p>
               )}
             </div>
-          )}
-
-          {/* Gases y fármacos */}
-          {!readOnly && (
-            <details className="rounded-xl border border-border bg-surface p-3 group" open>
-              <summary className="text-[11px] font-medium text-muted font-mono uppercase tracking-widest cursor-pointer select-none list-none flex items-center gap-2">
-                <span>Gases y fármacos</span>
-                <span className="text-[9px] text-brand font-mono normal-case tracking-normal">{horaMinuto(minutoActual)}</span>
-              </summary>
-              <div className="mt-3 space-y-4">
-                {/* Gases */}
-                <div>
-                  <h5 className="text-xs font-medium text-text-secondary mb-1.5">Gases inhalatorios</h5>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {GASES_INTRAOP.map((g) => (
-                      <label key={g.key} className="flex items-center gap-1.5 min-w-0">
-                        <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: g.color }} />
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          step="any"
-                          placeholder={g.label}
-                          value={gasesInput[g.key]}
-                          onChange={(e) => setGasesInput((prev) => ({ ...prev, [g.key]: e.target.value }))}
-                          onKeyDown={(e) => e.key === "Enter" && guardarGases()}
-                          className={`${inputCls} w-full min-w-0 text-xs`}
-                        />
-                      </label>
-                    ))}
-                    <label className="flex items-center gap-1.5 min-w-0">
-                      <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: GAS_FIO2.color }} />
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        step="any"
-                        placeholder="FiO₂ %"
-                        value={gasesInput.fio2}
-                        onChange={(e) => setGasesInput((prev) => ({ ...prev, fio2: e.target.value }))}
-                        onKeyDown={(e) => e.key === "Enter" && guardarGases()}
-                        className={`${inputCls} w-full min-w-0 text-xs`}
-                      />
-                    </label>
-                  </div>
-                  <Button size="sm" variant="secondary" onClick={guardarGases} className="mt-1.5 w-full min-h-[40px] whitespace-nowrap">
-                    Registrar gases
-                  </Button>
-                  <p className="mt-1.5 text-[10px] text-muted font-mono">En minuto {minutoSeleccionado ?? minutoActual}&apos; (hora {horaMinuto(minutoSeleccionado ?? minutoActual)})</p>
-                </div>
-
-                {/* Modalidad ventilatoria */}
-                <div>
-                  <h5 className="text-xs font-medium text-text-secondary mb-1.5">Modalidad ventilatoria</h5>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <select value={modalidadSel} onChange={(e) => setModalidadSel(e.target.value)} className={`${selectCls} flex-1 min-w-[160px] text-xs`}>
-                      <option value="">— seleccionar —</option>
-                      {MODALIDADES_VENT.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                    <Button size="sm" variant="secondary" onClick={aplicarModalidad} disabled={!modalidadSel} className="min-h-[40px] shrink-0 whitespace-nowrap">
-                      Aplicar
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Bolo */}
-                <div>
-                  <h5 className="text-xs font-medium text-text-secondary mb-1.5">Bolo</h5>
-                  <div className="space-y-1.5">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <select value={boloDroga} onChange={(e) => setBoloDroga(e.target.value)} className={`${selectCls} flex-1 min-w-[150px] text-xs`}>
-                        {DROGAS_BOLO.map((d) => (
-                          <option key={d} value={d}>
-                            {d}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        step="any"
-                        placeholder="Dosis"
-                        value={boloDosis}
-                        onChange={(e) => setBoloDosis(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && guardarBolo()}
-                        className={`${inputCls} w-20 shrink-0 min-w-0 text-xs`}
-                      />
-                      <select value={boloUnidad} onChange={(e) => setBoloUnidad(e.target.value)} className={`${selectCls} min-w-[74px] shrink-0 text-xs`}>
-                        {UNIDADES_BOLO.map((u) => (
-                          <option key={u} value={u}>
-                            {u}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button size="sm" variant="secondary" onClick={guardarBolo} disabled={!boloDosis.trim()} className="min-h-[40px] whitespace-nowrap">
-                        <Plus size={12} /> Registrar bolo
-                      </Button>
-                      <span className="text-[10px] text-muted font-mono">min {minutoSeleccionado ?? minutoActual}&apos;</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Infusiones */}
-                <div>
-                  <h5 className="text-xs font-medium text-text-secondary mb-1.5">Infusión continua</h5>
-                  <div className="space-y-1.5">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <select value={infDroga} onChange={(e) => setInfDroga(e.target.value)} className={`${selectCls} flex-1 min-w-[150px] text-xs`}>
-                        {DROGAS_INFUSION.map((d) => (
-                          <option key={d} value={d}>
-                            {d}
-                          </option>
-                        ))}
-                      </select>
-                      <select value={infVelocidad} onChange={(e) => setInfVelocidad(e.target.value)} className={`${selectCls} min-w-[90px] shrink-0 text-xs`}>
-                        {VELOCIDADES_INFUSION.map((v) => (
-                          <option key={v} value={v}>
-                            {v}
-                          </option>
-                        ))}
-                      </select>
-                      <Button size="sm" variant="secondary" onClick={iniciarInfusion} className="min-h-[40px] shrink-0 whitespace-nowrap">
-                        Iniciar
-                      </Button>
-                    </div>
-                    {infusionesActivas.length > 0 && (
-                      <ul className="space-y-1">
-                        {infusionesActivas.map((inf) => (
-                          <li key={inf.id} className="flex items-center gap-1.5 text-[11px] font-mono text-text-secondary">
-                            <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colorDeDroga(inf.droga) }} />
-                            <span className="flex-1 truncate">
-                              {inf.droga} · {inf.velocidad} · desde {inf.inicio}&apos;
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => detenerInfusion(inf.id)}
-                              className="text-[10px] text-muted hover:text-error"
-                            >
-                              detener
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-
-                {/* Balance de fluidos */}
-                <div>
-                  <h5 className="text-xs font-medium text-text-secondary mb-1.5">Balance de fluidos (por hora)</h5>
-                  <div className="space-y-1.5">
-                    <p className="text-[10px] text-muted font-mono">
-                      Hora {labelHora(horaBalance)}–{labelHora(horaBalance + 60)}
-                    </p>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        placeholder="Ingresos ml"
-                        value={balIngresos}
-                        onChange={(e) => setBalIngresos(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && guardarBalance()}
-                        className={`${inputCls} w-full min-w-0 text-xs`}
-                      />
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        placeholder="Egresos ml"
-                        value={balEgresos}
-                        onChange={(e) => setBalEgresos(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && guardarBalance()}
-                        className={`${inputCls} w-full min-w-0 text-xs`}
-                      />
-                    </div>
-                    <Button size="sm" variant="secondary" onClick={guardarBalance} disabled={!balIngresos.trim() && !balEgresos.trim()} className="w-full sm:w-auto min-h-[40px] whitespace-nowrap">
-                      Guardar
-                    </Button>
-                    {balanceHoraActual && (balanceHoraActual.ingresos != null || balanceHoraActual.egresos != null) && (
-                      <p className="text-[10px] font-mono text-brand">
-                        {`actual: +${balanceHoraActual.ingresos ?? 0} / -${balanceHoraActual.egresos ?? 0} ml`}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </details>
           )}
 
           {/* Eventos de un toque */}

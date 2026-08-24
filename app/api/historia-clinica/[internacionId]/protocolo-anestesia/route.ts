@@ -262,6 +262,53 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
       }
     }
 
+    // Sync Premedicación → MedicamentoCirugia (libro de quirófano).
+    // Idempotente por firma nombre|hora|observacion([PREMEDICACIÓN] · dosis):
+    // re-guardar no duplica; borrar/editar en premedicación reconcilia la lista.
+    if (cirugia) {
+      const TAG = "[PREMEDICACIÓN]";
+      const premedItems = (
+        Array.isArray(campos.premedicacion) ? campos.premedicacion : []
+      ) as { droga?: string | null; dosis?: string | null; hora?: string | null }[];
+      const deseadas = premedItems
+        .filter((it) => typeof it.droga === "string" && it.droga.trim())
+        .map((it) => ({
+          nombre: (it.droga as string).trim(),
+          hora: it.hora?.trim() || null,
+          obs: `${TAG}${it.dosis?.trim() ? ` · ${it.dosis.trim()}` : ""}`,
+        }));
+
+      const sincronizadas = await tx.medicamentoCirugia.findMany({
+        where: { cirugiaId: cirugia.id, observacion: { contains: TAG } },
+      });
+      const porFirma = new Map(
+        sincronizadas.map((m) => [`${(m.nombre ?? "").trim()}|${m.horaAplicacion ?? ""}|${m.observacion ?? ""}`, m])
+      );
+      const firmasDeseadas = new Set<string>();
+
+      for (const d of deseadas) {
+        const firma = `${d.nombre}|${d.hora}|${d.obs}`;
+        firmasDeseadas.add(firma);
+        if (!porFirma.has(firma)) {
+          await tx.medicamentoCirugia.create({
+            data: {
+              cirugiaId: cirugia.id,
+              nombre: d.nombre,
+              cantidad: 1,
+              horaAplicacion: d.hora,
+              observacion: d.obs,
+            },
+          });
+        }
+      }
+
+      for (const [firma, med] of porFirma.entries()) {
+        if (!firmasDeseadas.has(firma)) {
+          await tx.medicamentoCirugia.delete({ where: { id: med.id } });
+        }
+      }
+    }
+
     return tx.protocoloAnestesia.findUnique({
       where: { id: result.id },
       include: { drogas: true },
