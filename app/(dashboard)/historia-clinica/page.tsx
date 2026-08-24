@@ -38,7 +38,9 @@ const estadoTone: Record<string, "success" | "warning" | "info" | "danger" | "ne
   ACTIVA: "success",
   EN_QUIROFANO: "warning",
   POSTQUIRURGICO: "warning",
-  ALTA_MEDICA: "neutral",
+  ALTA_MEDICA: "info",
+  ALTA_ENFERMERIA: "info",
+  ALTA_ADMINISTRATIVA: "neutral",
   FACTURADA: "neutral",
   FALLECIDO: "danger",
 };
@@ -48,9 +50,12 @@ const estadoLabel: Record<string, string> = {
   EN_QUIROFANO: "En quirófano",
   POSTQUIRURGICO: "Post quirúrgico",
   ALTA_MEDICA: "Alta médica",
+  ALTA_ENFERMERIA: "Alta enfermería",
+  ALTA_ADMINISTRATIVA: "Alta administrativa",
   FACTURADA: "Facturada",
   FALLECIDO: "Fallecido",
 };
+
 
 export default function HistoriaClinicaListPage() {
   const router = useRouter();

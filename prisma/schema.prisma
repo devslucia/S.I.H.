@@ -64,6 +64,8 @@ enum EstadoInternacion {
   EN_QUIROFANO
   POSTQUIRURGICO
   ALTA_MEDICA
+  ALTA_ENFERMERIA
+  ALTA_ADMINISTRATIVA
   FACTURADA
   FALLECIDO
 }
@@ -368,6 +370,9 @@ model Internacion {
   medicosTratantesInternacion InternacionMedicoTratante[]
   tipoIngreso                 TipoIngreso
   estado                      EstadoInternacion           @default(ACTIVA)
+  altaMedicaAt                DateTime?
+  altaEnfermeriaAt            DateTime?
+  altaAdministrativaAt        DateTime?
   pases                       PaseInterno[]
   histClinica                 HistoriaClinica?
   episodio                    Episodio?

@@ -3,10 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
 import { NextRequest, NextResponse } from "next/server";
 
-const ALTA_ROLES = ["ADMIN", "MEDICO"];
-
+/** Alta MÉDICA: primer paso. Solo MEDICO o ADMIN.
+ * La cama NO se libera aquí — permanece OCUPADA.
+ * La fecha de egreso se registra pero la cama espera al alta administrativa.
+ */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { session, error } = await requireRole(...ALTA_ROLES);
+  const { session, error } = await requireRole("ADMIN", "MEDICO");
   if (error) return error;
 
   if (!(await isInternacionVisibleForUser(params.id, session.user.id, session.user.rol))) {
@@ -22,30 +24,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
 
-  if (internacion.estado !== "ACTIVA" && internacion.estado !== "POSTQUIRURGICO") {
+  const estadosPermitidos = ["ACTIVA", "POSTQUIRURGICO"] as const;
+  if (!estadosPermitidos.includes(internacion.estado as (typeof estadosPermitidos)[number])) {
     return NextResponse.json(
-      { error: `No se puede dar de alta una internación en estado ${internacion.estado}` },
+      { error: `No se puede dar alta médica a una internación en estado ${internacion.estado}` },
       { status: 409 }
     );
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.internacion.update({
-      where: { id: params.id },
-      data: {
-        estado: "ALTA_MEDICA",
-        fechaEgreso: new Date(),
-      },
-    });
-
-    if (internacion.camaId) {
-      // Liberación atómica: solo si la cama sigue OCUPADA
-      await tx.cama.updateMany({
-        where: { id: internacion.camaId, estado: "OCUPADA" },
-        data: { estado: "LIBRE" },
-      });
-    }
+  await prisma.internacion.update({
+    where: { id: params.id },
+    data: {
+      estado: "ALTA_MEDICA",
+      fechaEgreso: new Date(),
+      altaMedicaAt: new Date(),
+      // La cama NO se libera aquí
+    },
   });
 
-  return NextResponse.json({ ok: true, message: "Alta médica registrada. Cama liberada." });
+  return NextResponse.json({ ok: true, message: "Alta médica registrada. La cama quedará disponible tras el alta administrativa." });
 }

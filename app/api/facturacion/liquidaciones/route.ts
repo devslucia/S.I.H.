@@ -14,6 +14,9 @@ export async function GET(req: NextRequest) {
   const anio = Number(sp.get("anio") || new Date().getFullYear());
   const q = (sp.get("q") || "").trim();
   const estadoFiltro = sp.get("estado") || undefined;
+  // Filtra por estado de la INTERNACIÓN: "activa" | "en_alta" | "egresada"
+  const estadoInternacionFiltro = sp.get("estadoInternacion") || undefined;
+
 
   if (obraSocialId && session.user.rol !== "ADMIN") {
     const usable = await prisma.obraSocial.findFirst({ where: { id: obraSocialId, ...whereObrasSocialesUsables("INTERNACION") } });
@@ -28,16 +31,31 @@ export async function GET(req: NextRequest) {
   const where: Record<string, unknown> = {
     fecha: { gte: inicio, lte: fin },
   };
-  if (obraSocialId) where.internacion = { obraSocialId };
-  if (q) {
-    where.internacion = {
-      ...(where.internacion as Record<string, unknown>),
-      OR: [
-        { paciente: { apellido: { contains: q, mode: "insensitive" } } },
-        { paciente: { dni: { contains: q } } },
-      ],
-    };
+
+  // Filtro por obra social
+  const internacionWhere: Record<string, unknown> = {};
+  if (obraSocialId) internacionWhere.obraSocialId = obraSocialId;
+
+  // Filtro por estado de la internación (para separar activas / en alta / egresadas)
+  if (estadoInternacionFiltro === "activa") {
+    internacionWhere.estado = { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] };
+  } else if (estadoInternacionFiltro === "en_alta") {
+    internacionWhere.estado = { in: ["ALTA_MEDICA", "ALTA_ENFERMERIA"] };
+  } else if (estadoInternacionFiltro === "egresada") {
+    internacionWhere.estado = { in: ["ALTA_ADMINISTRATIVA", "FACTURADA"] };
   }
+
+  if (q) {
+    internacionWhere.OR = [
+      { paciente: { apellido: { contains: q, mode: "insensitive" } } },
+      { paciente: { dni: { contains: q } } },
+    ];
+  }
+
+  if (Object.keys(internacionWhere).length > 0) {
+    where.internacion = internacionWhere;
+  }
+
 
   const cargos = await prisma.cargoFacturacion.findMany({
     where,
@@ -51,6 +69,7 @@ export async function GET(req: NextRequest) {
     },
     orderBy: [{ internacion: { paciente: { apellido: "asc" } } }, { fecha: "asc" }],
   });
+
 
   const grouped = cargos.reduce<
     Record<string, {
@@ -110,7 +129,12 @@ export async function GET(req: NextRequest) {
       internacionId: l.internacion.id,
       internacion: {
         numero: l.internacion.numero,
+        estado: l.internacion.estado,
         fechaIngreso: l.internacion.fechaIngreso,
+        fechaEgreso: l.internacion.fechaEgreso ?? null,
+        altaMedicaAt: l.internacion.altaMedicaAt ?? null,
+        altaEnfermeriaAt: l.internacion.altaEnfermeriaAt ?? null,
+        altaAdministrativaAt: l.internacion.altaAdministrativaAt ?? null,
         paciente: { apellido: l.internacion.paciente?.apellido, nombre: l.internacion.paciente?.nombre, dni: l.internacion.paciente?.dni },
         obraSocial: l.internacion.obraSocial
           ? { id: l.internacion.obraSocial.id, nombre: l.internacion.obraSocial.nombre, sigla: l.internacion.obraSocial.sigla }

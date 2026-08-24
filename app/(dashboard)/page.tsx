@@ -62,6 +62,8 @@ const estadoLabel: Record<string, string> = {
   EN_QUIROFANO: "En quirófano",
   POSTQUIRURGICO: "Post quirúrgico",
   ALTA_MEDICA: "Alta médica",
+  ALTA_ENFERMERIA: "Alta enfermería",
+  ALTA_ADMINISTRATIVA: "Alta administrativa",
   FACTURADA: "Facturada",
   FALLECIDO: "Fallecido",
 };
@@ -89,7 +91,7 @@ function TurnoList({ agenda }: { agenda: NonNullable<StatsData["rolData"]["agend
           <StatusBadge
             tone={
               t.estado === "EN_CONSULTA" ? "success" :
-              t.estado === "CONFIRMADO" ? "warning" : "info"
+                t.estado === "CONFIRMADO" ? "warning" : "info"
             }
             label={turnoLabel[t.estado] ?? t.estado}
           />

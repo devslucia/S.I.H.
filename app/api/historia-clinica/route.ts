@@ -7,7 +7,8 @@ import { Prisma, type EstadoInternacion } from "@prisma/client";
 const HC_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION"];
 
 const ESTADOS_ACTIVOS: EstadoInternacion[] = ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"];
-const ESTADOS_ALTA: EstadoInternacion[] = ["ALTA_MEDICA", "FACTURADA"];
+const ESTADOS_ALTA: EstadoInternacion[] = ["ALTA_MEDICA", "ALTA_ENFERMERIA", "ALTA_ADMINISTRATIVA", "FACTURADA"];
+
 
 function ambulatorioWhereForRole(userId: string, rol: string): Prisma.HistoriaClinicaWhereInput {
   if (["ADMIN", "ENFERMERO", "INSTRUMENTADOR", "ADMISION", "FACTURACION", "FARMACIA"].includes(rol)) {
@@ -120,15 +121,15 @@ export async function GET(req: NextRequest) {
       paciente: e.paciente,
       internacion: e.internacion
         ? {
-            id: e.internacion.id,
-            numero: e.internacion.numero,
-            estado: e.internacion.estado,
-            fechaIngreso: e.internacion.fechaIngreso,
-            fechaEgreso: e.internacion.fechaEgreso,
-            motivoIngreso: e.internacion.motivoIngreso,
-            cama: e.internacion.cama,
-            obraSocial: e.internacion.obraSocial,
-          }
+          id: e.internacion.id,
+          numero: e.internacion.numero,
+          estado: e.internacion.estado,
+          fechaIngreso: e.internacion.fechaIngreso,
+          fechaEgreso: e.internacion.fechaEgreso,
+          motivoIngreso: e.internacion.motivoIngreso,
+          cama: e.internacion.cama,
+          obraSocial: e.internacion.obraSocial,
+        }
         : null,
       contexto,
       ultimaActividad: e.ultimaActividad,
