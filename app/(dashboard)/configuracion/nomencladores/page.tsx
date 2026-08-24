@@ -644,9 +644,9 @@ export default function NomencladoresPage() {
 
           <div className="text-[12px] text-muted font-mono">{totalNac} prácticas · edición ADMIN</div>
 
-          <div className="border border-border rounded-lg overflow-hidden bg-surface">
+          <div className="border border-border rounded-lg overflow-auto max-h-[70vh] bg-surface">
             <table className="w-full text-[13px]">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-surface">
                 <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
                   <th className="px-4 py-2.5 text-left">Código</th>
                   <th className="px-4 py-2.5 text-left">Descripción</th>
@@ -843,9 +843,9 @@ export default function NomencladoresPage() {
                 </div>
               )}
 
-              <div className="border border-border rounded-lg overflow-x-auto bg-surface">
+              <div className="border border-border rounded-lg overflow-auto max-h-[70vh] bg-surface">
                 <table className="w-full text-[13px] min-w-[1100px]">
-                  <thead>
+                  <thead className="sticky top-0 z-10 bg-surface">
                     <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
                       <th className="px-4 py-2.5 text-left">Código</th>
                       <th className="px-4 py-2.5 text-left">Descripción</th>
