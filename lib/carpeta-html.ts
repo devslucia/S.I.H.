@@ -695,7 +695,7 @@ export function generarHTMLCarpeta(data: DatosCarpeta, usuarios: Usuario[]): str
               <div><strong>Talla:</strong> ${pa.talla ?? '—'} cm</div>
             </div>
             ${premedicacion.length > 0 ? `
-              <div style="margin-top:8px"><strong>Premedicación:</strong>
+              <div style="margin-top:8px"><strong>Medicación:</strong>
                 <table style="margin-top:4px">
                   <thead><tr><th>Droga</th><th>Dosis</th><th>Vía</th><th>Hora</th></tr></thead>
                   <tbody>${premedicacion.map((m) => `<tr><td>${m.droga}</td><td>${m.dosis}</td><td>${m.via}</td><td>${m.hora}</td></tr>`).join('')}</tbody>

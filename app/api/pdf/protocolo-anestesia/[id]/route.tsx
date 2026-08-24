@@ -206,7 +206,7 @@ function ProtocoloPDF({ protocolo, paciente, internacion, cirugia }: ProtocoloPD
         <Field label="Última ingesta" value={p.ultimaIngesta} />
         <Field label="Estado psíquico" value={p.estadoPsiquico} />
         {premedicacion && premedicacion.length > 0 && (
-          <Field label="Premedicación" value={premedicacion.map((pm) => `${pm.droga}${pm.dosis ? ` ${pm.dosis}` : ""}${pm.hora ? ` (${pm.hora})` : ""}`).join("; ")} />
+          <Field label="Medicación" value={premedicacion.map((pm) => `${pm.droga}${pm.dosis ? ` ${pm.dosis}` : ""}${pm.hora ? ` (${pm.hora})` : ""}`).join("; ")} />
         )}
         <Field label="Preoxigenación" value={p.preoxigenacion ? `Sí${p.preoxigenacionDetalle ? ` — ${p.preoxigenacionDetalle}` : ""}` : "No"} />
         {signosVitaPreop && (

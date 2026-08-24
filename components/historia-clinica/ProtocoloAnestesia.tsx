@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, useFieldArray, type Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {ArrowLeft, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Printer, PenLine, AlertTriangle, Clock, Trash2} from "lucide-react";
 
@@ -91,7 +91,7 @@ const SECCIONES = [
   { key: "tecnica", label: "3. Técnica Anestésica" },
   { key: "registro", label: "4. Registro Intraoperatorio" },
   { key: "balance", label: "5. Balance de Líquidos" },
-  { key: "recuperacion", label: "6. Recuperación y Firma" },
+  { key: "recuperacion", label: "6. Medicación y Firma" },
 ];
 
 const ESTADO_PSICOS = ["Normal", "Ansioso", "Hiperemotivo", "Excitado", "Deprimido", "Comatoso"];
@@ -884,36 +884,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                     </div>
                   </div>
 
-                  {/* Premedicación */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-sm text-muted uppercase tracking-wide">Premedicación</label>
-                      <Button type="button" variant="secondary" size="sm" disabled={firmado}
-                        onClick={() => {
-                          const prev = onlyArray<PremedicacionItem>(form.getValues("premedicacion"));
-                          form.setValue("premedicacion", [...prev, { droga: "", dosis: "", hora: "" }], { shouldDirty: true });
-                        }}>+ Agregar</Button>
-                    </div>
-                    {onlyArray<PremedicacionItem>(form.watch("premedicacion")).length === 0 && (
-                      <p className="text-xs text-muted italic">Sin premedicación registrada</p>
-                    )}
-                    {onlyArray<PremedicacionItem>(form.watch("premedicacion")).map((_: PremedicacionItem, idx: number) => (
-                      <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2 rounded bg-background border border-border/50 items-end">
-                        <Input label="Droga" {...form.register(`premedicacion.${idx}.droga`)} disabled={firmado} />
-                        <Input label="Dosis" {...form.register(`premedicacion.${idx}.dosis`)} disabled={firmado} />
-                        <div className="flex gap-2 items-end">
-                          <Input label="Hora" type="time" {...form.register(`premedicacion.${idx}.hora`)} disabled={firmado} className="flex-1" />
-                          <Button type="button" variant="danger" size="sm" disabled={firmado}
-                            onClick={() => {
-                              const prev = onlyArray<PremedicacionItem>(form.getValues("premedicacion"));
-                              form.setValue("premedicacion", prev.filter((_, i) => i !== idx), { shouldDirty: true });
-                            }}><Trash2 size={12} /></Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Preoxigenación */}
+                   {/* Preoxigenación */}
                   <div className="space-y-2">
                     <label className="block text-sm text-muted">Preoxigenación</label>
                     <div className="flex items-center gap-4">
@@ -1347,9 +1318,12 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                 </>
               )}
 
-              {/* === SECCIÓN 6: Recuperación y Firma === */}
+              {/* === SECCIÓN 6: Medicación y Firma === */}
               {sec.key === "recuperacion" && (
                 <>
+                  {/* Medicación del anestesista (fuente de verdad; sync a medicación de Qx) */}
+                  <MedicacionAnestesista control={form.control} firmado={firmado} />
+
                   {/* Estado egreso */}
                   <div className="space-y-2">
                     <label className="block text-sm text-muted">Estado al egreso de quirófano</label>
@@ -1492,6 +1466,126 @@ function BalanceLiquidos({ disabled }: { disabled: boolean }) {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+// Sub-componente: medicación del anestesista (catálogo farmacia; sync a medicación de Qx)
+interface MedicacionAnestesistaProps {
+  control: Control<ProtocoloAnestesiaFormData>;
+  firmado: boolean;
+}
+
+interface StockSearchHit {
+  id: string;
+  nTroquel?: string | null;
+  nombre: string;
+  presentacion?: string | null;
+}
+
+function MedicacionAnestesista({ control, firmado }: MedicacionAnestesistaProps) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "premedicacion",
+  });
+
+  const [busqueda, setBusqueda] = useState("");
+  const [resultados, setResultados] = useState<StockSearchHit[]>([]);
+  const [abierta, setAbierta] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!busqueda.trim() || busqueda.trim().length < 2 || firmado) {
+      setResultados([]);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/farmacia/stock-search?q=${encodeURIComponent(busqueda.trim())}`);
+        if (res.ok) {
+          const data = await res.json();
+          setResultados(Array.isArray(data) ? data : []);
+        }
+      } catch {
+        setResultados([]);
+      }
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [busqueda, firmado]);
+
+  const elegir = (hit: StockSearchHit) => {
+    append({ droga: hit.nombre, nTroquel: hit.nTroquel ?? null, dosis: "", hora: "" });
+    setBusqueda("");
+    setResultados([]);
+    setAbierta(false);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="block text-sm text-muted uppercase tracking-wide">Medicación</label>
+      </div>
+
+      {!firmado && (
+        <div className="relative">
+          <input
+            value={busqueda}
+            onChange={(e) => {
+              setBusqueda(e.target.value);
+              setAbierta(true);
+            }}
+            onFocus={() => setAbierta(true)}
+            onBlur={() => setTimeout(() => setAbierta(false), 150)}
+            placeholder="Buscar medicamento por nombre o troquel…"
+            className="w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
+          />
+          {abierta && busqueda.trim().length >= 2 && (
+            <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto border border-border rounded-md bg-surface shadow-sm">
+              {resultados.length === 0 ? (
+                <div className="px-3 py-2 text-[12px] text-muted">Sin resultados</div>
+              ) : (
+                resultados.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onMouseDown={() => elegir(r)}
+                    className="w-full text-left px-3 py-2 hover:bg-surface-hover transition-colors border-b border-border/30 last:border-0"
+                  >
+                    <span className="font-mono text-[12px] text-brand">{r.nTroquel ?? "—"}</span>
+                    <span className="text-[13px] text-text ml-2">{r.nombre}</span>
+                    {r.presentacion && <span className="text-[11px] text-muted ml-2">{r.presentacion}</span>}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {fields.length === 0 && (
+        <p className="text-xs text-muted italic">Sin medicación registrada</p>
+      )}
+
+      {fields.map((field, idx) => (
+        <div key={field.id} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_120px_auto] gap-2 p-2 rounded bg-background border border-border/50 items-end">
+          <div className="min-w-0">
+            <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">Medicamento</span>
+            <span className="text-[13px]">
+              <span className="font-mono text-brand">{(field as PremedicacionItem).nTroquel ? `${(field as PremedicacionItem).nTroquel} · ` : ""}</span>
+              <span className="text-text">{(field as PremedicacionItem).droga}</span>
+            </span>
+          </div>
+          <Input label="Dosis" {...control.register(`premedicacion.${idx}.dosis`)} disabled={firmado} />
+          <Input label="Hora" type="time" {...control.register(`premedicacion.${idx}.hora`)} disabled={firmado} />
+          <Button type="button" variant="danger" size="sm" disabled={firmado}
+            onClick={() => remove(idx)}>
+            <Trash2 size={12} />
+          </Button>
+        </div>
+      ))}
     </div>
   );
 }
