@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useForm, useWatch, useFieldArray, type Control } from "react-hook-form";
+import { useForm, useWatch, useFieldArray, type Control, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {ArrowLeft, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Printer, PenLine, AlertTriangle, Clock, Trash2} from "lucide-react";
 
@@ -1322,7 +1322,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
               {sec.key === "recuperacion" && (
                 <>
                   {/* Medicación del anestesista (fuente de verdad; sync a medicación de Qx) */}
-                  <MedicacionAnestesista control={form.control} firmado={firmado} />
+                  <MedicacionAnestesista form={form} firmado={firmado} />
 
                   {/* Estado egreso */}
                   <div className="space-y-2">
@@ -1362,11 +1362,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                   {/* Aldrete */}
                   <EscalaAldrete control={form.control} readOnly={firmado} />
 
-                  {/* Drogas */}
-                  <div className="space-y-2">
-                    <label className="block text-sm text-muted uppercase tracking-wide">Medicación administrada</label>
-                    <PanelDrogas control={form.control} readOnly={firmado} />
-                  </div>
+                  {/* Medicación del anestesista ya está en MedicacionAnestesista arriba */}
                 </>
               )}
             </div>
@@ -1472,7 +1468,7 @@ function BalanceLiquidos({ disabled }: { disabled: boolean }) {
 
 // Sub-componente: medicación del anestesista (catálogo farmacia; sync a medicación de Qx)
 interface MedicacionAnestesistaProps {
-  control: Control<ProtocoloAnestesiaFormData>;
+  form: UseFormReturn<ProtocoloAnestesiaFormData>;
   firmado: boolean;
 }
 
@@ -1483,16 +1479,28 @@ interface StockSearchHit {
   presentacion?: string | null;
 }
 
-function MedicacionAnestesista({ control, firmado }: MedicacionAnestesistaProps) {
+function MedicacionAnestesista({ form, firmado }: MedicacionAnestesistaProps) {
+  const { getValues, trigger } = form;
   const { fields, append, remove } = useFieldArray({
-    control,
+    control: form.control,
     name: "premedicacion",
   });
+  const { toast } = useToast();
 
   const [busqueda, setBusqueda] = useState("");
   const [resultados, setResultados] = useState<StockSearchHit[]>([]);
   const [abierta, setAbierta] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Snapshot del último estado guardado para detectar cambios
+  const ultimoGuardadoRef = useRef<string>(JSON.stringify(getValues("premedicacion") || []));
+  const hayCambios = JSON.stringify(getValues("premedicacion") || []) !== ultimoGuardadoRef.current;
+
+  // Función para obtener hora actual en formato HH:mm
+  const horaActual = () => {
+    const ahora = new Date();
+    return `${String(ahora.getHours()).padStart(2, "0")}:${String(ahora.getMinutes()).padStart(2, "0")}`;
+  };
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -1517,16 +1525,30 @@ function MedicacionAnestesista({ control, firmado }: MedicacionAnestesistaProps)
   }, [busqueda, firmado]);
 
   const elegir = (hit: StockSearchHit) => {
-    append({ droga: hit.nombre, nTroquel: hit.nTroquel ?? null, dosis: "", hora: "" });
+    append({ droga: hit.nombre, nTroquel: hit.nTroquel ?? null, dosis: "", hora: horaActual() });
     setBusqueda("");
     setResultados([]);
     setAbierta(false);
+  };
+
+  const guardar = async () => {
+    if (firmado) return;
+    try {
+      await form.trigger("premedicacion");
+      ultimoGuardadoRef.current = JSON.stringify(getValues("premedicacion") || []);
+      toast("success", "Medicación guardada");
+    } catch {
+      toast("error", "Error al guardar medicación");
+    }
   };
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <label className="block text-sm text-muted uppercase tracking-wide">Medicación</label>
+        {!firmado && hayCambios && (
+          <span className="text-[10px] font-mono text-warning bg-warning/10 px-2 py-0.5 rounded">Sin guardar</span>
+        )}
       </div>
 
       {!firmado && (
@@ -1578,14 +1600,22 @@ function MedicacionAnestesista({ control, firmado }: MedicacionAnestesistaProps)
               <span className="text-text">{(field as PremedicacionItem).droga}</span>
             </span>
           </div>
-          <Input label="Dosis" {...control.register(`premedicacion.${idx}.dosis`)} disabled={firmado} />
-          <Input label="Hora" type="time" {...control.register(`premedicacion.${idx}.hora`)} disabled={firmado} />
+          <Input label="Dosis" {...form.control.register(`premedicacion.${idx}.dosis`)} disabled={firmado} />
+          <Input label="Hora" type="time" {...form.control.register(`premedicacion.${idx}.hora`)} disabled={firmado} />
           <Button type="button" variant="danger" size="sm" disabled={firmado}
             onClick={() => remove(idx)}>
             <Trash2 size={12} />
           </Button>
         </div>
       ))}
+
+      {!firmado && fields.length > 0 && (
+        <div className="pt-2 border-t border-border/50">
+          <Button onClick={guardar} variant="primary" size="sm" className="w-full sm:w-auto">
+            <PenLine size={13} /> Guardar medicación
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
