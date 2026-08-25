@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { validarCuil } from "./cuil";
 
-const cuilSchema = z.string().refine(
+const cuilSchema = z.string().optional().nullable().refine(
   (val) => {
+    if (!val || !val.trim()) return true; // cuil no obligatorio
     const result = validarCuil(val);
     return result.valido;
   },
@@ -43,11 +44,11 @@ export const createPacienteSchema = z.object({
 
 export const updatePacienteSchema = createPacienteSchema.partial().refine(
   (data) => {
-    if (data.cuil !== undefined && data.cuil === null) return false;
+    // Solo fechaNac no puede vaciarse si ya fue cargada
     if (data.fechaNac !== undefined && data.fechaNac === null) return false;
     return true;
   },
-  { message: "No se puede vaciar CUIL ni fecha de nacimiento si ya fueron cargados" }
+  { message: "No se puede vaciar la fecha de nacimiento si ya fue cargada" }
 );
 
 export type CreatePacienteInput = z.infer<typeof createPacienteSchema>;

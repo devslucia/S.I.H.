@@ -14,8 +14,8 @@ const admitirSchema = z.object({
   nombre: z.string().min(1),
   sexo: z.enum(["MASCULINO", "FEMENINO", "OTRO"]),
   fechaNac: fechaNacSchema,
-  cuil: z.string().refine(
-    (val) => validarCuil(val).valido,
+  cuil: z.string().optional().nullable().refine(
+    (val) => !val || !val.trim() || validarCuil(val).valido,
     { message: "CUIL inválido (formato o dígito verificador incorrecto)" }
   ),
   domicilio: z.string().optional().nullable(),
