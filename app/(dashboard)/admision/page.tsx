@@ -14,7 +14,8 @@ import { PatientSearchPanel, type PatientSearchResult } from "@/components/ui/Pa
 import { BedPicker, type BedPickerBed } from "@/components/ui/BedPicker";
 import { PrimaryActionBar } from "@/components/ui/PrimaryActionBar";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { formatDateTime, formatUserName } from "@/lib/utils";
+import { formatDateTime, formatUserName, cn } from "@/lib/utils";
+
 import { calcularEdad } from "@/lib/validations/cuil";
 
 interface Paciente {
@@ -78,6 +79,7 @@ interface AdmisionBody {
   tipoBeneficiario: string;
   camaId: string;
   tipoIngreso: string;
+  tipoAtencion: string;
   motivoIngreso: string;
   estadoCivil?: string;
   medicoTratanteIds?: string[];
@@ -88,6 +90,7 @@ interface AdmisionBody {
 interface InternacionBody {
   pacienteId: string;
   tipoIngreso: string;
+  tipoAtencion: string;
   motivoIngreso?: string;
   camaId?: string;
   medicoTratanteIds?: string[];
@@ -104,6 +107,12 @@ interface InternacionEspera {
 }
 
 type ViewMode = "desk" | "existing-patient";
+
+const TIPO_ATENCION_OPTIONS = [
+  { value: "CIRUGIA_AMBULATORIA", icon: "💉", title: "Cirugía ambulatoria", desc: "Quirófano · sin cama" },
+  { value: "INTERNACION_QUIRURGICA", icon: "🛏️", title: "Internación quirúrgica", desc: "Cama + quirófano" },
+  { value: "INTERNACION_CLINICA", icon: "🏥", title: "Internación clínica", desc: "Cama · sin quirófano" },
+] as const;
 
 const initialNewPatientForm = {
   dni: "",
@@ -123,6 +132,7 @@ const initialNewPatientForm = {
   camaId: "",
   medicoTratanteIds: [] as string[],
   tipoIngreso: "PROGRAMADO",
+  tipoAtencion: "",
   motivoIngreso: "",
   peso: "",
   diagnosticoCirugia: "",
@@ -132,6 +142,7 @@ const initialInternacionForm = {
   camaId: "",
   medicoTratanteIds: [] as string[],
   tipoIngreso: "PROGRAMADO",
+  tipoAtencion: "",
   motivoIngreso: "",
   peso: "",
   diagnosticoCirugia: "",
@@ -291,6 +302,7 @@ export default function AdmisionPage() {
       const body: InternacionBody = {
         pacienteId: selectedPaciente.id,
         tipoIngreso: internacionForm.tipoIngreso,
+        tipoAtencion: internacionForm.tipoAtencion,
         motivoIngreso: internacionForm.motivoIngreso || undefined,
       };
       if (internacionForm.camaId) body.camaId = internacionForm.camaId;
@@ -394,6 +406,32 @@ export default function AdmisionPage() {
               )}
 
               <form onSubmit={handleCreateAdmission} className="space-y-6">
+                {/* ── Tipo de atención (obligatorio, primer paso) ── */}
+                <div>
+                  <h4 className="text-sm font-medium text-brand uppercase tracking-wide mb-3">Tipo de atención *</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {TIPO_ATENCION_OPTIONS.map((opt) => (
+                      <button
+                        type="button"
+                        key={opt.value}
+                        onClick={() => setNewPatientForm((p) => ({ ...p, tipoAtencion: opt.value }))}
+                        className={cn(
+                          "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-all text-[13px]",
+                          newPatientForm.tipoAtencion === opt.value
+                            ? "border-brand bg-brand/8 text-brand font-medium"
+                            : "border-border hover:border-border-hover text-text"
+                        )}
+                      >
+                        <span>{opt.icon} {opt.title}</span>
+                        <span className="text-[11px] text-muted font-normal">{opt.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {!newPatientForm.tipoAtencion && (
+                    <p className="text-[11px] text-warning mt-1">Seleccioná un tipo de atención para continuar</p>
+                  )}
+                </div>
+
                 <div>
                   <h4 className="text-sm font-medium text-brand uppercase tracking-wide mb-3">Datos del Paciente</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -522,6 +560,7 @@ export default function AdmisionPage() {
                   confirmLabel={saving ? "Guardando..." : "Crear paciente y asignar cama"}
                   onConfirm={() => (document.getElementById("npm-form-submit") as HTMLButtonElement)?.click()}
                   confirmLoading={saving}
+                  confirmDisabled={!newPatientForm.tipoAtencion}
                 />
                 <button type="submit" id="npm-form-submit" className="hidden" aria-hidden="true" />
               </form>
@@ -646,6 +685,33 @@ export default function AdmisionPage() {
                 </div>
               )}
               <form onSubmit={handleCreateInternacion} className="space-y-4">
+                {/* ── Tipo de atención (obligatorio) ── */}
+                <div>
+                  <label className="text-sm text-text-secondary block mb-1.5">Tipo de atención *</label>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {TIPO_ATENCION_OPTIONS.map((opt) => (
+                      <button
+                        type="button"
+                        key={opt.value}
+                        onClick={() => setInternacionForm((p) => ({ ...p, tipoAtencion: opt.value }))}
+                        className={cn(
+                          "flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all text-[13px]",
+                          internacionForm.tipoAtencion === opt.value
+                            ? "border-brand bg-brand/8 text-brand font-medium"
+                            : "border-border hover:border-border-hover text-text"
+                        )}
+                      >
+                        <span>{opt.icon}</span>
+                        <span>{opt.title}</span>
+                        <span className="text-[11px] text-muted ml-auto">{opt.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {!internacionForm.tipoAtencion && (
+                    <p className="text-[11px] text-warning mt-1">Obligatorio</p>
+                  )}
+                </div>
+
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm text-text-secondary">Médico(s) Tratante(s)</label>
                   <SearchableMultiSelect
@@ -673,6 +739,7 @@ export default function AdmisionPage() {
                   confirmLabel={saving ? "Guardando..." : "Crear internación"}
                   onConfirm={() => (document.getElementById("npm-internacion-submit") as HTMLButtonElement)?.click()}
                   confirmLoading={saving}
+                  confirmDisabled={!internacionForm.tipoAtencion}
                 />
                 <button type="submit" id="npm-internacion-submit" className="hidden" aria-label="submit" />
               </form>
