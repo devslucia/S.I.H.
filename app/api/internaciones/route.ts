@@ -83,6 +83,14 @@ export async function POST(req: NextRequest) {
         if (cama.estado !== "LIBRE") throw new Error(`CAMA_NOT_AVAILABLE:${cama.estado}`);
       }
 
+      // Validación: internaciones (clínica o quirúrgica) requieren cama
+      if (
+        (parsed.data.tipoAtencion === "INTERNACION_CLINICA" || parsed.data.tipoAtencion === "INTERNACION_QUIRURGICA") &&
+        !parsed.data.camaId
+      ) {
+        throw new Error("CAMA_REQUERIDA_INTERNACION");
+      }
+
       const internacion = await tx.internacion.create({
         data: {
           pacienteId: parsed.data.pacienteId,
@@ -96,11 +104,13 @@ export async function POST(req: NextRequest) {
           diagnosticoCIE: parsed.data.diagnosticoCIE,
           medicoSolicitante: parsed.data.medicoSolicitante,
           tipoIngreso: parsed.data.tipoIngreso,
+          tipoAtencion: parsed.data.tipoAtencion,
           medicosTratantesInternacion: parsed.data.medicoTratanteIds?.length
             ? { create: parsed.data.medicoTratanteIds.map((id) => ({ medicoId: id })) }
             : undefined,
         },
       });
+
 
       await tx.historiaClinica.create({
         data: { internacionId: internacion.id },
@@ -164,6 +174,9 @@ export async function POST(req: NextRequest) {
     }
     if (errorMessage(e) === "CAMA_NOT_FOUND") {
       return NextResponse.json({ error: "Cama no encontrada" }, { status: 404 });
+    }
+    if (errorMessage(e) === "CAMA_REQUERIDA_INTERNACION") {
+      return NextResponse.json({ error: "La internación clínica o quirúrgica requiere una cama asignada" }, { status: 400 });
     }
     const msg = errorMessage(e);
     if (msg?.startsWith("CAMA_NOT_AVAILABLE")) {

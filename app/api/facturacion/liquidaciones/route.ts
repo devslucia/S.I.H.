@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
   const estadoInternacionFiltro = sp.get("estadoInternacion") || undefined;
   // Filtra por estado de CARPETA: "ABIERTA" | "CERRADA" | "ENVIADA" | "LIQUIDADA"
   const estadoCarpetaFiltro = sp.get("estadoCarpeta") || undefined;
+  // Filtra por tipo de atención: "CIRUGIA_AMBULATORIA" | "INTERNACION_QUIRURGICA" | "INTERNACION_CLINICA" | "SIN_CLASIFICAR"
+  const tipoAtencionFiltro = sp.get("tipoAtencion") || undefined;
 
 
   if (obraSocialId && session.user.rol !== "ADMIN") {
@@ -56,6 +58,14 @@ export async function GET(req: NextRequest) {
 
   if (estadoCarpetaFiltro) {
     internacionWhere.estadoCarpeta = estadoCarpetaFiltro;
+  }
+
+  if (tipoAtencionFiltro) {
+    if (tipoAtencionFiltro === "SIN_CLASIFICAR") {
+      internacionWhere.tipoAtencion = null;
+    } else {
+      internacionWhere.tipoAtencion = tipoAtencionFiltro;
+    }
   }
 
   if (Object.keys(internacionWhere).length > 0) {
@@ -140,6 +150,7 @@ export async function GET(req: NextRequest) {
         numero: l.internacion.numero,
         estado: l.internacion.estado,
         estadoCarpeta: l.internacion.estadoCarpeta,
+        tipoAtencion: l.internacion.tipoAtencion ?? null,
         fechaCierre: l.internacion.fechaCierre ?? null,
         fechaEnvio: l.internacion.fechaEnvio ?? null,
         fechaLiquidacion: l.internacion.fechaLiquidacion ?? null,

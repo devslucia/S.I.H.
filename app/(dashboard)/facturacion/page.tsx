@@ -98,6 +98,7 @@ interface Liquidacion {
     numero: number;
     estado: string;
     estadoCarpeta: string;
+    tipoAtencion?: string | null;
     fechaCierre?: string | null;
     fechaEnvio?: string | null;
     fechaLiquidacion?: string | null;
@@ -149,6 +150,12 @@ const LABEL_CARPETA: Record<string, { label: string; tone: "success" | "warning"
   LIQUIDADA: { label: "Liquidada", tone: "neutral" },
 };
 
+const LABEL_TIPO_ATENCION: Record<string, { label: string; tone: "success" | "warning" | "info" | "neutral" }> = {
+  CIRUGIA_AMBULATORIA: { label: "Cir. ambulatoria", tone: "info" },
+  INTERNACION_QUIRURGICA: { label: "Internación quirúrgica", tone: "warning" },
+  INTERNACION_CLINICA: { label: "Internación clínica", tone: "neutral" },
+};
+
 type EstadoCarpetaUI = "ABIERTA" | "CERRADA" | "ENVIADA" | "LIQUIDADA";
 
 const TRANSICIONES_CARPETA: Record<EstadoCarpetaUI, { nuevoEstado: EstadoCarpetaUI; label: string; confirmar: boolean; danger?: boolean }[]> = {
@@ -175,6 +182,7 @@ export default function FacturacionPage() {
   const [estadoFiltro, setEstadoFiltro] = useState("");
   const [estadoIntFiltro, setEstadoIntFiltro] = useState("");
   const [estadoCarpetaFiltro, setEstadoCarpetaFiltro] = useState("");
+  const [tipoAtencionFiltro, setTipoAtencionFiltro] = useState("");
   const [applied, setApplied] = useState<Record<string, string>>({});
 
   // Confirm dialog para transiciones de carpeta
@@ -216,6 +224,7 @@ export default function FacturacionPage() {
       if (applied.estado) params.set("estado", applied.estado);
       if (applied.estadoInt) params.set("estadoInternacion", applied.estadoInt);
       if (applied.estadoCarpeta) params.set("estadoCarpeta", applied.estadoCarpeta);
+      if (applied.tipoAtencion) params.set("tipoAtencion", applied.tipoAtencion);
 
       const res = await fetch(`/api/facturacion/liquidaciones?${params}`);
       if (!res.ok) throw new Error("No autorizado");
@@ -235,10 +244,11 @@ export default function FacturacionPage() {
   }, [cargarObras, fetchLiquidaciones]);
 
   const aplicar = () => {
-    setApplied({ os: osSel, mes, q: q.trim(), estado: estadoFiltro, estadoInt: estadoIntFiltro, estadoCarpeta: estadoCarpetaFiltro });
+    setApplied({ os: osSel, mes, q: q.trim(), estado: estadoFiltro, estadoInt: estadoIntFiltro, estadoCarpeta: estadoCarpetaFiltro, tipoAtencion: tipoAtencionFiltro });
     setExpandedPaciente(null);
     setRubroAbierto(null);
   };
+
 
   const ejecutarTransicionCarpeta = async () => {
     if (!confirmCarpeta) return;
@@ -346,6 +356,20 @@ export default function FacturacionPage() {
               <option value="LIQUIDADA">Liquidada</option>
             </select>
           </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Tipo de atención</label>
+            <select
+              value={tipoAtencionFiltro}
+              onChange={(e) => setTipoAtencionFiltro(e.target.value)}
+              className="border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
+            >
+              <option value="">Todos</option>
+              <option value="CIRUGIA_AMBULATORIA">Cirugía ambulatoria</option>
+              <option value="INTERNACION_QUIRURGICA">Internación quirúrgica</option>
+              <option value="INTERNACION_CLINICA">Internación clínica</option>
+              <option value="SIN_CLASIFICAR">Sin clasificar (legado)</option>
+            </select>
+          </div>
           <div className="relative flex-1 min-w-[220px]">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input
@@ -414,6 +438,13 @@ export default function FacturacionPage() {
                   <div className="text-right shrink-0 ml-3">
                     <p className="text-[15px] font-medium text-text tabular-nums">{money(liq.totalCargos)}</p>
                     <div className="mt-1 flex items-center gap-1.5 justify-end flex-wrap">
+                      {/* Badge tipo de atención */}
+                      {liq.internacion?.tipoAtencion && LABEL_TIPO_ATENCION[liq.internacion.tipoAtencion] && (
+                        <StatusBadge
+                          tone={LABEL_TIPO_ATENCION[liq.internacion.tipoAtencion].tone}
+                          label={LABEL_TIPO_ATENCION[liq.internacion.tipoAtencion].label}
+                        />
+                      )}
                       {/* Badge estado carpeta */}
                       {liq.internacion?.estadoCarpeta && LABEL_CARPETA[liq.internacion.estadoCarpeta] && (
                         <StatusBadge
@@ -431,6 +462,7 @@ export default function FacturacionPage() {
                       )}
                       <StatusBadge tone={est.tone} label={est.label} dot={liq.estado !== "FACTURADO"} />
                     </div>
+
                   </div>
 
                 </button>
