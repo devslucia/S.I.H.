@@ -60,7 +60,7 @@ const FORM_INICIAL: FormState = {
 
 const field = "flex flex-col gap-1";
 const label = "text-[11px] font-mono uppercase tracking-widest text-muted";
-const th = "px-4 py-2.5 text-left text-[11px] font-mono uppercase tracking-widest text-muted whitespace-nowrap";
+const th = "px-4 py-2.5 text-left text-[11px] font-mono uppercase tracking-widest text-muted whitespace-nowrap bg-surface";
 const td = "px-4 py-2.5";
 
 const fechaProximaVencimiento = (vencimiento?: string, dias = 30) => {
@@ -264,7 +264,7 @@ export default function FarmaciaPage() {
 
   useEffect(() => {
     fetchStock({ page: 1, search: "" });
-    fetch("/api/auth/session").then(r => r.json()).then(d => setUserRole(d?.user?.rol || "")).catch(() => {});
+    fetch("/api/auth/session").then(r => r.json()).then(d => setUserRole(d?.user?.rol || "")).catch(() => { });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -488,10 +488,12 @@ export default function FarmaciaPage() {
         </div>
       ) : (
         <div className="border border-border rounded-lg overflow-hidden bg-surface">
-          <div className="overflow-x-auto">
+          {/* overflow-auto habilita scroll en ambos ejes; max-h fija la altura usable */}
+          <div className="overflow-auto max-h-[calc(100vh-18rem)]">
             <table className="w-full text-[13px]">
-              <thead>
-                <tr className="border-b border-border text-muted">
+              {/* sticky top-0 z-10: encabezados fijos al hacer scroll vertical dentro del contenedor */}
+              <thead className="sticky top-0 z-10">
+                <tr className="border-b border-border text-muted bg-surface">
                   <th className={th}>Nombre</th>
                   <th className={th}>Presentación</th>
                   <th className={th}>Stock</th>
