@@ -13,7 +13,9 @@ export const createInternacionSchema = z.object({
   medicoSolicitante: z.string().optional().nullable(),
   medicoTratanteIds: z.array(z.string().uuid()).optional().nullable(),
   tipoIngreso: z.enum(["PROGRAMADO", "URGENCIA", "GUARDIA", "DERIVACION"]),
+  tipoAtencion: z.enum(["CIRUGIA_AMBULATORIA", "INTERNACION_QUIRURGICA", "INTERNACION_CLINICA"]),
 });
+
 
 export const updateInternacionSchema = createInternacionSchema.partial();
 

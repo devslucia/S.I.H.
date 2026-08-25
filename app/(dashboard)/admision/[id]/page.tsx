@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
 import { SearchableMultiSelect } from "@/components/ui/SearchableMultiSelect";
 import { formatDateTime } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface Alergia {
   id: string;
@@ -81,7 +82,7 @@ export default function PacienteDetailPage() {
   const [medicos, setMedicos] = useState<Medico[]>([]);
 
   const [nuevaInternacionOpen, setNuevaInternacionOpen] = useState(false);
-  const [form, setForm] = useState({ camaId: "", obraSocialId: "", medicoTratanteIds: [] as string[], nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO", peso: "", diagnosticoCirugia: "" });
+  const [form, setForm] = useState({ tipoAtencion: "", camaId: "", obraSocialId: "", medicoTratanteIds: [] as string[], nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO", peso: "", diagnosticoCirugia: "" });
   const [saving, setSaving] = useState(false);
 
   const [alergiaModalOpen, setAlergiaModalOpen] = useState(false);
@@ -119,6 +120,7 @@ export default function PacienteDetailPage() {
       const body: {
         pacienteId: string;
         tipoIngreso: string;
+        tipoAtencion: string;
         motivoIngreso?: string;
         camaId?: string;
         obraSocialId?: string;
@@ -130,6 +132,7 @@ export default function PacienteDetailPage() {
       } = {
         pacienteId: Array.isArray(params.id) ? params.id[0] : params.id,
         tipoIngreso: form.tipoIngreso,
+        tipoAtencion: form.tipoAtencion,
         motivoIngreso: form.motivoIngreso || undefined,
       };
       if (form.camaId) body.camaId = form.camaId;
@@ -147,7 +150,7 @@ export default function PacienteDetailPage() {
       });
       if (res.ok) {
         setNuevaInternacionOpen(false);
-        setForm({ camaId: "", obraSocialId: "", medicoTratanteIds: [], nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO", peso: "", diagnosticoCirugia: "" });
+        setForm({ tipoAtencion: "", camaId: "", obraSocialId: "", medicoTratanteIds: [], nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO", peso: "", diagnosticoCirugia: "" });
         fetchPaciente();
       }
     } catch (err) { console.error(err); }
@@ -366,11 +369,52 @@ export default function PacienteDetailPage() {
 
       <Modal open={nuevaInternacionOpen} onClose={() => setNuevaInternacionOpen(false)} title="Nueva internación" size="xl">
         <form onSubmit={handleCreateInternacion} className="space-y-4">
+
+          {/* ── Tipo de atención (obligatorio, va primero) ── */}
+          <div className={`${field} sm:col-span-2`}>
+            <label className={`${label} text-brand`}>Tipo de atención *</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
+              {([
+                { value: "CIRUGIA_AMBULATORIA", icon: "💉", title: "Cirugía ambulatoria", desc: "Quirófano · sin cama" },
+                { value: "INTERNACION_QUIRURGICA", icon: "🛏️", title: "Internación quirúrgica", desc: "Cama + quirófano" },
+                { value: "INTERNACION_CLINICA", icon: "🏥", title: "Internación clínica", desc: "Cama · sin quirófano" },
+              ] as const).map((opt) => (
+                <button
+                  type="button"
+                  key={opt.value}
+                  onClick={() => setForm((p) => ({ ...p, tipoAtencion: opt.value }))}
+                  className={cn(
+                    "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-all text-[13px]",
+                    form.tipoAtencion === opt.value
+                      ? "border-brand bg-brand/8 text-brand font-medium"
+                      : "border-border hover:border-border-hover text-text"
+                  )}
+                >
+                  <span>{opt.icon} {opt.title}</span>
+                  <span className="text-[11px] text-muted font-normal">{opt.desc}</span>
+                </button>
+              ))}
+            </div>
+            {form.tipoAtencion === "" && (
+              <p className="text-[11px] text-warning mt-1">Seleccioná un tipo de atención para continuar</p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className={field}>
-              <label className={label}>Cama</label>
-              <select className="select-field text-[13px]" value={form.camaId} onChange={(e) => setForm((p) => ({ ...p, camaId: e.target.value }))}>
-                <option value="">Sin cama asignada</option>
+              <label className={label}>
+                Cama
+                {(form.tipoAtencion === "INTERNACION_CLINICA" || form.tipoAtencion === "INTERNACION_QUIRURGICA") && (
+                  <span className="text-error ml-1">*</span>
+                )}
+              </label>
+              <select
+                className="select-field text-[13px]"
+                value={form.camaId}
+                onChange={(e) => setForm((p) => ({ ...p, camaId: e.target.value }))}
+                required={form.tipoAtencion === "INTERNACION_CLINICA" || form.tipoAtencion === "INTERNACION_QUIRURGICA"}
+              >
+                <option value="">{form.tipoAtencion === "CIRUGIA_AMBULATORIA" ? "Sin cama (ambulatoria)" : "Sin cama asignada"}</option>
                 {camasLibres.map((c) => <option key={c.id} value={c.id}>{c.numero} — {c.sector.nombre}</option>)}
               </select>
             </div>
@@ -428,7 +472,13 @@ export default function PacienteDetailPage() {
           </div>
           <div className="flex justify-end gap-2 pt-1">
             <button type="button" onClick={() => setNuevaInternacionOpen(false)} className="btn-secondary text-[13px]">Cancelar</button>
-            <button type="submit" disabled={saving} className="btn-primary text-[13px]">{saving ? "Guardando…" : "Guardar"}</button>
+            <button
+              type="submit"
+              disabled={saving || !form.tipoAtencion}
+              className="btn-primary text-[13px]"
+            >
+              {saving ? "Guardando…" : "Guardar"}
+            </button>
           </div>
         </form>
       </Modal>

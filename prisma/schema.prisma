@@ -77,6 +77,14 @@ enum EstadoCarpeta {
   LIQUIDADA
 }
 
+// Tipo de atención/HC elegido obligatoriamente en Admisión.
+// NULL significa registro previo sin clasificar (legado).
+enum TipoAtencion {
+  CIRUGIA_AMBULATORIA     // Pasa por quirófano; sin cama fija
+  INTERNACION_QUIRURGICA  // Internación + quirófano
+  INTERNACION_CLINICA     // Internación sin paso por quirófano
+}
+
 enum TipoPrescripcion {
   MEDICACION
   DIETA
@@ -385,7 +393,9 @@ model Internacion {
   fechaCierre                 DateTime?
   fechaEnvio                  DateTime?
   fechaLiquidacion            DateTime?
+  tipoAtencion                TipoAtencion?               // NULL = legado sin clasificar
   carpetaLogs                 CarpetaLog[]
+
   pases                       PaseInterno[]
   histClinica                 HistoriaClinica?
   episodio                    Episodio?
