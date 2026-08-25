@@ -2,6 +2,8 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { calcularMedicacion } from "@/lib/facturacion-medicacion";
+import { assertCarpetaAbierta } from "@/lib/carpeta-guard";
+
 
 export async function POST(req: NextRequest) {
   const { error } = await requireRole("ADMIN", "FACTURACION");
@@ -17,6 +19,10 @@ export async function POST(req: NextRequest) {
   const modo = body.modo === "stock" ? "stock" : body.modo === "92" ? "92" : body.modo === "60" ? "60" : null;
   if (!internacionId) return NextResponse.json({ error: "Internación requerida" }, { status: 400 });
   if (!modo) return NextResponse.json({ error: "Modo inválido (stock, 60 o 92)" }, { status: 400 });
+
+  const guardaCarpeta = await assertCarpetaAbierta(internacionId);
+  if (!guardaCarpeta.ok) return guardaCarpeta.response;
+
 
   const num = (v: unknown) => {
     if (typeof v === "number" && Number.isFinite(v)) return v;

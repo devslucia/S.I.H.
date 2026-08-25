@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { calcularHonorario } from "@/lib/facturacion-honorarios";
+import { assertCarpetaAbierta } from "@/lib/carpeta-guard";
 
 const FUNCIONES = ["10", "20", "30", "91"] as const;
 
@@ -23,6 +24,9 @@ export async function POST(req: NextRequest) {
   if (!internacionId) return NextResponse.json({ error: "Internación requerida" }, { status: 400 });
   if (!codigo && !concepto) return NextResponse.json({ error: "Concepto requerido" }, { status: 400 });
   if (!funcionCodigo) return NextResponse.json({ error: "Función inválida (10, 20, 30 o 91)" }, { status: 400 });
+
+  const guardaCarpeta = await assertCarpetaAbierta(internacionId);
+  if (!guardaCarpeta.ok) return guardaCarpeta.response;
 
   const num = (v: unknown) => {
     if (typeof v === "number" && Number.isFinite(v)) return v;
