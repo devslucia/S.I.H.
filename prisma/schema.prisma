@@ -70,6 +70,13 @@ enum EstadoInternacion {
   FALLECIDO
 }
 
+enum EstadoCarpeta {
+  ABIERTA
+  CERRADA
+  ENVIADA
+  LIQUIDADA
+}
+
 enum TipoPrescripcion {
   MEDICACION
   DIETA
@@ -234,6 +241,7 @@ model Usuario {
   notificaciones           Notificacion[]
   guardiasAtendidas        EpisodioGuardiaMeta[]          @relation("MedicoGuardia")
   guardiasRegistradas      EpisodioGuardiaMeta[]          @relation("RegistroIngresoGuardia")
+  carpetaLogs              CarpetaLog[]
 }
 
 model Paciente {
@@ -373,6 +381,11 @@ model Internacion {
   altaMedicaAt                DateTime?
   altaEnfermeriaAt            DateTime?
   altaAdministrativaAt        DateTime?
+  estadoCarpeta               EstadoCarpeta               @default(ABIERTA)
+  fechaCierre                 DateTime?
+  fechaEnvio                  DateTime?
+  fechaLiquidacion            DateTime?
+  carpetaLogs                 CarpetaLog[]
   pases                       PaseInterno[]
   histClinica                 HistoriaClinica?
   episodio                    Episodio?
@@ -1231,4 +1244,18 @@ model PlantillaProtocoloQuirurgico {
   updatedAt   DateTime @updatedAt
 
   @@unique([medicoId, nombre])
+}
+
+model CarpetaLog {
+  id             String        @id @default(uuid())
+  internacionId  String
+  internacion    Internacion   @relation(fields: [internacionId], references: [id], onDelete: Cascade)
+  estadoAnterior EstadoCarpeta
+  estadoNuevo    EstadoCarpeta
+  usuarioId      String
+  usuario        Usuario       @relation(fields: [usuarioId], references: [id])
+  motivo         String?
+  at             DateTime      @default(now())
+
+  @@index([internacionId])
 }

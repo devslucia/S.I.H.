@@ -97,6 +97,10 @@ interface Liquidacion {
   internacion: {
     numero: number;
     estado: string;
+    estadoCarpeta: string;
+    fechaCierre?: string | null;
+    fechaEnvio?: string | null;
+    fechaLiquidacion?: string | null;
     fechaIngreso: string;
     fechaEgreso?: string | null;
     altaMedicaAt?: string | null;
@@ -138,6 +142,24 @@ const LABEL_ESTADO_INT: Record<string, { label: string; tone: "success" | "warni
   FACTURADA: { label: "Facturada", tone: "neutral" },
 };
 
+const LABEL_CARPETA: Record<string, { label: string; tone: "success" | "warning" | "info" | "neutral" | "danger" }> = {
+  ABIERTA: { label: "Abierta", tone: "success" },
+  CERRADA: { label: "Carpeta cerrada", tone: "warning" },
+  ENVIADA: { label: "Enviada", tone: "info" },
+  LIQUIDADA: { label: "Liquidada", tone: "neutral" },
+};
+
+type EstadoCarpetaUI = "ABIERTA" | "CERRADA" | "ENVIADA" | "LIQUIDADA";
+
+const TRANSICIONES_CARPETA: Record<EstadoCarpetaUI, { nuevoEstado: EstadoCarpetaUI; label: string; confirmar: boolean; danger?: boolean }[]> = {
+  ABIERTA: [{ nuevoEstado: "CERRADA", label: "Cerrar carpeta", confirmar: true }],
+  CERRADA: [{ nuevoEstado: "ENVIADA", label: "Enviar", confirmar: true },
+  { nuevoEstado: "ABIERTA", label: "Reabrir carpeta", confirmar: true, danger: true }],
+  ENVIADA: [{ nuevoEstado: "LIQUIDADA", label: "Marcar liquidada", confirmar: true },
+  { nuevoEstado: "ABIERTA", label: "Reabrir carpeta", confirmar: true, danger: true }],
+  LIQUIDADA: [{ nuevoEstado: "ABIERTA", label: "Reabrir carpeta", confirmar: true, danger: true }],
+};
+
 export default function FacturacionPage() {
   const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,7 +174,19 @@ export default function FacturacionPage() {
   const [q, setQ] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
   const [estadoIntFiltro, setEstadoIntFiltro] = useState("");
+  const [estadoCarpetaFiltro, setEstadoCarpetaFiltro] = useState("");
   const [applied, setApplied] = useState<Record<string, string>>({});
+
+  // Confirm dialog para transiciones de carpeta
+  const [confirmCarpeta, setConfirmCarpeta] = useState<{
+    internacionId: string;
+    nuevoEstado: EstadoCarpetaUI;
+    label: string;
+    motivo: string;
+  } | null>(null);
+  const [savingCarpeta, setSavingCarpeta] = useState(false);
+  const [carpetaMsg, setCarpetaMsg] = useState<Record<string, string>>({});
+  const [carpetaErr, setCarpetaErr] = useState<Record<string, string>>({});
 
   const [expandedPaciente, setExpandedPaciente] = useState<string | null>(null);
   const [rubroAbierto, setRubroAbierto] = useState<string | null>(null);
@@ -181,6 +215,8 @@ export default function FacturacionPage() {
       if (applied.q) params.set("q", applied.q);
       if (applied.estado) params.set("estado", applied.estado);
       if (applied.estadoInt) params.set("estadoInternacion", applied.estadoInt);
+      if (applied.estadoCarpeta) params.set("estadoCarpeta", applied.estadoCarpeta);
+
       const res = await fetch(`/api/facturacion/liquidaciones?${params}`);
       if (!res.ok) throw new Error("No autorizado");
       const d = await res.json();
@@ -199,10 +235,37 @@ export default function FacturacionPage() {
   }, [cargarObras, fetchLiquidaciones]);
 
   const aplicar = () => {
-    setApplied({ os: osSel, mes, q: q.trim(), estado: estadoFiltro, estadoInt: estadoIntFiltro });
+    setApplied({ os: osSel, mes, q: q.trim(), estado: estadoFiltro, estadoInt: estadoIntFiltro, estadoCarpeta: estadoCarpetaFiltro });
     setExpandedPaciente(null);
     setRubroAbierto(null);
   };
+
+  const ejecutarTransicionCarpeta = async () => {
+    if (!confirmCarpeta) return;
+    setSavingCarpeta(true);
+    const { internacionId, nuevoEstado, motivo } = confirmCarpeta;
+    try {
+      const res = await fetch(`/api/facturacion/carpeta/${internacionId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nuevoEstado, motivo: motivo || undefined }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setCarpetaErr((prev) => ({ ...prev, [internacionId]: (d as { error?: string }).error ?? "Error" }));
+      } else {
+        setCarpetaMsg((prev) => ({ ...prev, [internacionId]: (d as { message?: string }).message ?? "Estado actualizado" }));
+        setCarpetaErr((prev) => { const n = { ...prev }; delete n[internacionId]; return n; });
+        await fetchLiquidaciones();
+      }
+    } catch {
+      setCarpetaErr((prev) => ({ ...prev, [internacionId]: "Error de conexión" }));
+    } finally {
+      setSavingCarpeta(false);
+      setConfirmCarpeta(null);
+    }
+  };
+
 
   const totalImporte = liquidaciones.reduce((acc, l) => acc + (Number(l.totalCargos) || 0), 0);
   const montoPendiente = liquidaciones.reduce(
@@ -267,6 +330,20 @@ export default function FacturacionPage() {
               <option value="activa">Internadas activas</option>
               <option value="en_alta">En proceso de alta</option>
               <option value="egresada">Egresadas / Facturadas</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Estado carpeta</label>
+            <select
+              value={estadoCarpetaFiltro}
+              onChange={(e) => setEstadoCarpetaFiltro(e.target.value)}
+              className="border border-border rounded-md bg-surface px-3 py-2 text-[13px]"
+            >
+              <option value="">Todas</option>
+              <option value="ABIERTA">Abierta</option>
+              <option value="CERRADA">Carpeta cerrada</option>
+              <option value="ENVIADA">Enviada</option>
+              <option value="LIQUIDADA">Liquidada</option>
             </select>
           </div>
           <div className="relative flex-1 min-w-[220px]">
@@ -337,6 +414,15 @@ export default function FacturacionPage() {
                   <div className="text-right shrink-0 ml-3">
                     <p className="text-[15px] font-medium text-text tabular-nums">{money(liq.totalCargos)}</p>
                     <div className="mt-1 flex items-center gap-1.5 justify-end flex-wrap">
+                      {/* Badge estado carpeta */}
+                      {liq.internacion?.estadoCarpeta && LABEL_CARPETA[liq.internacion.estadoCarpeta] && (
+                        <StatusBadge
+                          tone={LABEL_CARPETA[liq.internacion.estadoCarpeta].tone as "success" | "warning" | "info" | "neutral"}
+                          label={LABEL_CARPETA[liq.internacion.estadoCarpeta].label}
+                          dot={liq.internacion.estadoCarpeta === "ABIERTA"}
+                        />
+                      )}
+                      {/* Badge estado internación */}
                       {liq.internacion?.estado && LABEL_ESTADO_INT[liq.internacion.estado] && (
                         <StatusBadge
                           tone={LABEL_ESTADO_INT[liq.internacion.estado].tone as "success" | "warning" | "info" | "neutral"}
@@ -351,6 +437,52 @@ export default function FacturacionPage() {
 
                 {abierto && (
                   <div className="border-t border-border p-4 space-y-3">
+
+                    {/* ── Panel de acciones de carpeta ── */}
+                    {(() => {
+                      const ec = (liq.internacion?.estadoCarpeta ?? "ABIERTA") as EstadoCarpetaUI;
+                      const carpetaLabel = LABEL_CARPETA[ec];
+                      const transiciones = TRANSICIONES_CARPETA[ec] ?? [];
+                      const carpetaCerrada = ec !== "ABIERTA";
+                      return (
+                        <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-border/50">
+                          <span className="text-[11px] font-mono uppercase tracking-widest text-muted">Carpeta:</span>
+                          {carpetaLabel && (
+                            <StatusBadge
+                              tone={carpetaLabel.tone as "success" | "warning" | "info" | "neutral"}
+                              label={carpetaLabel.label}
+                              dot={ec === "ABIERTA"}
+                            />
+                          )}
+                          {transiciones.map((t) => (
+                            <button
+                              key={t.nuevoEstado}
+                              onClick={() => setConfirmCarpeta({ internacionId: liq.internacionId, nuevoEstado: t.nuevoEstado, label: t.label, motivo: "" })}
+                              className={cn(
+                                "text-[12px] px-3 py-1.5 rounded-md border transition-colors",
+                                t.danger
+                                  ? "border-warning/40 text-warning hover:bg-warning/5"
+                                  : carpetaCerrada
+                                    ? "border-brand/40 text-brand hover:bg-brand/5"
+                                    : "border-border text-muted hover:border-border-hover hover:text-text"
+                              )}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                          {carpetaMsg[liq.internacionId] && (
+                            <span className="text-[12px] text-success">{carpetaMsg[liq.internacionId]}</span>
+                          )}
+                          {carpetaErr[liq.internacionId] && (
+                            <span className="text-[12px] text-error">{carpetaErr[liq.internacionId]}</span>
+                          )}
+                          {carpetaCerrada && (
+                            <span className="text-[12px] text-warning ml-1">⚠️ Carpeta cerrada — reabrí para editar cargos</span>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     <div className="flex gap-2 flex-wrap">
                       {RUBROS.map((r) => {
                         const totalRubro = liq.totalesPorRubro?.[r.id] ?? 0;
@@ -382,6 +514,7 @@ export default function FacturacionPage() {
                           rubroId={rubroAbierto}
                           internacionId={liq.internacionId}
                           obraSocialId={liq.internacion?.obraSocial?.id ?? ""}
+                          estadoCarpeta={(liq.internacion?.estadoCarpeta ?? "ABIERTA") as EstadoCarpetaUI}
                           onCambio={fetchLiquidaciones}
                         />
                       </div>
@@ -393,6 +526,48 @@ export default function FacturacionPage() {
           })}
         </div>
       )}
+
+      {/* ── ConfirmDialog: transición Estado Carpeta ── */}
+      {confirmCarpeta && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-surface border border-border rounded-xl shadow-xl p-6 max-w-md w-full mx-4 space-y-4">
+            <p className="text-[15px] font-medium text-text">{confirmCarpeta.label}</p>
+            <p className="text-[13px] text-muted">
+              {confirmCarpeta.nuevoEstado === "ABIERTA"
+                ? "Al reabrir la carpeta se podrán volver a cargar y editar cargos."
+                : confirmCarpeta.nuevoEstado === "CERRADA"
+                  ? "Al cerrar la carpeta se bloqueará la edición de cargos hasta que se reabra."
+                  : confirmCarpeta.nuevoEstado === "ENVIADA"
+                    ? "La carpeta se marcará como enviada a la obra social / auditoría."
+                    : "La carpeta quedará liquidada contablemente."}
+            </p>
+            <div className="space-y-1">
+              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Motivo (opcional)</label>
+              <input
+                className="input-field text-[13px] w-full"
+                placeholder="Motivo del cambio…"
+                value={confirmCarpeta.motivo}
+                onChange={(e) => setConfirmCarpeta((p) => p ? { ...p, motivo: e.target.value } : null)}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <button onClick={() => setConfirmCarpeta(null)} className="btn-secondary text-[13px]">Cancelar</button>
+              <button
+                onClick={ejecutarTransicionCarpeta}
+                disabled={savingCarpeta}
+                className={cn(
+                  "text-[13px] px-4 py-2 rounded-lg font-medium transition-colors",
+                  confirmCarpeta.nuevoEstado === "ABIERTA"
+                    ? "bg-warning text-white hover:bg-warning/90"
+                    : "bg-brand text-white hover:bg-brand/90"
+                )}
+              >
+                {savingCarpeta ? "Procesando…" : "Confirmar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -402,18 +577,22 @@ function RubroDetalle({
   rubroId,
   internacionId,
   obraSocialId,
+  estadoCarpeta,
   onCambio,
 }: {
   cargos: Cargo[];
   rubroId: string;
   internacionId: string;
   obraSocialId: string;
+  estadoCarpeta: EstadoCarpetaUI;
   onCambio: () => void;
 }) {
+  const carpetaCerrada = estadoCarpeta !== "ABIERTA";
   const rubro = RUBROS.find((r) => r.id === rubroId);
   const esMed = rubroId === "MED";
   const esHon = rubroId === "HON";
   const esGas = rubroId === "GAS";
+
 
   const FUNCIONES = esMed
     ? [
@@ -717,9 +896,13 @@ function RubroDetalle({
           {esMed ? "Sin medicamentos en el período" : `Sin ítems de ${rubro?.descripcion.toLowerCase() ?? rubroId} en el período.`}
         </p>
         {(esMed || esHon || esGas) && (
-          <button onClick={abrirNuevo} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
-            <Plus size={14} /> {esHon ? "Agregar honorario" : esGas ? "Agregar gasto" : "Agregar medicación"}
-          </button>
+          carpetaCerrada ? (
+            <p className="text-[12px] text-warning">⚠️ Carpeta cerrada — reabrí para agregar cargos</p>
+          ) : (
+            <button onClick={abrirNuevo} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
+              <Plus size={14} /> {esHon ? "Agregar honorario" : esGas ? "Agregar gasto" : "Agregar medicación"}
+            </button>
+          )
         )}
       </div>
     );
@@ -728,13 +911,18 @@ function RubroDetalle({
     <div className="space-y-3">
       {(esMed || esHon || esGas) && !formAbierto && (
         <div className="flex justify-end">
-          <button onClick={abrirNuevo} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
-            <Plus size={14} /> {esHon ? "Agregar honorario" : esGas ? "Agregar gasto" : "Agregar medicación"}
-          </button>
+          {carpetaCerrada ? (
+            <p className="text-[12px] text-warning">⚠️ Carpeta cerrada — reabrí para agregar cargos</p>
+          ) : (
+            <button onClick={abrirNuevo} className="btn-primary inline-flex items-center gap-1.5 text-[13px]">
+              <Plus size={14} /> {esHon ? "Agregar honorario" : esGas ? "Agregar gasto" : "Agregar medicación"}
+            </button>
+          )}
         </div>
       )}
 
-      {(esMed || esHon || esGas) && formAbierto && (
+      {(esMed || esHon || esGas) && formAbierto && !carpetaCerrada && (
+
         <div className="border border-border rounded-lg bg-surface p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-[13px] font-semibold">

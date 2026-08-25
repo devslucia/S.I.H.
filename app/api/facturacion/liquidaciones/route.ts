@@ -16,6 +16,8 @@ export async function GET(req: NextRequest) {
   const estadoFiltro = sp.get("estado") || undefined;
   // Filtra por estado de la INTERNACIÓN: "activa" | "en_alta" | "egresada"
   const estadoInternacionFiltro = sp.get("estadoInternacion") || undefined;
+  // Filtra por estado de CARPETA: "ABIERTA" | "CERRADA" | "ENVIADA" | "LIQUIDADA"
+  const estadoCarpetaFiltro = sp.get("estadoCarpeta") || undefined;
 
 
   if (obraSocialId && session.user.rol !== "ADMIN") {
@@ -52,9 +54,14 @@ export async function GET(req: NextRequest) {
     ];
   }
 
+  if (estadoCarpetaFiltro) {
+    internacionWhere.estadoCarpeta = estadoCarpetaFiltro;
+  }
+
   if (Object.keys(internacionWhere).length > 0) {
     where.internacion = internacionWhere;
   }
+
 
 
   const cargos = await prisma.cargoFacturacion.findMany({
@@ -65,10 +72,12 @@ export async function GET(req: NextRequest) {
           paciente: true,
           obraSocial: true,
         },
+        // Incluimos campos de carpeta directamente del modelo Internacion
       },
     },
     orderBy: [{ internacion: { paciente: { apellido: "asc" } } }, { fecha: "asc" }],
   });
+
 
 
   const grouped = cargos.reduce<
@@ -130,6 +139,10 @@ export async function GET(req: NextRequest) {
       internacion: {
         numero: l.internacion.numero,
         estado: l.internacion.estado,
+        estadoCarpeta: l.internacion.estadoCarpeta,
+        fechaCierre: l.internacion.fechaCierre ?? null,
+        fechaEnvio: l.internacion.fechaEnvio ?? null,
+        fechaLiquidacion: l.internacion.fechaLiquidacion ?? null,
         fechaIngreso: l.internacion.fechaIngreso,
         fechaEgreso: l.internacion.fechaEgreso ?? null,
         altaMedicaAt: l.internacion.altaMedicaAt ?? null,

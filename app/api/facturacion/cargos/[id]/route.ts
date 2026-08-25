@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { calcularMedicacion } from "@/lib/facturacion-medicacion";
 import { calcularHonorario } from "@/lib/facturacion-honorarios";
 import { calcularGasto } from "@/lib/facturacion-gastos";
+import { assertCarpetaAbierta } from "@/lib/carpeta-guard";
+
 
 const MED_FUNCIONES = ["stock", "60", "92"] as const;
 const HON_FUNCIONES = ["10", "20", "30", "91"] as const;
@@ -30,6 +32,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: "No se pueden editar ítems generados automáticamente" }, { status: 400 });
   }
   if (existe.facturado) return NextResponse.json({ error: "No se puede editar un cargo facturado" }, { status: 400 });
+
+  const guardaCarpeta = await assertCarpetaAbierta(existe.internacionId);
+  if (!guardaCarpeta.ok) return guardaCarpeta.response;
+
 
   const concepto = String(body.concepto ?? existe.concepto).trim() || existe.concepto;
   const num = (v: unknown) => {
