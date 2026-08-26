@@ -115,3 +115,38 @@ export async function DELETE(req: NextRequest) {
 
   return NextResponse.json({ message: "Ítem desactivado" });
 }
+
+export async function PATCH(req: NextRequest) {
+  const { error } = await requireRole("ADMIN");
+  if (error) return error;
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json({ error: "id requerido" }, { status: 400 });
+  }
+
+  let body: { activo?: boolean };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+  }
+
+  if (typeof body.activo !== "boolean") {
+    return NextResponse.json({ error: "Se requiere un booleano 'activo'" }, { status: 400 });
+  }
+
+  const item = await prisma.stockItem.findUnique({ where: { id } });
+  if (!item) {
+    return NextResponse.json({ error: "Ítem no encontrado" }, { status: 404 });
+  }
+
+  const updated = await prisma.stockItem.update({
+    where: { id },
+    data: { activo: body.activo },
+  });
+
+  return NextResponse.json(updated);
+}

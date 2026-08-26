@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
-  const {error} = await requireRole("ADMIN", "FARMACIA");
+  const { error } = await requireRole("ADMIN", "FARMACIA");
   if (error) return error;
 
   const { searchParams } = new URL(req.url);
@@ -12,8 +12,16 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get("search")?.trim();
   const pageParam = searchParams.get("page");
   const pageSizeParam = searchParams.get("pageSize");
+  const estadoParam = searchParams.get("estado") || "activas";
 
-  const where: Prisma.StockItemWhereInput = { activo: true };
+  const where: Prisma.StockItemWhereInput = {};
+
+  if (estadoParam === "activas") {
+    where.activo = true;
+  } else if (estadoParam === "inactivas") {
+    where.activo = false;
+  }
+
   if (alertas === "true") {
     where.stockActual = { lte: prisma.stockItem.fields.stockMinimo };
   }
