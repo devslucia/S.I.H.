@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { AlertTriangle, Plus, ArrowUpDown, Trash2, Search, Pencil, Upload } from "lucide-react";
+import { AlertTriangle, Plus, ArrowUpDown, Trash2, Search, Pencil, Upload, Power } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { OpsStat } from "@/components/ui/OpsStat";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -30,6 +30,7 @@ interface StockItem {
   fraccion?: number | null;
   precioUnidadCompra?: number | string | null;
   precioUnidadVenta?: number | string | null;
+  activo?: boolean;
 }
 
 type FormState = {
@@ -235,13 +236,15 @@ export default function FarmaciaPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
+  const [estadoFiltro, setEstadoFiltro] = useState<"todas" | "activas" | "inactivas">("todas");
 
-  const fetchStock = async (opts?: { page?: number; search?: string }) => {
+  const fetchStock = async (opts?: { page?: number; search?: string; estado?: string }) => {
     setLoading(true);
     try {
       const p = opts?.page ?? page;
       const q = opts?.search ?? debouncedSearch;
-      const params = new URLSearchParams({ page: String(p), pageSize: String(PAGE_SIZE) });
+      const estado = opts?.estado ?? estadoFiltro;
+      const params = new URLSearchParams({ page: String(p), pageSize: String(PAGE_SIZE), estado });
       if (q.trim()) params.set("search", q.trim());
       const res = await fetch(`/api/farmacia/stock?${params.toString()}`);
       if (res.ok) {
@@ -271,7 +274,8 @@ export default function FarmaciaPage() {
   useEffect(() => {
     fetchStock({ page: 1, search: debouncedSearch });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch]);
+  }, [debouncedSearch, estadoFiltro]);
+
 
   const cambiarPagina = (nueva: number) => {
     setPage(nueva);
@@ -406,12 +410,39 @@ export default function FarmaciaPage() {
     }
   };
 
+  const handleToggleEstado = async (item: StockItem) => {
+    // Si está intentando desactivar, lo mandamos al modal
+    if (item.activo) {
+      setDeleteItem(item);
+      setConfirmDelete(true);
+      return;
+    }
+    // Si está inactiva y la va a activar, lo hace directo
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/farmacia/stock/items?id=${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activo: true }),
+      });
+      if (res.ok) fetchStock();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const confirmarDesactivar = async () => {
     if (!deleteItem) return;
     setConfirmDelete(false);
     setSaving(true);
     try {
-      const res = await fetch(`/api/farmacia/stock/items?id=${deleteItem.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/farmacia/stock/items?id=${deleteItem.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activo: false }),
+      });
       if (res.ok) {
         setDeleteItem(null);
         fetchStock();
@@ -463,7 +494,16 @@ export default function FarmaciaPage() {
         <OpsStat label="Unidades" value={stats.unidades} sub="Stock acumulado" tone="neutral" />
       </section>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
+        <select
+          value={estadoFiltro}
+          onChange={(e) => setEstadoFiltro(e.target.value as any)}
+          className="select-field text-[13px] w-auto bg-surface"
+        >
+          <option value="todas">Todas</option>
+          <option value="activas">Activas</option>
+          <option value="inactivas">Inactivas</option>
+        </select>
         <div className="relative">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
           <input
@@ -501,6 +541,7 @@ export default function FarmaciaPage() {
                   <th className={th}>Precio unidad</th>
                   <th className={th}>Lote</th>
                   <th className={th}>Vencimiento</th>
+                  <th className={th}>Estado</th>
                   <th className={th + " text-right"}>Acciones</th>
                 </tr>
               </thead>
@@ -554,11 +595,29 @@ export default function FarmaciaPage() {
                           <span className={proximoVencimiento ? "text-error" : ""}>{formatDate(item.vencimiento)}</span>
                         ) : "—"}
                       </td>
+                      <td className={td}>
+                        <StatusBadge
+                          tone={item.activo ? "success" : "neutral"}
+                          label={item.activo ? "Activa" : "Inactiva"}
+                        />
+                      </td>
                       <td className={td + " text-right"}>
                         <div className="flex items-center justify-end gap-1.5">
                           <button onClick={() => openMovement(item)} className="btn-secondary text-[12px] inline-flex items-center gap-1.5">
                             <ArrowUpDown size={12} /> Movimiento
                           </button>
+                          {(userRole === "ADMIN" || userRole === "FARMACIA") && (
+                            <button
+                              onClick={() => handleToggleEstado(item)}
+                              className={`p-1.5 rounded-md transition-colors ${item.activo
+                                  ? "text-muted hover:text-error hover:bg-error/10"
+                                  : "text-muted hover:text-success hover:bg-success/10"
+                                }`}
+                              title={item.activo ? "Desactivar" : "Activar"}
+                            >
+                              <Power size={14} />
+                            </button>
+                          )}
                           {userRole === "ADMIN" && (
                             <>
                               <button
@@ -567,13 +626,6 @@ export default function FarmaciaPage() {
                                 title="Editar ítem"
                               >
                                 <Pencil size={14} />
-                              </button>
-                              <button
-                                onClick={() => { setDeleteItem(item); setConfirmDelete(true); }}
-                                className="p-1.5 rounded-md text-muted hover:text-error hover:bg-error/10 transition-colors"
-                                title="Desactivar ítem"
-                              >
-                                <Trash2 size={14} />
                               </button>
                             </>
                           )}
@@ -702,11 +754,14 @@ export default function FarmaciaPage() {
         </form>
       </Modal>
 
-      <Modal open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Desactivar ítem">
+      <Modal open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Desactivar medicamento">
         <div className="space-y-4">
           <p className="text-[13px] text-muted">
-            Se desactivará <strong className="text-text">{deleteItem?.nombre}</strong> del stock. No se elimina permanentemente.
+            Se desactivará <strong className="text-text">{deleteItem?.nombre}</strong> del catálogo activo.
           </p>
+          <div className="bg-warning/10 border border-warning/30 rounded-md p-3 text-[12px] text-warning-dark">
+            ⚠️ Dejará de aparecer en Enfermería, Quirófano, Prescripciones y Facturación. No se eliminarán los historiales existentes.
+          </div>
           <div className="flex justify-end gap-2">
             <button onClick={() => setConfirmDelete(false)} className="btn-secondary text-[13px]">Cancelar</button>
             <button onClick={confirmarDesactivar} disabled={saving} className="btn-danger text-[13px]">
@@ -715,6 +770,7 @@ export default function FarmaciaPage() {
           </div>
         </div>
       </Modal>
+
     </div>
   );
 }

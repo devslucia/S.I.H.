@@ -162,7 +162,6 @@ async function upsertLoteSQL(lote: AlfabetaRow[]): Promise<void> {
       "precioVenta" = EXCLUDED."precioVenta",
       "precioUnidadCompra" = EXCLUDED."precioUnidadCompra",
       "precioUnidadVenta" = EXCLUDED."precioUnidadVenta",
-      "activo" = true,
       "updatedAt" = now()
   `;
   await prisma.$executeRawUnsafe(sql, ...params);
