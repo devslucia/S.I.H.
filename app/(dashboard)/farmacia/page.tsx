@@ -237,6 +237,8 @@ export default function FarmaciaPage() {
   const [saving, setSaving] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
   const [estadoFiltro, setEstadoFiltro] = useState<"todas" | "activas" | "inactivas">("todas");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState<"activate" | "deactivate" | null>(null);
 
   const fetchStock = async (opts?: { page?: number; search?: string; estado?: string }) => {
     setLoading(true);
@@ -454,6 +456,28 @@ export default function FarmaciaPage() {
     }
   };
 
+  const confirmarBulkAction = async (activo: boolean) => {
+    if (selectedIds.length === 0) return;
+    setBulkAction(null);
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/farmacia/stock/items/bulk`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds, activo }),
+      });
+      if (res.ok) {
+        setSelectedIds([]);
+        fetchStock();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+
   const totalPaginas = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
 
   return (
@@ -515,6 +539,32 @@ export default function FarmaciaPage() {
         </div>
       </div>
 
+      {/* Bulk actions bar */}
+      {selectedIds.length > 0 && (
+        <div className="bg-brand/10 border border-brand/20 rounded-lg p-3 flex items-center justify-between">
+          <span className="text-[13px] text-brand font-medium">
+            {selectedIds.length} seleccionado{selectedIds.length > 1 ? "s" : ""}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => confirmarBulkAction(true)}
+              disabled={saving}
+              className="btn-secondary bg-white text-[13px]"
+            >
+              {saving ? "Procesando..." : "Activar seleccionados"}
+            </button>
+            <button
+              onClick={() => setBulkAction("deactivate")}
+              disabled={saving}
+              className="btn-danger text-[13px]"
+            >
+              Desactivar seleccionados
+            </button>
+          </div>
+        </div>
+      )}
+
+
       {loading ? (
         <div className="space-y-2">
           <div className="skeleton h-12" />
@@ -534,6 +584,19 @@ export default function FarmaciaPage() {
               {/* sticky top-0 z-10: encabezados fijos al hacer scroll vertical dentro del contenedor */}
               <thead className="sticky top-0 z-10">
                 <tr className="border-b border-border text-muted bg-surface">
+                  <th className={th + " w-[40px] text-center"}>
+                    <input
+                      type="checkbox"
+                      checked={stock.length > 0 && selectedIds.length === stock.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedIds(stock.map(i => i.id));
+                        } else {
+                          setSelectedIds([]);
+                        }
+                      }}
+                    />
+                  </th>
                   <th className={th}>Nombre</th>
                   <th className={th}>Presentación</th>
                   <th className={th}>Stock</th>
@@ -551,6 +614,19 @@ export default function FarmaciaPage() {
                   const proximoVencimiento = fechaProximaVencimiento(item.vencimiento);
                   return (
                     <tr key={item.id} className="border-b border-border/30 hover:bg-surface-hover transition-colors">
+                      <td className={td + " text-center"}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(item.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIds((prev) => [...prev, item.id]);
+                            } else {
+                              setSelectedIds((prev) => prev.filter((id) => id !== item.id));
+                            }
+                          }}
+                        />
+                      </td>
                       <td className={td + " text-text"}>
                         <span className="flex items-center gap-1.5">
                           {item.nombre}
@@ -610,8 +686,8 @@ export default function FarmaciaPage() {
                             <button
                               onClick={() => handleToggleEstado(item)}
                               className={`p-1.5 rounded-md transition-colors ${item.activo
-                                  ? "text-muted hover:text-error hover:bg-error/10"
-                                  : "text-muted hover:text-success hover:bg-success/10"
+                                ? "text-muted hover:text-error hover:bg-error/10"
+                                : "text-muted hover:text-success hover:bg-success/10"
                                 }`}
                               title={item.activo ? "Desactivar" : "Activar"}
                             >
@@ -765,6 +841,23 @@ export default function FarmaciaPage() {
           <div className="flex justify-end gap-2">
             <button onClick={() => setConfirmDelete(false)} className="btn-secondary text-[13px]">Cancelar</button>
             <button onClick={confirmarDesactivar} disabled={saving} className="btn-danger text-[13px]">
+              {saving ? "Guardando…" : "Desactivar"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={bulkAction === "deactivate"} onClose={() => setBulkAction(null)} title="Desactivar medicamentos en lote">
+        <div className="space-y-4">
+          <p className="text-[13px] text-muted">
+            Estás a punto de desactivar <strong className="text-text">{selectedIds.length}</strong> medicamentos.
+          </p>
+          <div className="bg-warning/10 border border-warning/30 rounded-md p-3 text-[12px] text-warning-dark">
+            ⚠️ {selectedIds.length} medicamentos dejarán de verse en enfermería, quirófano y prescripciones.
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setBulkAction(null)} className="btn-secondary text-[13px]">Cancelar</button>
+            <button onClick={() => confirmarBulkAction(false)} disabled={saving} className="btn-danger text-[13px]">
               {saving ? "Guardando…" : "Desactivar"}
             </button>
           </div>
