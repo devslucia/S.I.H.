@@ -6,6 +6,7 @@ import { ArrowLeft, Save, CheckCircle, AlertCircle, Printer } from "lucide-react
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
+import { DateInput } from "@/components/ui/DateInput";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatDateTime } from "@/lib/utils";
 import { AntecClinicosForm } from "@/components/historia-clinica/preanestesia/AntecClinicosForm";
@@ -142,18 +143,16 @@ export default function PreanestesiaPage() {
           <div className="flex gap-3">
             <button type="button"
               onClick={() => handleChange("cirugiaPropuestaTipo", "programada")}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                data.cirugiaPropuestaTipo === "programada"
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${data.cirugiaPropuestaTipo === "programada"
                   ? "bg-accent/15 text-accent"
                   : "bg-border text-text-secondary hover:bg-surface-active"
-              }`}>Programada</button>
+                }`}>Programada</button>
             <button type="button"
               onClick={() => handleChange("cirugiaPropuestaTipo", "urgencia")}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                data.cirugiaPropuestaTipo === "urgencia"
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${data.cirugiaPropuestaTipo === "urgencia"
                   ? "bg-error/15 text-error"
                   : "bg-border text-text-secondary hover:bg-surface-active"
-              }`}>Urgencia</button>
+                }`}>Urgencia</button>
           </div>
         </div>
 
@@ -186,9 +185,9 @@ export default function PreanestesiaPage() {
           placeholder="Resultados de laboratorio relevantes..."
           rows={3}
         />
-        <Input label="Fecha de laboratorio" type="date"
+        <DateInput label="Fecha de laboratorio"
           value={data.laboratorioFecha ? new Date(data.laboratorioFecha).toISOString().slice(0, 10) : ""}
-          onChange={(e) => handleChange("laboratorioFecha", e.target.value ? new Date(e.target.value).toISOString() : null)} />
+          onChange={(e: any) => handleChange("laboratorioFecha", e.target.value ? new Date(e.target.value).toISOString() : null)} />
         <VoiceTextarea
           label="Anestesia Sugerida"
           value={data.anestesiaSugerida || ""}

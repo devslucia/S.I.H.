@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
+import { DateInput } from "@/components/ui/DateInput";
 
 interface Medico {
   id: string;
@@ -106,7 +107,7 @@ export function NuevoTurnoModal({ open, onClose, onCreated, paciente, medicos, m
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Fecha *</label>
-            <input className="input-field text-[13px]" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+            <DateInput native value={fecha} onChange={(e) => setFecha(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Hora *</label>

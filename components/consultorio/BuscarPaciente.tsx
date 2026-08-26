@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Search, UserPlus, X, Check } from "lucide-react";
+import { DateInput } from "@/components/ui/DateInput";
 
 interface Paciente {
   id: string;
@@ -146,7 +147,7 @@ export function BuscarPaciente({ onSelected }: BuscarPacienteProps) {
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Fecha nac. *</label>
-              <input className="input-field text-[13px]" type="date" value={form.fechaNac} onChange={(e) => setForm({ ...form, fechaNac: e.target.value })} />
+              <DateInput native value={form.fechaNac} onChange={(e) => setForm({ ...form, fechaNac: e.target.value })} />
             </div>
           </div>
           {createError && <p className="text-[12px] text-error">{createError}</p>}

@@ -9,6 +9,7 @@ import { SearchableMultiSelect } from "@/components/ui/SearchableMultiSelect";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { DateInput } from "@/components/ui/DateInput";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PatientSearchPanel, type PatientSearchResult } from "@/components/ui/PatientSearchPanel";
 import { BedPicker, type BedPickerBed } from "@/components/ui/BedPicker";
@@ -434,7 +435,7 @@ export default function AdmisionPage() {
                         <option value="OTRO">Otro</option>
                       </select>
                     </div>
-                    <Input label="Fecha de Nacimiento *" name="fechaNac" type="date" value={newPatientForm.fechaNac} onChange={handleNewPatientChange} required />
+                    <DateInput label="Fecha de Nacimiento *" name="fechaNac" value={newPatientForm.fechaNac} onChange={handleNewPatientChange as any} required />
                     <Input label="Edad" value={newPatientForm.fechaNac ? calcularEdad(newPatientForm.fechaNac) : ""} readOnly />
                     <Input label="CUIL *" name="cuil" value={newPatientForm.cuil} onChange={handleNewPatientChange} required placeholder="20-12345678-9" />
                     <Input label="Domicilio" name="domicilio" value={newPatientForm.domicilio} onChange={handleNewPatientChange} />

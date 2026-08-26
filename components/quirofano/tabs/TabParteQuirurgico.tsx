@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Trash2, Printer } from "lucide-react";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { Modal } from "@/components/ui/Modal";
+import { DateInput } from "@/components/ui/DateInput";
 import { formatDateTime, formatUserName } from "@/lib/utils";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
 import type { CirugiaFormData, CirugiaFull, UpdateField } from "./types";
@@ -67,9 +68,8 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
       <div className="flex gap-2 border-b border-border pb-1">
         {SUB_TABS.map((st, i) => (
           <button key={i} onClick={() => setSubTab(i)}
-            className={`px-4 py-2 text-xs font-medium rounded-t transition-colors ${
-              subTab === i ? "bg-surface text-brand border border-border border-b-0" : "text-muted hover:text-text"
-            }`}
+            className={`px-4 py-2 text-xs font-medium rounded-t transition-colors ${subTab === i ? "bg-surface text-brand border border-border border-b-0" : "text-muted hover:text-text"
+              }`}
           >{st}</button>
         ))}
       </div>
@@ -235,7 +235,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
       {/* Modal: Agregar práctica */}
       <Modal open={showPracticaModal} onClose={() => setShowPracticaModal(false)} title="Agregar práctica" size="md">
         <div className="grid grid-cols-2 gap-3">
-          <div><label className={labelClass}>Fecha</label><input type="date" value={practicaForm.fecha} onChange={e => setPracticaForm({ ...practicaForm, fecha: e.target.value })} className={inputClass} /></div>
+          <div><label className={labelClass}>Fecha</label><DateInput native value={practicaForm.fecha} onChange={e => setPracticaForm({ ...practicaForm, fecha: e.target.value })} className={inputClass} /></div>
           <div><label className={labelClass}>Hora</label><input type="time" value={practicaForm.hora} onChange={e => setPracticaForm({ ...practicaForm, hora: e.target.value })} className={inputClass} /></div>
           <div className="col-span-2"><label className={labelClass}>Práctica</label><input type="text" value={practicaForm.practica} onChange={e => setPracticaForm({ ...practicaForm, practica: e.target.value })} className={inputClass} /></div>
           <div><label className={labelClass}>Laboratorio</label><input type="text" value={practicaForm.laboratorio} onChange={e => setPracticaForm({ ...practicaForm, laboratorio: e.target.value })} className={inputClass} /></div>

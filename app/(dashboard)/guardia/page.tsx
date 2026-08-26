@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { PatientSearchPanel, type PatientSearchResult } from "@/components/ui/PatientSearchPanel";
+import { DateInput } from "@/components/ui/DateInput";
 import { cn } from "@/lib/utils";
 import { infoPrioridad, DISPOSICIONES_GUARDIA, PRIORIDADES } from "@/lib/guardia";
 import { RefreshCw, Plus, ChevronRight, PencilLine, UserRound } from "lucide-react";
@@ -189,10 +190,10 @@ export default function GuardiaPage() {
             {t === "EN_ESPERA" ? "En espera" : t === "EN_ATENCION" ? "En atención" : t === "ATENDIDO" ? "Atendidos hoy" : "Anulados hoy"}
           </button>
         ))}
-        <input
-          type="date"
+        <DateInput
+          native
           value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
+          onChange={(e: any) => setFecha(e.target.value)}
           className="input-field text-[12px] font-mono ml-auto"
         />
       </div>
@@ -488,7 +489,7 @@ function AltaGuardiaModal({ open, onClose, onCreated, fecha }: { open: boolean; 
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Fecha</label>
-                <input type="date" value={fecha} disabled className="input-field text-[13px] opacity-60" />
+                <DateInput native value={fecha} disabled className="input-field text-[13px] opacity-60" />
               </div>
             </div>
 

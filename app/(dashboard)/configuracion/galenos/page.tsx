@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Pencil, Plus, Power, RefreshCw, Search } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { DateInput } from "@/components/ui/DateInput";
 import { toMoney } from "@/lib/utils";
 
 interface ObraSocialSel {
@@ -48,15 +49,27 @@ function CampoForm({
   return (
     <label className="block">
       <span className="block text-[11px] font-mono uppercase tracking-widest text-muted mb-1">{label}</span>
-      <input
-        type={type}
-        value={valor}
-        onChange={(e) => set(e.target.value)}
-        className={
-          "w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px] text-text focus:outline-none focus:ring-2 focus:ring-brand/40 " +
-          (mono ? "font-mono" : "")
-        }
-      />
+      {type === "date" ? (
+        <DateInput
+          native
+          value={valor}
+          onChange={(e) => set(e.target.value)}
+          className={
+            "w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px] text-text focus:outline-none focus:ring-2 focus:ring-brand/40 " +
+            (mono ? "font-mono" : "")
+          }
+        />
+      ) : (
+        <input
+          type={type}
+          value={valor}
+          onChange={(e) => set(e.target.value)}
+          className={
+            "w-full border border-border rounded-md bg-surface px-3 py-2 text-[13px] text-text focus:outline-none focus:ring-2 focus:ring-brand/40 " +
+            (mono ? "font-mono" : "")
+          }
+        />
+      )}
     </label>
   );
 }

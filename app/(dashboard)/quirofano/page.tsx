@@ -9,6 +9,7 @@ import { Modal } from "@/components/ui/Modal";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { OpsStat } from "@/components/ui/OpsStat";
 import { DateNavigator } from "@/components/ui/DateNavigator";
+import { DateInput } from "@/components/ui/DateInput";
 import { CirugiaCard, type CirugiaEstado } from "@/components/ui/CirugiaCard";
 
 interface Cirugia {
@@ -480,8 +481,8 @@ export default function QuirofanoPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[12px] text-muted">Fecha</label>
-                <input
-                  type="date"
+                <DateInput
+                  native
                   value={cirugiaForm.fechaProgramada}
                   onChange={(e) => setCirugiaForm({ ...cirugiaForm, fechaProgramada: e.target.value })}
                   className="input-field text-[13px] w-full"

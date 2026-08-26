@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BookMarked, Download } from "lucide-react";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
+import { DateInput } from "@/components/ui/DateInput";
 import { formatUserName } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
@@ -59,7 +60,7 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
     fetch("/api/quirofanos")
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => setQuirofanos(Array.isArray(d) ? d : []))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const loadPlantillas = () => {
@@ -71,7 +72,7 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
         setPlantillas(lista);
         if (lista.length > 0 && !lista.some((t: Plantilla) => t.id === plantillaId)) setPlantillaId(lista[0].id);
       })
-      .catch(() => {});
+      .catch(() => { });
   };
 
   useEffect(() => {
@@ -125,8 +126,8 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className={labelClass}>Fecha inicio</label>
-            <input type="date" value={formData?.fechaProgramada?.split("T")[0] || ""}
-              onChange={e => update("fechaProgramada", e.target.value ? new Date(e.target.value).toISOString() : null)}
+            <DateInput native value={formData?.fechaProgramada?.split("T")[0] || ""}
+              onChange={(e: any) => update("fechaProgramada", e.target.value ? new Date(e.target.value).toISOString() : null)}
               disabled={disabled("fechaProgramada")} className={inputClass} />
           </div>
           <div>
@@ -137,8 +138,8 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
           </div>
           <div>
             <label className={labelClass}>Fecha fin</label>
-            <input type="date" value={formData?.horaFin && formData.fechaProgramada?.split("T")[0] || formData?.fechaProgramada?.split("T")[0] || ""}
-              onChange={() => {}} disabled className={inputClass} />
+            <DateInput native value={formData?.horaFin && formData.fechaProgramada?.split("T")[0] || formData?.fechaProgramada?.split("T")[0] || ""}
+              onChange={() => { }} disabled className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Hora fin</label>
@@ -167,7 +168,7 @@ export function TabCirugia({ formData, update, isReadOnly, effectiveRole, canEdi
             <select value={formData?.scoreASA || ""} onChange={e => update("scoreASA", e.target.value ? Number(e.target.value) : null)}
               disabled={disabled("scoreASA")} className={inputClass}>
               <option value="">Seleccionar</option>
-              {[1,2,3,4,5,6].map(n => <option key={n} value={n}>ASA {n}</option>)}
+              {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>ASA {n}</option>)}
             </select>
           </div>
           <div>

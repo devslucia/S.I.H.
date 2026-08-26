@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { DateInput } from "@/components/ui/DateInput";
 import { cn } from "@/lib/utils";
 
 interface DateNavigatorProps {
@@ -28,10 +29,10 @@ export function DateNavigator({ value, onChange, onYesterday, onTomorrow, onToda
       >
         <ChevronLeft size={15} />
       </button>
-      <input
-        type="date"
+      <DateInput
+        native
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e: any) => onChange(e.target.value)}
         className="input-field text-[13px] font-mono text-center w-40"
       />
       <button
