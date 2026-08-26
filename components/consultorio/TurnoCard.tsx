@@ -19,8 +19,9 @@ interface Turno {
 const estadoConfig: Record<string, { tone: "success" | "warning" | "danger" | "info" | "neutral"; label: string; dot?: boolean; pulse?: boolean }> = {
   PENDIENTE: { tone: "warning", label: "Pendiente", dot: true },
   CONFIRMADO: { tone: "info", label: "Confirmado", dot: true },
+  PRESENTE: { tone: "success", label: "Presente", dot: true },
   EN_CONSULTA: { tone: "success", label: "En consulta", dot: true, pulse: true },
-  COMPLETADO: { tone: "neutral", label: "Completado" },
+  COMPLETADO: { tone: "neutral", label: "Atendido" },
   CANCELADO: { tone: "danger", label: "Cancelado" },
   NO_ASISTIO: { tone: "danger", label: "No asistió" },
 };
@@ -31,12 +32,13 @@ interface TurnoCardProps {
   turno: Turno;
   viewMode: "secretaria" | "medico";
   onConfirm?: (turno: Turno) => void;
+  onPresente?: (turno: Turno) => void;
   onCancel?: (turno: Turno) => void;
   onStart?: (turno: Turno) => void;
   onClick?: (turno: Turno) => void;
 }
 
-export function TurnoCard({ turno, viewMode, onConfirm, onCancel, onStart, onClick }: TurnoCardProps) {
+export function TurnoCard({ turno, viewMode, onConfirm, onPresente, onCancel, onStart, onClick }: TurnoCardProps) {
   const config = estadoConfig[turno.estado] || estadoConfig.PENDIENTE;
   const cerrado = CERRADOS.includes(turno.estado);
   const enAtencion = turno.estado === "EN_CONSULTA";
@@ -85,12 +87,17 @@ export function TurnoCard({ turno, viewMode, onConfirm, onCancel, onStart, onCli
             <Check size={13} /> Confirmar
           </button>
         )}
-        {viewMode === "secretaria" && (turno.estado === "PENDIENTE" || turno.estado === "CONFIRMADO") && onCancel && (
+        {viewMode === "secretaria" && turno.estado === "CONFIRMADO" && onPresente && (
+          <button onClick={() => onPresente(turno)} className="btn-success text-[12px] inline-flex items-center gap-1.5">
+            <Check size={13} /> Presente
+          </button>
+        )}
+        {viewMode === "secretaria" && (turno.estado === "PENDIENTE" || turno.estado === "CONFIRMADO" || turno.estado === "PRESENTE") && onCancel && (
           <button onClick={() => onCancel(turno)} className="btn-danger text-[12px] inline-flex items-center gap-1.5">
             <X size={13} /> Cancelar
           </button>
         )}
-        {viewMode === "medico" && (turno.estado === "PENDIENTE" || turno.estado === "CONFIRMADO") && onStart && (
+        {viewMode === "medico" && turno.estado === "PRESENTE" && onStart && (
           <button onClick={() => onStart(turno)} className="btn-primary text-[12px] inline-flex items-center gap-1.5">
             <Play size={13} /> Iniciar
           </button>

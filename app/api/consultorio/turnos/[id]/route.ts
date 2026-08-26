@@ -10,7 +10,7 @@ const TURNOS_READ_ROLES = ["ADMIN", "SECRETARIA", "MEDICO"];
 const TURNOS_UPDATE_ROLES = ["ADMIN", "SECRETARIA", "MEDICO"];
 
 const updateTurnoSchema = z.object({
-  estado: z.enum(["PENDIENTE", "CONFIRMADO", "EN_CONSULTA", "COMPLETADO", "CANCELADO", "NO_ASISTIO"]).optional(),
+  estado: z.enum(["PENDIENTE", "CONFIRMADO", "PRESENTE", "EN_CONSULTA", "COMPLETADO", "CANCELADO", "NO_ASISTIO"]).optional(),
   motivo: z.string().optional(),
   asistio: z.boolean().optional(),
   obraSocialId: z.string().uuid().optional().nullable(),
@@ -102,8 +102,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   if (data.estado && rol !== "ADMIN") {
     const transicionesValidas: Record<string, string[]> = {
-      PENDIENTE: ["PENDIENTE", "CONFIRMADO", "CANCELADO", "NO_ASISTIO"],
-      CONFIRMADO: ["PENDIENTE", "CONFIRMADO", "CANCELADO", "NO_ASISTIO"],
+      PENDIENTE: ["PENDIENTE", "CONFIRMADO", "PRESENTE", "CANCELADO", "NO_ASISTIO"],
+      CONFIRMADO: ["PENDIENTE", "CONFIRMADO", "PRESENTE", "CANCELADO", "NO_ASISTIO"],
+      PRESENTE: ["PRESENTE", "CANCELADO", "NO_ASISTIO"],
       EN_CONSULTA: ["EN_CONSULTA"],
       COMPLETADO: ["COMPLETADO"],
       CANCELADO: ["CANCELADO"],

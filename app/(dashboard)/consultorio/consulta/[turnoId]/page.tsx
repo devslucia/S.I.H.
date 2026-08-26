@@ -24,7 +24,7 @@ const estadoBadges: Record<string, { tone: "success" | "warning" | "danger" | "i
   PENDIENTE: { tone: "warning", label: "Pendiente", dot: true },
   CONFIRMADO: { tone: "info", label: "Confirmado", dot: true },
   EN_CONSULTA: { tone: "success", label: "En consulta", dot: true, pulse: true },
-  COMPLETADO: { tone: "neutral", label: "Completado" },
+  COMPLETADO: { tone: "neutral", label: "Atendido" },
   CANCELADO: { tone: "danger", label: "Cancelado" },
   NO_ASISTIO: { tone: "danger", label: "No asistió" },
 };

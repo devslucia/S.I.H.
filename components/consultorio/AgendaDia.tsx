@@ -23,6 +23,7 @@ interface AgendaDiaProps {
   selectedDate: Date;
   onDateChange: (date: Date) => void;
   onConfirm?: (turno: Turno) => void;
+  onPresente?: (turno: Turno) => void;
   onCancel?: (turno: Turno) => void;
   onStart?: (turno: Turno) => void;
   onClick?: (turno: Turno) => void;
@@ -40,7 +41,7 @@ function fromIso(iso: string) {
   return new Date(y, m - 1, d);
 }
 
-export function AgendaDia({ turnos, loading, viewMode, selectedDate, onDateChange, onConfirm, onCancel, onStart, onClick }: AgendaDiaProps) {
+export function AgendaDia({ turnos, loading, viewMode, selectedDate, onDateChange, onConfirm, onPresente, onCancel, onStart, onClick }: AgendaDiaProps) {
   const iso = toIso(selectedDate);
   const isToday = toIso(new Date()) === iso;
 
@@ -55,7 +56,7 @@ export function AgendaDia({ turnos, loading, viewMode, selectedDate, onDateChang
     onDateChange(next);
   };
 
-  const atender = turnos.filter((t) => t.estado === "PENDIENTE" || t.estado === "CONFIRMADO").length;
+  const atender = turnos.filter((t) => t.estado === "PENDIENTE" || t.estado === "CONFIRMADO" || t.estado === "PRESENTE").length;
   const enConsulta = turnos.filter((t) => t.estado === "EN_CONSULTA").length;
   const cerrados = turnos.filter((t) => t.estado === "COMPLETADO" || t.estado === "CANCELADO" || t.estado === "NO_ASISTIO").length;
 
@@ -115,6 +116,7 @@ export function AgendaDia({ turnos, loading, viewMode, selectedDate, onDateChang
               turno={t}
               viewMode={viewMode}
               onConfirm={onConfirm}
+              onPresente={onPresente}
               onCancel={onCancel}
               onStart={onStart}
               onClick={onClick}
