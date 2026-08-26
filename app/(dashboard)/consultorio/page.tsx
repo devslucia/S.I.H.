@@ -84,7 +84,7 @@ export default function ConsultorioPage() {
     fetch("/api/consultorio/mis-medicos")
       .then((r) => r.json())
       .then((d) => setMedicos(Array.isArray(d) ? d : []))
-      .catch(() => {});
+      .catch(() => { });
   }, [userRol]);
 
   const handleConfirm = async (turno: Turno) => {
@@ -92,6 +92,15 @@ export default function ConsultorioPage() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ estado: "CONFIRMADO" }),
+    });
+    fetchTurnos();
+  };
+
+  const handlePresente = async (turno: Turno) => {
+    await fetch(`/api/consultorio/turnos/${turno.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ estado: "PRESENTE" }),
     });
     fetchTurnos();
   };
@@ -125,9 +134,9 @@ export default function ConsultorioPage() {
   };
 
   const pendientes = turnos.filter((t) => t.estado === "PENDIENTE").length;
-  const porAtender = turnos.filter((t) => t.estado === "PENDIENTE" || t.estado === "CONFIRMADO").length;
+  const porAtender = turnos.filter((t) => t.estado === "PENDIENTE" || t.estado === "CONFIRMADO" || t.estado === "PRESENTE").length;
   const enConsulta = turnos.filter((t) => t.estado === "EN_CONSULTA").length;
-  const completados = turnos.filter((t) => t.estado === "COMPLETADO").length;
+  const atendidos = turnos.filter((t) => t.estado === "COMPLETADO").length;
 
   const tabCls = (active: boolean) => cn("px-3 py-2 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors",
     active ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:border-border-hover hover:text-text");
@@ -162,8 +171,8 @@ export default function ConsultorioPage() {
           tone={enConsulta > 0 ? "success" : "neutral"}
         />
         <OpsStat
-          label={esRecepcion ? "Cerrados" : "Completados"}
-          value={esRecepcion ? completados + turnos.filter((t) => t.estado === "CANCELADO" || t.estado === "NO_ASISTIO").length : completados}
+          label={esRecepcion ? "Cerrados" : "Atendidos"}
+          value={esRecepcion ? atendidos + turnos.filter((t) => t.estado === "CANCELADO" || t.estado === "NO_ASISTIO").length : atendidos}
           sub="Finalizados en el día"
           tone="neutral"
         />
@@ -209,8 +218,8 @@ export default function ConsultorioPage() {
                     <StatusBadge tone={enConsulta > 0 ? "success" : "neutral"} label={String(enConsulta)} dot={enConsulta > 0} />
                   </li>
                   <li className="flex items-center justify-between">
-                    <span className="text-muted">Completados</span>
-                    <StatusBadge tone="neutral" label={String(completados)} />
+                    <span className="text-muted">Atendidos</span>
+                    <StatusBadge tone="neutral" label={String(atendidos)} />
                   </li>
                 </ul>
               </div>
@@ -225,6 +234,7 @@ export default function ConsultorioPage() {
               selectedDate={selectedDate}
               onDateChange={setSelectedDate}
               onConfirm={handleConfirm}
+              onPresente={handlePresente}
               onCancel={(t) => setTurnoCancelar(t)}
               onStart={handleStart}
               onClick={handleClick}

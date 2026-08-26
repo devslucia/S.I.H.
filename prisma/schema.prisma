@@ -203,6 +203,7 @@ enum EstadoInterconsulta {
 enum EstadoTurno {
   PENDIENTE
   CONFIRMADO
+  PRESENTE
   EN_CONSULTA
   COMPLETADO
   CANCELADO

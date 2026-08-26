@@ -28,10 +28,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "No puede iniciar turnos de otro médico" }, { status: 403 });
   }
 
-  // Solo se puede iniciar turnos CONFIRMADO o PENDIENTE
-  if (turno.estado !== "CONFIRMADO" && turno.estado !== "PENDIENTE") {
+  // Solo se puede iniciar turnos cuando el paciente está PRESENTE
+  if (turno.estado !== "PRESENTE") {
     return NextResponse.json(
-      { error: `No se puede iniciar un turno en estado ${turno.estado}` },
+      { error: `No se puede iniciar la consulta. El paciente debe estar Presente (estado actual: ${turno.estado}).` },
       { status: 400 }
     );
   }
