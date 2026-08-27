@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   HeartPulse, AlertTriangle, Activity, ChevronDown, ChevronUp,
+  ChevronRight,
   FileText, Pill,
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -14,7 +15,7 @@ import { BedMap, type BedMapCama } from "@/components/ui/BedMap";
 import { cn } from "@/lib/utils";
 
 import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
-import { formatUserName, formatDate } from "@/lib/utils";
+import { formatUserName, formatDate, formatDateTime } from "@/lib/utils";
 import IndicacionesNuevas from "@/components/notificaciones/IndicacionesNuevas";
 import { useToast } from "@/components/ui/Toast";
 
@@ -47,7 +48,8 @@ interface Aplicacion {
   fecha: string;
   hora: string;
   cantidadDescontada?: number;
-  enfermero: { nombre: string };
+  enfermero?: { nombre: string };
+  motivo?: string;
 }
 
 interface Paciente {
@@ -469,7 +471,7 @@ function AplicarPrescripcion({
                 {aplicaciones.map((a) => (
                   <li key={a.id} className="py-1.5 flex items-center justify-between text-[12px]">
                     <span className="font-mono text-text">{a.hora}</span>
-                    <span className="text-muted">{formatUserName(a.enfermero)}</span>
+                    <span className="text-muted">{a.enfermero ? formatUserName(a.enfermero) : "—"}</span>
                   </li>
                 ))}
               </ul>
@@ -629,8 +631,8 @@ function MedicacionAdHoc({ internacionId, onApplied }: { internacionId: string; 
 
   return (
     <>
-      <button onClick={() => setShowModal(true)} className="text-[12px] btn-secondary py-1.5 px-2.5 inline-flex items-center gap-1.5">
-        <Pill size={12} /> Med. ad-hoc
+      <button onClick={() => setShowModal(true)} className="text-[12px] py-1.5 px-2.5 inline-flex items-center gap-1.5 bg-brand-soft text-brand border border-brand hover:bg-brand-soft/80 font-medium rounded-lg transition-colors">
+        <Pill size={12} /> Med. adicional
       </button>
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title="Medicación ad-hoc (sin prescripción)" size="lg">
@@ -671,7 +673,30 @@ export default function EnfermeriaPage() {
   const [controlesMap, setControlesMap] = useState<Record<string, ControlRecord[]>>({});
   const [loadingControles, setLoadingControles] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [expandedHistorial, setExpandedHistorial] = useState<string | null>(null);
+  const [historialAplicaciones, setHistorialAplicaciones] = useState<Record<string, Aplicacion[]>>({});
+  const [loadingHistorial, setLoadingHistorial] = useState<Record<string, boolean>>({});
   const enfocado = useRef<string | null>(null);
+
+  const fetchHistorialAplicaciones = useCallback(async (prescripcionId: string) => {
+    setLoadingHistorial((prev) => ({ ...prev, [prescripcionId]: true }));
+    try {
+      const res = await fetch(`/api/historia-clinica/${selectedInternacion}/enfermeria/aplicar?prescripcionId=${prescripcionId}&historial=true`);
+      if (res.ok) {
+        const data = await res.json();
+        setHistorialAplicaciones((prev) => ({ ...prev, [prescripcionId]: Array.isArray(data) ? data : [] }));
+      }
+    } catch {} finally {
+      setLoadingHistorial((prev) => ({ ...prev, [prescripcionId]: false }));
+    }
+  }, [selectedInternacion]);
+
+  const toggleHistorial = useCallback((prescripcionId: string) => {
+    setExpandedHistorial((prev) => (prev === prescripcionId ? null : prescripcionId));
+    if (expandedHistorial !== prescripcionId) {
+      fetchHistorialAplicaciones(prescripcionId);
+    }
+  }, [expandedHistorial, fetchHistorialAplicaciones]);
 
   useEffect(() => {
     const url = new URLSearchParams(window.location.search);
@@ -885,6 +910,7 @@ export default function EnfermeriaPage() {
                     <table className="w-full text-[13px]">
                       <thead>
                         <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
+                          <th className="px-4 py-2 text-left w-8"></th>
                           <th className="px-4 py-2 text-left">Tipo</th>
                           <th className="px-4 py-2 text-left">Indicación</th>
                           <th className="px-4 py-2 text-left">Dosis / Vía</th>
@@ -894,32 +920,81 @@ export default function EnfermeriaPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {prescs.map((pr) => (
-                          <tr key={pr.id} className="border-b border-border/50 hover:bg-surface-hover">
-                            <td className="px-4 py-2.5">
-                              <span className="text-[11px] font-mono text-muted uppercase">{pr.tipo.replace("_", " ")}</span>
-                            </td>
-                            <td className="px-4 py-2.5 text-text">{pr.droga || pr.dieta || pr.descripcion}</td>
-                            <td className="px-4 py-2.5 text-muted">{pr.dosis}{pr.via ? ` · ${pr.via}` : ""}</td>
-                            <td className="px-4 py-2.5 text-muted">{pr.frecuencia || "—"}</td>
-                            <td className="px-4 py-2.5">
-                              {pr.estado === "BLOQUEADA_ALERGIA" ? (
-                                <StatusBadge tone="danger" dot label="Alergia" />
-                              ) : pr.estado === "EN_CURSO" || pr.estado === "A_COINCIDIR" ? (
-                                <StatusBadge tone="warning" dot label="Pendiente" />
-                              ) : pr.estado === "COMPLETADA" ? (
-                                <StatusBadge tone="success" dot label="Completa" />
-                              ) : (
-                                <StatusBadge tone="warning" label="Pendiente" />
+                        {prescs.map((pr) => {
+                          const isExpanded = expandedHistorial === pr.id;
+                          const apps = historialAplicaciones[pr.id] || [];
+                          const loadingHist = loadingHistorial[pr.id];
+                          return (
+                            <>
+                              <tr key={pr.id} className="border-b border-border/50 hover:bg-surface-hover cursor-pointer" onClick={() => toggleHistorial(pr.id)}>
+                                <td className="px-4 py-2.5 text-center">
+                                  {pr.tipo === "MEDICACION" && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); toggleHistorial(pr.id); }}
+                                      className="p-1 hover:bg-surface-active rounded transition-colors"
+                                      aria-label={isExpanded ? "Ocultar historial" : "Ver historial"}
+                                    >
+                                      {isExpanded ? <ChevronUp size={14} className="text-text" /> : <ChevronRight size={14} className="text-muted" />}
+                                    </button>
+                                  )}
+                                </td>
+                                <td className="px-4 py-2.5">
+                                  <span className="text-[11px] font-mono text-muted uppercase">{pr.tipo.replace("_", " ")}</span>
+                                </td>
+                                <td className="px-4 py-2.5 text-text">{pr.droga || pr.dieta || pr.descripcion}</td>
+                                <td className="px-4 py-2.5 text-muted">{pr.dosis}{pr.via ? ` · ${pr.via}` : ""}</td>
+                                <td className="px-4 py-2.5 text-muted">{pr.frecuencia || "—"}</td>
+                                <td className="px-4 py-2.5">
+                                  {pr.estado === "BLOQUEADA_ALERGIA" ? (
+                                    <StatusBadge tone="danger" dot label="Alergia" />
+                                  ) : pr.estado === "EN_CURSO" || pr.estado === "A_COINCIDIR" ? (
+                                    <StatusBadge tone="warning" dot label="Pendiente" />
+                                  ) : pr.estado === "COMPLETADA" ? (
+                                    <StatusBadge tone="success" dot label="Completa" />
+                                  ) : (
+                                    <StatusBadge tone="warning" label="Pendiente" />
+                                  )}
+                                </td>
+                                <td className="px-4 py-2.5">
+                                  {pr.tipo === "MEDICACION" && pr.estado !== "COMPLETADA" && pr.estado !== "BLOQUEADA_ALERGIA" && (
+                                    <AplicarPrescripcion internacionId={i.id} prescripcion={pr} onApplied={fetchInternaciones} />
+                                  )}
+                                </td>
+                              </tr>
+                              {isExpanded && pr.tipo === "MEDICACION" && (
+                                <tr key={`historial-${pr.id}`} className="bg-background/40">
+                                  <td colSpan={7} className="px-4 py-3">
+                                    <div className="ml-10 border-l-2 border-brand-soft pl-3">
+                                      {loadingHist ? (
+                                        <div className="flex items-center gap-2 text-sm text-muted py-2">
+                                          <div className="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+                                          Cargando historial...
+                                        </div>
+                                      ) : apps.length === 0 ? (
+                                        <div className="text-sm text-muted italic py-2">Sin aplicaciones registradas</div>
+                                      ) : (
+                                        <div className="space-y-1.5">
+                                          {apps.map((app, idx) => (
+                                            <div key={app.id || idx} className="flex items-center gap-3 text-sm py-1.5 px-2 rounded hover:bg-surface transition-colors">
+                                              <span className="font-mono text-text whitespace-nowrap">{formatDateTime(app.fecha)}</span>
+                                              <span className="text-muted whitespace-nowrap">{app.hora}</span>
+                                              {app.enfermero?.nombre && (
+                                                <span className="text-text-secondary">por {app.enfermero.nombre}</span>
+                                              )}
+                                              {app.motivo && (
+                                                <span className="text-muted ml-auto max-w-xs truncate">{app.motivo}</span>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
                               )}
-                            </td>
-                            <td className="px-4 py-2.5">
-                              {pr.tipo === "MEDICACION" && pr.estado !== "COMPLETADA" && pr.estado !== "BLOQUEADA_ALERGIA" && (
-                                <AplicarPrescripcion internacionId={i.id} prescripcion={pr} onApplied={fetchInternaciones} />
-                              )}
-                            </td>
-                          </tr>
-                        ))}
+                            </>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

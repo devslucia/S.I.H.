@@ -18,22 +18,25 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
 
   const { searchParams } = new URL(req.url);
   const prescripcionId = searchParams.get("prescripcionId");
+  const historial = searchParams.get("historial") === "true";
   if (!prescripcionId) {
     return NextResponse.json({ error: "prescripcionId requerido" }, { status: 400 });
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const where: { prescripcionId: string; fecha?: { gte: Date; lt: Date } } = { prescripcionId };
+
+  if (!historial) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    where.fecha = { gte: today, lt: tomorrow };
+  }
 
   const aplicaciones = await prisma.aplicacionMedicamento.findMany({
-    where: {
-      prescripcionId,
-      fecha: { gte: today, lt: tomorrow },
-    },
+    where,
     include: { enfermero: { select: { nombre: true } } },
-    orderBy: { hora: "asc" },
+    orderBy: historial ? [{ fecha: "desc" }, { hora: "desc" }] : { hora: "asc" },
   });
 
   return NextResponse.json(aplicaciones);
