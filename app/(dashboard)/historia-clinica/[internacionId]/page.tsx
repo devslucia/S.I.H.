@@ -10,6 +10,7 @@ import {
 
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
+import { DateInput } from "@/components/ui/DateInput";
 import { Usuario, generarHTMLCarpeta } from "@/lib/carpeta-html";
 import { cn } from "@/lib/utils";
 
@@ -435,8 +436,8 @@ export default function HistoriaClinicaPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-[12px] text-muted">Fecha</label>
-              <input
-                type="date"
+              <DateInput
+                native
                 value={cirugiaForm.fechaProgramada}
                 onChange={(e) => setCirugiaForm({ ...cirugiaForm, fechaProgramada: e.target.value })}
                 className="input-field text-[13px] w-full"

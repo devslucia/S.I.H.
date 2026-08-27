@@ -6,6 +6,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { DateInput } from "@/components/ui/DateInput";
 import { formatDateTime } from "@/lib/utils";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
 import type { CirugiaFormData, CirugiaFull, UpdateField } from "./types";
@@ -105,7 +106,7 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
                   <td className="px-3 py-2">{p.laboratorio || "—"}</td>
                   <td className="px-3 py-2">{p.cargoPor || "—"}</td>
                   <td className="px-3 py-2">{p.actoQuirurgico || "—"}</td>
-                   {canAddPracticas && <td className="px-3 py-2"><button onClick={() => setPendingDelete({ kind: "practica", id: p.id })} className="text-error hover:text-error/80"><Trash2 size={14} /></button></td>}
+                  {canAddPracticas && <td className="px-3 py-2"><button onClick={() => setPendingDelete({ kind: "practica", id: p.id })} className="text-error hover:text-error/80"><Trash2 size={14} /></button></td>}
                 </tr>
               ))}
             </tbody>
@@ -139,7 +140,7 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
                   <td className="px-3 py-2">{m.via || "—"}</td>
                   <td className="px-3 py-2">{m.horaAplicacion || "—"}</td>
                   <td className="px-3 py-2">{m.observacion || "—"}</td>
-                   {canAddMedicamentos && <td className="px-3 py-2"><button onClick={() => setPendingDelete({ kind: "medicamento", id: m.id })} className="text-error hover:text-error/80"><Trash2 size={14} /></button></td>}
+                  {canAddMedicamentos && <td className="px-3 py-2"><button onClick={() => setPendingDelete({ kind: "medicamento", id: m.id })} className="text-error hover:text-error/80"><Trash2 size={14} /></button></td>}
                 </tr>
               ))}
             </tbody>
@@ -152,10 +153,12 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
           searchPlaceholder="Buscar por troquel o nombre…"
           extraFields={[
             { key: "cantidad", label: "Cantidad", type: "number", defaultValue: 1, required: true },
-            { key: "via", label: "Vía", type: "select", defaultValue: "EV", options: [
-              { value: "EV", label: "EV" }, { value: "IM", label: "IM" }, { value: "SC", label: "SC" },
-              { value: "VO", label: "VO" }, { value: "Tópica", label: "Tópica" }, { value: "Inhalatoria", label: "Inhalatoria" }
-            ]},
+            {
+              key: "via", label: "Vía", type: "select", defaultValue: "EV", options: [
+                { value: "EV", label: "EV" }, { value: "IM", label: "IM" }, { value: "SC", label: "SC" },
+                { value: "VO", label: "VO" }, { value: "Tópica", label: "Tópica" }, { value: "Inhalatoria", label: "Inhalatoria" }
+              ]
+            },
             { key: "horaAplicacion", label: "Hora aplicación", type: "text", placeholder: "HH:MM" },
             { key: "observacion", label: "Observación", type: "text" },
           ]}
@@ -167,7 +170,7 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
       {/* Modal: Agregar práctica */}
       <Modal open={showPracticaModal} onClose={() => setShowPracticaModal(false)} title="Agregar práctica" size="md">
         <div className="grid grid-cols-2 gap-3">
-          <div><label className={labelClass}>Fecha</label><input type="date" value={practicaForm.fecha} onChange={e => setPracticaForm({ ...practicaForm, fecha: e.target.value })} className={inputClass} /></div>
+          <div><label className={labelClass}>Fecha</label><DateInput native value={practicaForm.fecha} onChange={e => setPracticaForm({ ...practicaForm, fecha: e.target.value })} className={inputClass} /></div>
           <div><label className={labelClass}>Hora</label><input type="time" value={practicaForm.hora} onChange={e => setPracticaForm({ ...practicaForm, hora: e.target.value })} className={inputClass} /></div>
           <div className="col-span-2"><label className={labelClass}>Práctica</label><input type="text" value={practicaForm.practica} onChange={e => setPracticaForm({ ...practicaForm, practica: e.target.value })} className={inputClass} /></div>
           <div><label className={labelClass}>Laboratorio</label><input type="text" value={practicaForm.laboratorio} onChange={e => setPracticaForm({ ...practicaForm, laboratorio: e.target.value })} className={inputClass} /></div>

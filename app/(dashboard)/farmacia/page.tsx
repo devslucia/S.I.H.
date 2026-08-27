@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { OpsStat } from "@/components/ui/OpsStat";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
+import { DateInput } from "@/components/ui/DateInput";
 import { formatDate } from "@/lib/utils";
 import { calcularPreciosUnitarios, formatearPrecio } from "@/lib/precios";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -155,7 +156,7 @@ function ItemFormFields({ form, onChange }: { form: FormState; onChange: (p: Par
       </div>
       <div className={field}>
         <label className={label}>Vencimiento</label>
-        <input className="input-field text-[13px]" name="vencimiento" type="date" value={form.vencimiento}
+        <DateInput native name="vencimiento" value={form.vencimiento}
           onChange={(e) => onChange({ vencimiento: e.target.value })} />
       </div>
       <div className={field}>

@@ -5,6 +5,7 @@ import { Save, CheckCircle, AlertCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
+import { DateInput } from "@/components/ui/DateInput";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatDateTime } from "@/lib/utils";
 
@@ -163,9 +164,9 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
             className="input-field min-h-[80px] resize-y" rows={3} disabled={readOnly} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Input label="Próximo Control - Fecha" name="proximoControlFecha" type="date"
+          <DateInput label="Próximo Control - Fecha" name="proximoControlFecha"
             value={data.proximoControlFecha ? data.proximoControlFecha.slice(0, 10) : ""}
-            onChange={(e) => handleChange("proximoControlFecha", e.target.value ? new Date(e.target.value).toISOString() : null)} disabled={readOnly} />
+            onChange={(e: any) => handleChange("proximoControlFecha", e.target.value ? new Date(e.target.value).toISOString() : null)} disabled={readOnly} />
           <Input label="Próximo Control - Lugar" name="proximoControlLugar" value={data.proximoControlLugar || ""}
             onChange={(e) => handleChange("proximoControlLugar", e.target.value)} disabled={readOnly} />
           <Input label="Próximo Control - Médico" name="proximoControlMedico" value={data.proximoControlMedico || ""}
