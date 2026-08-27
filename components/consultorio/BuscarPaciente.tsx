@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, UserPlus, X, Check } from "lucide-react";
 import { DateInput } from "@/components/ui/DateInput";
 
@@ -12,6 +12,8 @@ interface Paciente {
   sexo: string;
   fechaNac: string;
   obraSocial?: { id: string; nombre: string; sigla: string } | null;
+  telefono?: string | null;
+  coseguro?: number | null;
 }
 
 interface BuscarPacienteProps {
@@ -26,7 +28,15 @@ export function BuscarPaciente({ onSelected }: BuscarPacienteProps) {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
-  const [form, setForm] = useState({ nombre: "", apellido: "", sexo: "MASCULINO", fechaNac: "" });
+  const [form, setForm] = useState({ nombre: "", apellido: "", sexo: "MASCULINO", fechaNac: "", obraSocialId: "", telefono: "", coseguro: "" });
+  const [obrasSociales, setObrasSociales] = useState<{ id: string; nombre: string; sigla: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/obras-sociales?contexto=AMBULATORIO")
+      .then((r) => r.json())
+      .then((d) => setObrasSociales(Array.isArray(d) ? d : []))
+      .catch(() => { });
+  }, []);
 
   const handleSearch = async () => {
     const trimmed = dni.trim();
@@ -72,6 +82,9 @@ export function BuscarPaciente({ onSelected }: BuscarPacienteProps) {
           apellido: form.apellido.trim(),
           sexo: form.sexo,
           fechaNac: form.fechaNac,
+          telefono: form.telefono.trim() || undefined,
+          obraSocialId: form.obraSocialId || undefined,
+          coseguro: form.coseguro ? Number(form.coseguro) : undefined,
         }),
       });
       if (res.ok) {
@@ -148,6 +161,27 @@ export function BuscarPaciente({ onSelected }: BuscarPacienteProps) {
             <div className="flex flex-col gap-1">
               <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Fecha nac. *</label>
               <DateInput native value={form.fechaNac} onChange={(e) => setForm({ ...form, fechaNac: e.target.value })} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Obra Social</label>
+              <select className="select-field text-[13px]" value={form.obraSocialId} onChange={(e) => setForm({ ...form, obraSocialId: e.target.value })}>
+                <option value="">Particular / Sin OS</option>
+                {obrasSociales.map((os) => (
+                  <option key={os.id} value={os.id}>{os.sigla} - {os.nombre}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Teléfono</label>
+              <input className="input-field text-[13px]" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} placeholder="Ej: 3764..." />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Coseguro (Opcional)</label>
+              <input type="number" min="0" step="0.01" className="input-field text-[13px]" value={form.coseguro} onChange={(e) => setForm({ ...form, coseguro: e.target.value })} placeholder="Ej. 1500" />
             </div>
           </div>
           {createError && <p className="text-[12px] text-error">{createError}</p>}

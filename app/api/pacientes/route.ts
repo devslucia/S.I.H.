@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const {error} = await requireRole("ADMIN", "ADMISION", "SECRETARIA");
+  const { error } = await requireRole("ADMIN", "ADMISION", "SECRETARIA");
   if (error) return error;
 
   const body = await req.json();
@@ -57,6 +57,19 @@ export async function POST(req: NextRequest) {
   const existe = await prisma.paciente.findUnique({ where: { dni: parsed.data.dni } });
   if (existe) {
     return NextResponse.json({ error: "Ya existe un paciente con ese DNI" }, { status: 409 });
+  }
+
+  if (parsed.data.obraSocialId) {
+    const os = await prisma.obraSocial.findUnique({
+      where: { id: parsed.data.obraSocialId },
+      select: { activa: true, estadoAmbulatorio: true }
+    });
+    if (!os) {
+      return NextResponse.json({ error: "Obra social no encontrada" }, { status: 400 });
+    }
+    if (!os.activa || os.estadoAmbulatorio === "SUSPENDIDA") {
+      return NextResponse.json({ error: "Obra social no disponible para atención ambulatoria" }, { status: 400 });
+    }
   }
 
   const paciente = await prisma.paciente.create({ data: parsed.data });

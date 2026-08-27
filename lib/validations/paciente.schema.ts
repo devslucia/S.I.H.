@@ -40,6 +40,8 @@ export const createPacienteSchema = z.object({
   email: z.string().email().optional().nullable(),
   grupoSangre: z.string().optional().nullable(),
   estadoCivil: z.enum(["SOLTERO", "CASADO", "DIVORCIADO", "VIUDO", "UNION_CONVIVENCIAL"]).optional().nullable(),
+  obraSocialId: z.string().optional().nullable(),
+  coseguro: z.number().min(0, "El coseguro no puede ser negativo").optional().nullable(),
 });
 
 export const updatePacienteSchema = createPacienteSchema.partial().refine(
