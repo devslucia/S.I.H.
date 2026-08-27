@@ -600,61 +600,6 @@ function HojaEnfermeriaForm({ internacionId, onSaved }: { internacionId: string;
   );
 }
 
-function MedicacionAdHoc({ internacionId, onApplied }: { internacionId: string; onApplied: () => void }) {
-  const [showModal, setShowModal] = useState(false);
-
-  const handleSubmit = async (items: SelectedItem[]): Promise<{ ok: boolean; items: { index: number; nombre: string; ok: boolean; error?: string }[] }> => {
-    const payload = items.map((sel) => ({
-      stockItemId: sel.stockItem.id,
-      nombre: sel.stockItem.nombre,
-      cantidad: sel.values.cantidad || 1,
-      via: sel.values.via || "VO",
-      hora: sel.values.hora || new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false }),
-      motivo: sel.values.motivo || "",
-    }));
-    const res = await fetch(`/api/historia-clinica/${internacionId}/enfermeria/ad-hoc`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items: payload }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.ok) {
-        setShowModal(false);
-        onApplied();
-      }
-      return data;
-    }
-    const e = await res.json();
-    return { ok: false, items: items.map((sel, i) => ({ index: i, nombre: sel.stockItem.nombre, ok: false, error: e.error || "Error al registrar" })) };
-  };
-
-  return (
-    <>
-      <button onClick={() => setShowModal(true)} className="text-[12px] py-1.5 px-2.5 inline-flex items-center gap-1.5 bg-brand-soft text-brand border border-brand hover:bg-brand-soft/80 font-medium rounded-lg transition-colors">
-        <Pill size={12} /> Med. adicional
-      </button>
-
-      <Modal open={showModal} onClose={() => setShowModal(false)} title="Medicación ad-hoc (sin prescripción)" size="lg">
-        <MedicacionMultiSelect
-          searchPlaceholder="Buscar por troquel o nombre…"
-          extraFields={[
-            { key: "cantidad", label: "Cantidad", type: "number", defaultValue: 1, required: true },
-            { key: "via", label: "Vía", type: "select", defaultValue: "VO", options: [
-              { value: "EV", label: "EV" }, { value: "IM", label: "IM" }, { value: "SC", label: "SC" },
-              { value: "VO", label: "VO" }, { value: "Tópica", label: "Tópica" }, { value: "Inhalatoria", label: "Inhalatoria" },
-            ]},
-            { key: "hora", label: "Hora", type: "text", placeholder: "HH:MM", defaultValue: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false }) },
-            { key: "motivo", label: "Motivo / observación *", type: "text", required: true, placeholder: "ej: indicación verbal Dr. X, PRN por dolor" },
-          ]}
-          submitLabel="Registrar medicación"
-          onSubmit={handleSubmit}
-        />
-      </Modal>
-    </>
-  );
-}
-
 interface CamaApi {
   id: string;
   numero: string;
@@ -999,11 +944,6 @@ export default function EnfermeriaPage() {
                     </table>
                   </div>
                 )}
-
-                <div className="px-4 py-2 border-t border-border/50 flex items-center gap-2">
-                  <MedicacionAdHoc internacionId={i.id} onApplied={fetchInternaciones} />
-                </div>
-
                 {selectedInternacion === i.id && (
                   <div className="p-4 border-t border-border space-y-4">
                     {controles.length > 0 && (
