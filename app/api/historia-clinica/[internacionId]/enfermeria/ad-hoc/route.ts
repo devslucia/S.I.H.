@@ -6,6 +6,7 @@ import { generarCargo } from "@/lib/utils/facturacion";
 import { verificarAlergia } from "@/lib/utils/alertas-alergia";
 import { NextRequest, NextResponse } from "next/server";
 
+const ADHOC_READ_ROLES = ["ADMIN", "ENFERMERO", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
 const ADHOC_WRITE_ROLES = ["ADMIN", "ENFERMERO", "MEDICO", "ANESTESIOLOGO"];
 
 interface AdHocItem {
@@ -15,6 +16,33 @@ interface AdHocItem {
   hora?: string;
   motivo: string;
   nombre?: string;
+}
+
+export async function GET(req: NextRequest, { params }: { params: { internacionId: string } }) {
+  const { session, error } = await requireRole(...ADHOC_READ_ROLES);
+  if (error) return error;
+
+  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+  }
+
+  const adHocAplicaciones = await prisma.aplicacionMedicamento.findMany({
+    where: {
+      prescripcionId: null,
+      cargo: {
+        internacionId: params.internacionId,
+        origen: "MEDICACION",
+      },
+    },
+    include: {
+      stockItem: { select: { nombre: true, nTroquel: true, principioActivo: true, presentacion: true } },
+      enfermero: { select: { nombre: true } },
+      cargo: { select: { internacionId: true } },
+    },
+    orderBy: [{ fecha: "desc" }, { hora: "desc" }],
+  });
+
+  return NextResponse.json(adHocAplicaciones);
 }
 
 async function processOneAdHoc(
