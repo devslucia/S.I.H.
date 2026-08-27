@@ -21,7 +21,7 @@ interface NuevoTurnoModalProps {
   open: boolean;
   onClose: () => void;
   onCreated: () => void;
-  paciente: { id: string; nombre: string; apellido: string; dni: string; obraSocial?: ObraSocial | null } | null;
+  paciente: { id: string; nombre: string; apellido: string; dni: string; obraSocial?: ObraSocial | null; coseguro?: number | null } | null;
   medicos: Medico[];
   medicoPreseleccionado?: string;
 }
@@ -32,6 +32,7 @@ export function NuevoTurnoModal({ open, onClose, onCreated, paciente, medicos, m
   const [hora, setHora] = useState("");
   const [motivo, setMotivo] = useState("");
   const [obraSocialId, setObraSocialId] = useState(paciente?.obraSocial?.id || "");
+  const [coseguro, setCoseguro] = useState(paciente?.coseguro?.toString() || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -39,6 +40,7 @@ export function NuevoTurnoModal({ open, onClose, onCreated, paciente, medicos, m
     if (!open) return;
     if (medicoPreseleccionado) setMedicoId(medicoPreseleccionado);
     if (paciente?.obraSocial?.id) setObraSocialId(paciente.obraSocial.id);
+    if (paciente?.coseguro) setCoseguro(paciente.coseguro.toString());
   }, [open, medicoPreseleccionado, paciente]);
 
   const handleSubmit = async () => {
@@ -56,6 +58,7 @@ export function NuevoTurnoModal({ open, onClose, onCreated, paciente, medicos, m
           hora,
           motivo: motivo || undefined,
           obraSocialId: obraSocialId || undefined,
+          coseguro: coseguro ? Number(coseguro) : undefined,
         }),
       });
       if (res.ok) {
@@ -66,6 +69,7 @@ export function NuevoTurnoModal({ open, onClose, onCreated, paciente, medicos, m
         setHora("");
         setMotivo("");
         setObraSocialId(paciente?.obraSocial?.id || "");
+        setCoseguro(paciente?.coseguro?.toString() || "");
       } else {
         const data = await res.json();
         setError(data.error || "Error al crear turno");
@@ -115,6 +119,7 @@ export function NuevoTurnoModal({ open, onClose, onCreated, paciente, medicos, m
           </div>
         </div>
 
+
         <div className="flex flex-col gap-1">
           <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Motivo</label>
           <input
@@ -122,6 +127,19 @@ export function NuevoTurnoModal({ open, onClose, onCreated, paciente, medicos, m
             value={motivo}
             onChange={(e) => setMotivo(e.target.value)}
             placeholder="Motivo de la consulta…"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Coseguro (Opcional)</label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            className="input-field text-[13px]"
+            value={coseguro}
+            onChange={(e) => setCoseguro(e.target.value)}
+            placeholder="Monto de coseguro (por defecto el del paciente)…"
           />
         </div>
 
@@ -134,6 +152,6 @@ export function NuevoTurnoModal({ open, onClose, onCreated, paciente, medicos, m
           </button>
         </div>
       </div>
-    </Modal>
+    </Modal >
   );
 }

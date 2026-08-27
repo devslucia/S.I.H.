@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (rol === "SECRETARIA") {
     const pacienteMinimo = await prisma.paciente.findFirst({
       where: { id: params.id, ...getPacienteScopeWhere(userId, rol) },
-      select: { id: true, dni: true, apellido: true, nombre: true, sexo: true, fechaNac: true },
+      select: { id: true, dni: true, apellido: true, nombre: true, sexo: true, fechaNac: true, telefono: true, coseguro: true, obraSocial: true },
     });
 
     if (!pacienteMinimo) {
@@ -36,6 +36,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     where: { id: params.id },
     include: {
       alergias: true,
+      obraSocial: true,
       internaciones: {
         include: {
           cama: { include: { sector: true } },
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const {error} = await requireRole("ADMIN", "ADMISION");
+  const { error } = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
   const body = await req.json();
