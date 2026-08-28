@@ -437,7 +437,7 @@ export default function AdmisionPage() {
                     </div>
                     <DateInput label="Fecha de Nacimiento *" name="fechaNac" value={newPatientForm.fechaNac} onChange={handleNewPatientChange as any} required />
                     <Input label="Edad" value={newPatientForm.fechaNac ? calcularEdad(newPatientForm.fechaNac) : ""} readOnly />
-                    <Input label="CUIL *" name="cuil" value={newPatientForm.cuil} onChange={handleNewPatientChange} required placeholder="20-12345678-9" />
+                    <Input label="CUIL (opcional)" name="cuil" value={newPatientForm.cuil} onChange={handleNewPatientChange} placeholder="20-12345678-9" />
                     <Input label="Domicilio" name="domicilio" value={newPatientForm.domicilio} onChange={handleNewPatientChange} />
                     <Input label="Localidad" name="localidad" value={newPatientForm.localidad} onChange={handleNewPatientChange} />
                     <Input label="Provincia" name="provincia" value={newPatientForm.provincia} onChange={handleNewPatientChange} />
