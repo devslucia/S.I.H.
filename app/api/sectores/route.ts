@@ -46,6 +46,22 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Check for existing sector by nombre (case-insensitive)
+    const existingByNombre = await prisma.sector.findFirst({
+      where: { nombre: { equals: body.nombre, mode: "insensitive" } },
+    });
+    if (existingByNombre) {
+      return NextResponse.json({ error: `Ya existe un sector con el nombre "${existingByNombre.nombre}"` }, { status: 409 });
+    }
+
+    // Check for existing sector by codigo (case-insensitive)
+    const existingByCodigo = await prisma.sector.findFirst({
+      where: { codigo: { equals: body.codigo, mode: "insensitive" } },
+    });
+    if (existingByCodigo) {
+      return NextResponse.json({ error: `Ya existe un sector con el código "${existingByCodigo.codigo}"` }, { status: 409 });
+    }
+
     const sector = await prisma.sector.create({
       data: { nombre: body.nombre, codigo: body.codigo },
     });
