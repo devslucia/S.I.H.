@@ -5,6 +5,7 @@ import { Bed, Building2, Heart, Activity, Trash2, X, type LucideIcon } from "luc
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
 
 type Tab = "sectores" | "camas" | "obras-sociales" | "quirofanos" | "rangos-vitales";
@@ -152,13 +153,20 @@ function SectoresTab({ sectores, onRefresh }: { sectores: Sector[]; onRefresh: (
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Sector | null>(null);
+  const { toast } = useToast();
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const method = editing ? "PUT" : "POST";
       const body = editing ? { id: editing, ...form } : form;
-      await fetch("/api/sectores", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const res = await fetch("/api/sectores", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast("error", data.error ?? "Error al guardar");
+        return;
+      }
+      toast("success", editing ? "Sector actualizado" : "Sector creado");
       setForm({ nombre: "", codigo: "" });
       setEditing(null);
       onRefresh();
@@ -167,7 +175,13 @@ function SectoresTab({ sectores, onRefresh }: { sectores: Sector[]; onRefresh: (
 
   const handleDelete = async (id: string) => {
     setPendingDelete(null);
-    await fetch(`/api/sectores?id=${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/sectores?id=${id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast("error", data.error ?? "Error al eliminar");
+      return;
+    }
+    toast("success", "Sector eliminado");
     onRefresh();
   };
 
@@ -228,11 +242,18 @@ function CamasTab({ camas, sectores, onRefresh }: { camas: Cama[]; sectores: Sec
   const [form, setForm] = useState({ numero: "", sectorId: "", tipo: "ESTANDAR" });
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Cama | null>(null);
+  const { toast } = useToast();
 
   const handleCreate = async () => {
     setSaving(true);
     try {
-      await fetch("/api/camas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const res = await fetch("/api/camas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast("error", data.error ?? "Error al crear cama");
+        return;
+      }
+      toast("success", "Cama creada");
       setForm({ numero: "", sectorId: "", tipo: "ESTANDAR" });
       onRefresh();
     } finally { setSaving(false); }
@@ -240,12 +261,23 @@ function CamasTab({ camas, sectores, onRefresh }: { camas: Cama[]; sectores: Sec
 
   const handleDelete = async (id: string) => {
     setPendingDelete(null);
-    await fetch(`/api/camas?id=${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/camas?id=${id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast("error", data.error ?? "Error al eliminar");
+      return;
+    }
+    toast("success", "Cama eliminada");
     onRefresh();
   };
 
   const handleEstado = async (id: string, estado: string) => {
-    await fetch("/api/camas", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, estado }) });
+    const res = await fetch("/api/camas", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, estado }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast("error", data.error ?? "Error al cambiar estado");
+      return;
+    }
     onRefresh();
   };
 
@@ -328,13 +360,12 @@ function ObrasTab({ obras, onRefresh }: { obras: ObraSocial[]; onRefresh: () => 
   const [form, setForm] = useState(EMPTY_OS_FORM);
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const set = (k: keyof typeof EMPTY_OS_FORM, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleSave = async () => {
     setSaving(true);
-    setError(null);
     try {
       const method = editing ? "PUT" : "POST";
       const body = {
@@ -345,11 +376,12 @@ function ObrasTab({ obras, onRefresh }: { obras: ObraSocial[]; onRefresh: () => 
         porcentajeDescMedicamentos: Number(form.porcentajeDescMedicamentos),
       };
       const res = await fetch("/api/obras-sociales", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? "Error al guardar");
+        toast("error", data.error ?? "Error al guardar");
         return;
       }
+      toast("success", editing ? "Obra social actualizada" : "Obra social creada");
       setForm(EMPTY_OS_FORM);
       setEditing(null);
       onRefresh();
@@ -357,7 +389,13 @@ function ObrasTab({ obras, onRefresh }: { obras: ObraSocial[]; onRefresh: () => 
   };
 
   const handleToggle = async (id: string, activa: boolean) => {
-    await fetch("/api/obras-sociales", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, activa: !activa }) });
+    const res = await fetch("/api/obras-sociales", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, activa: !activa }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast("error", data.error ?? "Error al cambiar estado");
+      return;
+    }
+    toast("success", activa ? "Obra social desactivada" : "Obra social activada");
     onRefresh();
   };
 
@@ -372,7 +410,7 @@ function ObrasTab({ obras, onRefresh }: { obras: ObraSocial[]; onRefresh: () => 
     });
   };
 
-  const cancelEdit = () => { setEditing(null); setForm(EMPTY_OS_FORM); setError(null); };
+  const cancelEdit = () => { setEditing(null); setForm(EMPTY_OS_FORM); };
 
   return (
     <div className="space-y-4">
@@ -410,7 +448,6 @@ function ObrasTab({ obras, onRefresh }: { obras: ObraSocial[]; onRefresh: () => 
           {editing && <button onClick={cancelEdit} className="btn-secondary text-[13px]"><X size={14} /></button>}
         </div>
       </div>
-      {error && <p className="text-[12px] text-error">{error}</p>}
       {obras.length === 0 ? (
         <Empty text="Sin obras sociales." />
       ) : (
@@ -458,13 +495,20 @@ function QuirofanosTab({ quirofanos, onRefresh }: { quirofanos: Quirofano[]; onR
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Quirofano | null>(null);
+  const { toast } = useToast();
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const method = editing ? "PUT" : "POST";
       const body = editing ? { id: editing, ...form } : form;
-      await fetch("/api/quirofanos", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const res = await fetch("/api/quirofanos", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast("error", data.error ?? "Error al guardar");
+        return;
+      }
+      toast("success", editing ? "Quirófano actualizado" : "Quirófano creado");
       setForm({ numero: 0, nombre: "", piso: "" });
       setEditing(null);
       onRefresh();
@@ -473,12 +517,24 @@ function QuirofanosTab({ quirofanos, onRefresh }: { quirofanos: Quirofano[]; onR
 
   const handleDelete = async (id: string) => {
     setPendingDelete(null);
-    await fetch(`/api/quirofanos?id=${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/quirofanos?id=${id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast("error", data.error ?? "Error al eliminar");
+      return;
+    }
+    toast("success", "Quirófano eliminado");
     onRefresh();
   };
 
   const handleToggle = async (id: string, disponible: boolean) => {
-    await fetch("/api/quirofanos", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, disponible: !disponible }) });
+    const res = await fetch("/api/quirofanos", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, disponible: !disponible }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast("error", data.error ?? "Error al cambiar estado");
+      return;
+    }
+    toast("success", disponible ? "Quirófano deshabilitado" : "Quirófano habilitado");
     onRefresh();
   };
 
@@ -545,13 +601,20 @@ function RangosTab({ rangos, onRefresh }: { rangos: RangoVital[]; onRefresh: () 
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<RangoVital | null>(null);
+  const { toast } = useToast();
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const method = editing ? "PUT" : "POST";
       const body = editing ? { id: editing, ...form } : form;
-      await fetch("/api/rangos-vitales", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const res = await fetch("/api/rangos-vitales", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast("error", data.error ?? "Error al guardar");
+        return;
+      }
+      toast("success", editing ? "Rango actualizado" : "Rango creado");
       setForm({ parametro: "", minimo: 0, maximo: 0, unidad: "" });
       setEditing(null);
       onRefresh();
@@ -560,7 +623,13 @@ function RangosTab({ rangos, onRefresh }: { rangos: RangoVital[]; onRefresh: () 
 
   const handleDelete = async (id: string) => {
     setPendingDelete(null);
-    await fetch(`/api/rangos-vitales?id=${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/rangos-vitales?id=${id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast("error", data.error ?? "Error al eliminar");
+      return;
+    }
+    toast("success", "Rango eliminado");
     onRefresh();
   };
 
