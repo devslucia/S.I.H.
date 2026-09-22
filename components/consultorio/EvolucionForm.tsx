@@ -5,6 +5,7 @@ import { Plus, CheckCircle, Clock, User, Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
+import { useToast } from "@/components/ui/Toast";
 import { formatDateTime } from "@/lib/utils";
 
 interface Evolucion {
@@ -26,6 +27,7 @@ export function EvolucionForm({ apiBase }: EvolucionFormProps) {
   const [showEditor, setShowEditor] = useState(false);
   const [nuevoContenido, setNuevoContenido] = useState("");
   const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
 
   const fetchEvoluciones = async () => {
     setLoading(true);
@@ -51,11 +53,15 @@ export function EvolucionForm({ apiBase }: EvolucionFormProps) {
         body: JSON.stringify({ contenido: nuevoContenido }),
       });
       if (res.ok) {
+        toast("success", "Evolución guardada correctamente");
         setNuevoContenido("");
         setShowEditor(false);
         fetchEvoluciones();
+      } else {
+        toast("error", "No se pudo guardar la evolución");
       }
     } catch (err) {
+      toast("error", "Error de conexión al guardar");
       console.error(err);
     } finally {
       setSaving(false);

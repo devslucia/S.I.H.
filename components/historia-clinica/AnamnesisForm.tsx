@@ -5,6 +5,7 @@ import { Save, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
+import { useToast } from "@/components/ui/Toast";
 import { formatDateTime } from "@/lib/utils";
 
 interface AnamnesisData {
@@ -70,6 +71,7 @@ export function AnamnesisForm({ internacionId, apiBase, onSaved }: AnamnesisForm
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchAnamnesis = async () => {
@@ -102,11 +104,15 @@ export function AnamnesisForm({ internacionId, apiBase, onSaved }: AnamnesisForm
         body: JSON.stringify(data),
       });
       if (res.ok) {
+        toast("success", "Anamnesis guardada correctamente");
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
         onSaved?.();
+      } else {
+        toast("error", "No se pudo guardar la anamnesis");
       }
     } catch (err) {
+      toast("error", "Error de conexión al guardar");
       console.error(err);
     } finally {
       setSaving(false);
