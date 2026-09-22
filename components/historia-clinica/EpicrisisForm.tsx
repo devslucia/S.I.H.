@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { DateInput } from "@/components/ui/DateInput";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
+import { useToast } from "@/components/ui/Toast";
 import { formatDateTime } from "@/lib/utils";
 
 interface EpicrisisData {
@@ -39,6 +40,7 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
   const [saving, setSaving] = useState(false);
   const [signing, setSigning] = useState(false);
   const [saved, setSaved] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,11 +73,15 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
         body: JSON.stringify(data),
       });
       if (res.ok) {
+        toast("success", "Epicrisis guardada correctamente");
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
         onSaved?.();
+      } else {
+        toast("error", "No se pudo guardar la epicrisis");
       }
     } catch (err) {
+      toast("error", "Error de conexión al guardar");
       console.error(err);
     } finally {
       setSaving(false);
@@ -91,9 +97,13 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
       if (res.ok) {
         const d = await res.json();
         setData((prev) => ({ ...prev, firmadaAt: d.firmadaAt || new Date().toISOString() }));
+        toast("success", "Paciente dismuetado/alta registrada");
         onSigned?.();
+      } else {
+        toast("error", "No se pudo firmar/dar de alta");
       }
     } catch (err) {
+      toast("error", "Error de conexión al firmar");
       console.error(err);
     } finally {
       setSigning(false);

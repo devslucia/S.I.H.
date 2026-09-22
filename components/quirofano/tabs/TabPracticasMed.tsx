@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { useToast } from "@/components/ui/Toast";
 
 import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
 import { Modal } from "@/components/ui/Modal";
@@ -35,6 +36,7 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
   const [showPracticaModal, setShowPracticaModal] = useState(false);
   const [practicaForm, setPracticaForm] = useState({ fecha: "", hora: "", practica: "", laboratorio: "", cargoPor: "", actoQuirurgico: "" });
   const [pendingDelete, setPendingDelete] = useState<{ kind: "practica" | "medicamento"; id: string } | null>(null);
+  const { toast } = useToast();
 
   const canAddPracticas = !isReadOnly && (effectiveRole === "INSTRUMENTADOR" || effectiveRole === "CIRCULANTE" || effectiveRole === "ADMIN");
   const canAddMedicamentos = !isReadOnly && (effectiveRole === "INSTRUMENTADOR" || effectiveRole === "CIRCULANTE" || effectiveRole === "ADMIN");
@@ -45,7 +47,10 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(practicaForm),
     });
-    if (res.ok) { onRefresh(); setShowPracticaModal(false); setPracticaForm({ fecha: "", hora: "", practica: "", laboratorio: "", cargoPor: "", actoQuirurgico: "" }); }
+    if (res.ok) {
+      toast("success", "Práctica agregada");
+      onRefresh(); setShowPracticaModal(false); setPracticaForm({ fecha: "", hora: "", practica: "", laboratorio: "", cargoPor: "", actoQuirurgico: "" });
+    }
   };
 
   const deletePractica = async (id: string) => {
@@ -67,7 +72,7 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ items: payload }),
     });
-    if (res.ok) { const d = await res.json(); onRefresh(); return d; }
+    if (res.ok) { const d = await res.json(); toast("success", "Medicamentos agregados"); onRefresh(); return d; }
     const e = await res.json();
     return { ok: false, items: items.map((sel, i) => ({ index: i, nombre: sel.stockItem.nombre, ok: false, error: e.error || "Error al agregar" })) };
   };
