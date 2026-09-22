@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { AlertaBloqueada } from "@/components/ui/AlertaBloqueada";
+import { useToast } from "@/components/ui/Toast";
 
 
 interface Prescripcion {
@@ -46,6 +47,7 @@ export function ConsultaPrescripciones({ apiBase }: ConsultaPrescripcionesProps)
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
   const [alerta, setAlerta] = useState<{ droga: string; fechaAlta: string } | null>(null);
 
   const fetchPrescripciones = async () => {
@@ -71,14 +73,19 @@ export function ConsultaPrescripciones({ apiBase }: ConsultaPrescripcionesProps)
         body: JSON.stringify(form),
       });
       if (res.ok) {
+        toast("success", "Prescripción guardada correctamente");
         setForm(initialForm);
         setShowForm(false);
         fetchPrescripciones();
       } else if (res.status === 409) {
         const data = await res.json();
         setAlerta({ droga: form.droga, fechaAlta: data.fechaAlta || "" });
+        toast("error", "No se pudo guardar la prescripción");
+      } else {
+        toast("error", "No se pudo guardar la prescripción");
       }
     } catch (err) {
+      toast("error", "Error de conexión al guardar");
       console.error(err);
     } finally {
       setSaving(false);
