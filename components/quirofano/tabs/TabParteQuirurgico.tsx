@@ -5,6 +5,7 @@ import { Plus, Trash2, Printer } from "lucide-react";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { Modal } from "@/components/ui/Modal";
 import { DateInput } from "@/components/ui/DateInput";
+import { useToast } from "@/components/ui/Toast";
 import { formatDateTime, formatUserName } from "@/lib/utils";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
 import type { CirugiaFormData, CirugiaFull, UpdateField } from "./types";
@@ -34,6 +35,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
   const [showPracticaModal, setShowPracticaModal] = useState(false);
   const [implanteForm, setImplanteForm] = useState({ codigo: "", nombre: "", lote: "", modelo: "", lado: "" });
   const [practicaForm, setPracticaForm] = useState({ fecha: "", hora: "", practica: "", laboratorio: "", cargoPor: "", actoQuirurgico: "" });
+  const { toast } = useToast();
 
   const isMedico = effectiveRole === "MEDICO" || effectiveRole === "ADMIN";
   const isInstrumentador = effectiveRole === "INSTRUMENTADOR" || effectiveRole === "CIRCULANTE" || effectiveRole === "ADMIN";
@@ -43,14 +45,19 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
   const disabledIndicaciones = isReadOnly || !isMedico;
 
   const addImplante = async () => {
-    await fetch(`/api/quirofano/${cirugiaId}/implantes`, {
+    const res = await fetch(`/api/quirofano/${cirugiaId}/implantes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(implanteForm),
     });
-    setShowImplanteModal(false);
-    setImplanteForm({ codigo: "", nombre: "", lote: "", modelo: "", lado: "" });
-    onRefresh();
+    if (res.ok) {
+      toast("success", "Implante agregado");
+      setShowImplanteModal(false);
+      setImplanteForm({ codigo: "", nombre: "", lote: "", modelo: "", lado: "" });
+      onRefresh();
+    } else {
+      toast("error", "No se pudo agregar el implante");
+    }
   };
 
   const addPractica = async () => {
@@ -59,7 +66,12 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(practicaForm),
     });
-    if (res.ok) { onRefresh(); setShowPracticaModal(false); setPracticaForm({ fecha: "", hora: "", practica: "", laboratorio: "", cargoPor: "", actoQuirurgico: "" }); }
+    if (res.ok) {
+      toast("success", "Práctica agregada");
+      setShowPracticaModal(false);
+      setPracticaForm({ fecha: "", hora: "", practica: "", laboratorio: "", cargoPor: "", actoQuirurgico: "" });
+      onRefresh();
+    }
   };
 
   return (
