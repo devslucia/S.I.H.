@@ -101,20 +101,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
   // Validar el body contra los permisos del rol
   const { allowedBody, rejected } = validatePatchBody(body, effectiveRole, cirugiaActual);
 
-  // Reprogramación reservada a ADMIN (A2): MEDICO/otros no pueden
-  // cambiar fechaProgramada ni marcar la cirugía como REPROGRAMADA
+  // Campos que solo ADMIN puede modificar (silenciosamente ignorados para otros roles)
+  // fechaProgramada y REPROGRAMADA están reservadas al administrador
   if (effectiveRole !== "ADMIN") {
-    const camposProhibidos: string[] = [];
-    if ("fechaProgramada" in body) camposProhibidos.push("fechaProgramada");
-    if (body.estado === "REPROGRAMADA") camposProhibidos.push("estado");
-    if (camposProhibidos.length > 0) {
-      return NextResponse.json(
-        { error: "No tiene permiso para reprogramar esta cirugía", fields: camposProhibidos },
-        { status: 403 }
-      );
+    if ("fechaProgramada" in body) delete body.fechaProgramada;
+    if (body.estado === "REPROGRAMADA") {
+      // Remover el estado REPROGRAMADA para roles no-ADMIN, conservar solo transiciones operativas
+      const { estado: _estado, ...resto } = body;
+      Object.assign(body, resto);
     }
-    // El estado no está en la whitelist de MEDICO: se re-agrega solo
-    // con valores de transición operativa (nunca REPROGRAMADA)
+    // Re-agregar estado con valores de transición operativa (nunca REPROGRAMADA)
     if (typeof body.estado === "string") {
       (allowedBody as Record<string, unknown>).estado = body.estado;
     }

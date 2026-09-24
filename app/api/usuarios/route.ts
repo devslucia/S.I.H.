@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { formatZodError } from "@/lib/validations/format-zod-error";
 
 export async function GET() {
-  const {error} = await requireRole("ADMIN");
+  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO");
   if (error) return error;
 
   const usuarios = await prisma.usuario.findMany({

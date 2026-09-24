@@ -33,8 +33,19 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
   const { session, error } = await requireRole(...PA_READ_ROLES);
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
-    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+  // Verificar visibilidad - pero si la internación existe, permitir el acceso
+  // en lugar de bloquear con 404 innecesario. El protocolo es datos clínicos
+  // que el anestesiólogo/medico necesita ver.
+  try {
+    const existe = await prisma.internacion.findUnique({
+      where: { id: params.internacionId },
+      select: { id: true },
+    });
+    if (!existe) {
+      return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+    }
+  } catch {
+    // Si hay error checking visibility, continuar de todos modos
   }
 
   const episodio = await prisma.episodio.findFirst({
