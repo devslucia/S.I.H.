@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/Toast";
 import Link from "next/link";
 import { Activity, Clock, ChevronRight, Plus, AlertTriangle } from "lucide-react";
 
@@ -17,7 +18,7 @@ import { PrimaryActionBar } from "@/components/ui/PrimaryActionBar";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDateTime, formatUserName, cn } from "@/lib/utils";
 
-import { calcularEdad } from "@/lib/validations/cuil";
+import { validarCuil, formatCuil, calcularEdad } from "@/lib/validations/cuil";
 
 interface Paciente {
   id: string;
@@ -158,6 +159,8 @@ export default function AdmisionPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dniCheckResult, setDniCheckResult] = useState<{ existe: boolean; paciente?: { id: string; dni: string; apellido: string; nombre: string } } | null>(null);
+  const [cuilError, setCuilError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchPacientes = useCallback(async (q?: string) => {
     setLoading(true);
@@ -248,6 +251,44 @@ export default function AdmisionPage() {
     }
   };
 
+  const handleCuilChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.trim();
+    setNewPatientForm((prev) => ({ ...prev, cuil: rawValue }));
+
+    // Auto-formatear mientras escribe: formato XX-XXXXXXXX-X
+    if (rawValue) {
+      // Quitar guiones y espacios para validar
+      const normalized = rawValue.replace(/[-\s]/g, "");
+      if (normalized.length <= 2) {
+        setNewPatientForm((prev) => ({ ...prev, cuil: rawValue }));
+        setCuilError(null);
+      } else if (normalized.length <= 10) {
+        const formatted = `${normalized.slice(0, 2)}-${normalized.slice(2)}`;
+        setNewPatientForm((prev) => ({ ...prev, cuil: formatted }));
+        setCuilError(null);
+      } else if (normalized.length <= 11) {
+        const formatted = `${normalized.slice(0, 2)}-${normalized.slice(2, 10)}-${normalized.slice(10)}`;
+        setNewPatientForm((prev) => ({ ...prev, cuil: formatted }));
+        // Validar dígito verificador
+        const validacion = validarCuil(formatted);
+        if (!validacion.valido) {
+          setCuilError(validacion.error || "CUIL inválido");
+        } else {
+          setCuilError(null);
+        }
+      } else {
+        // Si tiene más de 11, quitar extras y mantener formato
+        const truncated = normalized.slice(0, 11);
+        const formatted = `${truncated.slice(0, 2)}-${truncated.slice(2, 10)}-${truncated.slice(10)}`;
+        setNewPatientForm((prev) => ({ ...prev, cuil: formatted }));
+        setCuilError("CUIL debe tener exactamente 11 dígitos");
+      }
+    } else {
+      setNewPatientForm((prev) => ({ ...prev, cuil: "" }));
+      setCuilError(null);
+    }
+  };
+
   const handleInternacionChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setInternacionForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -256,6 +297,21 @@ export default function AdmisionPage() {
     e.preventDefault();
     setSaving(true);
     setError(null);
+    setCuilError(null); // Limpiar error de CUIL antes de validar
+    
+    // Validar CUIL si tiene valor
+    const cuil = newPatientForm.cuil?.trim();
+    if (cuil && !cuil.match(/^\d{2}-\d{8}-\d$/)) {
+      setCuilError("El CUIL debe tener formato 20-12345678-9");
+      setSaving(false);
+      return;
+    }
+    if (cuil && !validarCuil(cuil).valido) {
+      setCuilError(validarCuil(cuil).error || "CUIL inválido (formato o dígito verificador incorrecto)");
+      setSaving(false);
+      return;
+    }
+    
     try {
       const body: AdmisionBody = { ...newPatientForm };
       if (body.medicoTratanteIds?.length === 0) delete body.medicoTratanteIds;
@@ -269,16 +325,30 @@ export default function AdmisionPage() {
         body: JSON.stringify(body),
       });
       if (res.ok) {
+        toast("success", "Paciente admitido y internación creada correctamente");
         setView("desk");
         setNewPatientForm(initialNewPatientForm);
         fetchPacientes();
         fetchLookups();
+      } else if (res.status === 400) {
+        const data = await res.json();
+        setError(data.error || "Error al crear admisión");
+        setCuilError(data.error || "CUIL inválido (formato o dígito verificador incorrecto)");
+        toast("error", data.error || "Error al crear la admisión");
+      } else if (res.status === 401 || res.status === 403) {
+        toast("error", "Sesión expirada o sin permisos. Vuelva a iniciar sesión.");
+        setError("Sesión expirada o sin permisos");
+        // Redirigir al login después de un tiempo
+        setTimeout(() => router.push("/login"), 5000);
       } else {
         const data = await res.json();
         setError(data.error || "Error al crear admisión");
+        toast("error", data.error || "Error desconocido al crear admisión");
       }
-    } catch (_err) {
-      setError("Error de conexión");
+    } catch (err: any) {
+      toast("error", "Error de conexión. Verifique su sesión e intente nuevamente.");
+      setError("Error de conexión al crear admisión");
+      console.error("Error submitting admission:", err);
     } finally {
       setSaving(false);
     }
@@ -437,7 +507,12 @@ export default function AdmisionPage() {
                     </div>
                     <DateInput label="Fecha de Nacimiento *" name="fechaNac" value={newPatientForm.fechaNac} onChange={handleNewPatientChange as any} required />
                     <Input label="Edad" value={newPatientForm.fechaNac ? calcularEdad(newPatientForm.fechaNac) : ""} readOnly />
-                    <Input label="CUIL (opcional)" name="cuil" value={newPatientForm.cuil} onChange={handleNewPatientChange} placeholder="20-12345678-9" />
+                    <Input label="CUIL (opcional)" name="cuil" value={newPatientForm.cuil} onChange={handleCuilChange} placeholder="20-12345678-9" />
+                    {cuilError && (
+                      <div className="mt-2 text-error text-sm">
+                        {cuilError}
+                      </div>
+                    )}
                     <Input label="Domicilio" name="domicilio" value={newPatientForm.domicilio} onChange={handleNewPatientChange} />
                     <Input label="Localidad" name="localidad" value={newPatientForm.localidad} onChange={handleNewPatientChange} />
                     <Input label="Provincia" name="provincia" value={newPatientForm.provincia} onChange={handleNewPatientChange} />
