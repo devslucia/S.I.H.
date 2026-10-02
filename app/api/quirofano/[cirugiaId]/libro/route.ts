@@ -102,17 +102,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
   const { allowedBody, rejected } = validatePatchBody(body, effectiveRole, cirugiaActual);
 
   // Campos que solo ADMIN puede modificar (silenciosamente ignorados para otros roles)
-  // fechaProgramada y REPROGRAMADA están reservadas al administrador
+  // fechaProgramada y estado REPROGRAMADA están reservadas al administrador
   if (effectiveRole !== "ADMIN") {
-    if ("fechaProgramada" in body) delete body.fechaProgramada;
+    delete body.fechaProgramada;
     if (body.estado === "REPROGRAMADA") {
-      // Remover el estado REPROGRAMADA para roles no-ADMIN, conservar solo transiciones operativas
-      const { estado: _estado, ...resto } = body;
-      Object.assign(body, resto);
-    }
-    // Re-agregar estado con valores de transición operativa (nunca REPROGRAMADA)
-    if (typeof body.estado === "string") {
-      (allowedBody as Record<string, unknown>).estado = body.estado;
+      delete body.estado;
     }
   }
 

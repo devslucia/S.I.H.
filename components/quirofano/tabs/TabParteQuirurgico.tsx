@@ -71,6 +71,9 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
       setShowPracticaModal(false);
       setPracticaForm({ fecha: "", hora: "", practica: "", laboratorio: "", cargoPor: "", actoQuirurgico: "" });
       onRefresh();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      toast("error", err.error || "No se pudo agregar la práctica");
     }
   };
 
