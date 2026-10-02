@@ -11,6 +11,7 @@ import { OpsStat } from "@/components/ui/OpsStat";
 import { DateNavigator } from "@/components/ui/DateNavigator";
 import { DateInput } from "@/components/ui/DateInput";
 import { CirugiaCard, type CirugiaEstado } from "@/components/ui/CirugiaCard";
+import { useToast } from "@/components/ui/Toast";
 
 interface Cirugia {
   id: string;
@@ -130,6 +131,7 @@ export default function QuirofanoPage() {
 
   const [savingCirugia, setSavingCirugia] = useState(false);
   const [cirugiaForm, setCirugiaForm] = useState(emptyCirugiaForm());
+  const { toast } = useToast();
 
   const fetchCirugias = useCallback(async (fecha: string) => {
     setLoading(true);
@@ -205,13 +207,18 @@ export default function QuirofanoPage() {
         body: JSON.stringify({ ...cirugiaForm, internacionId: selectedInternacion.id }),
       });
       if (res.ok) {
+        toast("success", "Cirugía programada correctamente");
         setShowCirugiaModal(false);
         setSelectedInternacion(null);
         setCirugiaForm(emptyCirugiaForm());
         fetchCirugias(fechaSeleccionada);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast("error", err.error || "No se pudo programar la cirugía");
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de red al programar la cirugía");
     } finally {
       setSavingCirugia(false);
     }

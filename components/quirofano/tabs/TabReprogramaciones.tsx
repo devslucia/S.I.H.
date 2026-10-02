@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Calendar, AlertTriangle } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { formatDateTime } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
 import type { EffectiveRole } from "@/lib/quirofano-rbac";
 import type { CirugiaFull } from "./types";
 
@@ -26,7 +27,8 @@ export function TabReprogramaciones({ data, isReadOnly, effectiveRole, cirugiaId
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ nuevaFecha: "", motivo: "" });
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
   const canReprogram = effectiveRole === "ADMIN";
 
   const addReprogramacion = async () => {
@@ -35,12 +37,23 @@ export function TabReprogramaciones({ data, isReadOnly, effectiveRole, cirugiaId
       return;
     }
     setErrorMsg(null);
+    setSaving(true);
     const res = await fetch(`/api/quirofano/${cirugiaId}/reprogramaciones`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
-    if (res.ok) { setShowModal(false); setForm({ nuevaFecha: "", motivo: "" }); onRefresh(); }
+    setSaving(false);
+    if (res.ok) {
+      toast("success", "Cirugía reprogramada correctamente");
+      setShowModal(false);
+      setForm({ nuevaFecha: "", motivo: "" });
+      onRefresh();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      setErrorMsg(err.error || "No se pudo reprogramar la cirugía");
+      toast("error", err.error || "No se pudo reprogramar la cirugía");
+    }
   };
 
   return (
@@ -77,27 +90,27 @@ export function TabReprogramaciones({ data, isReadOnly, effectiveRole, cirugiaId
         </div>
       </div>
 
-{/* Modal: Reprogramación */}
+      {/* Modal: Reprogramación */}
       <Modal open={showModal} onClose={() => setShowModal(false)} title="Reprogramar cirugía" size="md">
-            <div className="space-y-3">
-              {errorMsg && (
-                <div className="flex items-center gap-2 text-[13px] text-error border border-error/30 bg-error/10 rounded-md px-3 py-2">
-                  <AlertTriangle size={14} /> {errorMsg}
-                </div>
-              )}
-              <div><label className={labelClass}>Nueva fecha propuesta</label>
-                <input type="datetime-local" value={form.nuevaFecha} onChange={e => setForm({ ...form, nuevaFecha: e.target.value })} className={inputClass} /></div>
-              <div><label className={labelClass}>Motivo</label>
-                <select value={form.motivo} onChange={e => setForm({ ...form, motivo: e.target.value })} className={inputClass}>
-                  <option value="">Seleccionar</option>{MOTIVOS_REPROG.map(m => <option key={m} value={m}>{m}</option>)}
-                </select></div>
-              <div><label className={labelClass}>Detalle adicional</label>
-                <textarea rows={3} className={`${inputClass} resize-y`} placeholder="Detalle..." /></div>
+        <div className="space-y-3">
+          {errorMsg && (
+            <div className="flex items-center gap-2 text-[13px] text-error border border-error/30 bg-error/10 rounded-md px-3 py-2">
+              <AlertTriangle size={14} /> {errorMsg}
             </div>
-            <div className="flex justify-end gap-3 mt-4">
-              <button onClick={() => setShowModal(false)} className={btnOutline}>Cancelar</button>
-              <button onClick={addReprogramacion} className={`${btnTeal} flex items-center gap-2`}><Calendar size={14} /> Confirmar reprogramación</button>
-            </div>
+          )}
+          <div><label className={labelClass}>Nueva fecha propuesta</label>
+            <input type="datetime-local" value={form.nuevaFecha} onChange={e => setForm({ ...form, nuevaFecha: e.target.value })} className={inputClass} /></div>
+          <div><label className={labelClass}>Motivo</label>
+            <select value={form.motivo} onChange={e => setForm({ ...form, motivo: e.target.value })} className={inputClass}>
+              <option value="">Seleccionar</option>{MOTIVOS_REPROG.map(m => <option key={m} value={m}>{m}</option>)}
+            </select></div>
+          <div><label className={labelClass}>Detalle adicional</label>
+            <textarea rows={3} className={`${inputClass} resize-y`} placeholder="Detalle..." /></div>
+        </div>
+        <div className="flex justify-end gap-3 mt-4">
+          <button onClick={() => setShowModal(false)} className={btnOutline}>Cancelar</button>
+          <button onClick={addReprogramacion} disabled={saving} className={`${btnTeal} flex items-center gap-2 disabled:opacity-50`}><Calendar size={14} /> {saving ? "Guardando..." : "Confirmar reprogramación"}</button>
+        </div>
       </Modal>
     </div>
   );

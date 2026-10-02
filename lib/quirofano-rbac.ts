@@ -130,12 +130,12 @@ export function validatePatchBody(
   const allowedBody: Record<string, unknown> = {};
   const rejectedFields: string[] = [];
 
-  // Campos estrictos de Parte Quirúrgico — solo MEDICO
+  // Campos estrictos de Parte Quirúrgico — solo MEDICO o ADMIN
   const parteQuirFields = ["hallazgos", "evolucionPostInt", "indicacionesPostoperatorias"];
 
   for (const [key, value] of Object.entries(body)) {
-    // Validación estricta: Parte Quirúrgico
-    if (parteQuirFields.includes(key) && role !== "MEDICO") {
+    // Validación estricta: Parte Quirúrgico (ADMIN siempre puede editar todo)
+    if (parteQuirFields.includes(key) && role !== "MEDICO" && role !== "ADMIN") {
       rejectedFields.push(key);
       continue;
     }

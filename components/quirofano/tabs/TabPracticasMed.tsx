@@ -55,8 +55,13 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
 
   const deletePractica = async (id: string) => {
     setPendingDelete(null);
-    await fetch(`/api/quirofano/${cirugiaId}/practicas?id=${id}`, { method: "DELETE" });
-    onRefresh();
+    const res = await fetch(`/api/quirofano/${cirugiaId}/practicas?id=${id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast("success", "Práctica eliminada");
+      onRefresh();
+    } else {
+      toast("error", "No se pudo eliminar la práctica");
+    }
   };
 
   const addMedicamentos = async (items: SelectedItem[]): Promise<{ ok: boolean; items: { index: number; nombre: string; ok: boolean; error?: string }[] }> => {
@@ -79,8 +84,13 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
 
   const deleteMedicamento = async (medId: string) => {
     setPendingDelete(null);
-    await fetch(`/api/quirofano/${cirugiaId}/medicamentos/${medId}`, { method: "DELETE" });
-    onRefresh();
+    const res = await fetch(`/api/quirofano/${cirugiaId}/medicamentos/${medId}`, { method: "DELETE" });
+    if (res.ok) {
+      toast("success", "Medicamento anulado y stock devuelto");
+      onRefresh();
+    } else {
+      toast("error", "No se pudo anular el medicamento");
+    }
   };
 
   return (

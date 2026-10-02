@@ -62,7 +62,16 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
   });
 
   if (!episodio) {
-    return NextResponse.json({ error: "No se encontró el episodio clínico para esta internación" }, { status: 404 });
+    // La internación existe pero todavía no tiene un episodio clínico.
+    // Devolvemos 200 con datos vacíos para que el frontend pueda mostrar el formulario.
+    return NextResponse.json({
+      protocolo: null,
+      anestesiologoAsignado: null,
+      equipoCirugia: { cirujano: null, ayudantes: [], hayEquipo: false },
+      tiemposCirugia: { inicio: null, fin: null },
+      paciente: null,
+      internacion: null,
+    });
   }
 
   const protocolo = await prisma.protocoloAnestesia.findUnique({
@@ -103,9 +112,9 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
   );
   const equipoUsuarios = equipoIds.length
     ? await prisma.usuario.findMany({
-        where: { id: { in: equipoIds } },
-        select: { id: true, nombre: true, apellido: true, matricula: true },
-      })
+      where: { id: { in: equipoIds } },
+      select: { id: true, nombre: true, apellido: true, matricula: true },
+    })
     : [];
   const equipoMap = new Map(equipoUsuarios.map((u) => [u.id, u]));
   const nombreDe = (id?: string | null) => {
@@ -115,9 +124,9 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
   const equipoCirugia = {
     cirujano: cirugia?.cirujanoId
       ? {
-          nombre: nombreDe(cirugia.cirujanoId),
-          matricula: cirugia.cirujanoId ? equipoMap.get(cirugia.cirujanoId)?.matricula ?? null : null,
-        }
+        nombre: nombreDe(cirugia.cirujanoId),
+        matricula: cirugia.cirujanoId ? equipoMap.get(cirugia.cirujanoId)?.matricula ?? null : null,
+      }
       : null,
     ayudantes: [cirugia?.ayudante1Id, cirugia?.ayudante2Id]
       .filter((v): v is string => Boolean(v))
@@ -231,9 +240,9 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
   );
   const equipoUsuarios = equipoIds.length
     ? await prisma.usuario.findMany({
-        where: { id: { in: equipoIds } },
-        select: { id: true, nombre: true, apellido: true, matricula: true },
-      })
+      where: { id: { in: equipoIds } },
+      select: { id: true, nombre: true, apellido: true, matricula: true },
+    })
     : [];
   const equipoMap = new Map(equipoUsuarios.map((u) => [u.id, u]));
   const nombreDe = (id?: string | null) => {
