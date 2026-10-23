@@ -87,7 +87,7 @@ export function NuevoTurnoModal({ open, onClose, onCreated, paciente, medicos, m
         {paciente && (
           <div className="flex items-center gap-3 border border-border rounded-lg bg-background/40 p-3">
             <div className="w-9 h-9 rounded-full bg-brand-soft flex items-center justify-center text-brand font-medium text-sm shrink-0">
-              {paciente.nombre[0]}{paciente.apellido[0]}
+              {`${paciente.nombre?.[0] ?? ""}${paciente.apellido?.[0] ?? ""}`.toUpperCase()}
             </div>
             <div className="min-w-0">
               <p className="font-serif text-[15px] text-text truncate">{paciente.apellido}, {paciente.nombre}</p>
@@ -97,7 +97,7 @@ export function NuevoTurnoModal({ open, onClose, onCreated, paciente, medicos, m
         )}
 
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Médico *</label>
+          <label className="field-label">Médico<span className="text-error ml-0.5" aria-hidden>*</span></label>
           <select className="select-field text-[13px]" value={medicoId} onChange={(e) => setMedicoId(e.target.value)}>
             <option value="">Seleccionar médico…</option>
             {medicos.map((m) => (
@@ -110,18 +110,18 @@ export function NuevoTurnoModal({ open, onClose, onCreated, paciente, medicos, m
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Fecha *</label>
+            <label className="field-label">Fecha<span className="text-error ml-0.5" aria-hidden>*</span></label>
             <DateInput native value={fecha} onChange={(e) => setFecha(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Hora *</label>
+            <label className="field-label">Hora<span className="text-error ml-0.5" aria-hidden>*</span></label>
             <input className="input-field text-[13px]" type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
           </div>
         </div>
 
 
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Motivo</label>
+          <label className="field-label">Motivo</label>
           <input
             className="input-field text-[13px]"
             value={motivo}
@@ -131,7 +131,7 @@ export function NuevoTurnoModal({ open, onClose, onCreated, paciente, medicos, m
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Coseguro (Opcional)</label>
+          <label className="field-label">Coseguro (Opcional)</label>
           <input
             type="number"
             min="0"

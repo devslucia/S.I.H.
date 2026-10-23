@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { OpsStat } from "@/components/ui/OpsStat";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDateTime } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/States";
 
 interface Internacion {
   id: string;
@@ -48,7 +49,7 @@ export default function EsperaCamaPage() {
         description="Internaciones activas sin cama asignada. Asigná una cama desde la ficha del paciente."
       />
 
-      <section className="grid grid-cols-2 gap-5">
+      <section className="grid grid-cols-2 gap-3">
         <OpsStat label="En espera" value={internaciones.length} sub="Sin cama asignada" tone={internaciones.length > 0 ? "warning" : "success"} />
       </section>
 
@@ -59,11 +60,7 @@ export default function EsperaCamaPage() {
           ))}
         </div>
       ) : internaciones.length === 0 ? (
-        <div className="border border-dashed border-border rounded-lg py-12 text-center">
-          <Bed size={28} className="mx-auto text-muted mb-2" />
-          <p className="text-[13px] text-text">No hay pacientes esperando cama</p>
-          <p className="text-[12px] text-muted mt-1">Todos los pacientes internados tienen cama asignada.</p>
-        </div>
+        <EmptyState bordered icon={Bed} title="No hay pacientes esperando cama" description="Todos los pacientes internados tienen cama asignada." />
       ) : (
         <div className="space-y-2">
           {internaciones.map((i) => (

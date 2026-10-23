@@ -13,7 +13,7 @@ import type { CirugiaFormData, UpdateField } from "./types";
 type UsuarioData = { id: string; nombre: string; email: string; rol: string; matricula?: string; especialidad?: string };
 
 const inputClass = "input-field text-[13px]";
-const labelClass = "text-[11px] font-mono uppercase tracking-widest text-muted mb-1 block";
+const labelClass = "field-label mb-1.5 block";
 const btnClass = "px-3 py-1.5 text-xs rounded font-medium transition-colors inline-flex items-center gap-1";
 const btnOutline = `${btnClass} border border-border text-muted hover:text-text hover:border-muted`;
 

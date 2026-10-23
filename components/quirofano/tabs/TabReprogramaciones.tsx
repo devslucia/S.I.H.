@@ -9,7 +9,7 @@ import type { EffectiveRole } from "@/lib/quirofano-rbac";
 import type { CirugiaFull } from "./types";
 
 const inputClass = "input-field text-[13px]";
-const labelClass = "text-[11px] font-mono uppercase tracking-widest text-muted mb-1 block";
+const labelClass = "field-label mb-1.5 block";
 const btnTeal = "btn-primary text-[13px]";
 const btnOutline = "btn-secondary text-[13px]";
 
@@ -33,7 +33,7 @@ export function TabReprogramaciones({ data, isReadOnly, effectiveRole, cirugiaId
 
   const addReprogramacion = async () => {
     if (!form.nuevaFecha || !form.motivo) {
-      setErrorMsg("Complete fecha y motivo");
+      setErrorMsg("Completá fecha y motivo");
       return;
     }
     setErrorMsg(null);
@@ -68,7 +68,7 @@ export function TabReprogramaciones({ data, isReadOnly, effectiveRole, cirugiaId
           )}
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="data-table">
             <thead><tr className="text-left text-muted text-xs uppercase tracking-wide">
               <th className="px-3 py-2">#</th><th className="px-3 py-2">Fecha original</th><th className="px-3 py-2">Nueva fecha</th>
               <th className="px-3 py-2">Motivo</th><th className="px-3 py-2">Registrado por</th><th className="px-3 py-2">Fecha registro</th>

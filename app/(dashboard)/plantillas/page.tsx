@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { PlantillasManager } from "@/components/quirofano/PlantillasManager";
+import { LoadingState } from "@/components/ui/States";
 
 const PLANTILLA_ROLES = ["MEDICO", "ANESTESIOLOGO", "ADMIN"];
 
@@ -18,7 +19,7 @@ export default function PlantillasPage() {
       </div>
 
       {status === "loading" ? (
-        <p className="text-muted text-sm">Cargando...</p>
+        <LoadingState label="Cargando…" />
       ) : autorizado ? (
         <PlantillasManager />
       ) : (

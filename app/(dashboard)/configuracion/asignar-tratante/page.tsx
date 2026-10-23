@@ -91,7 +91,7 @@ export default function AsignarTratantePage() {
         description="Las internaciones activas sin tratante no aparecen en la vista del médico. Asigná el responsable para que pueda seguirlas."
       />
 
-      <section className="grid grid-cols-2 gap-5">
+      <section className="grid grid-cols-2 gap-3">
         <OpsStat label="Pendientes" value={internaciones.length} sub="Sin tratante asignado" tone={internaciones.length > 0 ? "warning" : "success"} />
         <OpsStat label="Médicos" value={medicos.length} sub="Disponibles para asignar" tone="info" />
       </section>

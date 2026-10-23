@@ -1,22 +1,20 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { useParams } from "next/navigation";
 import { EpicrisisForm } from "@/components/historia-clinica/EpicrisisForm";
+import { HcSubpageHeader } from "@/components/historia-clinica/HcSubpageHeader";
 
 export default function EpicrisisPage() {
   const params = useParams();
-  const router = useRouter();
   const internacionId = params.internacionId as string;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="text-muted hover:text-text transition-colors">
-          <ArrowLeft size={20} />
-        </button>
-        <h2 className="text-lg font-display font-semibold text-text">Epicrisis</h2>
-      </div>
+      <HcSubpageHeader
+        internacionId={internacionId}
+        title="Epicrisis"
+        description="Resumen de la internación. Al firmarla se registra el alta médica."
+      />
 
       <EpicrisisForm internacionId={internacionId} />
     </div>

@@ -5,15 +5,38 @@ import { useParams, useRouter, usePathname } from "next/navigation";
 import {
   ArrowLeft, FileText, Activity, Pill, Syringe,
   Stethoscope, Thermometer, ClipboardList, BookOpen, Printer,
-  AlertCircle, Loader2, CalendarPlus, IdCard, MapPin, Users, LogOut,
+  AlertCircle, AlertTriangle, CalendarPlus, IdCard, MapPin, Users, LogOut,
 } from "lucide-react";
 
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { EstadoBadge } from "@/components/ui/EstadoBadge";
+import { humanizar } from "@/lib/estados";
 import { Modal } from "@/components/ui/Modal";
 import { DateInput } from "@/components/ui/DateInput";
 import { Usuario, generarHTMLCarpeta } from "@/lib/carpeta-html";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+
+type TipoAlta = "alta" | "alta-enfermeria" | "alta-administrativa";
+
+const ALTA_CONFIRM: Record<TipoAlta, { titulo: string; mensaje: string; boton: string }> = {
+  alta: {
+    titulo: "Registrar alta médica",
+    mensaje: "La internación pasa a ALTA MÉDICA. Luego enfermería y admisión deben completar sus altas. El paciente conserva la cama hasta el alta administrativa.",
+    boton: "Registrar alta médica",
+  },
+  "alta-enfermeria": {
+    titulo: "Registrar alta de enfermería",
+    mensaje: "Confirmá que el paciente completó los cuidados de enfermería. Después solo queda el alta administrativa.",
+    boton: "Registrar alta de enfermería",
+  },
+  "alta-administrativa": {
+    titulo: "Registrar alta administrativa",
+    mensaje: "Se cierra la internación y se libera la cama (pasa a limpieza). Esta acción no se puede deshacer desde el sistema.",
+    boton: "Dar alta y liberar cama",
+  },
+};
 
 function hoyLocal() {
   const d = new Date();
@@ -27,6 +50,7 @@ interface Quirofano {
 }
 
 interface PacienteInfo {
+  alergias?: { id: string; sustancia: string }[];
   id: string; nombre: string; apellido: string; dni: string;
   fechaNac?: string; sexo?: string;
 }
@@ -56,27 +80,7 @@ const secciones = [
   { id: "epicrisis", label: "Epicrisis", icon: BookOpen },
 ];
 
-const estadoTone: Record<string, "success" | "warning" | "info" | "danger" | "neutral"> = {
-  ACTIVA: "success",
-  EN_QUIROFANO: "warning",
-  POSTQUIRURGICO: "warning",
-  ALTA_MEDICA: "info",
-  ALTA_ENFERMERIA: "info",
-  ALTA_ADMINISTRATIVA: "neutral",
-  FACTURADA: "neutral",
-  FALLECIDO: "danger",
-};
 
-const estadoLabel: Record<string, string> = {
-  ACTIVA: "Internación activa",
-  EN_QUIROFANO: "En quirófano",
-  POSTQUIRURGICO: "Post quirúrgico",
-  ALTA_MEDICA: "Alta médica",
-  ALTA_ENFERMERIA: "Alta enfermería",
-  ALTA_ADMINISTRATIVA: "Alta administrativa",
-  FACTURADA: "Facturada",
-  FALLECIDO: "Fallecido",
-};
 
 function calcularEdad(fechaNac?: string): string | null {
   if (!fechaNac) return null;
@@ -119,6 +123,7 @@ export default function HistoriaClinicaPage() {
   const [altaMsg, setAltaMsg] = useState<string | null>(null);
   const [altaErr, setAltaErr] = useState<string | null>(null);
   const [savingAlta, setSavingAlta] = useState(false);
+  const [altaPendiente, setAltaPendiente] = useState<TipoAlta | null>(null);
   const [rolUsuario, setRolUsuario] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -137,7 +142,7 @@ export default function HistoriaClinicaPage() {
     if (res.ok) setInternacion(await res.json());
   }, [params.internacionId]);
 
-  const darAlta = async (tipo: "alta" | "alta-enfermeria" | "alta-administrativa") => {
+  const darAlta = async (tipo: TipoAlta) => {
     setSavingAlta(true);
     setAltaMsg(null);
     setAltaErr(null);
@@ -159,6 +164,7 @@ export default function HistoriaClinicaPage() {
       toast("error", "Error de conexión al registrar el alta");
     } finally {
       setSavingAlta(false);
+      setAltaPendiente(null);
     }
   };
 
@@ -264,33 +270,27 @@ export default function HistoriaClinicaPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
-        <Loader2 className="w-5 h-5 text-brand animate-spin" />
-        <span className="ml-3 text-text-secondary text-[13px]">Cargando historia clínica…</span>
+        <LoadingState label="Cargando historia clínica…" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-xl mx-auto mt-12 p-6">
-        <div className="border border-error/30 bg-error/10 rounded-lg p-5 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-error mt-0.5 shrink-0" />
-          <div>
-            <p className="text-error font-medium mb-1">Error al cargar la historia clínica</p>
-            <p className="text-error/80 text-sm">{error}</p>
-            <button onClick={() => window.location.reload()} className="mt-3 text-sm text-error underline">
-              Reintentar
-            </button>
-          </div>
-        </div>
+      <div className="max-w-xl mx-auto mt-8 card">
+        <ErrorState
+          title="No se pudo abrir la historia clínica"
+          message={error}
+          onRetry={() => window.location.reload()}
+        />
       </div>
     );
   }
 
   if (!internacion) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh]">
-        <p className="text-muted text-[13px]">Internación no encontrada.</p>
+      <div className="max-w-xl mx-auto mt-8 card">
+        <EmptyState icon={FileText} title="Internación no encontrada" description="Puede haber sido dada de baja o el enlace es incorrecto." />
       </div>
     );
   }
@@ -338,13 +338,23 @@ export default function HistoriaClinicaPage() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <StatusBadge tone={estadoTone[internacion.estado] ?? "neutral"} dot label={estadoLabel[internacion.estado] ?? internacion.estado} />
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            <EstadoBadge dominio="internacion" estado={internacion.estado} dot label={internacion.estado === "ACTIVA" ? "Internación activa" : undefined} />
+            {p.alergias && p.alergias.length > 0 ? (
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-error/30 bg-error/10 px-2 py-0.5 text-[12px] font-medium text-error max-w-[280px]">
+                <AlertTriangle size={13} className="shrink-0" aria-hidden />
+                <span className="truncate" title={p.alergias.map((a) => a.sustancia).join(", ")}>
+                  Alergias: {p.alergias.map((a) => a.sustancia).join(", ")}
+                </span>
+              </span>
+            ) : (
+              <span className="text-[12px] text-muted">Sin alergias registradas</span>
+            )}
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2 p-4">
-          <button onClick={imprimirCarpeta} className="btn-primary inline-flex items-center gap-2">
+          <button onClick={imprimirCarpeta} className="btn-secondary inline-flex items-center gap-2">
             <Printer size={15} /> Imprimir carpeta
           </button>
           {(rolUsuario === "MEDICO" || rolUsuario === "ADMIN") && (
@@ -363,7 +373,7 @@ export default function HistoriaClinicaPage() {
           {(rolUsuario === "MEDICO" || rolUsuario === "ADMIN") &&
             (internacion.estado === "ACTIVA" || internacion.estado === "POSTQUIRURGICO") && (
               <button
-                onClick={() => darAlta("alta")}
+                onClick={() => setAltaPendiente("alta")}
                 disabled={savingAlta}
                 className="btn-secondary inline-flex items-center gap-2 border-warning/40 text-warning hover:bg-warning/5"
               >
@@ -373,7 +383,7 @@ export default function HistoriaClinicaPage() {
           {(rolUsuario === "ENFERMERO" || rolUsuario === "ADMIN") &&
             internacion.estado === "ALTA_MEDICA" && (
               <button
-                onClick={() => darAlta("alta-enfermeria")}
+                onClick={() => setAltaPendiente("alta-enfermeria")}
                 disabled={savingAlta}
                 className="btn-secondary inline-flex items-center gap-2 border-info/40 text-info hover:bg-info/5"
               >
@@ -383,7 +393,7 @@ export default function HistoriaClinicaPage() {
           {(rolUsuario === "ADMISION" || rolUsuario === "ADMIN") &&
             internacion.estado === "ALTA_ENFERMERIA" && (
               <button
-                onClick={() => darAlta("alta-administrativa")}
+                onClick={() => setAltaPendiente("alta-administrativa")}
                 disabled={savingAlta}
                 className="btn-secondary inline-flex items-center gap-2 border-success/40 text-success hover:bg-success/5"
               >
@@ -424,6 +434,7 @@ export default function HistoriaClinicaPage() {
                 <li key={s.id}>
                   <button
                     type="button"
+                    aria-current={activo ? "page" : undefined}
                     onClick={() => router.push(`/historia-clinica/${params.internacionId}/${s.id}`)}
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-2.5 text-left text-[13px] transition-colors",
@@ -447,7 +458,7 @@ export default function HistoriaClinicaPage() {
             <div className="text-[11px] font-mono uppercase tracking-widest text-muted mb-3">Ficha de la internación</div>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
               <Dato label="Fecha de ingreso" value={formatFechaLarga(internacion.fechaIngreso)} />
-              <Dato label="Tipo de ingreso" value={internacion.tipoIngreso ? internacion.tipoIngreso.replace("_", " ") : "—"} />
+              <Dato label="Tipo de ingreso" value={internacion.tipoIngreso ? humanizar(internacion.tipoIngreso) : "—"} />
               <Dato label="Motivo de ingreso" value={internacion.motivoIngreso || "—"} wide />
               <Dato label="Diagnóstico CIE" value={internacion.diagnosticoCIE || "—"} />
               <Dato label="Médico solicitante" value={internacion.medicoSolicitante || "—"} />
@@ -457,18 +468,38 @@ export default function HistoriaClinicaPage() {
           <div className="border-t border-border pt-4">
             <div className="text-[11px] font-mono uppercase tracking-widest text-muted mb-2">Documentación</div>
             <p className="text-[13px] text-muted leading-relaxed">
-              Abra una sección para ver o registrar anamnesis, evolución, prescripciones, hoja de enfermería,
-              preanestesia, protocolos y epicrisis de este episodio.
+              Abrí una sección de la izquierda para ver o registrar anamnesis, evolución, prescripciones,
+              hoja de enfermería, preanestesia, protocolos y epicrisis de este episodio.
             </p>
           </div>
         </section>
       </div>
 
+      <ConfirmDialog
+        open={altaPendiente !== null}
+        tone="primary"
+        title={altaPendiente ? ALTA_CONFIRM[altaPendiente].titulo : ""}
+        message={
+          altaPendiente ? (
+            <>
+              <strong className="text-text">{p.apellido}, {p.nombre}</strong> · Internación #{internacion.numero}
+              <br />
+              {ALTA_CONFIRM[altaPendiente].mensaje}
+            </>
+          ) : null
+        }
+        confirmLabel={altaPendiente ? ALTA_CONFIRM[altaPendiente].boton : "Confirmar"}
+        busyLabel="Registrando…"
+        busy={savingAlta}
+        onConfirm={() => altaPendiente && darAlta(altaPendiente)}
+        onCancel={() => !savingAlta && setAltaPendiente(null)}
+      />
+
       <Modal open={showCirugiaModal} onClose={() => setShowCirugiaModal(false)} title="Programar cirugía" size="lg">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] text-muted">Fecha</label>
+              <label className="field-label">Fecha</label>
               <DateInput
                 native
                 value={cirugiaForm.fechaProgramada}
@@ -477,7 +508,7 @@ export default function HistoriaClinicaPage() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] text-muted">Hora</label>
+              <label className="field-label">Hora</label>
               <input
                 type="time"
                 value={cirugiaForm.horaProgramada}
@@ -486,7 +517,7 @@ export default function HistoriaClinicaPage() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] text-muted">Quirófano</label>
+              <label className="field-label">Quirófano</label>
               <select
                 value={cirugiaForm.quirofanoId}
                 onChange={(e) => setCirugiaForm({ ...cirugiaForm, quirofanoId: e.target.value })}
@@ -499,7 +530,7 @@ export default function HistoriaClinicaPage() {
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] text-muted">Tipo</label>
+              <label className="field-label">Tipo</label>
               <select
                 value={cirugiaForm.tipo}
                 onChange={(e) => setCirugiaForm({ ...cirugiaForm, tipo: e.target.value as "PROGRAMADA" | "URGENCIA" | "EMERGENCIA" })}
@@ -511,7 +542,7 @@ export default function HistoriaClinicaPage() {
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] text-muted">Cirujano</label>
+              <label className="field-label">Cirujano</label>
               <select
                 value={cirugiaForm.cirujanoId}
                 onChange={(e) => setCirugiaForm({ ...cirugiaForm, cirujanoId: e.target.value })}
@@ -524,7 +555,7 @@ export default function HistoriaClinicaPage() {
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] text-muted">Anestesiólogo</label>
+              <label className="field-label">Anestesiólogo</label>
               <select
                 value={cirugiaForm.anestesiologoId}
                 onChange={(e) => setCirugiaForm({ ...cirugiaForm, anestesiologoId: e.target.value })}
@@ -537,7 +568,7 @@ export default function HistoriaClinicaPage() {
               </select>
             </div>
             <div className="col-span-2 flex flex-col gap-1.5">
-              <label className="text-[12px] text-muted">Procedimiento</label>
+              <label className="field-label">Procedimiento</label>
               <input
                 type="text"
                 value={cirugiaForm.procedimiento}
@@ -547,7 +578,7 @@ export default function HistoriaClinicaPage() {
               />
             </div>
             <div className="col-span-2 flex flex-col gap-1.5">
-              <label className="text-[12px] text-muted">Diagnóstico preoperatorio</label>
+              <label className="field-label">Diagnóstico preoperatorio</label>
               <input
                 type="text"
                 value={cirugiaForm.diagnosticoPreop}

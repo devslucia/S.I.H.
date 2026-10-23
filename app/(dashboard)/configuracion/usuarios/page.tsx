@@ -148,7 +148,7 @@ export default function UsuariosPage() {
   if (loading) return <div className="space-y-2"><div className="skeleton h-24" /><div className="skeleton h-48" /></div>;
 
   const field = "flex flex-col gap-1";
-  const label = "text-[11px] font-mono uppercase tracking-widest text-muted";
+  const label = "field-label";
 
   return (
     <div className="space-y-7">
@@ -165,7 +165,7 @@ export default function UsuariosPage() {
         }
       />
 
-      <section className="grid grid-cols-2 md:grid-cols-3 gap-5">
+      <section className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <OpsStat label="Usuarios" value={usuarios.length} sub="Cuentas activas" tone="info" />
         <OpsStat label="Médicos" value={medicos} sub="Con perfil clínico" tone="neutral" />
         <OpsStat label="Recepción" value={recepcion} sub="Adm. + secretarias + fact." tone="neutral" />
@@ -189,7 +189,7 @@ export default function UsuariosPage() {
       ) : (
         <div className="border border-border rounded-lg overflow-hidden bg-surface">
           <div className="overflow-x-auto">
-            <table className="w-full text-[13px]">
+            <table className="data-table">
               <thead>
                 <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
                   <th className="px-4 py-2.5 text-left">Nombre</th>
@@ -211,7 +211,7 @@ export default function UsuariosPage() {
                     <td className="px-4 py-2.5 text-muted">{u.matricula || "—"}</td>
                     <td className="px-4 py-2.5 text-muted">{u.especialidad || "—"}</td>
                     <td className="px-4 py-2.5 text-right">
-                      <button onClick={() => handleEdit(u)} className="p-1.5 rounded-md text-muted hover:text-brand hover:bg-brand-soft transition-colors" title="Editar">
+                      <button aria-label="Editar" onClick={() => handleEdit(u)} className="p-1.5 rounded-md text-muted hover:text-brand hover:bg-brand-soft transition-colors" title="Editar">
                         <Pencil size={15} />
                       </button>
                     </td>
@@ -232,23 +232,23 @@ export default function UsuariosPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className={field}>
-              <label className={label}>Nombre *</label>
+              <label className={label}>Nombre<span className="text-error ml-0.5" aria-hidden>*</span></label>
               <input type="text" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="input-field text-[13px]" required />
             </div>
             <div className={field}>
-              <label className={label}>Apellido *</label>
+              <label className={label}>Apellido<span className="text-error ml-0.5" aria-hidden>*</span></label>
               <input type="text" value={form.apellido} onChange={(e) => setForm({ ...form, apellido: e.target.value })} className="input-field text-[13px]" required />
             </div>
             <div className={field}>
-              <label className={label}>Email *</label>
+              <label className={label}>Email<span className="text-error ml-0.5" aria-hidden>*</span></label>
               <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-field text-[13px]" required />
             </div>
             <div className={field}>
-              <label className={label}>Contraseña {editingId ? "(vacío = no cambiar)" : "*"}</label>
+              <label className={label}>Contraseña{editingId ? " (vacío = no cambiar)" : <span className="text-error ml-0.5" aria-hidden>*</span>}</label>
               <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-field text-[13px]" {...(!editingId ? { required: true } : {})} />
             </div>
             <div className={field}>
-              <label className={label}>Rol *</label>
+              <label className={label}>Rol<span className="text-error ml-0.5" aria-hidden>*</span></label>
               <select value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value })} className="select-field text-[13px]" required>
                 {ROLES.map((r) => (
                   <option key={r} value={r}>{r}</option>

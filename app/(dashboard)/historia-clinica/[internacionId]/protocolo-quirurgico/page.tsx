@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {ArrowLeft} from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { LoadingState } from "@/components/ui/States";
+import { HcSubpageHeader } from "@/components/historia-clinica/HcSubpageHeader";
 
 interface CirugiaProtocolo {
   id: string;
@@ -82,24 +83,24 @@ export default function ProtocoloQuirurgicoPage() {
     fetchData();
   }, [params.internacionId]);
 
-  if (loading) return <p className="text-muted text-sm">Cargando protocolo quirúrgico...</p>;
+  if (loading) return <LoadingState label="Cargando protocolo quirúrgico…" />;
   if (loadError) return <p className="text-error text-sm">{loadError}</p>;
   if (!cirugia) return <p className="text-muted text-sm">Esta internación todavía no tiene cirugías programadas.</p>;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="text-muted hover:text-text transition-colors">
-          <ArrowLeft size={20} />
-        </button>
-        <h2 className="text-lg font-display font-semibold text-text">Protocolo Quirúrgico</h2>
-        <button
-          onClick={() => router.push(`/quirofano/${cirugia.id}/libro`)}
-          className="btn-secondary ml-auto text-[13px]"
-        >
-          Abrir libro de quirófano
-        </button>
-      </div>
+      <HcSubpageHeader
+        internacionId={params.internacionId as string}
+        title="Protocolo quirúrgico"
+        actions={
+          <button
+            onClick={() => router.push(`/quirofano/${cirugia.id}/libro`)}
+            className="btn-secondary text-[13px]"
+          >
+            Abrir libro de quirófano
+          </button>
+        }
+      />
 
       <div className="card p-5">
         <h3 className="text-sm font-medium text-brand mb-4 uppercase tracking-wide">Cirugía</h3>
@@ -129,7 +130,7 @@ export default function ProtocoloQuirurgicoPage() {
         <div className="card p-5">
           <h3 className="text-sm font-medium text-brand mb-4 uppercase tracking-wide">Implantes</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-text">
+            <table className="data-table">
               <thead className="bg-background">
                 <tr>
                   <th className="px-3 py-2 text-left text-muted font-medium">Código</th>
@@ -159,7 +160,7 @@ export default function ProtocoloQuirurgicoPage() {
         <div className="card p-5">
           <h3 className="text-sm font-medium text-brand mb-4 uppercase tracking-wide">Medicamentos</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-text">
+            <table className="data-table">
               <thead className="bg-background">
                 <tr>
                   <th className="px-3 py-2 text-left text-muted font-medium">Nombre</th>
@@ -187,7 +188,7 @@ export default function ProtocoloQuirurgicoPage() {
         <div className="card p-5">
           <h3 className="text-sm font-medium text-brand mb-4 uppercase tracking-wide">Prácticas</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-text">
+            <table className="data-table">
               <thead className="bg-background">
                 <tr>
                   <th className="px-3 py-2 text-left text-muted font-medium">Fecha</th>

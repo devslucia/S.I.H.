@@ -152,7 +152,7 @@ export default function ConsultorioPage() {
   const atendidos = turnos.filter((t) => t.estado === "COMPLETADO").length;
 
   const tabCls = (active: boolean) => cn("px-3 py-2 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors",
-    active ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:border-border-hover hover:text-text");
+    active ? "chip-active" : "chip-inactive");
 
   return (
     <div className="space-y-7">
@@ -164,7 +164,7 @@ export default function ConsultorioPage() {
           : "Solo tu agenda. Iniciá la consulta desde un turno pendiente o continuá los que están en atención."}
       />
 
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-5">
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <OpsStat
           label={esRecepcion ? "Turnos hoy" : "Mi agenda"}
           value={turnos.length}
@@ -200,7 +200,7 @@ export default function ConsultorioPage() {
               <div className="border border-border rounded-lg bg-surface p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center text-brand font-medium text-sm shrink-0">
-                    {paciente.nombre[0]}{paciente.apellido[0]}
+                    {`${paciente.nombre?.[0] ?? ""}${paciente.apellido?.[0] ?? ""}`.toUpperCase()}
                   </div>
                   <div className="min-w-0">
                     <p className="font-serif text-[15px] text-text truncate">{paciente.apellido}, {paciente.nombre}</p>

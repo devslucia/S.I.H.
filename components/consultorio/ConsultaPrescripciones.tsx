@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/Input";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { AlertaBloqueada } from "@/components/ui/AlertaBloqueada";
 import { useToast } from "@/components/ui/Toast";
+import { LoadingState } from "@/components/ui/States";
+import { SaveButton } from "@/components/ui/SaveButton";
 
 
 interface Prescripcion {
@@ -138,9 +140,7 @@ export function ConsultaPrescripciones({ apiBase }: ConsultaPrescripcionesProps)
           )}
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => { setShowForm(false); setForm(initialForm); }}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving}>
-              <Send size={16} /> {saving ? "Guardando..." : "Guardar"}
-            </Button>
+            <SaveButton type="button" onClick={handleSave} saving={saving} icon={Send} />
           </div>
         </div>
       )}
@@ -148,7 +148,7 @@ export function ConsultaPrescripciones({ apiBase }: ConsultaPrescripcionesProps)
       {alerta && <AlertaBloqueada droga={alerta.droga} fechaAlta={alerta.fechaAlta} onClose={() => setAlerta(null)} />}
 
       {loading ? (
-        <p className="text-muted text-sm">Cargando prescripciones...</p>
+        <LoadingState label="Cargando prescripciones…" />
       ) : prescripciones.length === 0 ? (
         <p className="text-muted text-sm">Sin prescripciones registradas.</p>
       ) : (

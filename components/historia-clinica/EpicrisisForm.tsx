@@ -3,7 +3,7 @@
 import { apiErrorMessage } from "@/lib/api-errors";
 
 import { useState, useEffect } from "react";
-import { Save, CheckCircle, AlertCircle, LogOut } from "lucide-react";
+import { CheckCircle, AlertCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
@@ -11,6 +11,8 @@ import { DateInput } from "@/components/ui/DateInput";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { useToast } from "@/components/ui/Toast";
 import { formatDateTime } from "@/lib/utils";
+import { LoadingState } from "@/components/ui/States";
+import { SaveButton } from "@/components/ui/SaveButton";
 
 interface EpicrisisData {
   id?: string;
@@ -114,7 +116,7 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
     }
   };
 
-  if (loading) return <p className="text-muted text-sm">Cargando epicrisis...</p>;
+  if (loading) return <LoadingState label="Cargando epicrisis…" />;
 
   return (
     <div className="space-y-6">
@@ -129,9 +131,7 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
           </Badge>
         )}
         {!readOnly && (
-          <Button onClick={handleSave} disabled={saving}>
-            <Save size={16} /> {saving ? "Guardando..." : saved ? "Guardado" : "Guardar"}
-          </Button>
+          <SaveButton type="button" onClick={handleSave} saving={saving} saved={saved} label="Guardar epicrisis" />
         )}
         {!readOnly && !data.firmadaAt && (
           <Button variant="danger" onClick={handleFirmar} disabled={signing}>
@@ -147,7 +147,7 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
           <Input label="Diagnóstico de Egreso" name="diagEgreso" value={data.diagEgreso || ""}
             onChange={(e) => handleChange("diagEgreso", e.target.value)} disabled={readOnly} />
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-muted">Condición de Egreso</label>
+            <label className="field-label">Condición de Egreso</label>
             <select value={data.condicionEgreso || ""} onChange={(e) => handleChange("condicionEgreso", e.target.value)} className="select-field" disabled={readOnly}>
               <option value="">Seleccionar...</option>
               <option value="MEJORADO">Mejorado</option>
@@ -158,7 +158,7 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-muted">Destino</label>
+            <label className="field-label">Destino</label>
             <select value={data.destino || ""} onChange={(e) => handleChange("destino", e.target.value)} className="select-field" disabled={readOnly}>
               <option value="">Seleccionar...</option>
               <option value="DOMICILIO">Domicilio</option>
@@ -172,7 +172,7 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
         <VoiceTextarea label="Estudios Realizados" value={data.estudiosRealizados || ""} onChange={(v) => handleChange("estudiosRealizados", v)} rows={3} disabled={readOnly} />
         <VoiceTextarea label="Tratamientos Realizados" value={data.tratamientosRealizados || ""} onChange={(v) => handleChange("tratamientosRealizados", v)} rows={3} disabled={readOnly} />
         <div>
-          <label className="block text-sm text-muted mb-1">Indicaciones de Alta</label>
+          <label className="field-label block mb-1">Indicaciones de Alta</label>
           <textarea value={data.indicacionesAlta || ""}
             onChange={(e) => handleChange("indicacionesAlta", e.target.value)}
             className="input-field min-h-[80px] resize-y" rows={3} disabled={readOnly} />

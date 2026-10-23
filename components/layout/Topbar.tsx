@@ -2,29 +2,75 @@
 
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { LogOut, Menu, ChevronDown, Sun, Moon } from "lucide-react";
+import Link from "next/link";
+import { LogOut, Menu, ChevronDown, ChevronRight, Sun, Moon } from "lucide-react";
+import { rolLabel } from "@/lib/estados";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import CampanaNotificaciones from "@/components/notificaciones/CampanaNotificaciones";
 
-const moduleNames: Record<string, string> = {
-  "/": "Tablero",
-  "/admision": "Admisión",
-  "/camas": "Camas",
-  "/historia-clinica": "Historias Clínicas",
-  "/historia-clinica/nueva": "Nueva Historia Clínica",
-  "/enfermeria": "Enfermería",
-  "/quirofano": "Quirófano",
-  "/consultorio": "Consultorio",
-  "/farmacia": "Farmacia",
-  "/facturacion": "Facturación",
-  "/configuracion": "Configuración",
-  "/configuracion/admin": "Administrar Sistema",
-  "/configuracion/usuarios": "Usuarios",
-  "/configuracion/asignar-tratante": "Asignar Tratante",
+// Nombre de cada segmento de ruta (los ids dinámicos se omiten en el breadcrumb)
+const SEGMENTOS: Record<string, string> = {
+  "": "Inicio",
+  admision: "Admisión",
+  espera: "Pacientes en espera",
+  internados: "Internados",
+  "atencion-medica": "Atención médica",
+  camas: "Camas",
+  configuracion: "Configuración",
+  admin: "Administrar sistema",
+  "asignar-secretaria-consultorio": "Secretarías de consultorio",
+  "asignar-tratante": "Asignar tratante",
+  galenos: "Galenos",
+  nomencladores: "Nomencladores",
+  usuarios: "Usuarios",
+  consultorio: "Consultorio",
+  consulta: "Consulta",
+  enfermeria: "Enfermería",
+  facturacion: "Facturación",
+  farmacia: "Farmacia",
+  guardia: "Guardia",
+  "historia-clinica": "Historias clínicas",
+  anamnesis: "Anamnesis",
+  "medicacion-adicional": "Medicación adicional",
+  epicrisis: "Epicrisis",
+  evolucion: "Evolución",
+  imprimir: "Imprimir carpeta",
+  preanestesia: "Preanestesia",
+  prescripciones: "Prescripciones",
+  "protocolo-anestesia": "Protocolo de anestesia",
+  "protocolo-quirurgico": "Protocolo quirúrgico",
+  "panel-medico": "Panel médico",
+  plantillas: "Mis plantillas",
+  quirofano: "Quirófano",
+  libro: "Libro quirúrgico",
 };
+
+// Segmentos que no son página propia (no se linkean en el breadcrumb)
+const SIN_PAGINA = new Set(["consulta", "panel-medico"]);
+
+function esId(seg: string) {
+  return /^[0-9a-f-]{8,}$/i.test(seg) || /^c[a-z0-9]{20,}$/i.test(seg);
+}
+
+function buildCrumbs(pathname: string) {
+  const segs = pathname.split("/").filter(Boolean);
+  const crumbs: { label: string; href: string | null }[] = [];
+  let acc = "";
+  for (const seg of segs) {
+    acc += "/" + seg;
+    if (esId(seg)) {
+      // El id de la HC sí tiene página: el último crumb anterior pasa a apuntar a ella
+      if (crumbs.length && segs[0] === "historia-clinica") crumbs.push({ label: "Paciente", href: acc });
+      else if (segs[0] === "admision" && seg === segs[segs.length - 1]) crumbs.push({ label: "Detalle de internación", href: null });
+      continue;
+    }
+    crumbs.push({ label: SEGMENTOS[seg] ?? seg, href: SIN_PAGINA.has(seg) ? null : acc });
+  }
+  return crumbs;
+}
 
 interface TopbarProps {
   onMenuToggle: () => void;
@@ -37,8 +83,9 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const basePath = "/" + (pathname.split("/")[1] || "");
-  const title = moduleNames[pathname] || moduleNames[basePath] || "SIH";
+  const crumbs = buildCrumbs(pathname);
+  const title = crumbs.length ? crumbs[crumbs.length - 1].label : SEGMENTOS[""];
+  const padres = crumbs.slice(0, -1);
 
   const today = new Date().toLocaleDateString("es-AR", {
     weekday: "long",
@@ -64,7 +111,7 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
       className="h-14 border-b border-border bg-surface flex items-center justify-between px-4 md:px-6 no-print sticky top-0 z-30"
       data-topbar
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onMenuToggle}
           className="md:hidden p-2 -ml-2 text-muted hover:text-text transition-colors duration-150 rounded-lg hover:bg-surface-hover"
@@ -72,12 +119,21 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
         >
           <Menu size={20} />
         </button>
-        <div className="flex items-baseline gap-2.5">
-          <span className="hidden sm:inline text-[10px] font-mono uppercase tracking-widest text-muted">
-            SIH
-          </span>
-          <h1 className="text-sm font-semibold text-text tracking-tight">{title}</h1>
-        </div>
+        <nav aria-label="Ubicación" className="flex items-center gap-1.5 min-w-0 text-[13px]">
+          {padres.map((c, i) => (
+            <span key={i} className="hidden sm:flex items-center gap-1.5 min-w-0">
+              {c.href ? (
+                <Link href={c.href} className="text-muted hover:text-text transition-colors truncate">
+                  {c.label}
+                </Link>
+              ) : (
+                <span className="text-muted truncate">{c.label}</span>
+              )}
+              <ChevronRight size={13} className="text-muted/60 shrink-0" aria-hidden />
+            </span>
+          ))}
+          <h1 className="text-sm font-semibold text-text tracking-tight truncate" aria-current="page">{title}</h1>
+        </nav>
       </div>
 
       <div className="flex items-center gap-3 md:gap-4">
@@ -102,6 +158,9 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setUserMenuOpen(!userMenuOpen)}
+            aria-haspopup="menu"
+            aria-expanded={userMenuOpen}
+            aria-label="Menú de usuario"
             className={cn(
               "flex items-center gap-2 px-2 py-1 rounded-lg transition-colors",
               userMenuOpen
@@ -110,11 +169,11 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
             )}
           >
             <div className="w-7 h-7 rounded-md bg-brand-soft flex items-center justify-center text-brand font-medium text-xs">
-              {user?.name?.[0] || "U"}
+              {(user?.name?.[0] || "U").toUpperCase()}
             </div>
             <div className="hidden md:block text-left">
               <div className="text-[13px] text-text font-medium leading-tight">{user?.name || "Usuario"}</div>
-              <div className="text-[10px] text-muted font-mono uppercase tracking-wider leading-tight">{user?.rol || "—"}</div>
+              <div className="text-[11px] text-muted leading-tight">{rolLabel(user?.rol)}</div>
             </div>
             <ChevronDown size={13} className={cn("text-muted transition-transform duration-200", userMenuOpen && "rotate-180")} />
           </button>
@@ -131,7 +190,7 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
                 <div className="px-4 py-3 border-b border-border">
                   <div className="text-sm font-medium text-text">{user?.name || "Usuario"}</div>
                   <div className="text-xs text-muted font-mono">{user?.email || ""}</div>
-                  <div className="text-[11px] text-brand font-mono uppercase tracking-wider mt-0.5">{user?.rol || "—"}</div>
+                  <div className="text-[12px] text-brand font-medium mt-1">{rolLabel(user?.rol)}</div>
                 </div>
                 <button
                   onClick={() => signOut({ callbackUrl: "/login" })}

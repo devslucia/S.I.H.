@@ -187,7 +187,7 @@ export function MedicacionMultiSelect({
                   {sel.stockItem.nombre}
                   {sel.stockItem.presentacion && <span className="text-muted ml-1">({sel.stockItem.presentacion})</span>}
                 </span>
-                <button
+                <button aria-label="Cerrar"
                   type="button"
                   onClick={() => removeItem(sel.stockItem.id)}
                   className="p-1 text-muted hover:text-error transition-colors"
@@ -199,7 +199,7 @@ export function MedicacionMultiSelect({
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {extraFields.map((field) => (
                     <div key={field.key} className="flex flex-col gap-1">
-                      <label className="text-xs text-muted">{field.label}{field.required && " *"}</label>
+                      <label className="field-label">{field.label}{field.required && " *"}</label>
                       {field.type === "select" ? (
                         <select
                           value={sel.values[field.key] || ""}

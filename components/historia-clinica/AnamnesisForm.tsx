@@ -3,12 +3,13 @@
 import { apiErrorMessage } from "@/lib/api-errors";
 
 import { useState, useEffect } from "react";
-import { Save, CheckCircle, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { CheckCircle, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { useToast } from "@/components/ui/Toast";
 import { formatDateTime } from "@/lib/utils";
+import { LoadingState } from "@/components/ui/States";
+import { SaveButton } from "@/components/ui/SaveButton";
 
 interface AnamnesisData {
   id?: string;
@@ -123,7 +124,7 @@ export function AnamnesisForm({ internacionId, apiBase, onSaved }: AnamnesisForm
     }
   };
 
-  if (loading) return <p className="text-muted text-sm">Cargando anamnesis...</p>;
+  if (loading) return <LoadingState label="Cargando anamnesis…" />;
 
   return (
     <div className="space-y-6">
@@ -137,9 +138,7 @@ export function AnamnesisForm({ internacionId, apiBase, onSaved }: AnamnesisForm
             <AlertCircle size={12} /> Sin firmar
           </Badge>
         )}
-        <Button onClick={handleSave} disabled={saving}>
-          <Save size={16} /> {saving ? "Guardando..." : saved ? "Guardado" : "Guardar"}
-        </Button>
+        <SaveButton type="button" onClick={handleSave} saving={saving} saved={saved} label="Guardar anamnesis" />
       </div>
 
       {sections.map((section) => (
@@ -152,7 +151,7 @@ export function AnamnesisForm({ internacionId, apiBase, onSaved }: AnamnesisForm
                   <VoiceTextarea label={field.label} value={data[field.key] || ""} onChange={(v) => handleChange(field.key, v)} rows={3} />
                 ) : (
                   <>
-                    <label className="block text-sm text-muted mb-1">{field.label}</label>
+                    <label className="field-label block mb-1">{field.label}</label>
                     <textarea
                       value={data[field.key] || ""}
                       onChange={(e) => handleChange(field.key, e.target.value)}

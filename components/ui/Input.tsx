@@ -9,24 +9,31 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, className, id, ...props }, ref) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, "-");
+  ({ label, error, hint, className, id, required, ...props }, ref) => {
+    const autoId = React.useId();
+    const inputId = id || autoId;
+    const describedBy = error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined;
 
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
           <label
             htmlFor={inputId}
-            className="text-[13px] font-medium text-text-secondary"
+            className="field-label"
           >
             {label}
+            {required && <span className="text-error ml-0.5" aria-hidden>*</span>}
           </label>
         )}
         <input
           ref={ref}
           id={inputId}
+          required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={cn(
-            "w-full rounded-lg border bg-background px-3 py-2.5 text-sm text-text placeholder-muted font-mono",
+            "w-full rounded-lg border bg-background px-3 py-2.5 text-sm text-text placeholder:text-muted",
+            "disabled:opacity-60 disabled:cursor-not-allowed",
             "transition-all duration-150",
             "focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-background",
             error
@@ -37,10 +44,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {error && (
-          <span className="text-xs text-error animate-fade-in">{error}</span>
+          <span id={`${inputId}-error`} role="alert" className="field-error">{error}</span>
         )}
         {hint && !error && (
-          <span className="text-xs text-muted">{hint}</span>
+          <span id={`${inputId}-hint`} className="text-[11px] text-muted">{hint}</span>
         )}
       </div>
     );

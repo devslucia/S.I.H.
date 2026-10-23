@@ -5,7 +5,7 @@ import type { EffectiveRole } from "@/lib/quirofano-rbac";
 import type { CirugiaFormData, UpdateField } from "./types";
 
 const inputClass = "input-field text-[13px]";
-const labelClass = "text-[11px] font-mono uppercase tracking-widest text-muted mb-1 block";
+const labelClass = "field-label mb-1.5 block";
 
 interface TabPartoProps {
   formData: CirugiaFormData;

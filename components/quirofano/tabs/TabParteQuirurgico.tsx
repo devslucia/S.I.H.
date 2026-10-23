@@ -11,7 +11,7 @@ import type { EffectiveRole } from "@/lib/quirofano-rbac";
 import type { CirugiaFormData, CirugiaFull, UpdateField } from "./types";
 
 const inputClass = "input-field text-[13px]";
-const labelClass = "text-[11px] font-mono uppercase tracking-widest text-muted mb-1 block";
+const labelClass = "field-label mb-1.5 block";
 const btnTeal = "btn-primary text-[13px]";
 const btnOutline = "btn-secondary text-[13px]";
 
@@ -109,7 +109,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="data-table">
                 <thead><tr className="text-left text-muted text-xs uppercase tracking-wide">
                   <th className="px-3 py-2">#</th><th className="px-3 py-2">Fecha inicio</th><th className="px-3 py-2">Hora inicio</th>
                   <th className="px-3 py-2">Fecha fin</th><th className="px-3 py-2">Hora fin</th><th className="px-3 py-2">Cirujano</th>
@@ -146,7 +146,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
               )}
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="data-table">
                 <thead><tr className="text-left text-muted text-xs uppercase tracking-wide">
                   <th className="px-3 py-2">Código</th><th className="px-3 py-2">Nombre</th><th className="px-3 py-2">Lote</th>
                   <th className="px-3 py-2">Modelo</th><th className="px-3 py-2">Lado</th>
@@ -192,7 +192,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
             )}
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="data-table">
               <thead><tr className="text-left text-muted text-xs uppercase tracking-wide">
                 <th className="px-3 py-2">Indicación</th><th className="px-3 py-2">Dosis</th><th className="px-3 py-2">Frecuencia</th>
                 <th className="px-3 py-2">Vía</th><th className="px-3 py-2">Observaciones</th>
@@ -219,7 +219,7 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
                     <td className="px-3 py-1"><input type="text" value={ind.observaciones} disabled={disabledIndicaciones}
                       onChange={e => { const arr = [...formData.indicacionesPostoperatorias]; arr[idx].observaciones = e.target.value; update("indicacionesPostoperatorias", arr); }}
                       className="bg-transparent border-none text-sm text-text w-full focus:outline-none" /></td>
-                    {!disabledIndicaciones && <td className="px-3 py-1"><button onClick={() => {
+                    {!disabledIndicaciones && <td className="px-3 py-1"><button aria-label="Eliminar" onClick={() => {
                       const arr = formData.indicacionesPostoperatorias.filter((_, i) => i !== idx);
                       update("indicacionesPostoperatorias", arr);
                     }} className="text-error hover:text-error/80"><Trash2 size={14} /></button></td>}

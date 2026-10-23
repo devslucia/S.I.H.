@@ -144,7 +144,7 @@ export function ExamenFisicoForm({ value, onChange, patientSex, disabled }: Exam
                         disabled={disabled}
                       />
                       <div className="space-y-1">
-                        <label className="block text-xs text-muted">Mallampati</label>
+                        <label className="field-label block">Mallampati</label>
                         <div className="flex flex-wrap gap-2">
                           {MALLAMPATI_OPTIONS.map((m) => (
                             <button
@@ -209,7 +209,7 @@ export function ExamenFisicoForm({ value, onChange, patientSex, disabled }: Exam
                   {/* Embarazo */}
                   {sec.id === "embarazo" && (
                     <div className="space-y-2">
-                      <label className="block text-xs text-muted">Embarazo</label>
+                      <label className="field-label block">Embarazo</label>
                       <div className="flex gap-3">
                         {EMBARAZO_OPTIONS.map((opt) => (
                           <label key={opt.val} className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">

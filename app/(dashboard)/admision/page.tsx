@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/api-errors";
 import Link from "next/link";
-import { Activity, Clock, ChevronRight, Plus, AlertTriangle } from "lucide-react";
+import { Activity, Clock, ChevronLeft, ChevronRight, Plus, AlertTriangle } from "lucide-react";
 
 import { SearchableMultiSelect } from "@/components/ui/SearchableMultiSelect";
 import { Badge } from "@/components/ui/Badge";
@@ -343,7 +343,7 @@ export default function AdmisionPage() {
         toast("error", msg);
       }
     } catch (err: any) {
-      toast("error", "Error de conexión. Verifique su sesión e intente nuevamente.");
+      toast("error", "Error de conexión. Verificá tu sesión e intentá nuevamente.");
       setError("Error de conexión al crear admisión");
       console.error("Error submitting admission:", err);
     } finally {
@@ -428,7 +428,7 @@ export default function AdmisionPage() {
       <PageHeader
         eyebrow="Admisión"
         title="Mesa de admisión"
-        description="Busque o registre a un paciente y asigne cama desde el mapa de disponibilidad."
+        description="Buscá o registrá a un paciente y asigná cama desde el mapa de disponibilidad."
       />
 
       {view === "desk" && (
@@ -454,27 +454,31 @@ export default function AdmisionPage() {
                   <Plus size={20} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium text-text">Nuevo Paciente + Internación</h3>
-                  <p className="text-muted text-sm">Complete todos los datos en un solo paso</p>
+                  <h3 className="text-base font-semibold text-text">Nuevo paciente + internación</h3>
+                  <p className="text-muted text-[13px]">Completá los datos en un solo paso. Los campos con <span className="text-error">*</span> son obligatorios.</p>
                 </div>
               </div>
 
               {error && (
-                <div className="bg-error/10 border border-error/30 rounded-lg p-3 mb-4">
-                  <p className="text-error text-sm">{error}</p>
+                <div className="alert-error mb-4" role="alert">
+                  <AlertTriangle size={15} className="mt-px shrink-0" aria-hidden />
+                  <span>{error}</span>
                 </div>
               )}
 
               <form onSubmit={handleCreateAdmission} className="space-y-6">
                 <div>
-                  <h4 className="text-sm font-medium text-brand uppercase tracking-wide mb-3">Datos del Paciente</h4>
+                  <h4 className="text-[11px] font-mono font-medium text-brand uppercase tracking-wider mb-3 pb-2 border-b border-border">Datos del Paciente</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="relative">
-                      <Input label="DNI *" name="dni" value={newPatientForm.dni} onChange={handleNewPatientChange} required onBlur={handleDniBlur} />
+                      <Input label="DNI" name="dni" value={newPatientForm.dni} onChange={handleNewPatientChange} required onBlur={handleDniBlur} />
                       {dniCheckResult?.existe && (
-                        <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                          <p className="text-amber-800 text-sm">
-                            ⚠️ Ya existe un paciente con este DNI: {dniCheckResult.paciente?.apellido} {dniCheckResult.paciente?.nombre}. ¿Es este paciente (autocompletar/cargar datos) o es otro (continuar con el registro nuevo)?
+                        <div className="mt-2 alert-warning flex-col">
+                          <p className="text-[13px] flex items-start gap-1.5">
+                            <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
+                            <span>
+                              Ya existe un paciente con este DNI: <strong>{dniCheckResult.paciente?.apellido} {dniCheckResult.paciente?.nombre}</strong>. ¿Es la misma persona (autocompletar) o es otra (continuar como nuevo)?
+                            </span>
                           </p>
                           <div className="mt-2 flex gap-2">
                             <Button variant="ghost" size="sm" onClick={() => {
@@ -495,30 +499,25 @@ export default function AdmisionPage() {
                         </div>
                       )}
                     </div>
-                    <Input label="Apellido *" name="apellido" value={newPatientForm.apellido} onChange={handleNewPatientChange} required />
-                    <Input label="Nombre *" name="nombre" value={newPatientForm.nombre} onChange={handleNewPatientChange} required />
+                    <Input label="Apellido" name="apellido" value={newPatientForm.apellido} onChange={handleNewPatientChange} required />
+                    <Input label="Nombre" name="nombre" value={newPatientForm.nombre} onChange={handleNewPatientChange} required />
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-sm text-text-secondary">Sexo *</label>
+                      <label className="field-label">Sexo<span className="text-error ml-0.5" aria-hidden>*</span></label>
                       <select name="sexo" value={newPatientForm.sexo} onChange={handleNewPatientChange} className="select-field">
                         <option value="MASCULINO">Masculino</option>
                         <option value="FEMENINO">Femenino</option>
                         <option value="OTRO">Otro</option>
                       </select>
                     </div>
-                    <DateInput label="Fecha de Nacimiento *" name="fechaNac" value={newPatientForm.fechaNac} onChange={handleNewPatientChange as any} required />
+                    <DateInput label="Fecha de nacimiento" name="fechaNac" value={newPatientForm.fechaNac} onChange={handleNewPatientChange as any} required />
                     <Input label="Edad" value={newPatientForm.fechaNac ? calcularEdad(newPatientForm.fechaNac) : ""} readOnly />
-                    <Input label="CUIL (opcional)" name="cuil" value={newPatientForm.cuil} onChange={handleCuilChange} placeholder="20-12345678-9" />
-                    {cuilError && (
-                      <div className="mt-2 text-error text-sm">
-                        {cuilError}
-                      </div>
-                    )}
+                    <Input label="CUIL (opcional)" name="cuil" value={newPatientForm.cuil} onChange={handleCuilChange} placeholder="20-12345678-9" error={cuilError || undefined} />
                     <Input label="Domicilio" name="domicilio" value={newPatientForm.domicilio} onChange={handleNewPatientChange} />
                     <Input label="Localidad" name="localidad" value={newPatientForm.localidad} onChange={handleNewPatientChange} />
                     <Input label="Provincia" name="provincia" value={newPatientForm.provincia} onChange={handleNewPatientChange} />
                     <Input label="Teléfono" name="telefono" value={newPatientForm.telefono} onChange={handleNewPatientChange} />
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-sm text-text-secondary">Estado Civil</label>
+                      <label className="field-label">Estado Civil</label>
                       <select name="estadoCivil" value={newPatientForm.estadoCivil} onChange={handleNewPatientChange} className="select-field">
                         <option value="">No especificado</option>
                         <option value="SOLTERO">Soltero</option>
@@ -533,10 +532,10 @@ export default function AdmisionPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="text-sm font-medium text-brand uppercase tracking-wide mb-3">Obra Social</h4>
+                    <h4 className="text-[11px] font-mono font-medium text-brand uppercase tracking-wider mb-3 pb-2 border-b border-border">Obra Social</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-sm text-text-secondary">Obra Social</label>
+                        <label className="field-label">Obra Social</label>
                         <select name="obraSocialId" value={newPatientForm.obraSocialId} onChange={handleNewPatientChange} className="select-field">
                           <option value="">Sin obra social</option>
                           {obrasSociales.map((os) => (
@@ -546,7 +545,7 @@ export default function AdmisionPage() {
                       </div>
                       <Input label="N° Afiliado" name="nroAfiliado" value={newPatientForm.nroAfiliado} onChange={handleNewPatientChange} />
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-sm text-text-secondary">Tipo Beneficiario</label>
+                        <label className="field-label">Tipo Beneficiario</label>
                         <select name="tipoBeneficiario" value={newPatientForm.tipoBeneficiario} onChange={handleNewPatientChange} className="select-field">
                           <option value="TITULAR">Titular</option>
                           <option value="FAMILIAR">Familiar</option>
@@ -556,10 +555,10 @@ export default function AdmisionPage() {
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-medium text-brand uppercase tracking-wide mb-3">Datos de la Internación</h4>
+                    <h4 className="text-[11px] font-mono font-medium text-brand uppercase tracking-wider mb-3 pb-2 border-b border-border">Datos de la Internación</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-sm text-text-secondary">Cama</label>
+                        <label className="field-label">Cama</label>
                         <select name="camaId" value={newPatientForm.camaId} onChange={handleNewPatientChange} className="select-field">
                           <option value="">Sin cama asignada</option>
                           {camasLibres.map((c) => (
@@ -568,7 +567,7 @@ export default function AdmisionPage() {
                         </select>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-sm text-text-secondary">Médico(s) Tratante(s)</label>
+                        <label className="field-label">Médico(s) Tratante(s)</label>
                         <SearchableMultiSelect
                           items={medicos.map((m) => ({ id: m.id, label: formatUserName(m), sublabel: m.matricula || undefined }))}
                           selectedIds={newPatientForm.medicoTratanteIds}
@@ -577,7 +576,7 @@ export default function AdmisionPage() {
                         />
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-sm text-text-secondary">Tipo de Ingreso *</label>
+                        <label className="field-label">Tipo de ingreso<span className="text-error ml-0.5" aria-hidden>*</span></label>
                         <select name="tipoIngreso" value={newPatientForm.tipoIngreso} onChange={handleNewPatientChange} className="select-field">
                           <option value="PROGRAMADO">Programado</option>
                           <option value="GUARDIA">Guardia</option>
@@ -596,7 +595,7 @@ export default function AdmisionPage() {
                 <PrimaryActionBar
                   cancelLabel="Limpiar"
                   onCancel={() => setNewPatientForm(initialNewPatientForm)}
-                  confirmLabel={saving ? "Guardando..." : "Crear paciente y asignar cama"}
+                  confirmLabel={saving ? "Guardando…" : "Crear paciente e internar"}
                   onConfirm={() => (document.getElementById("npm-form-submit") as HTMLButtonElement)?.click()}
                   confirmLoading={saving}
                 />
@@ -618,7 +617,7 @@ export default function AdmisionPage() {
                 </button>
               </div>
               {espera.length === 0 ? (
-                <p className="text-[13px] text-muted py-1">Sin pacientes en espera.</p>
+                <p className="text-[13px] text-muted py-1">Sin pacientes en espera de cama.</p>
               ) : (
                 <ul className="divide-y divide-border">
                   {espera.slice(0, 6).map((i) => (
@@ -678,7 +677,7 @@ export default function AdmisionPage() {
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
                 <div className="w-12 h-12 rounded-full bg-brand-soft flex items-center justify-center text-brand font-medium text-lg shrink-0">
-                  {selectedPaciente.nombre[0]}{selectedPaciente.apellido[0]}
+                  {`${selectedPaciente.nombre?.[0] ?? ""}${selectedPaciente.apellido?.[0] ?? ""}`.toUpperCase()}
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-xl font-medium text-text truncate">{selectedPaciente.apellido}, {selectedPaciente.nombre}</h2>
@@ -706,7 +705,7 @@ export default function AdmisionPage() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
             <div className="lg:col-span-3 space-y-6">
               <div>
-                <h3 className="text-sm font-medium text-brand uppercase tracking-wide mb-3">Disponibilidad de camas</h3>
+                <h3 className="text-[11px] font-mono font-medium text-brand uppercase tracking-wider mb-3">Disponibilidad de camas</h3>
                 <BedPicker
                   beds={bedPickerBeds.filter((b) => b.estado === "LIBRE" || b.id === selectedBed)}
                   selectedId={selectedBed}
@@ -718,13 +717,14 @@ export default function AdmisionPage() {
             <div className="lg:col-span-2 border border-border rounded-lg bg-surface p-4">
               <h4 className="text-sm font-medium text-text mb-3">Nueva internación</h4>
               {error && (
-                <div className="bg-error/10 border border-error/30 rounded-lg p-3 mb-4">
-                  <p className="text-error text-sm">{error}</p>
+                <div className="alert-error mb-4" role="alert">
+                  <AlertTriangle size={15} className="mt-px shrink-0" aria-hidden />
+                  <span>{error}</span>
                 </div>
               )}
               <form onSubmit={handleCreateInternacion} className="space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm text-text-secondary">Médico(s) Tratante(s)</label>
+                  <label className="field-label">Médico(s) Tratante(s)</label>
                   <SearchableMultiSelect
                     items={medicos.map((m) => ({ id: m.id, label: m.nombre, sublabel: m.matricula || undefined }))}
                     selectedIds={internacionForm.medicoTratanteIds}
@@ -733,7 +733,7 @@ export default function AdmisionPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm text-text-secondary">Tipo de Ingreso *</label>
+                  <label className="field-label">Tipo de ingreso<span className="text-error ml-0.5" aria-hidden>*</span></label>
                   <select name="tipoIngreso" value={internacionForm.tipoIngreso} onChange={handleInternacionChange} className="select-field">
                     <option value="PROGRAMADO">Programado</option>
                     <option value="GUARDIA">Guardia</option>
@@ -747,7 +747,7 @@ export default function AdmisionPage() {
                 <PrimaryActionBar
                   cancelLabel="Cancelar"
                   onCancel={backToDesk}
-                  confirmLabel={saving ? "Guardando..." : "Crear internación"}
+                  confirmLabel={saving ? "Guardando…" : "Crear internación"}
                   onConfirm={() => (document.getElementById("npm-internacion-submit") as HTMLButtonElement)?.click()}
                   confirmLoading={saving}
                 />
@@ -767,7 +767,7 @@ function BackToDesk({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       className="flex items-center gap-2 text-muted hover:text-text transition-colors text-sm"
     >
-      ‹ Volver a la mesa
+      <ChevronLeft size={15} aria-hidden /> Volver a la mesa
     </button>
   );
 }

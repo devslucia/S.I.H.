@@ -7,6 +7,7 @@ import { OpsStat } from "@/components/ui/OpsStat";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDate, toMoney } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { ESTADO_CARPETA, ESTADO_INTERNACION } from "@/lib/estados";
 
 interface RubroInfo {
   id: string;
@@ -122,8 +123,10 @@ interface ObraSocialSel {
   sigla: string;
 }
 
-const money = (n: unknown) => `$${toMoney(n)}`;
-const moneyO = (n: number | null | undefined) => (n === null || n === undefined ? "—" : `$${toMoney(n)}`);
+// Formato argentino para mostrar importes: $ 1.234,56
+const fmtARS = (n: unknown) => Number(toMoney(n)).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money = (n: unknown) => `$ ${fmtARS(n)}`;
+const moneyO = (n: number | null | undefined) => (n === null || n === undefined ? "—" : `$ ${fmtARS(n)}`);
 const th = "px-4 py-2.5 text-left text-[11px] font-mono uppercase tracking-widest text-muted whitespace-nowrap";
 const td = "px-4 py-2.5";
 
@@ -133,22 +136,9 @@ const LABEL_ESTADO: Record<string, { label: string; tone: "success" | "warning" 
   FACTURADO: { label: "Facturado", tone: "success" },
 };
 
-const LABEL_ESTADO_INT: Record<string, { label: string; tone: "success" | "warning" | "info" | "neutral" }> = {
-  ACTIVA: { label: "Activa", tone: "success" },
-  EN_QUIROFANO: { label: "En quirófano", tone: "warning" },
-  POSTQUIRURGICO: { label: "Post quirúrgico", tone: "warning" },
-  ALTA_MEDICA: { label: "Alta médica", tone: "info" },
-  ALTA_ENFERMERIA: { label: "Alta enfermería", tone: "info" },
-  ALTA_ADMINISTRATIVA: { label: "Alta administrativa", tone: "neutral" },
-  FACTURADA: { label: "Facturada", tone: "neutral" },
-};
+const LABEL_ESTADO_INT = ESTADO_INTERNACION;
 
-const LABEL_CARPETA: Record<string, { label: string; tone: "success" | "warning" | "info" | "neutral" | "danger" }> = {
-  ABIERTA: { label: "Abierta", tone: "success" },
-  CERRADA: { label: "Carpeta cerrada", tone: "warning" },
-  ENVIADA: { label: "Enviada", tone: "info" },
-  LIQUIDADA: { label: "Liquidada", tone: "neutral" },
-};
+const LABEL_CARPETA = ESTADO_CARPETA;
 
 const LABEL_TIPO_ATENCION: Record<string, { label: string; tone: "success" | "warning" | "info" | "neutral" }> = {
   CIRUGIA_AMBULATORIA: { label: "Cir. ambulatoria", tone: "info" },
@@ -295,7 +285,7 @@ export default function FacturacionPage() {
       <section className="border border-border rounded-lg bg-surface p-4 space-y-3">
         <div className="flex gap-2 items-end flex-wrap">
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Obra social</label>
+            <label className="field-label">Obra social</label>
             <select
               value={osSel}
               onChange={(e) => setOsSel(e.target.value)}
@@ -308,7 +298,7 @@ export default function FacturacionPage() {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Período</label>
+            <label className="field-label">Período</label>
             <input
               type="month"
               value={mes}
@@ -317,7 +307,7 @@ export default function FacturacionPage() {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Estado cargos</label>
+            <label className="field-label">Estado cargos</label>
             <select
               value={estadoFiltro}
               onChange={(e) => setEstadoFiltro(e.target.value)}
@@ -330,7 +320,7 @@ export default function FacturacionPage() {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Estado internación</label>
+            <label className="field-label">Estado internación</label>
             <select
               value={estadoIntFiltro}
               onChange={(e) => setEstadoIntFiltro(e.target.value)}
@@ -343,7 +333,7 @@ export default function FacturacionPage() {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Estado carpeta</label>
+            <label className="field-label">Estado carpeta</label>
             <select
               value={estadoCarpetaFiltro}
               onChange={(e) => setEstadoCarpetaFiltro(e.target.value)}
@@ -357,7 +347,7 @@ export default function FacturacionPage() {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Tipo de atención</label>
+            <label className="field-label">Tipo de atención</label>
             <select
               value={tipoAtencionFiltro}
               onChange={(e) => setTipoAtencionFiltro(e.target.value)}
@@ -385,7 +375,7 @@ export default function FacturacionPage() {
         {error && <div className="text-[13px] text-error bg-error/5 border border-error/20 rounded-md px-3 py-2">{error}</div>}
       </section>
 
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-5">
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <OpsStat label="Pacientes" value={liquidaciones.length} sub="Con cargos en el período" tone="info" />
         <OpsStat label="Importe total" value={money(totalImporte)} sub="Cargos del período" tone="neutral" />
         <OpsStat label="Liquidaciones facturadas" value={facturados} sub="Todos los cargos cerrados" tone={facturados > 0 ? "success" : "neutral"} />
@@ -525,7 +515,7 @@ export default function FacturacionPage() {
                             onClick={() => setRubroAbierto(activo ? null : r.id)}
                             className={cn(
                               "border rounded-md px-3 py-2 text-[13px] inline-flex items-center gap-2 transition-colors",
-                              activo ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:border-border-hover hover:text-text"
+                              activo ? "chip-active" : "chip-inactive"
                             )}
                           >
                             <span className="font-mono">{r.label}</span>
@@ -561,7 +551,7 @@ export default function FacturacionPage() {
 
       {/* ── ConfirmDialog: transición Estado Carpeta ── */}
       {confirmCarpeta && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/60 backdrop-blur-sm">
           <div className="bg-surface border border-border rounded-xl shadow-xl p-6 max-w-md w-full mx-4 space-y-4">
             <p className="text-[15px] font-medium text-text">{confirmCarpeta.label}</p>
             <p className="text-[13px] text-muted">
@@ -574,7 +564,7 @@ export default function FacturacionPage() {
                     : "La carpeta quedará liquidada contablemente."}
             </p>
             <div className="space-y-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Motivo (opcional)</label>
+              <label className="field-label">Motivo (opcional)</label>
               <input
                 className="input-field text-[13px] w-full"
                 placeholder="Motivo del cambio…"
@@ -591,7 +581,7 @@ export default function FacturacionPage() {
                   "text-[13px] px-4 py-2 rounded-lg font-medium transition-colors",
                   confirmCarpeta.nuevoEstado === "ABIERTA"
                     ? "bg-warning text-white hover:bg-warning/90"
-                    : "bg-brand text-white hover:bg-brand/90"
+                    : "bg-accent-button text-white hover:bg-accent-dark"
                 )}
               >
                 {savingCarpeta ? "Procesando…" : "Confirmar"}
@@ -980,7 +970,7 @@ function RubroDetalle({
                   onClick={() => setFuncion(f.id)}
                   className={cn(
                     "border rounded-md px-3 py-2 text-[13px] transition-colors",
-                    funcion === f.id ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:text-text"
+                    funcion === f.id ? "chip-active" : "chip-inactive"
                   )}
                 >
                   <span className="font-mono">{f.label.split(" — ")[0]}</span>
@@ -1373,7 +1363,7 @@ function RubroDetalle({
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
+        <table className="data-table">
           <thead>
             <tr className="border-b border-border text-muted">
               <th className={th}>Concepto</th>
@@ -1456,7 +1446,7 @@ function RubroDetalle({
                   <td className={td}>
                     <div className="flex items-center justify-end">
                       {!cargo.facturado && (cargo.funcionCodigo !== null || cargo.stockItemId !== null) && (
-                        <button
+                        <button aria-label="Editar"
                           onClick={() => abrirEdicion(cargo)}
                           className="p-1.5 rounded-md text-muted hover:text-brand hover:bg-brand-soft transition-colors"
                           title="Editar"

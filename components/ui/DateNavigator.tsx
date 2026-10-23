@@ -22,7 +22,7 @@ interface DateNavigatorProps {
 export function DateNavigator({ value, onChange, onYesterday, onTomorrow, onToday, isToday, className }: DateNavigatorProps) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <button
+      <button aria-label="Anterior"
         type="button"
         onClick={onYesterday}
         className="p-1.5 rounded-md bg-surface border border-border text-muted hover:text-text hover:border-border-hover transition-colors"
@@ -35,7 +35,7 @@ export function DateNavigator({ value, onChange, onYesterday, onTomorrow, onToda
         onChange={(e: any) => onChange(e.target.value)}
         className="input-field text-[13px] font-mono text-center w-40"
       />
-      <button
+      <button aria-label="Siguiente"
         type="button"
         onClick={onTomorrow}
         className="p-1.5 rounded-md bg-surface border border-border text-muted hover:text-text hover:border-border-hover transition-colors"

@@ -4,8 +4,8 @@ import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/api-errors";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import {ArrowLeft, Plus, AlertTriangle} from "lucide-react";
+import { useParams } from "next/navigation";
+import { Plus, AlertTriangle, Pill } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -15,6 +15,10 @@ import { AlertaBloqueada } from "@/components/ui/AlertaBloqueada";
 import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
 import { formatDateTime } from "@/lib/utils";
 import { useSession } from "next-auth/react";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
+import { humanizar } from "@/lib/estados";
+import { SaveButton } from "@/components/ui/SaveButton";
+import { HcSubpageHeader } from "@/components/historia-clinica/HcSubpageHeader";
 
 interface Prescripcion {
   id: string;
@@ -58,7 +62,6 @@ const initialForm = {
 
 export default function PrescripcionesPage() {
   const params = useParams();
-  const router = useRouter();
   const session = useSession();
   const userRol = session?.data?.user?.rol;
   const canCreate = ["ADMIN","MEDICO","ANESTESIOLOGO"].includes(userRol || "");
@@ -67,6 +70,7 @@ export default function PrescripcionesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [saving, setSaving] = useState(false);
+  const [fieldError, setFieldError] = useState<string | null>(null);
   const [alerta, setAlerta] = useState<{ droga: string; fechaAlta: string } | null>(null);
   const [batchError, setBatchError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -94,10 +98,27 @@ export default function PrescripcionesPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setFieldError(null);
   };
+
+  // Campo principal de cada tipo (no medicación): se muestra y se exige para no guardar indicaciones vacías
+  const CAMPO_PRINCIPAL: Record<string, { name: keyof typeof form; label: string } | undefined> = {
+    DIETA: { name: "dieta", label: "Dieta" },
+    ESTUDIO: { name: "estudio", label: "Estudio" },
+    PRACTICA: { name: "practica", label: "Práctica" },
+  };
+  const principal = CAMPO_PRINCIPAL[form.tipo];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (principal && !String(form[principal.name] ?? "").trim()) {
+      setFieldError(`Indicá ${principal.label.toLowerCase()}`);
+      return;
+    }
+    if (!principal && !form.descripcion.trim()) {
+      setFieldError("Escribí la indicación");
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch(`/api/historia-clinica/${params.internacionId}/prescripciones`, {
@@ -170,29 +191,27 @@ export default function PrescripcionesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-muted hover:text-text transition-colors">
-            <ArrowLeft size={20} />
-          </button>
-          <h2 className="text-lg font-display font-semibold text-text">Prescripciones</h2>
-        </div>
-        {canCreate && (
-          <Button onClick={() => setModalOpen(true)}>
-            <Plus size={16} /> Nueva Prescripción
-          </Button>
-        )}
-      </div>
+      <HcSubpageHeader
+        internacionId={params.internacionId as string}
+        title="Prescripciones"
+        actions={
+          canCreate ? (
+            <Button onClick={() => setModalOpen(true)}>
+              <Plus size={16} /> Nueva prescripción
+            </Button>
+          ) : undefined
+        }
+      />
 
       {loading ? (
-        <p className="text-muted text-sm">Cargando prescripciones...</p>
+        <LoadingState label="Cargando prescripciones…" />
       ) : loadError ? (
-        <p className="text-error text-sm">{loadError}</p>
+        <ErrorState message={loadError} onRetry={fetchPrescripciones} />
       ) : prescripciones.length === 0 ? (
-        <p className="text-muted text-sm">Sin prescripciones registradas.</p>
+        <EmptyState bordered icon={Pill} title="Sin prescripciones registradas" description={canCreate ? "Usá «Nueva prescripción» para indicar medicación, dieta o estudios." : undefined} />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-sm text-text">
+          <table className="data-table">
             <thead className="bg-surface">
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-text-secondary">Fecha</th>
@@ -210,7 +229,7 @@ export default function PrescripcionesPage() {
                 return (
                   <tr key={p.id} className="border-t border-border hover:bg-border/30 transition-colors">
                     <td className="px-4 py-3 text-xs">{formatDateTime(p.fecha)}</td>
-                    <td className="px-4 py-3">{p.tipo}</td>
+                    <td className="px-4 py-3">{humanizar(p.tipo)}</td>
                     <td className="px-4 py-3">
                       <span className="flex items-center gap-1">
                         {p.bloqueadaAlergia && <AlertTriangle size={12} className="text-error" />}
@@ -229,16 +248,16 @@ export default function PrescripcionesPage() {
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nueva Prescripción" size="xl">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nueva prescripción" size="xl">
         <div className="space-y-4">
           {batchError && (
-            <div className="flex items-start gap-2 text-[13px] text-error border border-error/30 bg-error/10 rounded-md px-3 py-2">
+            <div className="alert-error" role="alert">
               <AlertTriangle size={14} className="mt-0.5 shrink-0" />
               <span className="whitespace-pre-line">{batchError}</span>
             </div>
           )}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-text-secondary">Tipo</label>
+            <label className="field-label">Tipo</label>
             <select name="tipo" value={form.tipo} onChange={handleChange} className="select-field">
               <option value="MEDICACION">Medicación</option>
               <option value="DIETA">Dieta</option>
@@ -265,21 +284,36 @@ export default function PrescripcionesPage() {
             />
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="Droga" name="droga" value={form.droga} onChange={handleChange} />
-                <Input label="Dosis" name="dosis" value={form.dosis} onChange={handleChange} />
-                <Input label="Unidad" name="unidad" value={form.unidad} onChange={handleChange} />
+              {principal && (
+                <Input
+                  label={principal.label}
+                  name={principal.name}
+                  value={String(form[principal.name] ?? "")}
+                  onChange={handleChange}
+                  required
+                  error={fieldError ?? undefined}
+                />
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Input label="Frecuencia" name="frecuencia" value={form.frecuencia} onChange={handleChange} />
-                <Input label="Vía" name="via" value={form.via} onChange={handleChange} />
                 <Input label="Duración" name="duracion" value={form.duracion} onChange={handleChange} />
-                <Input label="Dieta" name="dieta" value={form.dieta} onChange={handleChange} />
-                <Input label="Estudio" name="estudio" value={form.estudio} onChange={handleChange} />
-                <Input label="Práctica" name="practica" value={form.practica} onChange={handleChange} />
+                <Input label="Vía" name="via" value={form.via} onChange={handleChange} />
               </div>
-              <VoiceTextarea label="Descripción" value={form.descripcion} onChange={(v) => setForm((prev) => ({ ...prev, descripcion: v }))} rows={2} />
+              <div>
+                <VoiceTextarea
+                  label={principal ? "Descripción / indicaciones" : "Indicación *"}
+                  value={form.descripcion}
+                  onChange={(v) => {
+                    setForm((prev) => ({ ...prev, descripcion: v }));
+                    setFieldError(null);
+                  }}
+                  rows={3}
+                />
+                {!principal && fieldError && <p className="field-error mt-1" role="alert">{fieldError}</p>}
+              </div>
               <div className="flex justify-end gap-3 pt-2">
                 <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Prescribir"}</Button>
+                <SaveButton saving={saving} label="Prescribir" />
               </div>
             </form>
           )}

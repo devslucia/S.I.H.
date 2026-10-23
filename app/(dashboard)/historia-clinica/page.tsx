@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Search, SearchX, FileText } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { EstadoBadge } from "@/components/ui/EstadoBadge";
+import { estadoInfo } from "@/lib/estados";
 import { OpsStat } from "@/components/ui/OpsStat";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/States";
 
 interface Expediente {
   paciente: { id: string; apellido: string; nombre: string; dni: string };
@@ -34,27 +37,7 @@ const FILTROS: { key: Filtro; label: string }[] = [
   { key: "ambulatorio", label: "Ambulatorio" },
 ];
 
-const estadoTone: Record<string, "success" | "warning" | "info" | "danger" | "neutral"> = {
-  ACTIVA: "success",
-  EN_QUIROFANO: "warning",
-  POSTQUIRURGICO: "warning",
-  ALTA_MEDICA: "info",
-  ALTA_ENFERMERIA: "info",
-  ALTA_ADMINISTRATIVA: "neutral",
-  FACTURADA: "neutral",
-  FALLECIDO: "danger",
-};
 
-const estadoLabel: Record<string, string> = {
-  ACTIVA: "Activa",
-  EN_QUIROFANO: "En quirófano",
-  POSTQUIRURGICO: "Post quirúrgico",
-  ALTA_MEDICA: "Alta médica",
-  ALTA_ENFERMERIA: "Alta enfermería",
-  ALTA_ADMINISTRATIVA: "Alta administrativa",
-  FACTURADA: "Facturada",
-  FALLECIDO: "Fallecido",
-};
 
 
 export default function HistoriaClinicaListPage() {
@@ -124,10 +107,10 @@ export default function HistoriaClinicaListPage() {
       <PageHeader
         eyebrow="Historias clínicas"
         title="Pacientes con historia clínica"
-        description="Todos los expedientes del sanatorio: internados, altas y pacientes ambulatorios. Seleccione un paciente para abrir su expediente."
+        description="Todos los expedientes del sanatorio: internados, altas y pacientes ambulatorios. Seleccioná un paciente para abrir su expediente."
       />
 
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <OpsStat label="Expedientes con HC" value={expedientes.length} sub="Pacientes con historia clínica" tone="info" />
         <OpsStat label="Internados" value={internados} sub="Episodios abiertos" tone="success" />
         <OpsStat label="Ambulatorios" value={ambulatorios} sub="Seguimiento en consultorio" tone="neutral" />
@@ -153,7 +136,7 @@ export default function HistoriaClinicaListPage() {
               className={cn(
                 "px-3.5 py-1.5 text-[13px] rounded-full border transition-colors",
                 filtro === f.key
-                  ? "bg-brand text-white border-brand"
+                  ? "chip-active"
                   : "bg-surface border-border text-muted hover:border-brand/50 hover:text-text"
               )}
             >
@@ -169,9 +152,7 @@ export default function HistoriaClinicaListPage() {
           <div className="skeleton h-56" />
         </div>
       ) : filtered.length === 0 ? (
-        <p className="text-[13px] text-muted py-10 text-center border border-dashed border-border rounded-lg">
-          {emptyText()}
-        </p>
+        <EmptyState bordered icon={search ? SearchX : FileText} title={emptyText()} />
       ) : (
         <div className="border border-border rounded-lg overflow-hidden bg-surface divide-y divide-border">
           {filtered.map((e) => (
@@ -184,13 +165,13 @@ export default function HistoriaClinicaListPage() {
             >
               <div className="min-w-0 flex items-center gap-4">
                 <div className="w-9 h-9 rounded-full bg-brand-soft flex items-center justify-center text-brand font-medium text-sm shrink-0">
-                  {e.paciente.nombre[0]}{e.paciente.apellido[0]}
+                  {`${e.paciente.nombre?.[0] ?? ""}${e.paciente.apellido?.[0] ?? ""}`.toUpperCase()}
                 </div>
                 <div className="min-w-0">
                   <p className="text-text font-medium text-[13px] truncate">{e.paciente.apellido}, {e.paciente.nombre}</p>
                   <p className="text-[12px] text-muted mt-0.5 truncate">
                     DNI {e.paciente.dni}
-                    {e.internacion ? ` · Internación #${e.internacion.numero} · ${estadoLabel[e.internacion.estado] ?? e.internacion.estado}` : " · Ambulatorio"}
+                    {e.internacion ? ` · Internación #${e.internacion.numero} · ${estadoInfo("internacion", e.internacion.estado).label}` : " · Ambulatorio"}
                   </p>
                   {e.internacion?.motivoIngreso && (
                     <p className="text-[12px] text-muted truncate">Motivo: {e.internacion.motivoIngreso}</p>
@@ -208,7 +189,7 @@ export default function HistoriaClinicaListPage() {
                 {e.contexto === "AMBULATORIO" ? (
                   <StatusBadge tone="info" label="Ambulatorio" />
                 ) : (
-                  <StatusBadge tone={estadoTone[e.internacion!.estado] ?? "neutral"} dot label={estadoLabel[e.internacion!.estado] ?? e.internacion!.estado} />
+                  <EstadoBadge dominio="internacion" estado={e.internacion!.estado} dot />
                 )}
                 <ChevronRight size={14} className="text-muted/60" />
               </div>

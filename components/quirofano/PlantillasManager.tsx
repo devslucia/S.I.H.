@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BookMarked, Check, FileUp, Loader, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { LoadingState } from "@/components/ui/States";
 
 const MAX_DESCRIPCION = 10000;
 
 const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:border-brand";
-const labelClass = "text-xs text-muted font-medium mb-1 block";
+const labelClass = "field-label mb-1.5 block";
 const btnClass = "px-3 py-1.5 text-xs rounded font-medium transition-colors inline-flex items-center gap-1";
 const btnTeal = `${btnClass} bg-accent-button text-white hover:bg-accent-dark`;
 const btnOutline = `${btnClass} border border-border text-muted hover:text-text hover:border-muted`;
@@ -173,7 +174,7 @@ export function PlantillasManager() {
           </p>
         </div>
         <div>
-          <label className={labelClass}>Nombre *</label>
+          <label className={labelClass}>Nombre<span className="text-error ml-0.5" aria-hidden>*</span></label>
           <input value={form.nombre} onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))} className={inputClass} maxLength={200} />
         </div>
         <div>
@@ -263,7 +264,7 @@ export function PlantillasManager() {
             : `${filtradas.length} de ${plantillas.length} plantillas`}
         </p>
         {loading ? (
-          <p className="text-xs text-muted flex items-center gap-2"><Loader size={14} className="animate-spin" /> Cargando...</p>
+          <LoadingState compact />
         ) : filtradas.length === 0 ? (
           <p className="text-xs text-muted">No se encontraron plantillas para esa búsqueda.</p>
         ) : (
@@ -280,7 +281,7 @@ export function PlantillasManager() {
                     )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => abrirFormEdicion(p)} className={btnOutline} title="Editar">
+                    <button aria-label="Editar" onClick={() => abrirFormEdicion(p)} className={btnOutline} title="Editar">
                       <Pencil size={14} />
                     </button>
                     <button onClick={() => eliminar(p)} className={deletingId === p.id ? btnDangerSolid : btnDanger} title={deletingId === p.id ? "Confirmar eliminación" : "Eliminar"}>

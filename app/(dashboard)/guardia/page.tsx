@@ -58,7 +58,7 @@ interface GuardiaEpisodio {
 const TAB_CLS = (active: boolean) =>
   cn(
     "px-3 py-2 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors",
-    active ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:border-border-hover hover:text-text"
+    active ? "chip-active" : "chip-inactive"
   );
 
 const hoyISO = () => {
@@ -184,10 +184,12 @@ export default function GuardiaPage() {
       <PageHeader
         eyebrow="Emergencias"
         title="Guardia"
-        description={`Cola de atención de guardia · ${fecha}`}
+        description={`Cola de atención de guardia · ${fecha.split("-").reverse().join("/")}`}
         actions={
           <div className="flex items-center gap-2">
-            <button type="button" onClick={fetchEpisodios} disabled={loading} className="btn-secondary inline-flex items-center gap-2 disabled:opacity-60">
+            <button
+              aria-label="Actualizar"
+              title="Actualizar" type="button" onClick={fetchEpisodios} disabled={loading} className="btn-secondary inline-flex items-center gap-2 disabled:opacity-60">
               <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
               Actualizar
             </button>
@@ -198,7 +200,7 @@ export default function GuardiaPage() {
         }
       />
 
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-5">
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <OpsStat label="En espera" value={enEspera} sub="sin atención aún" tone={enEspera > 0 ? "warning" : "neutral"} />
         <OpsStat label="En atención" value={enAtencion} sub="siendo atendidos" tone={enAtencion > 0 ? "info" : "neutral"} />
         <OpsStat label="Atendidos hoy" value={atendidos} sub="egresos registrados" tone="success" />
@@ -211,16 +213,19 @@ export default function GuardiaPage() {
             {t === "EN_ESPERA" ? "En espera" : t === "EN_ATENCION" ? "En atención" : t === "ATENDIDO" ? "Atendidos hoy" : "Anulados hoy"}
           </button>
         ))}
-        <DateInput
-          native
-          value={fecha}
-          onChange={(e: any) => setFecha(e.target.value)}
-          className="input-field text-[12px] font-mono ml-auto"
-        />
+        <div className="ml-auto w-36">
+          <DateInput
+            native
+            value={fecha}
+            onChange={(e: any) => setFecha(e.target.value)}
+            className="input-field text-[12px] font-mono"
+            aria-label="Fecha de la guardia"
+          />
+        </div>
       </div>
 
       {error && (
-        <div className="rounded-md border border-error/30 bg-error/5 px-3 py-2 text-[13px] text-error">{error}</div>
+        <div className="alert-error" role="alert">{error}</div>
       )}
 
       <div className="space-y-2">
@@ -272,32 +277,32 @@ export default function GuardiaPage() {
                           </option>
                         ))}
                       </select>
-                      <button onClick={() => setEditar(e)} disabled={accionando === e.id} className="btn-secondary text-[12px] px-2.5 py-1 disabled:opacity-40" title="Editar datos">
+                      <button onClick={() => setEditar(e)} disabled={accionando === e.id} className="btn-secondary btn-sm text-[12px] px-2.5 py-1 disabled:opacity-40" title="Editar datos">
                         <PencilLine size={13} />
                       </button>
-                      <button onClick={() => tomarAtencion(e)} disabled={accionando === e.id} className="btn-primary text-[12px] px-2.5 py-1 disabled:opacity-40">
+                      <button onClick={() => tomarAtencion(e)} disabled={accionando === e.id} className="btn-primary btn-sm text-[12px] px-2.5 py-1 disabled:opacity-40">
                         Pasar a atención
                       </button>
-                      <button onClick={() => setAnular(e)} disabled={accionando === e.id} className="btn-secondary text-[12px] px-2.5 py-1 text-error disabled:opacity-40" title="Anular ingreso">
+                      <button onClick={() => setAnular(e)} disabled={accionando === e.id} className="btn-secondary btn-sm text-[12px] px-2.5 py-1 text-error disabled:opacity-40" title="Anular ingreso">
                         Anular
                       </button>
                     </>
                   )}
                   {e.guardiaMeta.estadoGuardia === "EN_ATENCION" && (
                     <>
-                      <a href={`/admision/${e.hc?.paciente.id}`} className="btn-secondary text-[12px] px-2.5 py-1 inline-flex items-center gap-1.5">
+                      <a href={`/admision/${e.hc?.paciente.id}`} className="btn-secondary btn-sm text-[12px] px-2.5 py-1 inline-flex items-center gap-1.5">
                         <UserRound size={13} /> Ficha
                       </a>
-                      <button onClick={() => setEgresar(e)} disabled={accionando === e.id} className="btn-primary text-[12px] px-2.5 py-1 disabled:opacity-40">
+                      <button onClick={() => setEgresar(e)} disabled={accionando === e.id} className="btn-primary btn-sm text-[12px] px-2.5 py-1 disabled:opacity-40">
                         Egresar
                       </button>
-                      <button onClick={() => setAnular(e)} disabled={accionando === e.id} className="btn-secondary text-[12px] px-2.5 py-1 text-error disabled:opacity-40" title="Anular atención">
+                      <button onClick={() => setAnular(e)} disabled={accionando === e.id} className="btn-secondary btn-sm text-[12px] px-2.5 py-1 text-error disabled:opacity-40" title="Anular atención">
                         Anular
                       </button>
                     </>
                   )}
                   {e.guardiaMeta.estadoGuardia === "ATENDIDO" && (
-                    <button onClick={() => reingresar(e)} disabled={accionando === e.id} className="btn-secondary text-[12px] px-2.5 py-1 disabled:opacity-40" title="Reingresar a la cola">
+                    <button onClick={() => reingresar(e)} disabled={accionando === e.id} className="btn-secondary btn-sm text-[12px] px-2.5 py-1 disabled:opacity-40" title="Reingresar a la cola">
                       <ChevronRight size={13} /> Reingresar
                     </button>
                   )}
@@ -482,7 +487,7 @@ function AltaGuardiaModal({ open, onClose, onCreated, fecha }: { open: boolean; 
 
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Prioridad *</label>
+                <label className="field-label">Prioridad<span className="text-error ml-0.5" aria-hidden>*</span></label>
                 <select value={prioridad} onChange={(e) => setPrioridad(Number(e.target.value))} className="select-field text-[13px]">
                   {Object.entries(PRIORIDADES).map(([k, v]) => (
                     <option key={k} value={k}>
@@ -492,7 +497,7 @@ function AltaGuardiaModal({ open, onClose, onCreated, fecha }: { open: boolean; 
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Obra social</label>
+                <label className="field-label">Obra social</label>
                 <select value={obraSocialId} onChange={(e) => setObraSocialId(e.target.value)} className="select-field text-[13px]">
                   <option value="">Particular / sin cobertura</option>
                   {obrasSociales.map((os) => (
@@ -506,21 +511,21 @@ function AltaGuardiaModal({ open, onClose, onCreated, fecha }: { open: boolean; 
 
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Hora de ingreso</label>
+                <label className="field-label">Hora de ingreso</label>
                 <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className="input-field text-[13px]" />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Fecha</label>
+                <label className="field-label">Fecha</label>
                 <DateInput native value={fecha} disabled className="input-field text-[13px] opacity-60" />
               </div>
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Motivo de consulta *</label>
+              <label className="field-label">Motivo de consulta<span className="text-error ml-0.5" aria-hidden>*</span></label>
               <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ej: dolor abdominal, fiebre, trauma…" className="input-field text-[13px]" rows={2} />
             </div>
 
-            {error && <div className="rounded-md border border-error/30 bg-error/5 px-3 py-2 text-[13px] text-error">{error}</div>}
+            {error && <div className="alert-error" role="alert">{error}</div>}
 
             <div className="flex items-center justify-end gap-2 pt-1">
               <button onClick={onClose} className="btn-secondary text-[13px]">
@@ -561,11 +566,11 @@ function EditarGuardiaForm({ episodio, onClose, onSaved }: { episodio: GuardiaEp
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-1">
-        <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Motivo de consulta *</label>
+        <label className="field-label">Motivo de consulta<span className="text-error ml-0.5" aria-hidden>*</span></label>
         <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} className="input-field text-[13px]" rows={2} />
       </div>
       <div className="flex flex-col gap-1">
-        <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Obra social</label>
+        <label className="field-label">Obra social</label>
         <select value={obraSocialId} onChange={(e) => setObraSocialId(e.target.value)} className="select-field text-[13px]">
           <option value="">Particular / sin cobertura</option>
           {obrasSociales.map((os) => (
@@ -575,7 +580,7 @@ function EditarGuardiaForm({ episodio, onClose, onSaved }: { episodio: GuardiaEp
           ))}
         </select>
       </div>
-      {error && <div className="rounded-md border border-error/30 bg-error/5 px-3 py-2 text-[13px] text-error">{error}</div>}
+      {error && <div className="alert-error" role="alert">{error}</div>}
       <div className="flex items-center justify-end gap-2 pt-1">
         <button onClick={onClose} className="btn-secondary text-[13px]">
           Cancelar
@@ -617,7 +622,7 @@ function EgresoGuardiaForm({
         {episodio.hc?.paciente.apellido}, {episodio.hc?.paciente.nombre} · DNI {episodio.hc?.paciente.dni}
       </div>
       <div className="flex flex-col gap-1">
-        <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Disposición de egreso *</label>
+        <label className="field-label">Disposición de egreso<span className="text-error ml-0.5" aria-hidden>*</span></label>
         <div className="grid grid-cols-2 gap-2">
           {DISPOSICIONES_GUARDIA.map((d) => (
             <button
@@ -640,10 +645,10 @@ function EgresoGuardiaForm({
         )}
       </div>
       <div className="flex flex-col gap-1">
-        <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Diagnóstico de egreso *</label>
+        <label className="field-label">Diagnóstico de egreso<span className="text-error ml-0.5" aria-hidden>*</span></label>
         <textarea value={diagnostico} onChange={(e) => setDiagnostico(e.target.value)} className="input-field text-[13px]" rows={2} placeholder="Diagnóstico presuntivo / confirmado…" />
       </div>
-      {error && <div className="rounded-md border border-error/30 bg-error/5 px-3 py-2 text-[13px] text-error">{error}</div>}
+      {error && <div className="alert-error" role="alert">{error}</div>}
       <div className="flex items-center justify-end gap-2 pt-1">
         <button onClick={onClose} className="btn-secondary text-[13px]">
           Cancelar

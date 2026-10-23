@@ -16,7 +16,7 @@ interface TabsProps {
 
 function Tabs({ tabs, activeTab, onChange }: TabsProps) {
   return (
-    <div className="flex border-b border-border overflow-x-auto">
+    <div className="flex border-b border-border overflow-x-auto" role="tablist">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = tab.id === activeTab;
@@ -24,6 +24,9 @@ function Tabs({ tabs, activeTab, onChange }: TabsProps) {
         return (
           <button
             key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
             onClick={() => onChange(tab.id)}
             className={cn(
               "flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium transition-colors border-b-2 -mb-px whitespace-nowrap",

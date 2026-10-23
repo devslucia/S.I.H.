@@ -125,7 +125,7 @@ export function BuscarPaciente({ onSelected }: BuscarPacienteProps) {
       {notFound && !showCreate && (
         <div className="mt-3 border border-dashed border-border rounded-lg p-3">
           <p className="text-[13px] text-text mb-2">No se encontró un paciente con DNI <strong className="font-mono">{dni}</strong></p>
-          <button onClick={() => setShowCreate(true)} className="btn-primary text-[12px] inline-flex items-center gap-1.5">
+          <button onClick={() => setShowCreate(true)} className="btn-primary btn-sm text-[12px] inline-flex items-center gap-1.5">
             <UserPlus size={14} /> Dar de alta
           </button>
         </div>
@@ -135,23 +135,23 @@ export function BuscarPaciente({ onSelected }: BuscarPacienteProps) {
         <div className="mt-3 border border-brand/20 bg-brand-soft/40 rounded-lg p-3 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-[11px] font-mono uppercase tracking-widest text-brand">Alta rápida</p>
-            <button onClick={() => { setShowCreate(false); setCreateError(""); }} className="text-muted hover:text-text">
+            <button aria-label="Cerrar" onClick={() => { setShowCreate(false); setCreateError(""); }} className="text-muted hover:text-text">
               <X size={14} />
             </button>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Nombre *</label>
+              <label className="field-label">Nombre<span className="text-error ml-0.5" aria-hidden>*</span></label>
               <input className="input-field text-[13px]" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Nombre" />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Apellido *</label>
+              <label className="field-label">Apellido<span className="text-error ml-0.5" aria-hidden>*</span></label>
               <input className="input-field text-[13px]" value={form.apellido} onChange={(e) => setForm({ ...form, apellido: e.target.value })} placeholder="Apellido" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Sexo *</label>
+              <label className="field-label">Sexo<span className="text-error ml-0.5" aria-hidden>*</span></label>
               <select className="select-field text-[13px]" value={form.sexo} onChange={(e) => setForm({ ...form, sexo: e.target.value })}>
                 <option value="MASCULINO">Masculino</option>
                 <option value="FEMENINO">Femenino</option>
@@ -159,13 +159,13 @@ export function BuscarPaciente({ onSelected }: BuscarPacienteProps) {
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Fecha nac. *</label>
+              <label className="field-label">Fecha nac.<span className="text-error ml-0.5" aria-hidden>*</span></label>
               <DateInput native value={form.fechaNac} onChange={(e) => setForm({ ...form, fechaNac: e.target.value })} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Obra Social</label>
+              <label className="field-label">Obra Social</label>
               <select className="select-field text-[13px]" value={form.obraSocialId} onChange={(e) => setForm({ ...form, obraSocialId: e.target.value })}>
                 <option value="">Particular / Sin OS</option>
                 {obrasSociales.map((os) => (
@@ -174,25 +174,25 @@ export function BuscarPaciente({ onSelected }: BuscarPacienteProps) {
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Teléfono</label>
+              <label className="field-label">Teléfono</label>
               <input className="input-field text-[13px]" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} placeholder="Ej: 3764..." />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Coseguro (Opcional)</label>
+              <label className="field-label">Coseguro (Opcional)</label>
               <input type="number" min="0" step="0.01" className="input-field text-[13px]" value={form.coseguro} onChange={(e) => setForm({ ...form, coseguro: e.target.value })} placeholder="Ej. 1500" />
             </div>
           </div>
           {createError && <p className="text-[12px] text-error">{createError}</p>}
           <div className="flex justify-end gap-2">
-            <button onClick={() => { setShowCreate(false); setCreateError(""); }} className="btn-secondary text-[12px]">
+            <button onClick={() => { setShowCreate(false); setCreateError(""); }} className="btn-secondary btn-sm text-[12px]">
               Cancelar
             </button>
             <button
               onClick={handleCreate}
               disabled={creating || !form.nombre.trim() || !form.apellido.trim() || !form.fechaNac}
-              className="btn-primary text-[12px] inline-flex items-center gap-1.5"
+              className="btn-primary btn-sm text-[12px] inline-flex items-center gap-1.5"
             >
               <Check size={14} /> {creating ? "Creando…" : "Crear y seleccionar"}
             </button>

@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/Modal";
 import { SearchableMultiSelect } from "@/components/ui/SearchableMultiSelect";
 import { formatDateTime } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { ESTADO_INTERNACION } from "@/lib/estados";
 
 interface Alergia {
   id: string;
@@ -51,16 +52,7 @@ interface Cama { id: string; numero: string; estado: string; sector: { nombre: s
 interface ObraSocial { id: string; nombre: string; sigla: string }
 interface Medico { id: string; nombre: string; matricula?: string | null }
 
-const estadoBadge: Record<string, { tone: "success" | "warning" | "info" | "danger" | "neutral"; label: string }> = {
-  ACTIVA: { tone: "success", label: "Activa" },
-  EN_QUIROFANO: { tone: "warning", label: "En quirófano" },
-  POSTQUIRURGICO: { tone: "warning", label: "Post quirúrgico" },
-  ALTA_MEDICA: { tone: "info", label: "Alta médica" },
-  ALTA_ENFERMERIA: { tone: "info", label: "Alta enfermería" },
-  ALTA_ADMINISTRATIVA: { tone: "neutral", label: "Alta administrativa" },
-  FACTURADA: { tone: "neutral", label: "Facturada" },
-  FALLECIDO: { tone: "danger", label: "Fallecido" },
-};
+const estadoBadge = ESTADO_INTERNACION;
 
 const severidadConfig: Record<string, { tone: "success" | "warning" | "danger" | "neutral"; label: string }> = {
   LEVE: { tone: "success", label: "Leve" },
@@ -72,7 +64,7 @@ const severidadConfig: Record<string, { tone: "success" | "warning" | "danger" |
 const initialAlergiaForm = { sustancia: "", severidad: "MODERADA", observacion: "" };
 
 const field = "flex flex-col gap-1";
-const label = "text-[11px] font-mono uppercase tracking-widest text-muted";
+const label = "field-label";
 
 export default function PacienteDetailPage() {
   const { toast } = useToast();
@@ -253,7 +245,7 @@ export default function PacienteDetailPage() {
           <p className="text-[11px] font-mono uppercase tracking-widest text-muted">Alergias</p>
           <button
             onClick={() => { setEditingAlergia(null); setAlergiaForm(initialAlergiaForm); setAlergiaModalOpen(true); }}
-            className="btn-secondary text-[12px] inline-flex items-center gap-1.5"
+            className="btn-secondary btn-sm text-[12px] inline-flex items-center gap-1.5"
           >
             <Plus size={13} /> Agregar
           </button>
@@ -272,10 +264,10 @@ export default function PacienteDetailPage() {
                     {a.observacion && <span className="text-[12px] text-muted truncate hidden sm:inline">— {a.observacion}</span>}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => openEditAlergia(a)} className="p-1.5 rounded-md text-muted hover:text-brand hover:bg-brand-soft transition-colors" title="Editar">
+                    <button aria-label="Editar" onClick={() => openEditAlergia(a)} className="p-1.5 rounded-md text-muted hover:text-brand hover:bg-brand-soft transition-colors" title="Editar">
                       <Edit size={14} />
                     </button>
-                    <button onClick={() => setAlergiaAEliminar(a)} className="p-1.5 rounded-md text-muted hover:text-error hover:bg-error/10 transition-colors" title="Eliminar">
+                    <button aria-label="Eliminar" onClick={() => setAlergiaAEliminar(a)} className="p-1.5 rounded-md text-muted hover:text-error hover:bg-error/10 transition-colors" title="Eliminar">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -340,7 +332,7 @@ export default function PacienteDetailPage() {
       <Modal open={alergiaModalOpen} onClose={() => setAlergiaModalOpen(false)} title={editingAlergia ? "Editar alergia" : "Nueva alergia"}>
         <form onSubmit={handleSaveAlergia} className="space-y-4">
           <div className={field}>
-            <label className={label}>Sustancia *</label>
+            <label className={label}>Sustancia<span className="text-error ml-0.5" aria-hidden>*</span></label>
             <input className="input-field text-[13px]" name="sustancia" value={alergiaForm.sustancia}
               onChange={(e) => setAlergiaForm((p) => ({ ...p, sustancia: e.target.value }))} required />
           </div>

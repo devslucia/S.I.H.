@@ -1,5 +1,6 @@
 "use client";
 
+import { rolLabel } from "@/lib/estados";
 import { useState, useEffect } from "react";
 import { Plus, CheckCircle, Clock, User, Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -7,6 +8,8 @@ import { Badge } from "@/components/ui/Badge";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { useToast } from "@/components/ui/Toast";
 import { formatDateTime } from "@/lib/utils";
+import { LoadingState } from "@/components/ui/States";
+import { SaveButton } from "@/components/ui/SaveButton";
 
 interface Evolucion {
   id: string;
@@ -82,21 +85,19 @@ export function EvolucionForm({ apiBase }: EvolucionFormProps) {
             value={nuevoContenido}
             onChange={(v) => setNuevoContenido(v)}
             rows={10}
-            placeholder="Escriba la nota de evolución..."
+            placeholder="Escribí la nota de evolución..."
           />
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => { setShowEditor(false); setNuevoContenido(""); }}>
               Cancelar
             </Button>
-            <Button onClick={handleCrearNota} disabled={saving || !nuevoContenido.trim()}>
-              <Send size={16} /> {saving ? "Guardando..." : "Guardar Nota"}
-            </Button>
+            <SaveButton type="button" onClick={handleCrearNota} saving={saving} disabled={!nuevoContenido.trim()} icon={Send} label="Guardar nota" />
           </div>
         </div>
       )}
 
       {loading ? (
-        <p className="text-muted text-sm">Cargando evoluciones...</p>
+        <LoadingState label="Cargando evoluciones…" />
       ) : evoluciones.length === 0 ? (
         <p className="text-muted text-sm">Sin notas de evolución registradas.</p>
       ) : (
@@ -118,7 +119,7 @@ export function EvolucionForm({ apiBase }: EvolucionFormProps) {
               </div>
               <p className="text-text text-sm whitespace-pre-wrap">{evo.contenido}</p>
               <div className="flex items-center gap-1 mt-2 text-xs text-muted">
-                <User size={12} /> {evo.usuario.apellido ? `${evo.usuario.apellido}, ${evo.usuario.nombre}` : evo.usuario.nombre} ({evo.usuario.rol})
+                <User size={12} /> {evo.usuario.apellido ? `${evo.usuario.apellido}, ${evo.usuario.nombre}` : evo.usuario.nombre} · {rolLabel(evo.usuario.rol)}
               </div>
             </div>
           ))}

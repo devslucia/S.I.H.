@@ -294,7 +294,7 @@ export default function GalenosPage() {
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
+          <table className="data-table">
             <thead>
               <tr className="border-b border-border text-muted">
                 <th className={th}>Obra social</th>
@@ -336,7 +336,7 @@ export default function GalenosPage() {
                     </td>
                     <td className={td}>
                       <div className="flex items-center justify-end gap-1.5">
-                        <button
+                        <button aria-label="Editar"
                           onClick={() => abrirEdicion(g)}
                           className="p-1.5 rounded-md text-muted hover:text-brand hover:bg-brand-soft transition-colors"
                           title="Editar"
