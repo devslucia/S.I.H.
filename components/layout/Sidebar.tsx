@@ -15,7 +15,7 @@ const modules = [
   { id: 4.6, name: "Guardia", icon: Ambulance, href: "/guardia", roles: ["ADMIN","ADMISION","MEDICO","ENFERMERO"] },
   { id: 4.7, name: "Consultorio", icon: ClipboardList, href: "/consultorio", roles: ["ADMIN","SECRETARIA","MEDICO"] },
   { id: 5, name: "Enfermería", icon: Syringe, href: "/enfermeria", roles: ["ADMIN","ENFERMERO"] },
-  { id: 6, name: "Quirófano", icon: Activity, href: "/quirofano", roles: ["ADMIN","MEDICO","ANESTESIOLOGO","INSTRUMENTADOR"] },
+  { id: 6, name: "Quirófano", icon: Activity, href: "/quirofano", roles: ["ADMIN","MEDICO","ANESTESIOLOGO","INSTRUMENTADOR","ENFERMERO"] },
   { id: 6.5, name: "Mis Plantillas", icon: BookMarked, href: "/plantillas", roles: ["ADMIN","MEDICO","ANESTESIOLOGO"] },
   { id: 7, name: "Farmacia", icon: Package, href: "/farmacia", roles: ["ADMIN","FARMACIA"] },
   { id: 8, name: "Facturación", icon: Receipt, href: "/facturacion", roles: ["ADMIN","FACTURACION"] },

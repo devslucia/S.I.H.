@@ -1,10 +1,12 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { getEffectiveRole, validatePatchBody } from "@/lib/quirofano-rbac";
-import { Prisma, type EstadoInternacion } from "@prisma/client";
+import { getEffectiveRole, validatePatchBody, validarTransicionEstado, FIELD_LABELS } from "@/lib/quirofano-rbac";
+import { Prisma, type EstadoInternacion, type EstadoCirugia } from "@prisma/client";
 
-const LIBRO_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR", "CIRCULANTE"];
+// No existe un rol global CIRCULANTE: el circulante suele ser ENFERMERO. El acceso real
+// lo decide la asignación en la cirugía (getEffectiveRole).
+const LIBRO_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ENFERMERO"];
 
 export async function GET(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
   const { session, error } = await requireRole(...LIBRO_ROLES);
@@ -68,17 +70,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
   const { session, error } = await requireRole(...LIBRO_ROLES);
   if (error) return error;
 
-  const body = await req.json();
+  const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Cuerpo de la solicitud inválido" }, { status: 400 });
+  }
 
-  // Obtener la cirugía actual para resolver el rol efectivo
-  const cirugiaActual = await prisma.cirugia.findUnique({
-    where: { id: params.cirugiaId },
-    select: {
-      cirujanoId: true, ayudante1Id: true, ayudante2Id: true,
-      anestesiologoId: true, instrumentadorId: true, circulanteId: true,
-      estado: true, internacionId: true,
-    },
-  });
+  // Cirugía actual completa: rol efectivo + comparación de valores (solo cuenta lo que cambia)
+  const cirugiaActual = await prisma.cirugia.findUnique({ where: { id: params.cirugiaId } });
 
   if (!cirugiaActual) {
     return NextResponse.json({ error: "Cirugía no encontrada" }, { status: 404 });
@@ -98,32 +96,43 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
     );
   }
 
-  // Validar el body contra los permisos del rol
-  const { allowedBody, rejected } = validatePatchBody(body, effectiveRole, cirugiaActual);
-
-  // Campos que solo ADMIN puede modificar (silenciosamente ignorados para otros roles)
-  // fechaProgramada y estado REPROGRAMADA están reservadas al administrador
-  if (effectiveRole !== "ADMIN") {
-    delete body.fechaProgramada;
-    if (body.estado === "REPROGRAMADA") {
-      delete body.estado;
-    }
+  // Si la cirugía está COMPLETADA, REPROGRAMADA o CANCELADA, no permitir edición (excepto ADMIN)
+  if (["COMPLETADA", "CANCELADA"].includes(cirugiaActual.estado) && effectiveRole !== "ADMIN") {
+    return NextResponse.json(
+      { error: "La cirugía está cerrada o cancelada: no se puede modificar" },
+      { status: 409 }
+    );
   }
+
+  // Estado: se valida como transición explícita (iniciar / cerrar / cancelar), no como campo libre
+  const { estado: estadoPedido, ...resto } = body;
+  let nuevoEstado: string | null = null;
+  if (typeof estadoPedido === "string" && estadoPedido !== cirugiaActual.estado) {
+    const errorTransicion = validarTransicionEstado(effectiveRole, cirugiaActual.estado, estadoPedido);
+    if (errorTransicion) {
+      return NextResponse.json({ error: errorTransicion }, { status: 403 });
+    }
+    nuevoEstado = estadoPedido;
+  }
+
+  // Validar el resto del body contra los permisos del rol (solo cuentan los cambios reales)
+  const { allowedBody, ignored, rejected } = validatePatchBody(
+    resto,
+    effectiveRole,
+    cirugiaActual as unknown as Record<string, unknown>
+  );
 
   if (rejected) {
     return NextResponse.json(
-      { error: "No tiene permiso para modificar estos campos", fields: rejected.fields },
+      {
+        error: `Su rol en esta cirugía no puede modificar: ${rejected.fields.map((f) => FIELD_LABELS[f] ?? f).join(", ")}`,
+        fields: rejected.fields,
+      },
       { status: 403 }
     );
   }
 
-  // Si la cirugía está COMPLETADA o REPROGRAMADA, no permitir edición (excepto ADMIN)
-  if (["COMPLETADA", "REPROGRAMADA"].includes(cirugiaActual.estado) && effectiveRole !== "ADMIN") {
-    return NextResponse.json(
-      { error: "La cirugía está cerrada o reprogramada" },
-      { status: 403 }
-    );
-  }
+  if (effectiveRole !== "ADMIN") delete allowedBody.fechaProgramada;
 
   // Construir el data update solo con campos permitidos
   const dataUpdate: Prisma.CirugiaUpdateInput = {};
@@ -131,7 +140,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
   // Mapear campos del body a columnas de Prisma
   const fieldMap: Record<string, (v: unknown) => unknown> = {
     quirofanoId: (v) => v,
-    fechaProgramada: (v) => (v as string) ? new Date(v as string) : undefined,
+    // Mediodía UTC: el día no se corre al mostrarlo en hora local (UTC-3)
+    fechaProgramada: (v) => (v as string) ? new Date(`${String(v).slice(0, 10)}T12:00:00.000Z`) : undefined,
     horaProgramada: (v) => v,
     tipo: (v) => v,
     estado: (v) => v,
@@ -183,6 +193,25 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
     }
   }
 
+  // Toma de puesto vacante: el instrumentador / anestesiólogo que guarda queda asignado
+  if (session.user.rol === "INSTRUMENTADOR" && !cirugiaActual.instrumentadorId && effectiveRole === "INSTRUMENTADOR") {
+    // Escalar (igual que el resto del mapeo): no mezclar connect con FKs escalares
+    (dataUpdate as Record<string, unknown>).instrumentadorId = session.user.id;
+  }
+  if (session.user.rol === "ANESTESIOLOGO" && !cirugiaActual.anestesiologoId && effectiveRole === "ANESTESIOLOGO") {
+    dataUpdate.anestesiologoId = session.user.id;
+  }
+
+  if (nuevoEstado) {
+    dataUpdate.estado = nuevoEstado as EstadoCirugia;
+    // Al iniciar sin hora de inicio cargada, se registra la hora actual (Argentina)
+    if (nuevoEstado === "EN_CURSO" && !cirugiaActual.horaInicio && !dataUpdate.horaInicio) {
+      dataUpdate.horaInicio = new Date().toLocaleTimeString("es-AR", {
+        hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Argentina/Buenos_Aires",
+      });
+    }
+  }
+
   const cirugia = await prisma.$transaction(async (tx) => {
     const updated = await tx.cirugia.update({
       where: { id: params.cirugiaId },
@@ -193,18 +222,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
       },
     });
 
-    if (dataUpdate.estado && updated.internacionId) {
-      const estadoMap: Record<string, string> = {
-        EN_CURSO: "EN_QUIROFANO",
-        COMPLETADA: "POSTQUIRURGICO",
-        CANCELADA: "ACTIVA",
-        REPROGRAMADA: "ACTIVA",
+    if (nuevoEstado && updated.internacionId) {
+      // Solo se mueve la internación mientras está en el circuito asistencial:
+      // nunca se pisa un alta (ALTA_*, FACTURADA, FALLECIDO).
+      const transiciones: Record<string, { desde: EstadoInternacion[]; a: EstadoInternacion }> = {
+        EN_CURSO: { desde: ["ACTIVA", "POSTQUIRURGICO"], a: "EN_QUIROFANO" },
+        COMPLETADA: { desde: ["ACTIVA", "EN_QUIROFANO"], a: "POSTQUIRURGICO" },
+        CANCELADA: { desde: ["EN_QUIROFANO"], a: "ACTIVA" },
+        REPROGRAMADA: { desde: ["EN_QUIROFANO"], a: "ACTIVA" },
       };
-      const nuevoEstadoInternacion = estadoMap[dataUpdate.estado as string];
-      if (nuevoEstadoInternacion) {
-        await tx.internacion.update({
-          where: { id: updated.internacionId },
-          data: { estado: nuevoEstadoInternacion as EstadoInternacion },
+      const t = transiciones[nuevoEstado];
+      if (t) {
+        await tx.internacion.updateMany({
+          where: { id: updated.internacionId, estado: { in: t.desde } },
+          data: { estado: t.a },
         });
       }
     }
@@ -232,6 +263,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { cirugiaId:
     instrumentador: refreshed?.instrumentador || (refreshed?.instrumentadorNombreLegado ? { id: null, nombre: refreshed.instrumentadorNombreLegado } : null),
     circulante: refreshed?.circulante || (refreshed?.circulanteNombreLegado ? { id: null, nombre: refreshed.circulanteNombreLegado } : null),
     _effectiveRole: effectiveRole,
+    _camposIgnorados: ignored.map((f) => FIELD_LABELS[f] ?? f),
   };
 
   return NextResponse.json(enriched);

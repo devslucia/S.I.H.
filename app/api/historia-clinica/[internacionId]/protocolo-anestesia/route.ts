@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
+import { ensureHcEpisodio } from "@/lib/hc-context";
+import { internacionAccessError } from "@/lib/internaciones-visibility";
 import { protocoloAnestesiaSchema } from "@/lib/validations/protocolo-anestesia";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
@@ -19,6 +20,12 @@ function jsonSafe(data: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
+/** Cirugía de referencia: la indicada (si pertenece a la internación) o la más reciente no cancelada. */
+function cirugiaWhere(internacionId: string, cirugiaId?: string | null): Prisma.CirugiaWhereInput {
+  if (cirugiaId) return { id: cirugiaId, internacionId };
+  return { internacionId, estado: { notIn: ["CANCELADA", "REPROGRAMADA"] } };
+}
+
 const PA_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
 
 function calcularIMC(peso?: number | null, talla?: number | null): number | null {
@@ -33,23 +40,16 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
   const { session, error } = await requireRole(...PA_READ_ROLES);
   if (error) return error;
 
-  // Verificar visibilidad - pero si la internación existe, permitir el acceso
-  // en lugar de bloquear con 404 innecesario. El protocolo es datos clínicos
-  // que el anestesiólogo/medico necesita ver.
-  try {
-    const existe = await prisma.internacion.findUnique({
-      where: { id: params.internacionId },
-      select: { id: true },
-    });
-    if (!existe) {
-      return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
-    }
-  } catch {
-    // Si hay error checking visibility, continuar de todos modos
+  const accesoError = await internacionAccessError(params.internacionId, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
+
+  const ctx = await ensureHcEpisodio(params.internacionId);
+  if (!ctx) {
+    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
 
-  const episodio = await prisma.episodio.findFirst({
-    where: { internacionId: params.internacionId },
+  const episodio = await prisma.episodio.findUniqueOrThrow({
+    where: { id: ctx.episodio.id },
     include: {
       internacion: {
         include: {
@@ -61,26 +61,14 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
     },
   });
 
-  if (!episodio) {
-    // La internación existe pero todavía no tiene un episodio clínico.
-    // Devolvemos 200 con datos vacíos para que el frontend pueda mostrar el formulario.
-    return NextResponse.json({
-      protocolo: null,
-      anestesiologoAsignado: null,
-      equipoCirugia: { cirujano: null, ayudantes: [], hayEquipo: false },
-      tiemposCirugia: { inicio: null, fin: null },
-      paciente: null,
-      internacion: null,
-    });
-  }
-
   const protocolo = await prisma.protocoloAnestesia.findUnique({
     where: { episodioId: episodio.id },
     include: { drogas: true },
   });
 
   const cirugia = await prisma.cirugia.findFirst({
-    where: { internacionId: params.internacionId },
+    where: cirugiaWhere(params.internacionId, req.nextUrl.searchParams.get("cirugiaId") ?? protocolo?.cirugiaId),
+    orderBy: { fechaProgramada: "desc" },
     select: {
       id: true,
       anestesiologoId: true,
@@ -140,6 +128,7 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
 
   return NextResponse.json({
     protocolo: protocolo ?? null,
+    cirugiaId: cirugia?.id ?? null,
     anestesiologoAsignado,
     equipoCirugia,
     tiemposCirugia: { inicio: cirugia?.horaInicio ?? null, fin: cirugia?.horaFin ?? null },
@@ -158,28 +147,14 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
   const { session, error } = await requireRole("ADMIN", "ANESTESIOLOGO");
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+  const accesoError = await internacionAccessError(params.internacionId, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
+
+  const ctx = await ensureHcEpisodio(params.internacionId);
+  if (!ctx) {
     return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
-
-  const hc = await prisma.historiaClinica.findUnique({
-    where: { internacionId: params.internacionId },
-  });
-
-  if (!hc) {
-    return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
-  }
-
-  const episodio = await prisma.episodio.findFirst({
-    where: { internacionId: params.internacionId },
-  });
-
-  if (!episodio) {
-    return NextResponse.json(
-      { error: "No se encontró el episodio clínico para esta internación" },
-      { status: 404 }
-    );
-  }
+  const { hc, episodio } = ctx;
 
   if (episodio.tipo !== "INTERNACION") {
     return NextResponse.json(
@@ -190,14 +165,14 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
 
   const existente = await prisma.protocoloAnestesia.findUnique({
     where: { episodioId: episodio.id },
-    select: { firmado: true },
+    select: { firmado: true, cirugiaId: true },
   });
 
   if (existente?.firmado) {
     return NextResponse.json({ error: "El protocolo está firmado y no puede modificarse" }, { status: 403 });
   }
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
   const parsed = protocoloAnestesiaSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
@@ -228,8 +203,14 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
   });
 
   const cirugia = await prisma.cirugia.findFirst({
-    where: { internacionId: params.internacionId },
-    select: { id: true, cirujanoId: true, ayudante1Id: true, ayudante2Id: true },
+    where: cirugiaWhere(
+      params.internacionId,
+      req.nextUrl.searchParams.get("cirugiaId") ??
+        (typeof body?.cirugiaId === "string" ? body.cirugiaId : null) ??
+        existente?.cirugiaId
+    ),
+    orderBy: { fechaProgramada: "desc" },
+    select: { id: true, cirujanoId: true, ayudante1Id: true, ayudante2Id: true, anestesiologoId: true },
   });
 
   // Fuente de verdad del equipo quirúrgico: la cirugía.
@@ -260,9 +241,15 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
   const protocolo = await prisma.$transaction(async (tx) => {
     const result = await tx.protocoloAnestesia.upsert({
       where: { episodioId: episodio.id },
-      update: { ...dataSeguro },
+      update: { ...dataSeguro, cirugiaId: cirugia?.id ?? existente?.cirugiaId ?? null },
       create: { hcId: hc.id, episodioId: episodio.id, cirugiaId: cirugia?.id ?? null, ...dataSeguro },
     });
+
+    // El anestesiólogo que completa el protocolo de una cirugía sin anestesiólogo
+    // asignado queda asignado (coherencia con libro de quirófano y visibilidad).
+    if (cirugia && !cirugia.anestesiologoId && session.user.rol === "ANESTESIOLOGO") {
+      await tx.cirugia.update({ where: { id: cirugia.id }, data: { anestesiologoId: session.user.id } });
+    }
 
     if (Array.isArray(drogas)) {
       await tx.drogaAnestesia.deleteMany({ where: { protocoloId: result.id } });

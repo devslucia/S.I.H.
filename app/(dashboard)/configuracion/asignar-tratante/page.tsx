@@ -77,7 +77,7 @@ export default function AsignarTratantePage() {
   const filteredMedicos = medicos.filter(
     (m) =>
       formatUserName(m).toLowerCase().includes(searchMedico.toLowerCase()) ||
-      m.email.toLowerCase().includes(searchMedico.toLowerCase()) ||
+      (m.email ?? "").toLowerCase().includes(searchMedico.toLowerCase()) ||
       (m.matricula && m.matricula.toLowerCase().includes(searchMedico.toLowerCase()))
   );
 

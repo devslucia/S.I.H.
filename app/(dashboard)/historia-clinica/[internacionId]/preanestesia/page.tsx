@@ -1,5 +1,8 @@
 "use client";
 
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Save, CheckCircle, AlertCircle, Printer } from "lucide-react";
@@ -22,6 +25,8 @@ export default function PreanestesiaPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchData = async () => {
     setLoading(true);
@@ -42,6 +47,8 @@ export default function PreanestesiaPage() {
         } else {
           setData({ antecClinicos: defaultAntecClinicos, examenFisico: defaultExamenFisico });
         }
+      } else {
+        setLoadError(await apiErrorMessage(preanRes, "No se pudo cargar la valoración preanestésica"));
       }
 
       if (internRes.ok) {
@@ -71,17 +78,24 @@ export default function PreanestesiaPage() {
         body: JSON.stringify(data),
       });
       if (res.ok) {
+        const guardada = await res.json().catch(() => null);
+        if (guardada?.id) setData((prev) => ({ ...prev, id: guardada.id }));
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
+        toast("success", "Valoración preanestésica guardada correctamente");
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo guardar la valoración preanestésica"));
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de conexión al guardar la valoración");
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) return <p className="text-muted text-sm">Cargando valoración preanestésica...</p>;
+  if (loadError) return <p className="text-error text-sm">{loadError}</p>;
 
   return (
     <div className="space-y-6">

@@ -246,10 +246,10 @@ export default function QuirofanoPage() {
   const esHoy = fechaSeleccionada === getTodayStr();
 
   const resumen = {
-    programadas: cirugias.filter((c) => c.estado === "PROGRAMADA").length,
+    programadas: cirugias.filter((c) => c.estado === "PROGRAMADA" || c.estado === "REPROGRAMADA").length,
     enCurso: cirugias.filter((c) => c.estado === "EN_CURSO").length,
     completadas: cirugias.filter((c) => c.estado === "COMPLETADA").length,
-    canceladas: cirugias.filter((c) => c.estado === "CANCELADA" || c.estado === "REPROGRAMADA").length,
+    canceladas: cirugias.filter((c) => c.estado === "CANCELADA").length,
   };
 
   return (

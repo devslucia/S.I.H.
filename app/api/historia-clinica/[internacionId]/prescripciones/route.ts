@@ -1,10 +1,12 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
+import { ensureHcEpisodio } from "@/lib/hc-context";
+import { internacionAccessError } from "@/lib/internaciones-visibility";
 import { createPrescripcionSchema } from "@/lib/validations/prescripcion.schema";
 import { verificarAlergia } from "@/lib/utils/alertas-alergia";
 import { crearNotificacionesPrescripcion } from "@/lib/notificaciones";
 import { NextRequest, NextResponse } from "next/server";
+import { formatZodError } from "@/lib/validations/format-zod-error";
 
 const PRESCRIPCIONES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
 const PRESCRIPCIONES_WRITE_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO"];
@@ -13,17 +15,14 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
   const { session, error } = await requireRole(...PRESCRIPCIONES_READ_ROLES);
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+  const accesoError = await internacionAccessError(params.internacionId, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
+
+  const ctx = await ensureHcEpisodio(params.internacionId);
+  if (!ctx) {
     return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
-
-  const hc = await prisma.historiaClinica.findUnique({
-    where: { internacionId: params.internacionId },
-  });
-
-  if (!hc) {
-    return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
-  }
+  const { hc } = ctx;
 
   const prescripciones = await prisma.prescripcion.findMany({
     where: { hcId: hc.id },
@@ -38,35 +37,23 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
   const { session, error } = await requireRole(...PRESCRIPCIONES_WRITE_ROLES);
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+  const accesoError = await internacionAccessError(params.internacionId, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
+
+  const ctx = await ensureHcEpisodio(params.internacionId);
+  if (!ctx) {
     return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
-
-  const hc = await prisma.historiaClinica.findUnique({
-    where: { internacionId: params.internacionId },
-    include: {
-      internacion: {
-        include: { paciente: { select: { id: true, apellido: true, nombre: true } } },
-      },
-    },
+  const { hc, episodio } = ctx;
+  const paciente = await prisma.paciente.findUnique({
+    where: { id: ctx.internacion.pacienteId },
+    select: { id: true, apellido: true, nombre: true },
   });
 
-  if (!hc) {
-    return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
+  const body = await req.json().catch(() => null);
+  if (!body) {
+    return NextResponse.json({ error: "Cuerpo de la solicitud inválido" }, { status: 400 });
   }
-
-  const episodio = await prisma.episodio.findFirst({
-    where: { internacionId: params.internacionId },
-  });
-
-  if (!episodio) {
-    return NextResponse.json(
-      { error: "No se encontró el episodio clínico para esta internación" },
-      { status: 404 }
-    );
-  }
-
-  const body = await req.json();
   const items = Array.isArray(body.items) ? body.items : [body];
 
   const results: { ok: boolean; nombre: string; error?: string; prescripcion?: object }[] = [];
@@ -74,14 +61,14 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
   for (const item of items) {
     const parsed = createPrescripcionSchema.safeParse(item);
     if (!parsed.success) {
-      results.push({ ok: false, nombre: item.droga || item.tipo || "desconocido", error: "Datos inválidos" });
+      results.push({ ok: false, nombre: item.droga || item.tipo || "desconocido", error: formatZodError(parsed.error) });
       continue;
     }
 
     const data = parsed.data;
 
-    if (data.droga && hc.internacion) {
-      const { bloqueada, alergia } = await verificarAlergia(hc.internacion.pacienteId, data.droga);
+    if (data.droga) {
+      const { bloqueada, alergia } = await verificarAlergia(ctx.internacion.pacienteId, data.droga);
       if (bloqueada) {
         const prescripcion = await prisma.prescripcion.create({
           data: {
@@ -116,7 +103,6 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
       const detalle = data.droga || data.descripcion || data.tipo || "indicación";
       const extra = [data.dosis && `dosis ${data.dosis}`, data.via && `vía ${data.via}`].filter(Boolean).join(", ");
 
-      const paciente = hc.internacion?.paciente;
       if (paciente) {
         await crearNotificacionesPrescripcion(prisma, {
           prescripcionId: prescripcion.id,

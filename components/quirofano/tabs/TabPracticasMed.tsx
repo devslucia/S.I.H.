@@ -48,8 +48,13 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
       body: JSON.stringify(practicaForm),
     });
     if (res.ok) {
-      toast("success", "Práctica agregada");
+      const creada = await res.json().catch(() => ({}));
+      if (creada?.advertencia) toast("warning", creada.advertencia);
+      else toast("success", "Práctica agregada");
       onRefresh(); setShowPracticaModal(false); setPracticaForm({ fecha: "", hora: "", practica: "", laboratorio: "", cargoPor: "", actoQuirurgico: "" });
+    } else {
+      const err = await res.json().catch(() => ({}));
+      toast("error", err.error || "No se pudo agregar la práctica");
     }
   };
 

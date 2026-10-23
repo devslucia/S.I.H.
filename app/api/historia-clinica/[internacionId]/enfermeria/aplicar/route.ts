@@ -1,9 +1,10 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
+import { internacionAccessError } from "@/lib/internaciones-visibility";
 import { descontarStock, type Tx } from "@/lib/utils/stock";
 import { generarCargo } from "@/lib/utils/facturacion";
 import { NextRequest, NextResponse } from "next/server";
+import { errorMessage } from "@/lib/errors";
 
 const APLICAR_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
 const APLICAR_WRITE_ROLES = ["ADMIN", "ENFERMERO", "MEDICO", "ANESTESIOLOGO"];
@@ -12,9 +13,8 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
   const { session, error } = await requireRole(...APLICAR_READ_ROLES);
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
-    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
-  }
+  const accesoError = await internacionAccessError(params.internacionId, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
 
   const { searchParams } = new URL(req.url);
   const prescripcionId = searchParams.get("prescripcionId");
@@ -110,11 +110,13 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
   const { session, error } = await requireRole(...APLICAR_WRITE_ROLES);
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
-    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
-  }
+  const accesoError = await internacionAccessError(params.internacionId, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Cuerpo de la solicitud inválido" }, { status: 400 });
+  }
   const items = Array.isArray(body.items) ? body.items : [body];
 
   // Queries de validación FUERA de la transacción
@@ -153,7 +155,9 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
       results.push(result);
     } catch (e: unknown) {
       console.error("Error en ítem de aplicación:", e);
-      results.push({ ok: false, nombre: item.nombre || item.prescripcionId || "desconocido", error: "Error interno" });
+      // Errores de negocio (ej. "Stock insuficiente para X") se muestran tal cual
+      const msg = errorMessage(e);
+      results.push({ ok: false, nombre: item.nombre || item.prescripcionId || "desconocido", error: msg?.startsWith("Stock insuficiente") ? msg : "Error interno al registrar" });
     }
   }
 

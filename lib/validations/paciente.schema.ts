@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { validarCuil } from "./cuil";
+import { validarCuil, fechaNacSchema } from "./cuil";
 
 const cuilSchema = z.string().optional().nullable().refine(
   (val) => {
@@ -10,26 +10,14 @@ const cuilSchema = z.string().optional().nullable().refine(
   { message: "CUIL inválido (formato o dígito verificador incorrecto)" }
 );
 
-const fechaNacSchema = z.string().transform((v) => new Date(v)).refine(
-  (date) => {
-    const hoy = new Date();
-    const nacimiento = new Date(date);
-    if (nacimiento > hoy) return false;
-    const edad = new Date().getFullYear() - nacimiento.getFullYear();
-    const mesActual = new Date().getMonth();
-    const diaActual = new Date().getDate();
-    if (mesActual < nacimiento.getMonth() || (mesActual === nacimiento.getMonth() && new Date().getDate() < nacimiento.getDate())) {
-      return edad - 1 >= 0 && edad - 1 <= 120;
-    }
-    return edad >= 0 && edad <= 120;
-  },
-  { message: "Fecha de nacimiento inválida (edad debe ser entre 0 y 120 años)" }
-);
-
+// Fecha de nacimiento a mediodía local (fechaNacSchema de cuil.ts): con new Date("YYYY-MM-DD")
+// quedaba en UTC 00:00 y en Argentina (UTC-3) se mostraba un día antes.
 export const createPacienteSchema = z.object({
-  dni: z.string().min(7).max(11),
-  apellido: z.string().min(1),
-  nombre: z.string().min(1),
+  dni: z.string()
+    .transform((v) => v.replace(/[.\s]/g, ""))
+    .pipe(z.string().min(7, "El DNI debe tener al menos 7 caracteres").max(11, "El DNI no puede superar 11 caracteres")),
+  apellido: z.string().trim().min(1, "El apellido es obligatorio"),
+  nombre: z.string().trim().min(1, "El nombre es obligatorio"),
   sexo: z.enum(["MASCULINO", "FEMENINO", "OTRO"]),
   fechaNac: fechaNacSchema,
   cuil: cuilSchema,
@@ -37,7 +25,7 @@ export const createPacienteSchema = z.object({
   localidad: z.string().optional().nullable(),
   provincia: z.string().optional().nullable(),
   telefono: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable(),
+  email: z.string().email("Email inválido").optional().nullable(),
   grupoSangre: z.string().optional().nullable(),
   estadoCivil: z.enum(["SOLTERO", "CASADO", "DIVORCIADO", "VIUDO", "UNION_CONVIVENCIAL"]).optional().nullable(),
   obraSocialId: z.string().optional().nullable(),

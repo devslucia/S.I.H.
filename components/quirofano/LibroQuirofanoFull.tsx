@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Save, Printer, CheckCircle, ArrowLeft, AlertCircle, X } from "lucide-react";
+import { Save, Printer, CheckCircle, ArrowLeft, AlertCircle, X, PlayCircle } from "lucide-react";
 import { formatDateTime, formatUserName } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useToast } from "@/components/ui/Toast";
@@ -47,7 +47,7 @@ export default function LibroQuirofanoFull() {
   const [inlineError, setInlineError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const isReadOnly = data?.estado === "COMPLETADA" || data?.estado === "REPROGRAMADA";
+  const isReadOnly = data?.estado === "COMPLETADA" || data?.estado === "CANCELADA";
 
   // Resolver el rol efectivo del usuario en esta cirugía
   const effectiveRole: EffectiveRole = (() => {
@@ -72,30 +72,48 @@ export default function LibroQuirofanoFull() {
         setData(d);
         setFormData({ ...d });
         setPendingItems(getPendingItems(d));
-      } else if (cirRes.status === 403) {
-        const err = await cirRes.json();
-        setInlineError(err.error || "Sin acceso a esta cirugía");
+      } else {
+        const err = await cirRes.json().catch(() => ({}));
+        setInlineError(err.error || (cirRes.status === 404 ? "Cirugía no encontrada" : "No se pudo cargar la cirugía"));
       }
       if (userRes.ok) setUsuarios(await userRes.json());
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); setInlineError("Error de red al cargar la cirugía"); }
     finally { setLoading(false); }
   }, [cirugiaId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Solo se envían los campos que el usuario cambió: el backend valida permisos por
+  // campo y reenviar todo el formulario hacía fallar el guardado de roles parciales.
+  const buildPatchBody = useCallback((): Record<string, unknown> => {
+    const STRIP_FIELDS = new Set(["implantes", "medicamentos", "practicas", "reprogramaciones",
+      "internacion", "quirofano", "cirujano", "ayudante1", "ayudante2", "anestesiologo",
+      "instrumentador", "circulante", "_effectiveRole", "_camposIgnorados", "internacionId",
+      "id", "createdAt", "updatedAt", "estado"]);
+    const original = (data ?? {}) as unknown as Record<string, unknown>;
+    const patchBody: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(formData)) {
+      if (STRIP_FIELDS.has(k)) continue;
+      if (JSON.stringify(v ?? null) !== JSON.stringify(original[k] ?? null)) patchBody[k] = v;
+    }
+    return patchBody;
+  }, [data, formData]);
+
+  const avisarIgnorados = (updated: { _camposIgnorados?: string[] }) => {
+    if (updated._camposIgnorados?.length) {
+      toast("warning", `No se guardaron (sin permiso para su rol): ${updated._camposIgnorados.join(", ")}`);
+    }
+  };
+
   const handleSave = async () => {
     setInlineError(null);
+    const patchBody = buildPatchBody();
+    if (Object.keys(patchBody).length === 0) {
+      toast("info", "No hay cambios para guardar");
+      return;
+    }
     setSaving(true);
     try {
-      // Filtrar campos relacionales que el backend no acepta en el PATCH principal
-      const STRIP_FIELDS = new Set(["implantes", "medicamentos", "practicas", "reprogramaciones",
-        "internacion", "quirofano", "cirujano", "ayudante1", "ayudante2", "anestesiologo",
-        "instrumentador", "circulante", "_effectiveRole", "internacionId"]);
-      const patchBody: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(formData)) {
-        if (!STRIP_FIELDS.has(k)) patchBody[k] = v;
-      }
-
       const res = await fetch(`/api/quirofano/${cirugiaId}/libro`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -107,6 +125,7 @@ export default function LibroQuirofanoFull() {
         setFormData({ ...updated });
         setPendingItems(getPendingItems(updated));
         toast("success", "Cambios guardados correctamente");
+        avisarIgnorados(updated);
 
         // Auto-creación de plantilla (solo para roles médicos y si hay procedimiento)
         const rol = (session?.user?.rol ?? "") as string;
@@ -125,11 +144,6 @@ export default function LibroQuirofanoFull() {
             // fallo silencioso: no bloquea el guardado del protocolo
           }
         }
-      } else if (res.status === 403) {
-        const err = await res.json();
-        const msg = `Sin permiso para modificar: ${err.fields?.join(", ") || "campos no autorizados"}`;
-        setInlineError(msg);
-        toast("error", msg);
       } else {
         const err = await res.json().catch(() => ({}));
         const msg = err.error || "Error al guardar los cambios";
@@ -140,34 +154,44 @@ export default function LibroQuirofanoFull() {
     finally { setSaving(false); }
   };
 
-  const cerrarCirugia = async () => {
-    if (!formData.horaFin) {
-      setInlineError("Debe cargar la hora fin antes de cerrar la cirugía.");
-      return;
-    }
+  const cambiarEstado = async (estado: "EN_CURSO" | "COMPLETADA", mensajeOk: string) => {
     setInlineError(null);
     setSaving(true);
-    const STRIP_FIELDS = new Set(["implantes", "medicamentos", "practicas", "reprogramaciones",
-      "internacion", "quirofano", "cirujano", "ayudante1", "ayudante2", "anestesiologo",
-      "instrumentador", "circulante", "_effectiveRole", "internacionId"]);
-    const patchBody: Record<string, unknown> = { estado: "COMPLETADA" };
-    for (const [k, v] of Object.entries(formData)) {
-      if (!STRIP_FIELDS.has(k)) patchBody[k] = v;
+    try {
+      const res = await fetch(`/api/quirofano/${cirugiaId}/libro`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...buildPatchBody(), estado }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        toast("success", mensajeOk);
+        avisarIgnorados(updated);
+        setShowCloseModal(false);
+        await fetchData();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        const msg = err.error || "No se pudo actualizar el estado de la cirugía";
+        setInlineError(msg);
+        toast("error", msg);
+      }
+    } catch (err) {
+      console.error(err);
+      toast("error", "Error de red al actualizar la cirugía");
+    } finally {
+      setSaving(false);
     }
-    const res = await fetch(`/api/quirofano/${cirugiaId}/libro`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patchBody),
-    });
-    setSaving(false);
-    setShowCloseModal(false);
-    if (res.ok) {
-      toast("success", "Cirugía cerrada correctamente");
-      fetchData();
-    } else {
-      const err = await res.json().catch(() => ({}));
-      toast("error", err.error || "No se pudo cerrar la cirugía");
+  };
+
+  const iniciarCirugia = () => cambiarEstado("EN_CURSO", "Cirugía iniciada: el paciente figura en quirófano");
+
+  const cerrarCirugia = async () => {
+    if (!formData.horaFin) {
+      setShowCloseModal(false);
+      setInlineError("Debe cargar la hora fin (pestaña Cirugía) antes de cerrar la cirugía.");
+      return;
     }
+    await cambiarEstado("COMPLETADA", "Cirugía cerrada correctamente: paciente en postquirúrgico");
   };
 
   const handleImprimir = () => {
@@ -231,7 +255,14 @@ export default function LibroQuirofanoFull() {
   const update = (field: string, value: unknown) => setFormData((prev: CirugiaFormData) => ({ ...prev, [field]: value }));
 
   if (loading) return <div className="flex items-center justify-center h-64"><p className="text-muted">Cargando libro de quirófano...</p></div>;
-  if (!data) return <div className="flex items-center justify-center h-64"><p className="text-muted">Cirugía no encontrada.</p></div>;
+  if (!data) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="flex items-start gap-2 text-[13px] text-error border border-error/30 bg-error/10 rounded-lg px-4 py-3 max-w-md">
+        <AlertCircle size={15} className="mt-0.5 shrink-0" />
+        <span>{inlineError ?? "Cirugía no encontrada."}</span>
+      </div>
+    </div>
+  );
 
   const paciente = data?.internacion?.paciente;
   const internacion = data?.internacion;
@@ -344,7 +375,13 @@ export default function LibroQuirofanoFull() {
             <Printer size={15} /> Imprimir
           </button>
         </div>
-        <div>
+        <div className="flex gap-2">
+          {(data?.estado === "PROGRAMADA" || data?.estado === "REPROGRAMADA") && effectiveRole !== "NINGUNO" && (
+            <button onClick={iniciarCirugia} disabled={saving}
+              className={`btn-primary inline-flex items-center gap-2 ${saving ? "opacity-50 cursor-not-allowed" : ""}`}>
+              <PlayCircle size={15} /> Iniciar cirugía
+            </button>
+          )}
           {data?.estado === "EN_CURSO" && canCloseSurgery(effectiveRole) && (
             <button onClick={() => setShowCloseModal(true)} disabled={saving}
               className={`btn-danger inline-flex items-center gap-2 ${saving ? "opacity-50 cursor-not-allowed" : ""}`}>

@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
+import { ensureHcEpisodio } from "@/lib/hc-context";
+import { internacionAccessError } from "@/lib/internaciones-visibility";
 import { NextRequest, NextResponse } from "next/server";
 
 const HC_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
@@ -10,17 +11,14 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
   const { session, error } = await requireRole(...HC_READ_ROLES);
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+  const accesoError = await internacionAccessError(params.internacionId, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
+
+  const ctx = await ensureHcEpisodio(params.internacionId);
+  if (!ctx) {
     return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
-
-  const hc = await prisma.historiaClinica.findUnique({
-    where: { internacionId: params.internacionId },
-  });
-
-  if (!hc) {
-    return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
-  }
+  const { hc } = ctx;
 
   const evoluciones = await prisma.evolucion.findMany({
     where: { hcId: hc.id },
@@ -35,35 +33,26 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
   const { session, error } = await requireRole(...HC_WRITE_ROLES);
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+  const accesoError = await internacionAccessError(params.internacionId, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
+
+  const ctx = await ensureHcEpisodio(params.internacionId);
+  if (!ctx) {
     return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
+  const { hc, episodio } = ctx;
 
-  const hc = await prisma.historiaClinica.findUnique({
-    where: { internacionId: params.internacionId },
-  });
-
-  if (!hc) {
-    return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
+  const body = await req.json().catch(() => null);
+  const contenido = typeof body?.contenido === "string" ? body.contenido.trim() : "";
+  if (!contenido) {
+    return NextResponse.json({ error: "La evolución no puede estar vacía" }, { status: 400 });
   }
 
-  const episodio = await prisma.episodio.findFirst({
-    where: { internacionId: params.internacionId },
-  });
-
-  if (!episodio) {
-    return NextResponse.json(
-      { error: "No se encontró el episodio clínico para esta internación" },
-      { status: 404 }
-    );
-  }
-
-  const body = await req.json();
   const evolucion = await prisma.evolucion.create({
     data: {
       hcId: hc.id,
       episodioId: episodio.id,
-      contenido: body.contenido,
+      contenido,
       usuarioId: session.user.id,
     },
   });

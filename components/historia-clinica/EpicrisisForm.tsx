@@ -1,5 +1,7 @@
 "use client";
 
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useState, useEffect } from "react";
 import { Save, CheckCircle, AlertCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -73,12 +75,14 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
         body: JSON.stringify(data),
       });
       if (res.ok) {
+        const guardada = await res.json().catch(() => null);
+        if (guardada?.id) setData((prev) => ({ ...prev, id: guardada.id }));
         toast("success", "Epicrisis guardada correctamente");
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
         onSaved?.();
       } else {
-        toast("error", "No se pudo guardar la epicrisis");
+        toast("error", await apiErrorMessage(res, "No se pudo guardar la epicrisis"));
       }
     } catch (err) {
       toast("error", "Error de conexión al guardar");
@@ -97,10 +101,10 @@ export function EpicrisisForm({ internacionId, readOnly = false, onSaved, onSign
       if (res.ok) {
         const d = await res.json();
         setData((prev) => ({ ...prev, firmadaAt: d.firmadaAt || new Date().toISOString() }));
-        toast("success", "Paciente dismuetado/alta registrada");
+        toast("success", d.message || "Epicrisis firmada: alta médica registrada");
         onSigned?.();
       } else {
-        toast("error", "No se pudo firmar/dar de alta");
+        toast("error", await apiErrorMessage(res, "No se pudo firmar la epicrisis"));
       }
     } catch (err) {
       toast("error", "Error de conexión al firmar");

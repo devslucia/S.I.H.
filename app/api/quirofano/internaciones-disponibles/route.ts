@@ -17,7 +17,8 @@ export async function GET(_req: NextRequest) {
 
   const internaciones = await prisma.internacion.findMany({
     where: {
-      estado: "ACTIVA",
+      // ACTIVA o POSTQUIRURGICO (reintervención); sin cirugía pendiente
+      estado: { in: ["ACTIVA", "POSTQUIRURGICO"] },
       cirugias: {
         none: {
           estado: { in: ["PROGRAMADA", "EN_CURSO"] },

@@ -1,5 +1,8 @@
 "use client";
 
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useCallback, useEffect, useState } from "react";
 import { Pencil, Plus, Power, RefreshCw, Search } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -75,6 +78,7 @@ function CampoForm({
 }
 
 export default function GalenosPage() {
+  const { toast } = useToast();
   const [galenos, setGalenos] = useState<Galeno[]>([]);
   const [obrasSociales, setObrasSociales] = useState<ObraSocialSel[]>([]);
   const [q, setQ] = useState("");
@@ -203,7 +207,9 @@ export default function GalenosPage() {
   const toggleActivo = async (g: Galeno) => {
     setToggleId(g.id);
     try {
-      await fetch(`/api/galenos/${g.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/galenos/${g.id}`, { method: "DELETE" });
+      if (res.ok) toast("success", "Estado del galeno actualizado");
+      else toast("error", await apiErrorMessage(res, "No se pudo actualizar el galeno"));
       cargar(q);
     } finally {
       setToggleId(null);

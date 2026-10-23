@@ -1,5 +1,8 @@
 "use client";
 
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, CheckCircle, Clock, User, Send } from "lucide-react";
@@ -29,14 +32,22 @@ export default function EvolucionPage() {
   const [showEditor, setShowEditor] = useState(false);
   const [nuevoContenido, setNuevoContenido] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchEvoluciones = async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/historia-clinica/${params.internacionId}/evoluciones`);
-      if (res.ok) setEvoluciones(await res.json());
+      if (res.ok) {
+        setEvoluciones(await res.json());
+        setLoadError(null);
+      } else {
+        setLoadError(await apiErrorMessage(res, "No se pudieron cargar las evoluciones"));
+      }
     } catch (err) {
       console.error(err);
+      setLoadError("Error de red al cargar las evoluciones");
     } finally {
       setLoading(false);
     }
@@ -54,12 +65,16 @@ export default function EvolucionPage() {
         body: JSON.stringify({ contenido: nuevoContenido }),
       });
       if (res.ok) {
+        toast("success", "Evolución guardada correctamente");
         setNuevoContenido("");
         setShowEditor(false);
         fetchEvoluciones();
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo guardar la evolución"));
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de conexión al guardar la evolución");
     } finally {
       setSaving(false);
     }
@@ -102,6 +117,8 @@ export default function EvolucionPage() {
 
       {loading ? (
         <p className="text-muted text-sm">Cargando evoluciones...</p>
+      ) : loadError ? (
+        <p className="text-error text-sm">{loadError}</p>
       ) : evoluciones.length === 0 ? (
         <p className="text-muted text-sm">Sin notas de evolución registradas.</p>
       ) : (

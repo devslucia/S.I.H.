@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { updatePacienteSchema } from "@/lib/validations/paciente.schema";
 import { NextRequest, NextResponse } from "next/server";
 import { formatZodError } from "@/lib/validations/format-zod-error";
+import { blankToNull } from "@/lib/validations/sanitize";
 import { canAccessPaciente, getPacienteScopeWhere } from "@/lib/pacientes-access";
 
 const PACIENTES_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "CIRCULANTE", "FACTURACION", "ADMISION", "SECRETARIA"];
@@ -58,10 +59,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const { error } = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
-  const body = await req.json();
-  const parsed = updatePacienteSchema.safeParse(body);
+  const body = await req.json().catch(() => null);
+  const parsed = updatePacienteSchema.safeParse(blankToNull(body));
   if (!parsed.success) {
     return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
+  }
+
+  const existe = await prisma.paciente.count({ where: { id: params.id } });
+  if (!existe) {
+    return NextResponse.json({ error: "Paciente no encontrado" }, { status: 404 });
   }
 
   const paciente = await prisma.paciente.update({

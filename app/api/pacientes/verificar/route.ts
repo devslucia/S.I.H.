@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const { error } = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
-  const dni = req.nextUrl.searchParams.get("dni")?.trim();
+  const dni = req.nextUrl.searchParams.get("dni")?.replace(/[.\s]/g, "");
   if (!dni || dni.length < 7) {
     return NextResponse.json({ existe: false });
   }

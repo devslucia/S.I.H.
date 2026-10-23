@@ -1,5 +1,8 @@
 "use client";
 
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -44,6 +47,7 @@ interface Medico {
 }
 
 export default function ConsultorioPage() {
+  const { toast } = useToast();
   const router = useRouter();
   const session = useSession();
   const userRol = (session?.data?.user as { rol?: string } | undefined)?.rol;
@@ -87,28 +91,44 @@ export default function ConsultorioPage() {
       .catch(() => { });
   }, [userRol]);
 
-  const handleConfirm = async (turno: Turno) => {
-    await fetch(`/api/consultorio/turnos/${turno.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estado: "CONFIRMADO" }),
-    });
+  const ESTADO_LABEL: Record<string, string> = {
+    CONFIRMADO: "Turno confirmado",
+    PRESENTE: "Paciente marcado como presente",
+    CANCELADO: "Turno cancelado",
+    NO_ASISTIO: "Turno marcado como ausente",
+  };
+
+  const cambiarEstadoTurno = async (turno: Turno, estado: string) => {
+    try {
+      const res = await fetch(`/api/consultorio/turnos/${turno.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado }),
+      });
+      if (res.ok) toast("success", ESTADO_LABEL[estado] ?? "Turno actualizado");
+      else toast("error", await apiErrorMessage(res, "No se pudo actualizar el turno"));
+    } catch (err) {
+      console.error(err);
+      toast("error", "Error de conexión al actualizar el turno");
+    }
     fetchTurnos();
   };
 
-  const handlePresente = async (turno: Turno) => {
-    await fetch(`/api/consultorio/turnos/${turno.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estado: "PRESENTE" }),
-    });
-    fetchTurnos();
-  };
+  const handleConfirm = (turno: Turno) => cambiarEstadoTurno(turno, "CONFIRMADO");
+
+  const handlePresente = (turno: Turno) => cambiarEstadoTurno(turno, "PRESENTE");
 
   const handleStart = async (turno: Turno) => {
-    const res = await fetch(`/api/consultorio/turnos/${turno.id}/iniciar`, { method: "POST" });
-    if (res.ok) {
-      router.push(`/consultorio/consulta/${turno.id}`);
+    try {
+      const res = await fetch(`/api/consultorio/turnos/${turno.id}/iniciar`, { method: "POST" });
+      if (res.ok) {
+        router.push(`/consultorio/consulta/${turno.id}`);
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo iniciar la consulta"));
+      }
+    } catch (err) {
+      console.error(err);
+      toast("error", "Error de conexión al iniciar la consulta");
     }
   };
 
@@ -120,14 +140,7 @@ export default function ConsultorioPage() {
     setCambiandoEstado(turno.id);
     setTurnoCancelar(null);
     try {
-      await fetch(`/api/consultorio/turnos/${turno.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado }),
-      });
-      fetchTurnos();
-    } catch (err) {
-      console.error(err);
+      await cambiarEstadoTurno(turno, estado);
     } finally {
       setCambiandoEstado(null);
     }

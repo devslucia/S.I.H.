@@ -40,6 +40,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             },
         });
 
+        // Cierra el episodio clínico de la internación (coherencia HC por paciente)
+        await tx.episodio.updateMany({
+            where: { internacionId: params.id, estado: "EN_CURSO" },
+            data: { estado: "FINALIZADO", fechaFin: new Date() },
+        });
+
         // Liberación de cama: SOLO en el alta administrativa (único punto correcto)
         if (internacion.camaId) {
             await tx.cama.updateMany({

@@ -5,13 +5,20 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { formatZodError } from "@/lib/validations/format-zod-error";
 
+// Directorio de personal: lo usan selects de equipo quirúrgico, libro de quirófano
+// e impresión de carpeta. El email solo se expone a ADMIN.
+const USUARIOS_READ_ROLES = ["ADMIN", "ADMISION", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ENFERMERO", "FACTURACION"];
+
 export async function GET() {
-  const {error} = await requireRole("ADMIN", "ADMISION", "MEDICO");
+  const { session, error } = await requireRole(...USUARIOS_READ_ROLES);
   if (error) return error;
 
   const usuarios = await prisma.usuario.findMany({
     where: { activo: true },
-    select: { id: true, nombre: true, apellido: true, email: true, rol: true, matricula: true, especialidad: true },
+    select: {
+      id: true, nombre: true, apellido: true, rol: true, matricula: true, especialidad: true,
+      email: session.user.rol === "ADMIN",
+    },
     orderBy: { nombre: "asc" },
   });
 

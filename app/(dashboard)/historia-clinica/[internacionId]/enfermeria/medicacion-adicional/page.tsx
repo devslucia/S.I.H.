@@ -68,11 +68,14 @@ export default function MedicacionAdicionalPage() {
       if (data.ok) {
         setShowModal(false);
         toast("success", "Medicación adicional registrada");
-        fetchAplicaciones();
+      } else {
+        toast("warning", "Algunos ítems no se registraron: revisá el detalle");
       }
+      fetchAplicaciones();
       return data;
     }
-    const e = await res.json();
+    const e = await res.json().catch(() => ({}));
+    toast("error", e.error || "No se pudo registrar la medicación adicional");
     return { ok: false, items: items.map((sel, i) => ({ index: i, nombre: sel.stockItem.nombre, ok: false, error: e.error || "Error al registrar" })) };
   };
 

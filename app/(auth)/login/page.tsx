@@ -17,20 +17,28 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    let result: Awaited<ReturnType<typeof signIn>> | undefined;
+    try {
+      result = await signIn("credentials", {
+        email: email.trim(),
+        password,
+        redirect: false,
+      });
+    } catch {
+      setError("No se pudo conectar con el servidor. Verificá la conexión e intentá de nuevo.");
+      setLoading(false);
+      return;
+    }
 
     if (result?.status === 429) {
       setError("Demasiados intentos. Esperá 15 minutos.");
       setLoading(false);
     } else if (result?.error) {
-      setError("Credenciales inválidas");
+      setError("Email o contraseña incorrectos, o usuario inactivo");
       setLoading(false);
     } else {
       router.push("/");
+      router.refresh();
     }
   };
 

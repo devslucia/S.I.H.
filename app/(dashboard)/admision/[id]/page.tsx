@@ -1,5 +1,8 @@
 "use client";
 
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, AlertTriangle, Calendar, Trash2, Edit } from "lucide-react";
@@ -72,6 +75,7 @@ const field = "flex flex-col gap-1";
 const label = "text-[11px] font-mono uppercase tracking-widest text-muted";
 
 export default function PacienteDetailPage() {
+  const { toast } = useToast();
   const params = useParams();
   const router = useRouter();
   const [paciente, setPaciente] = useState<Paciente | null>(null);
@@ -147,11 +151,14 @@ export default function PacienteDetailPage() {
         body: JSON.stringify(body),
       });
       if (res.ok) {
+        toast("success", "Internación creada correctamente");
         setNuevaInternacionOpen(false);
         setForm({ camaId: "", obraSocialId: "", medicoTratanteIds: [], nroAfiliado: "", tipoBeneficiario: "TITULAR", motivoIngreso: "", tipoIngreso: "PROGRAMADO", peso: "", diagnosticoCirugia: "" });
         fetchPaciente();
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo crear la internación"));
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); toast("error", "Error de conexión al crear la internación"); }
     finally { setSaving(false); }
   };
 
@@ -168,12 +175,15 @@ export default function PacienteDetailPage() {
         body: JSON.stringify(alergiaForm),
       });
       if (res.ok) {
+        toast("success", editingAlergia ? "Alergia actualizada" : "Alergia registrada");
         setAlergiaModalOpen(false);
         setEditingAlergia(null);
         setAlergiaForm(initialAlergiaForm);
         fetchPaciente();
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo guardar la alergia"));
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); toast("error", "Error de conexión al guardar la alergia"); }
     finally { setSavingAlergia(false); }
   };
 
@@ -182,8 +192,13 @@ export default function PacienteDetailPage() {
     setAlergiaAEliminar(null);
     try {
       const res = await fetch(`/api/pacientes/${params.id}/alergias/${alergiaAEliminar.id}`, { method: "DELETE" });
-      if (res.ok) fetchPaciente();
-    } catch (err) { console.error(err); }
+      if (res.ok) {
+        toast("success", "Alergia eliminada");
+        fetchPaciente();
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo eliminar la alergia"));
+      }
+    } catch (err) { console.error(err); toast("error", "Error de conexión al eliminar la alergia"); }
   };
 
   const openEditAlergia = (a: Alergia) => {

@@ -1,5 +1,8 @@
 "use client";
 
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {ArrowLeft, Plus, AlertTriangle} from "lucide-react";
@@ -66,14 +69,22 @@ export default function PrescripcionesPage() {
   const [saving, setSaving] = useState(false);
   const [alerta, setAlerta] = useState<{ droga: string; fechaAlta: string } | null>(null);
   const [batchError, setBatchError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchPrescripciones = async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/historia-clinica/${params.internacionId}/prescripciones`);
-      if (res.ok) setPrescripciones(await res.json());
+      if (res.ok) {
+        setPrescripciones(await res.json());
+        setLoadError(null);
+      } else {
+        setLoadError(await apiErrorMessage(res, "No se pudieron cargar las prescripciones"));
+      }
     } catch (err) {
       console.error(err);
+      setLoadError("Error de red al cargar las prescripciones");
     } finally {
       setLoading(false);
     }
@@ -103,6 +114,7 @@ export default function PrescripcionesPage() {
           items?: { ok: boolean; nombre: string; error?: string }[];
         };
         if (data.ok) {
+          toast("success", "Prescripción guardada correctamente");
           setBatchError(null);
           setModalOpen(false);
           setForm(initialForm);
@@ -111,10 +123,15 @@ export default function PrescripcionesPage() {
           const fallidos = data.items?.filter((i) => !i.ok) || [];
           const mensajes = fallidos.map((i) => `${i.nombre}: ${i.error}`).join("\n");
           setBatchError(`Algunos ítems no se guardaron: ${mensajes}`);
+          toast("error", `Prescripción no guardada: ${mensajes}`);
+          fetchPrescripciones();
         }
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo guardar la prescripción"));
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de conexión al guardar la prescripción");
     } finally {
       setSaving(false);
     }
@@ -139,9 +156,12 @@ export default function PrescripcionesPage() {
     if (res.ok) {
       const data = await res.json();
       fetchPrescripciones();
+      if (data.ok) toast("success", `${items.length} prescripción(es) guardada(s)`);
+      else toast("warning", "Algunas prescripciones no se guardaron: revisá el detalle");
       return data;
     }
-    const e = await res.json();
+    const e = await res.json().catch(() => ({}));
+    toast("error", e.error || "No se pudieron guardar las prescripciones");
     if (res.status === 409) {
       setAlerta({ droga: e.alergia?.sustancia || "", fechaAlta: formatDateTime(e.alergia?.createdAt || new Date().toISOString()) });
     }
@@ -166,6 +186,8 @@ export default function PrescripcionesPage() {
 
       {loading ? (
         <p className="text-muted text-sm">Cargando prescripciones...</p>
+      ) : loadError ? (
+        <p className="text-error text-sm">{loadError}</p>
       ) : prescripciones.length === 0 ? (
         <p className="text-muted text-sm">Sin prescripciones registradas.</p>
       ) : (

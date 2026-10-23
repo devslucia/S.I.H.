@@ -1,5 +1,7 @@
 "use client";
 
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, User, Clock } from "lucide-react";
@@ -169,7 +171,7 @@ export default function EnfermeriaPage() {
         setControles((prev) => [saved, ...prev]);
         fetchControles();
       } else {
-        toast("error", "No se pudo guardar el control");
+        toast("error", await apiErrorMessage(res, "No se pudo guardar el control"));
       }
     } catch (err) {
       console.error(err);

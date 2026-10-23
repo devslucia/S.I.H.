@@ -84,3 +84,75 @@ export async function GET(req: NextRequest) {
   });
   return NextResponse.json(items);
 }
+
+/**
+ * Movimiento manual de stock (modal "Movimiento" de /farmacia).
+ * Restaurado: se había eliminado por error en 18c5f7a y el modal fallaba con 405.
+ * INGRESO/EGRESO suman/restan; AJUSTE fija el stock al valor indicado.
+ */
+export async function POST(req: NextRequest) {
+  const { session, error } = await requireRole("ADMIN", "FARMACIA");
+  if (error) return error;
+
+  const body = await req.json().catch(() => null);
+  const stockItemId = typeof body?.stockItemId === "string" ? body.stockItemId : "";
+  const tipo = body?.tipo as string;
+  const cantNum = Number(body?.cantidad);
+  const motivo = typeof body?.motivo === "string" && body.motivo.trim() ? body.motivo.trim() : null;
+
+  if (!stockItemId) {
+    return NextResponse.json({ error: "Seleccioná un ítem de stock" }, { status: 400 });
+  }
+  if (!["INGRESO", "EGRESO", "AJUSTE"].includes(tipo)) {
+    return NextResponse.json({ error: "Tipo de movimiento inválido" }, { status: 400 });
+  }
+  if (!Number.isFinite(cantNum) || (tipo === "AJUSTE" ? cantNum < 0 : cantNum <= 0)) {
+    return NextResponse.json(
+      { error: tipo === "AJUSTE" ? "El stock no puede quedar negativo" : "La cantidad debe ser mayor a 0" },
+      { status: 400 }
+    );
+  }
+
+  const item = await prisma.stockItem.findUnique({ where: { id: stockItemId }, select: { id: true, nombre: true } });
+  if (!item) {
+    return NextResponse.json({ error: "Ítem de stock no encontrado" }, { status: 404 });
+  }
+
+  try {
+    const actualizado = await prisma.$transaction(async (tx) => {
+      if (tipo === "INGRESO") {
+        await tx.stockItem.update({ where: { id: stockItemId }, data: { stockActual: { increment: cantNum } } });
+      } else if (tipo === "EGRESO") {
+        // Atómico: solo descuenta si alcanza (evita stock negativo con egresos concurrentes)
+        const res = await tx.stockItem.updateMany({
+          where: { id: stockItemId, stockActual: { gte: cantNum } },
+          data: { stockActual: { decrement: cantNum } },
+        });
+        if (res.count === 0) throw new Error(`Stock insuficiente para ${item.nombre}`);
+      } else {
+        await tx.stockItem.update({ where: { id: stockItemId }, data: { stockActual: cantNum } });
+      }
+
+      await tx.movimientoStock.create({
+        data: {
+          stockItemId,
+          tipo: tipo as "INGRESO" | "EGRESO" | "AJUSTE",
+          cantidad: cantNum,
+          motivo: motivo ?? `Movimiento manual (${tipo.toLowerCase()})`,
+          usuarioId: session.user.id,
+        },
+      });
+
+      return tx.stockItem.findUnique({ where: { id: stockItemId } });
+    });
+
+    return NextResponse.json(actualizado, { status: 201 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (msg.startsWith("Stock insuficiente")) {
+      return NextResponse.json({ error: msg }, { status: 409 });
+    }
+    console.error("Error en POST /api/farmacia/stock:", e);
+    return NextResponse.json({ error: "Error interno al registrar el movimiento" }, { status: 500 });
+  }
+}

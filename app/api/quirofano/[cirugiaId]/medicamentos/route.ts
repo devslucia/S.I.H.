@@ -91,7 +91,7 @@ async function processOneItem(
 }
 
 export async function POST(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const { session, error } = await requireRole("ADMIN", "ENFERMERO", "INSTRUMENTADOR");
+  const { session, error } = await requireRole("ADMIN", "MEDICO", "ENFERMERO", "INSTRUMENTADOR");
   if (error) return error;
 
   if (session.user.rol !== "ADMIN") {

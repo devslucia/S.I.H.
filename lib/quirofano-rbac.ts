@@ -33,6 +33,10 @@ export function getEffectiveRole(
   if (cirugia.anestesiologoId === userId) return "ANESTESIOLOGO";
   if (cirugia.instrumentadorId === userId) return "INSTRUMENTADOR";
   if (cirugia.circulanteId === userId) return "CIRCULANTE";
+  // Puesto vacante: el instrumentador / anestesiólogo de turno puede tomar la cirugía
+  // (queda asignado al guardar; ver PATCH del libro).
+  if (globalRole === "INSTRUMENTADOR" && !cirugia.instrumentadorId) return "INSTRUMENTADOR";
+  if (globalRole === "ANESTESIOLOGO" && !cirugia.anestesiologoId) return "ANESTESIOLOGO";
   return "NINGUNO";
 }
 
@@ -125,33 +129,98 @@ export function canEditField(role: EffectiveRole, field: string): boolean {
 export function validatePatchBody(
   body: Record<string, unknown>,
   role: EffectiveRole,
-  _cirugia: CirugiaAsignacion
-): { allowedBody: Record<string, unknown>; rejected?: { status: 403; fields: string[] } } {
+  current: CirugiaAsignacion & Record<string, unknown>
+): {
+  allowedBody: Record<string, unknown>;
+  ignored: string[];
+  rejected?: { status: 403; fields: string[] };
+} {
   const allowedBody: Record<string, unknown> = {};
   const rejectedFields: string[] = [];
+  const ignored: string[] = [];
 
   // Campos estrictos de Parte Quirúrgico — solo MEDICO o ADMIN
   const parteQuirFields = ["hallazgos", "evolucionPostInt", "indicacionesPostoperatorias"];
 
   for (const [key, value] of Object.entries(body)) {
-    // Validación estricta: Parte Quirúrgico (ADMIN siempre puede editar todo)
+    const sinCambios = key in current && sameValue(current[key], value);
+
+    // Validación estricta: Parte Quirúrgico (ADMIN siempre puede editar todo).
+    // Solo se rechaza si el valor efectivamente cambia: el formulario del libro
+    // reenvía estos campos sin tocar y eso no debe bloquear el guardado del resto.
     if (parteQuirFields.includes(key) && role !== "MEDICO" && role !== "ADMIN") {
-      rejectedFields.push(key);
+      if (!sinCambios) rejectedFields.push(key);
       continue;
     }
 
-    // Para campos del libro principal, verificar permisos por rol
     if (canEditField(role, key)) {
       allowedBody[key] = value;
+    } else if (!sinCambios && FIELD_LABELS[key]) {
+      // Campo conocido que este rol no puede editar: se informa (no se guarda en silencio).
+      ignored.push(key);
     }
-    // Campos no reconocidos se ignoran silenciosamente
   }
 
   if (rejectedFields.length > 0) {
-    return { allowedBody, rejected: { status: 403, fields: rejectedFields } };
+    return { allowedBody, ignored, rejected: { status: 403, fields: rejectedFields } };
   }
 
-  return { allowedBody };
+  return { allowedBody, ignored };
+}
+
+function sameValue(a: unknown, b: unknown): boolean {
+  const norm = (v: unknown) => (v === undefined || v === "" ? null : v);
+  return JSON.stringify(norm(a)) === JSON.stringify(norm(b));
+}
+
+/** Etiquetas legibles para informar campos no editables por el rol. */
+export const FIELD_LABELS: Record<string, string> = {
+  quirofanoId: "quirófano", fechaProgramada: "fecha programada", horaProgramada: "hora programada",
+  tipo: "tipo de cirugía", cirujanoId: "cirujano", ayudante1Id: "ayudante 1", ayudante2Id: "ayudante 2",
+  anestesiologoId: "anestesiólogo", instrumentadorId: "instrumentador", circulanteId: "circulante",
+  diagnosticoPreop: "diagnóstico preoperatorio", diagnosticoPostop: "diagnóstico postoperatorio",
+  procedimiento: "procedimiento", intervencionesAgregadas: "intervenciones agregadas",
+  hallazgos: "hallazgos", evolucionPostInt: "evolución postoperatoria",
+  indicacionesPostoperatorias: "indicaciones postoperatorias",
+  horaInicio: "hora de inicio", horaFin: "hora de fin", scoreASA: "ASA",
+  signosVitalesIntraop: "signos vitales intraoperatorios", observacionesAnestesia: "observaciones de anestesia",
+  balanceIngresos: "balance de ingresos", balanceEgresos: "balance de egresos",
+};
+
+// ──────────────────────────────────────────────────────────────
+// Transiciones de estado de la cirugía
+// ──────────────────────────────────────────────────────────────
+
+/**
+ * PROGRAMADA → EN_CURSO: cualquier integrante asignado (o ADMIN).
+ * EN_CURSO → COMPLETADA: cirujano/ayudante o ADMIN.
+ * PROGRAMADA/EN_CURSO → CANCELADA: cirujano/ayudante o ADMIN.
+ * REPROGRAMADA: solo ADMIN (vía reprogramaciones).
+ * Devuelve un mensaje de error en español, o null si la transición es válida.
+ */
+export function validarTransicionEstado(
+  role: EffectiveRole,
+  actual: string,
+  nuevo: string
+): string | null {
+  if (actual === nuevo) return null;
+  if (role === "ADMIN") return null;
+  if (role === "NINGUNO") return "No está asignado a esta cirugía";
+  if (nuevo === "EN_CURSO") {
+    // REPROGRAMADA (legado) se trata como programada
+    return ["PROGRAMADA", "REPROGRAMADA"].includes(actual) ? null : "Solo se puede iniciar una cirugía programada";
+  }
+  if (nuevo === "COMPLETADA") {
+    if (role !== "MEDICO") return "Solo el equipo quirúrgico (cirujano/ayudante) puede cerrar la cirugía";
+    return actual === "EN_CURSO" ? null : "La cirugía debe estar en curso para cerrarla";
+  }
+  if (nuevo === "CANCELADA") {
+    if (role !== "MEDICO") return "Solo el equipo quirúrgico (cirujano/ayudante) puede cancelar la cirugía";
+    return ["PROGRAMADA", "REPROGRAMADA", "EN_CURSO"].includes(actual) ? null : "La cirugía ya no se puede cancelar";
+  }
+  if (nuevo === "REPROGRAMADA") return "Solo administración puede reprogramar cirugías";
+  if (nuevo === "PROGRAMADA") return "No se puede volver la cirugía a programada";
+  return "Estado de cirugía inválido";
 }
 
 // ──────────────────────────────────────────────────────────────

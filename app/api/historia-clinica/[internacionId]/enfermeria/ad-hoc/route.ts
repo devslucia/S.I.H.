@@ -1,10 +1,11 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
+import { internacionAccessError } from "@/lib/internaciones-visibility";
 import { descontarStock, type Tx } from "@/lib/utils/stock";
 import { generarCargo } from "@/lib/utils/facturacion";
 import { verificarAlergia } from "@/lib/utils/alertas-alergia";
 import { NextRequest, NextResponse } from "next/server";
+import { errorMessage } from "@/lib/errors";
 
 const ADHOC_READ_ROLES = ["ADMIN", "ENFERMERO", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
 const ADHOC_WRITE_ROLES = ["ADMIN", "ENFERMERO", "MEDICO", "ANESTESIOLOGO"];
@@ -22,9 +23,8 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
   const { session, error } = await requireRole(...ADHOC_READ_ROLES);
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
-    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
-  }
+  const accesoError = await internacionAccessError(params.internacionId, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
 
   const adHocAplicaciones = await prisma.aplicacionMedicamento.findMany({
     where: {
@@ -103,11 +103,13 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
   const { session, error } = await requireRole(...ADHOC_WRITE_ROLES);
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
-    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
-  }
+  const accesoError = await internacionAccessError(params.internacionId, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Cuerpo de la solicitud inválido" }, { status: 400 });
+  }
   const items = Array.isArray(body.items) ? body.items : [body];
 
   if (items.length === 0) {
@@ -166,7 +168,9 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
       results.push(result);
     } catch (e: unknown) {
       console.error("Error en ítem ad-hoc:", e);
-      results.push({ ok: false, nombre: item.nombre || "desconocido", error: "Error interno" });
+      // Errores de negocio (ej. "Stock insuficiente para X") se muestran tal cual
+      const msg = errorMessage(e);
+      results.push({ ok: false, nombre: item.nombre || "desconocido", error: msg?.startsWith("Stock insuficiente") ? msg : "Error interno al registrar" });
     }
   }
 

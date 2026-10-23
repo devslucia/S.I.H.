@@ -1,5 +1,8 @@
 "use client";
 
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle, Printer, ClipboardCheck } from "lucide-react";
@@ -30,6 +33,7 @@ const estadoBadges: Record<string, { tone: "success" | "warning" | "danger" | "i
 };
 
 export default function ConsultaPage() {
+  const { toast } = useToast();
   const params = useParams();
   const router = useRouter();
   const turnoId = params.turnoId as string;
@@ -63,9 +67,13 @@ export default function ConsultaPage() {
       });
       if (res.ok) {
         setTurno((prev) => (prev ? { ...prev, estado: "COMPLETADO" } : prev));
+        toast("success", "Consulta finalizada");
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo finalizar la consulta"));
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de conexión al finalizar la consulta");
     } finally {
       setFinalizing(false);
     }

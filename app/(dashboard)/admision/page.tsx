@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/api-errors";
 import Link from "next/link";
 import { Activity, Clock, ChevronRight, Plus, AlertTriangle } from "lucide-react";
 
@@ -330,20 +331,16 @@ export default function AdmisionPage() {
         setNewPatientForm(initialNewPatientForm);
         fetchPacientes();
         fetchLookups();
-      } else if (res.status === 400) {
-        const data = await res.json();
-        setError(data.error || "Error al crear admisión");
-        setCuilError(data.error || "CUIL inválido (formato o dígito verificador incorrecto)");
-        toast("error", data.error || "Error al crear la admisión");
-      } else if (res.status === 401 || res.status === 403) {
-        toast("error", "Sesión expirada o sin permisos. Vuelva a iniciar sesión.");
-        setError("Sesión expirada o sin permisos");
-        // Redirigir al login después de un tiempo
-        setTimeout(() => router.push("/login"), 5000);
+      } else if (res.status === 401) {
+        toast("error", "Tu sesión expiró. Volvé a iniciar sesión.");
+        setError("Sesión expirada");
+        setTimeout(() => router.push("/login"), 3000);
       } else {
-        const data = await res.json();
-        setError(data.error || "Error al crear admisión");
-        toast("error", data.error || "Error desconocido al crear admisión");
+        const msg = await apiErrorMessage(res, "No se pudo crear la admisión");
+        setError(msg);
+        // El error solo se marca en el campo CUIL si realmente es del CUIL
+        if (/cuil/i.test(msg)) setCuilError(msg);
+        toast("error", msg);
       }
     } catch (err: any) {
       toast("error", "Error de conexión. Verifique su sesión e intente nuevamente.");
@@ -376,6 +373,7 @@ export default function AdmisionPage() {
         body: JSON.stringify(body),
       });
       if (res.ok) {
+        toast("success", "Internación creada correctamente");
         const fullRes = await fetch(`/api/pacientes/${selectedPaciente.id}`);
         if (fullRes.ok) {
           const full = await fullRes.json();
@@ -384,11 +382,13 @@ export default function AdmisionPage() {
         setInternacionForm(initialInternacionForm);
         fetchLookups();
       } else {
-        const data = await res.json();
-        setError(data.error || "Error al crear internación");
+        const msg = await apiErrorMessage(res, "No se pudo crear la internación");
+        setError(msg);
+        toast("error", msg);
       }
     } catch (_err) {
       setError("Error de conexión");
+      toast("error", "Error de conexión al crear la internación");
     } finally {
       setSaving(false);
     }

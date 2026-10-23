@@ -5,7 +5,8 @@ import { getVisibleInternacionesWhere } from "@/lib/internaciones-visibility";
 import { createInternacionSchema } from "@/lib/validations/internacion.schema";
 import { NextRequest, NextResponse } from "next/server";
 import { formatZodError } from "@/lib/validations/format-zod-error";
-import { errorMessage } from "@/lib/errors";
+import { errorMessage, prismaErrorCode } from "@/lib/errors";
+import { blankToNull } from "@/lib/validations/sanitize";
 import { Prisma, type EstadoInternacion } from "@prisma/client";
 import { registrarEpisodioGuardiaDesdeAdmision } from "@/lib/guardia";
 
@@ -53,8 +54,8 @@ export async function POST(req: NextRequest) {
   const { session, error } = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
-  const body = await req.json();
-  const parsed = createInternacionSchema.safeParse(body);
+  const body = await req.json().catch(() => null);
+  const parsed = createInternacionSchema.safeParse(blankToNull(body));
   if (!parsed.success) {
     return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
   }
@@ -172,8 +173,11 @@ export async function POST(req: NextRequest) {
       const estado = msg.split(":")[1] as string;
       return NextResponse.json({ error: `La cama no está disponible (estado: ${estado})` }, { status: 409 });
     }
+    if (prismaErrorCode(e) === "P2003") {
+      return NextResponse.json({ error: "Paciente, médico tratante u obra social inexistente" }, { status: 400 });
+    }
     console.error("Error interno en POST /api/internaciones:", e);
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+    return NextResponse.json({ error: "Error interno al crear la internación. Reintentá." }, { status: 500 });
   }
 
   const internacion = await prisma.internacion.findUnique({

@@ -8,6 +8,7 @@ import {ArrowLeft, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Printer,
 
 
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
@@ -130,6 +131,11 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const { data: session } = useSession();
+  const rolSesion = session?.user?.rol;
+  // Solo anestesiología (y ADMIN) edita; el resto de los roles lo ve en modo lectura.
+  const puedeEditar = rolSesion === "ANESTESIOLOGO" || rolSesion === "ADMIN";
   const [secciones, setSecciones] = useState<Record<string, boolean>>({
     identificacion: true,
     preanesia: true,
@@ -206,7 +212,12 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/historia-clinica/${internacionId}/protocolo-anestesia`);
+        const qs = cirugiaId ? `?cirugiaId=${encodeURIComponent(cirugiaId)}` : "";
+        const res = await fetch(`/api/historia-clinica/${internacionId}/protocolo-anestesia${qs}`);
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => null);
+          setLoadError(errBody?.error ?? `No se pudo cargar el protocolo (error ${res.status})`);
+        }
         if (res.ok) {
           const data = await res.json();
           setPacienteData(data.paciente);
@@ -350,17 +361,19 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
         }
       } catch (err) {
         console.error(err);
+        setLoadError("Error de red al cargar el protocolo. Verificá la conexión y reintentá.");
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [internacionId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [internacionId, cirugiaId]);
 
   // Auto-guardado con debounce: solo con cambios reales del usuario (isDirty),
   // sin guardado en el mount ni reintentos en ráfaga (fingerprint estable).
   useEffect(() => {
-    if (loading || firmado || !form.formState.isDirty) return;
+    if (loading || firmado || !puedeEditar || !form.formState.isDirty) return;
     const fingerprint = JSON.stringify({ ...pickEditables(debouncedValues), signosVitales: signosVitalesRef.current });
     if (fingerprint === debouncedFingerprint.current) return;
     if (autoSaveRef.current || savingSignosRef.current) return;
@@ -388,12 +401,14 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
           if (creado?.id && !protocoloId) setProtocoloId(creado.id);
           setSaved(true);
           setTimeout(() => setSaved(false), 3000);
-        } else if (res.status === 403) {
-          setFirmado(true);
         } else {
           const errBody = await res.json().catch(() => null);
-          setSaveError(true);
-          toast("error", errBody?.error ?? `Error al guardar (${res.status})`);
+          if (res.status === 403 && /firmad/i.test(errBody?.error ?? "")) {
+            setFirmado(true);
+          } else {
+            setSaveError(true);
+            toast("error", errBody?.error ?? `Error al guardar (${res.status})`);
+          }
         }
       } catch {
         setSaveError(true);
@@ -404,7 +419,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
       }
     };
     save();
-  }, [debouncedValues, loading, firmado, protocoloId, internacionId, signosVitales, cirugiaId, form, toast]);
+  }, [debouncedValues, loading, firmado, puedeEditar, protocoloId, internacionId, signosVitales, cirugiaId, form, toast]);
 
   // Toggle sección
   const toggleSeccion = (key: string) => {
@@ -414,7 +429,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
   // Persistencia inmediata de signos vitales intraoperatorios
   const persistSignos = useCallback(
     (registros: SignoVitalRegistro[], minuto: number) => {
-      if (firmado) return;
+      if (firmado || !puedeEditar) return;
       if (savingSignosRef.current) {
         pendingSignosRef.current = registros;
         return;
@@ -452,12 +467,14 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                 ? `Signos vitales intraoperatorios guardados (${hora})`
                 : "Signos vitales intraoperatorios guardados"
             );
-          } else if (res.status === 403) {
-            setFirmado(true);
           } else {
             const errBody = await res.json().catch(() => null);
-            setSaveError(true);
-            toast("error", errBody?.error ?? `Error al guardar signos (${res.status})`);
+            if (res.status === 403 && /firmad/i.test(errBody?.error ?? "")) {
+              setFirmado(true);
+            } else {
+              setSaveError(true);
+              toast("error", errBody?.error ?? `Error al guardar signos (${res.status})`);
+            }
           }
         } catch {
           setSaveError(true);
@@ -473,7 +490,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
       };
       persist();
     },
-    [firmado, form, internacionId, cirugiaId, horaInicio, toast]
+    [firmado, puedeEditar, form, internacionId, cirugiaId, horaInicio, toast]
   );
 
   // Guardar signos vitales
@@ -543,9 +560,14 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
         setFirmado(true);
         setFirmadoData({ nombre: firmarNombre, fecha: new Date().toISOString() });
         setShowFirmarModal(false);
+        toast("success", "Protocolo de anestesia firmado");
+      } else {
+        const errBody = await res.json().catch(() => null);
+        toast("error", errBody?.error ?? `No se pudo firmar el protocolo (${res.status})`);
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de red al firmar el protocolo");
     }
   };
 
@@ -556,6 +578,15 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
   if (loading) {
     return <p className="text-muted text-sm">Cargando protocolo de anestesia...</p>;
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex items-start gap-2 text-[13px] text-error border border-error/30 bg-error/10 rounded-lg px-4 py-3">
+        <AlertCircle size={15} className="mt-0.5 shrink-0" />
+        <span>{loadError}</span>
+      </div>
+    );
   }
 
   const toggleEgreso = (val: string) => {
@@ -586,6 +617,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
           <h2 className="text-xl font-medium text-text">Protocolo de Anestesia</h2>
         </div>
         <div className="flex items-center gap-3">
+          {!puedeEditar && !firmado && <Badge variant="default">Solo lectura</Badge>}
           {saving && <span className="text-xs text-muted flex items-center gap-1"><Clock size={12} /> Guardando…</span>}
           {saved && <span className="text-xs text-brand flex items-center gap-1"><CheckCircle size={12} /> Guardado</span>}
           {saveError && <span className="text-xs text-error flex items-center gap-1"><AlertCircle size={12} /> Error al guardar</span>}

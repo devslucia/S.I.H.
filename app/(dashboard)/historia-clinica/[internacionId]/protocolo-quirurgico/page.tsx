@@ -60,14 +60,21 @@ export default function ProtocoloQuirurgicoPage() {
   const router = useRouter();
   const [cirugia, setCirugia] = useState<CirugiaProtocolo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await fetch(`/api/historia-clinica/${params.internacionId}/protocolo-quirurgico`);
-        if (res.ok) setCirugia(await res.json());
+        if (res.ok) {
+          setCirugia(await res.json());
+        } else {
+          const body = await res.json().catch(() => null);
+          setLoadError(body?.error ?? `No se pudo cargar el protocolo quirúrgico (error ${res.status})`);
+        }
       } catch (err) {
         console.error(err);
+        setLoadError("Error de red al cargar el protocolo quirúrgico");
       } finally {
         setLoading(false);
       }
@@ -76,7 +83,8 @@ export default function ProtocoloQuirurgicoPage() {
   }, [params.internacionId]);
 
   if (loading) return <p className="text-muted text-sm">Cargando protocolo quirúrgico...</p>;
-  if (!cirugia) return <p className="text-muted text-sm">No se encontró cirugía para esta internación.</p>;
+  if (loadError) return <p className="text-error text-sm">{loadError}</p>;
+  if (!cirugia) return <p className="text-muted text-sm">Esta internación todavía no tiene cirugías programadas.</p>;
 
   return (
     <div className="space-y-6">
@@ -85,6 +93,12 @@ export default function ProtocoloQuirurgicoPage() {
           <ArrowLeft size={20} />
         </button>
         <h2 className="text-lg font-display font-semibold text-text">Protocolo Quirúrgico</h2>
+        <button
+          onClick={() => router.push(`/quirofano/${cirugia.id}/libro`)}
+          className="btn-secondary ml-auto text-[13px]"
+        >
+          Abrir libro de quirófano
+        </button>
       </div>
 
       <div className="card p-5">

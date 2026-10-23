@@ -16,11 +16,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.email || !credentials?.password) return null;
 
         try {
-          const user = await prisma.usuario.findUnique({
-            where: { email: credentials.email as string },
+          // Case-insensitive: "Juan@..." y "juan@..." son el mismo usuario
+          const user = await prisma.usuario.findFirst({
+            where: { email: { equals: (credentials.email as string).trim(), mode: "insensitive" } },
           });
 
-          if (!user || !user.password) return null;
+          // Usuarios dados de baja (activo=false) no pueden iniciar sesión
+          if (!user || !user.password || !user.activo) return null;
 
           const passwordMatch = await bcrypt.compare(
             credentials.password as string,
