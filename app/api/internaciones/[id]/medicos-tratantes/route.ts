@@ -12,10 +12,11 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { session, error } = await requireRole("ADMIN", "MEDICO");
+  // ADMISION asigna tratantes al ingresar; MEDICO tratante suma colegas
+  const { session, error } = await requireRole("ADMIN", "ADMISION", "MEDICO");
   if (error) return error;
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
   const parsed = addMedicoSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(

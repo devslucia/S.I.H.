@@ -13,6 +13,12 @@ import { Modal } from "@/components/ui/Modal";
 import { DateInput } from "@/components/ui/DateInput";
 import { Usuario, generarHTMLCarpeta } from "@/lib/carpeta-html";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
+
+function hoyLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 interface Quirofano {
   id: string;
@@ -98,7 +104,7 @@ export default function HistoriaClinicaPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [quirofanos, setQuirofanos] = useState<Quirofano[]>([]);
   const [cirugiaForm, setCirugiaForm] = useState({
-    fechaProgramada: new Date().toISOString().split("T")[0],
+    fechaProgramada: hoyLocal(),
     horaProgramada: "08:00",
     quirofanoId: "",
     tipo: "PROGRAMADA" as "PROGRAMADA" | "URGENCIA" | "EMERGENCIA",
@@ -114,6 +120,7 @@ export default function HistoriaClinicaPage() {
   const [altaErr, setAltaErr] = useState<string | null>(null);
   const [savingAlta, setSavingAlta] = useState(false);
   const [rolUsuario, setRolUsuario] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Obtener rol del usuario de la sesión
@@ -138,13 +145,18 @@ export default function HistoriaClinicaPage() {
       const res = await fetch(`/api/internaciones/${params.internacionId}/${tipo}`, { method: "POST" });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setAltaErr((d as { error?: string }).error ?? "Error al registrar el alta");
+        const msg = (d as { error?: string }).error ?? "Error al registrar el alta";
+        setAltaErr(msg);
+        toast("error", msg);
       } else {
-        setAltaMsg((d as { message?: string }).message ?? "Alta registrada");
+        const msg = (d as { message?: string }).message ?? "Alta registrada";
+        setAltaMsg(msg);
+        toast("success", msg);
         await recargarInternacion();
       }
     } catch {
       setAltaErr("Error de conexión");
+      toast("error", "Error de conexión al registrar el alta");
     } finally {
       setSavingAlta(false);
     }
@@ -161,7 +173,17 @@ export default function HistoriaClinicaPage() {
       try {
         const res = await fetch(`/api/internaciones/${params.internacionId}`);
         if (!res.ok) {
-          if (!cancelled) setError(`Error ${res.status}: ${res.statusText}`);
+          const body = await res.json().catch(() => null);
+          if (!cancelled) {
+            setError(
+              body?.error ??
+              (res.status === 403
+                ? "No tenés acceso a esta internación."
+                : res.status === 404
+                  ? "La internación no existe."
+                  : `No se pudo cargar la historia clínica (error ${res.status}).`)
+            );
+          }
           return;
         }
 
@@ -202,11 +224,16 @@ export default function HistoriaClinicaPage() {
         }),
       });
       if (res.ok) {
+        toast("success", "Cirugía programada correctamente");
         setShowCirugiaModal(false);
         router.push("/quirofano");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast("error", err.error || "No se pudo programar la cirugía");
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de red al programar la cirugía");
     } finally {
       setSavingCirugia(false);
     }
@@ -216,7 +243,11 @@ export default function HistoriaClinicaPage() {
     setPrintError(null);
     try {
       const res = await fetch(`/api/internaciones/${params.internacionId}/carpeta-completa`);
-      if (!res.ok) { setPrintError(`Error ${res.status} al generar la carpeta`); return; }
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setPrintError(body?.error ?? `No se pudo generar la carpeta (error ${res.status})`);
+        return;
+      }
       const data = await res.json();
       const html = generarHTMLCarpeta(data, usuarios);
       const ventana = window.open('', '_blank', 'width=800,height=600');
@@ -316,9 +347,11 @@ export default function HistoriaClinicaPage() {
           <button onClick={imprimirCarpeta} className="btn-primary inline-flex items-center gap-2">
             <Printer size={15} /> Imprimir carpeta
           </button>
-          <button onClick={() => setShowCirugiaModal(true)} className="btn-secondary inline-flex items-center gap-2">
-            <CalendarPlus size={15} /> Programar cirugía
-          </button>
+          {(rolUsuario === "MEDICO" || rolUsuario === "ADMIN") && (
+            <button onClick={() => setShowCirugiaModal(true)} className="btn-secondary inline-flex items-center gap-2">
+              <CalendarPlus size={15} /> Programar cirugía
+            </button>
+          )}
           <button
             onClick={() => router.push(`/panel-medico/${params.internacionId}`)}
             className="btn-secondary inline-flex items-center gap-2"

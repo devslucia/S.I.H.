@@ -1,5 +1,7 @@
 "use client";
 
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useState, useEffect } from "react";
 import { Save, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -104,12 +106,14 @@ export function AnamnesisForm({ internacionId, apiBase, onSaved }: AnamnesisForm
         body: JSON.stringify(data),
       });
       if (res.ok) {
+        const guardada = await res.json().catch(() => null);
+        if (guardada?.id) setData((prev) => ({ ...prev, id: guardada.id }));
         toast("success", "Anamnesis guardada correctamente");
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
         onSaved?.();
       } else {
-        toast("error", "No se pudo guardar la anamnesis");
+        toast("error", await apiErrorMessage(res, "No se pudo guardar la anamnesis"));
       }
     } catch (err) {
       toast("error", "Error de conexión al guardar");

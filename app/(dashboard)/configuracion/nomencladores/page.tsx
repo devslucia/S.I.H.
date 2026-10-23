@@ -1,5 +1,8 @@
 "use client";
 
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useState, useEffect, useCallback, Fragment } from "react";
 import {
   BookOpen,
@@ -117,6 +120,7 @@ const RUBROS_COPIA = [
 ] as const;
 
 export default function NomencladoresPage() {
+  const { toast } = useToast();
   const [tab, setTab] = useState<Tab>("nacional");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -338,7 +342,11 @@ export default function NomencladoresPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        toast("error", await apiErrorMessage(res, "No se pudo guardar el ítem"));
+        return;
+      }
+      toast("success", `Ítem ${item.codigo} guardado`);
       await cargarCopia(osSel, offsetCopia);
       setEdits((prev) => {
         const next = { ...prev };
@@ -360,7 +368,9 @@ export default function NomencladoresPage() {
   const toggleItemCopia = async (item: ItemCopia) => {
     setToggleId(item.id);
     try {
-      await fetch(`/api/nomenclador-obra-social/items/${item.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/nomenclador-obra-social/items/${item.id}`, { method: "DELETE" });
+      if (res.ok) toast("success", "Estado del ítem actualizado");
+      else toast("error", await apiErrorMessage(res, "No se pudo actualizar el ítem"));
       await cargarCopia(osSel, offsetCopia);
     } finally {
       setToggleId(null);

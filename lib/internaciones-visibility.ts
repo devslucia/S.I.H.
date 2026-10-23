@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // Solo ADMIN ve cualquier internación. El resto pasa por reglas de pertenencia.
@@ -10,14 +11,37 @@ export function getVisibleInternacionesWhere(userId: string, rol: string): Prism
     return {};
   }
 
+  // MEDICO: tratante, integrante del equipo quirúrgico (cirujano/ayudante) o
+  // interconsultor. Misma política que pacientes-access (getPacienteScopeWhere).
   if (rol === "MEDICO") {
-    return { medicosTratantesInternacion: { some: { medicoId: userId } } };
+    return {
+      OR: [
+        { medicosTratantesInternacion: { some: { medicoId: userId } } },
+        {
+          cirugias: {
+            some: { OR: [{ cirujanoId: userId }, { ayudante1Id: userId }, { ayudante2Id: userId }] },
+          },
+        },
+        {
+          episodio: {
+            interconsultas: {
+              some: { OR: [{ medicoSolicitanteId: userId }, { especialistaId: userId }] },
+            },
+          },
+        },
+      ],
+    };
   }
 
+  // ANESTESIOLOGO: sus cirugías, y también las que todavía no tienen anestesiólogo
+  // asignado (el de turno debe poder abrir preanestesia/protocolo y tomar la cirugía).
   if (rol === "ANESTESIOLOGO") {
     return {
       cirugias: {
-        some: { anestesiologoId: userId },
+        some: {
+          OR: [{ anestesiologoId: userId }, { anestesiologoId: null }],
+          estado: { notIn: ["CANCELADA", "REPROGRAMADA"] },
+        },
       },
     };
   }
@@ -25,7 +49,10 @@ export function getVisibleInternacionesWhere(userId: string, rol: string): Prism
   if (rol === "INSTRUMENTADOR") {
     return {
       cirugias: {
-        some: { instrumentadorId: userId },
+        some: {
+          OR: [{ instrumentadorId: userId }, { circulanteId: userId }, { instrumentadorId: null }],
+          estado: { notIn: ["CANCELADA"] },
+        },
       },
     };
   }
@@ -87,4 +114,30 @@ export async function isInternacionVisibleForUser(
 
   const count = await prisma.internacion.count({ where });
   return count > 0;
+}
+
+/**
+ * Guard de acceso a una internación para endpoints:
+ *  - no existe → 404
+ *  - existe pero el usuario no tiene vínculo → 403 (mensaje claro, no un 404 engañoso)
+ * Devuelve null si el acceso está permitido.
+ */
+export async function internacionAccessError(
+  internacionId: string,
+  userId: string,
+  rol: string
+): Promise<NextResponse | null> {
+  if (await isInternacionVisibleForUser(internacionId, userId, rol)) return null;
+
+  const existe = await prisma.internacion.count({ where: { id: internacionId } });
+  if (!existe) {
+    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+  }
+  return NextResponse.json(
+    {
+      error:
+        "No tenés acceso a esta internación. Pedí que te asignen como médico tratante o al equipo de la cirugía.",
+    },
+    { status: 403 }
+  );
 }

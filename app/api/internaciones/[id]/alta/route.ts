@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
+import { internacionAccessError } from "@/lib/internaciones-visibility";
 import { NextRequest, NextResponse } from "next/server";
 
 /** Alta MÉDICA: primer paso. Solo MEDICO o ADMIN.
@@ -11,9 +11,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { session, error } = await requireRole("ADMIN", "MEDICO");
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.id, session.user.id, session.user.rol))) {
-    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
-  }
+  const accesoError = await internacionAccessError(params.id, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
 
   const internacion = await prisma.internacion.findUnique({
     where: { id: params.id },

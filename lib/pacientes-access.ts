@@ -1,13 +1,18 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-const ESTADOS_TERMINALES = ["ALTA_MEDICA", "FACTURADA", "FALLECIDO"] as const;
+// Igual que internaciones-visibility (ENFERMERO): ALTA_MEDICA sigue visible para el alta de enfermería.
+const ESTADOS_TERMINALES = ["ALTA_ENFERMERIA", "ALTA_ADMINISTRATIVA", "FACTURADA", "FALLECIDO"] as const;
 
 // Roles con acceso administrativo amplio al padrón de pacientes.
 const ROLES_AMPLIOS = ["ADMIN", "ADMISION"] as const;
 
 // Roles que pueden escribir alergias (Atención médica).
 export const ALERGIAS_WRITE_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO"] as const;
+
+// Registrar una alergia es un dato de seguridad: también puede hacerlo Admisión (al ingreso)
+// y Enfermería. Editar/borrar queda reservado a ALERGIAS_WRITE_ROLES.
+export const ALERGIAS_CREATE_ROLES = [...ALERGIAS_WRITE_ROLES, "ADMISION", "ENFERMERO"] as const;
 
 /**
  * Scope de visibilidad de un paciente según el rol (misma política que
@@ -57,11 +62,33 @@ export function getPacienteScopeWhere(userId: string, rol: string): Prisma.Pacie
   }
 
   if (rol === "ANESTESIOLOGO") {
-    return { internaciones: { some: { cirugias: { some: { anestesiologoId: userId } } } } };
+    return {
+      internaciones: {
+        some: {
+          cirugias: {
+            some: {
+              OR: [{ anestesiologoId: userId }, { anestesiologoId: null }],
+              estado: { notIn: ["CANCELADA", "REPROGRAMADA"] },
+            },
+          },
+        },
+      },
+    };
   }
 
   if (rol === "INSTRUMENTADOR") {
-    return { internaciones: { some: { cirugias: { some: { instrumentadorId: userId } } } } };
+    return {
+      internaciones: {
+        some: {
+          cirugias: {
+            some: {
+              OR: [{ instrumentadorId: userId }, { circulanteId: userId }, { instrumentadorId: null }],
+              estado: { notIn: ["CANCELADA"] },
+            },
+          },
+        },
+      },
+    };
   }
 
   if (rol === "CIRCULANTE") {

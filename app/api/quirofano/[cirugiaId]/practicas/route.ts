@@ -20,7 +20,7 @@ async function checkAssignment(userId: string, cirugiaId: string) {
 }
 
 export async function POST(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const { session, error } = await requireRole("ADMIN", "ENFERMERO", "INSTRUMENTADOR");
+  const { session, error } = await requireRole("ADMIN", "MEDICO", "ENFERMERO", "INSTRUMENTADOR");
   if (error) return error;
 
   if (session.user.rol !== "ADMIN") {
@@ -28,12 +28,21 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
     if (denied) return denied;
   }
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body.practica !== "string" || !body.practica.trim()) {
+    return NextResponse.json({ error: "Indicá el código o nombre de la práctica" }, { status: 400 });
+  }
+  const fechaPractica = body.fecha && !Number.isNaN(new Date(body.fecha).getTime()) ? new Date(body.fecha) : new Date();
+
+  // La falta de configuración de facturación (galeno) no bloquea el registro clínico:
+  // el cargo se crea a $0 y se informa para que Facturación lo valorice.
+  let advertencia: string | null = null;
+
   const result = await prisma.$transaction(async (tx) => {
     const practica = await tx.practicaCirugia.create({
       data: {
         cirugiaId: params.cirugiaId,
-        fecha: new Date(body.fecha),
+        fecha: fechaPractica,
         hora: body.hora,
         practica: body.practica,
         laboratorio: body.laboratorio,
@@ -71,27 +80,23 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
         if (internacion?.obraSocialId) {
           const item = await resolverPractica(tx, codigo, internacion.obraSocialId);
           if (item) {
-            const fechaPrestacion = new Date(body.fecha);
-            const galeno = await getGalenoVigente(tx, internacion.obraSocialId, fechaPrestacion);
+            const galeno = await getGalenoVigente(tx, internacion.obraSocialId, fechaPractica);
             if (!galeno) {
-              return NextResponse.json(
-                {
-                  error: "Falta configurar galeno para esta obra social en la fecha de la práctica. Revisá Configuración → Galenos por obra social.",
-                },
-                { status: 400 }
-              );
+              advertencia =
+                "Práctica registrada, pero falta configurar el galeno de la obra social para esa fecha: el cargo quedó en $0 (Configuración → Galenos por obra social).";
+            } else {
+              const importes = calcularImportesNomenclador(item.unidades, galeno);
+              precioUnitario = importes.total;
+              total = precioUnitario;
+              Object.assign(desglose, {
+                nomencladorId: item.nomencladorId ?? undefined,
+                galenoQx: Number(galeno.galenoQx),
+                honorariosEspecialista: importes.honorariosEspecialista,
+                honorariosAyudantes: importes.honorariosAyudantes,
+                honorariosAnestesista: importes.honorariosAnestesista,
+                gastosPractica: importes.gastosPractica,
+              });
             }
-            const importes = calcularImportesNomenclador(item.unidades, galeno);
-            precioUnitario = importes.total;
-            total = precioUnitario;
-            Object.assign(desglose, {
-              nomencladorId: item.nomencladorId ?? undefined,
-              galenoQx: Number(galeno.galenoQx),
-              honorariosEspecialista: importes.honorariosEspecialista,
-              honorariosAyudantes: importes.honorariosAyudantes,
-              honorariosAnestesista: importes.honorariosAnestesista,
-              gastosPractica: importes.gastosPractica,
-            });
           }
         }
       }
@@ -112,11 +117,11 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
     return practica;
   });
 
-  return NextResponse.json(result, { status: 201 });
+  return NextResponse.json({ ...result, advertencia }, { status: 201 });
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const { session, error } = await requireRole("ADMIN", "ENFERMERO", "INSTRUMENTADOR");
+  const { session, error } = await requireRole("ADMIN", "MEDICO", "ENFERMERO", "INSTRUMENTADOR");
   if (error) return error;
 
   if (session.user.rol !== "ADMIN") {

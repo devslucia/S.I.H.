@@ -1,5 +1,7 @@
 "use client";
 
+import { useToast } from "@/components/ui/Toast";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { OpsStat } from "@/components/ui/OpsStat";
@@ -74,7 +76,17 @@ function formatEspera(min: number): string {
   return `${Math.floor(min / 60)}h ${min % 60}m`;
 }
 
+const ACCION_OK: Record<string, string> = {
+  actualizarPrioridad: "Prioridad actualizada",
+  tomarAtencion: "Atención iniciada",
+  reingresar: "Paciente reingresado a la espera",
+  anular: "Ingreso de guardia anulado",
+  egresar: "Egreso de guardia registrado",
+  editarDatos: "Ingreso de guardia actualizado",
+};
+
 export default function GuardiaPage() {
+  const { toast } = useToast();
   const [episodios, setEpisodios] = useState<GuardiaEpisodio[]>([]);
   const [totales, setTotales] = useState(0);
   const [porEstado, setPorEstado] = useState({ EN_ESPERA: 0, EN_ATENCION: 0, ATENDIDO: 0, ANULADO: 0 });
@@ -131,9 +143,18 @@ export default function GuardiaPage() {
         body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Error en la operación");
+      if (!res.ok) {
+        toast("error", data.error ?? "No se pudo completar la operación de guardia");
+        return null;
+      }
+      const accion = (body as { accion?: string })?.accion ?? "";
+      toast("success", ACCION_OK[accion] ?? "Guardia actualizada");
       await fetchEpisodios();
       return data;
+    } catch (err) {
+      console.error(err);
+      toast("error", "Error de conexión en guardia");
+      return null;
     } finally {
       setAccionando(null);
     }
@@ -153,9 +174,9 @@ export default function GuardiaPage() {
 
   const confirmarAnulacion = () => {
     if (!anular) return;
-    void patch(anular.id, { accion: "anular", motivo: anular.guardiaMeta.motivoAnulacion ?? "" }).then(() =>
-      setAnular(null)
-    );
+    void patch(anular.id, { accion: "anular", motivo: anular.guardiaMeta.motivoAnulacion ?? "" }).then((r) => {
+      if (r) setAnular(null);
+    });
   };
 
   return (
@@ -309,6 +330,7 @@ export default function GuardiaPage() {
             onClose={() => setEgresar(null)}
             onConfirm={async (body) => {
               const r = await patch(egresar.id, body);
+              if (!r) return; // error ya informado: el modal queda abierto para reintentar
               setEgresar(null);
               if (r && "sugerirInternacion" in r && r.sugerirInternacion) {
                 window.location.href = `/admision/${r.pacienteId}`;

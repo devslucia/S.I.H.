@@ -1,5 +1,7 @@
 "use client";
 
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Printer, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
@@ -235,7 +237,8 @@ export default function ImprimirCarpetaPage() {
         const res = await fetch(`/api/internaciones/${params.internacionId}/carpeta-completa`);
 
         if (!res.ok) {
-          if (!cancelled) setError(`Error ${res.status}: ${res.statusText}`);
+          const msg = await apiErrorMessage(res, "No se pudo cargar la carpeta");
+          if (!cancelled) setError(msg);
           return;
         }
 

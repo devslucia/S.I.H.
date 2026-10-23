@@ -67,7 +67,9 @@ export function TabParteQuirurgico({ data, formData, update, isReadOnly, effecti
       body: JSON.stringify(practicaForm),
     });
     if (res.ok) {
-      toast("success", "Práctica agregada");
+      const creada = await res.json().catch(() => ({}));
+      if (creada?.advertencia) toast("warning", creada.advertencia);
+      else toast("success", "Práctica agregada");
       setShowPracticaModal(false);
       setPracticaForm({ fecha: "", hora: "", practica: "", laboratorio: "", cargoPor: "", actoQuirurgico: "" });
       onRefresh();

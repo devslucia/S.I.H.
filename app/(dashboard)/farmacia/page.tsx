@@ -1,5 +1,8 @@
 "use client";
 
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useState, useEffect, useMemo, useRef } from "react";
 import { AlertTriangle, Plus, ArrowUpDown, Trash2, Search, Pencil, Upload, Power } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -212,6 +215,7 @@ function ItemFormFields({ form, onChange }: { form: FormState; onChange: (p: Par
 }
 
 export default function FarmaciaPage() {
+  const { toast } = useToast();
   const [stock, setStock] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [movementModal, setMovementModal] = useState(false);
@@ -350,11 +354,15 @@ export default function FarmaciaPage() {
         body: JSON.stringify({ stockItemId: selectedItem.id, ...movForm, cantidad: parseFloat(movForm.cantidad) }),
       });
       if (res.ok) {
+        toast("success", `Movimiento registrado: ${selectedItem.nombre}`);
         setMovementModal(false);
         fetchStock();
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo registrar el movimiento"));
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de conexión al registrar el movimiento");
     } finally {
       setSaving(false);
     }
@@ -371,12 +379,14 @@ export default function FarmaciaPage() {
         body: JSON.stringify(bodyDesdeForm(createForm)),
       });
       if (res.ok) {
+        toast("success", "Ítem de stock creado");
         setCreateModal(false);
         setCreateForm({ ...FORM_INICIAL });
         fetchStock();
       } else {
         const d = await res.json().catch(() => ({}));
         setFormError(d?.error || "Error al crear el ítem");
+        toast("error", d?.error || "Error al crear el ítem");
       }
     } catch (err) {
       console.error(err);
@@ -398,12 +408,14 @@ export default function FarmaciaPage() {
         body: JSON.stringify(bodyDesdeForm(editForm)),
       });
       if (res.ok) {
+        toast("success", "Ítem de stock actualizado");
         setEditModal(false);
         setEditItem(null);
         fetchStock();
       } else {
         const d = await res.json().catch(() => ({}));
         setFormError(d?.error || "Error al guardar el ítem");
+        toast("error", d?.error || "Error al guardar el ítem");
       }
     } catch (err) {
       console.error(err);
@@ -428,9 +440,15 @@ export default function FarmaciaPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ activo: true }),
       });
-      if (res.ok) fetchStock();
+      if (res.ok) {
+        toast("success", `${item.nombre} reactivado`);
+        fetchStock();
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo reactivar el ítem"));
+      }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de conexión");
     } finally {
       setSaving(false);
     }
@@ -447,11 +465,15 @@ export default function FarmaciaPage() {
         body: JSON.stringify({ activo: false }),
       });
       if (res.ok) {
+        toast("success", `${deleteItem.nombre} desactivado`);
         setDeleteItem(null);
         fetchStock();
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo desactivar el ítem"));
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de conexión");
     } finally {
       setSaving(false);
     }
@@ -468,11 +490,15 @@ export default function FarmaciaPage() {
         body: JSON.stringify({ ids: selectedIds, activo }),
       });
       if (res.ok) {
+        toast("success", `${selectedIds.length} ítem(s) ${activo ? "activados" : "desactivados"}`);
         setSelectedIds([]);
         fetchStock();
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo aplicar la acción masiva"));
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de conexión");
     } finally {
       setSaving(false);
     }

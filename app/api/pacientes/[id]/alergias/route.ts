@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatZodError } from "@/lib/validations/format-zod-error";
-import { canAccessPaciente, ALERGIAS_WRITE_ROLES } from "@/lib/pacientes-access";
+import { canAccessPaciente, ALERGIAS_CREATE_ROLES } from "@/lib/pacientes-access";
 
 const ROLES_LECTURA = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ADMISION"];
 
@@ -33,14 +33,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { session, error } = await requireRole(...ALERGIAS_WRITE_ROLES);
+  const { session, error } = await requireRole(...ALERGIAS_CREATE_ROLES);
   if (error) return error;
 
   if (!(await canAccessPaciente(session.user.id, session.user.rol, params.id))) {
     return NextResponse.json({ error: "Paciente no encontrado" }, { status: 404 });
   }
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
   const parsed = alergiaSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });

@@ -3,16 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatZodError } from "@/lib/validations/format-zod-error";
-import { errorMessage } from "@/lib/errors";
+import { errorMessage, prismaErrorCode } from "@/lib/errors";
+import { blankToNull } from "@/lib/validations/sanitize";
 import { assertObraSocialUsable } from "@/lib/obra-social";
 import { registrarEpisodioGuardiaDesdeAdmision } from "@/lib/guardia";
-import { validarCuil, fechaNacSchema } from "@/lib/validations/cuil";
+import { validarCuil, fechaNacSchema, formatCuil } from "@/lib/validations/cuil";
 
 const admitirSchema = z.object({
-  dni: z.string().min(7).max(11),
-  apellido: z.string().min(1),
-  nombre: z.string().min(1),
-  sexo: z.enum(["MASCULINO", "FEMENINO", "OTRO"]),
+  dni: z.string({ required_error: "El DNI es obligatorio", invalid_type_error: "El DNI es obligatorio" })
+    .transform((v) => v.replace(/[.\s]/g, ""))
+    .pipe(z.string().min(7, "El DNI debe tener al menos 7 caracteres").max(11, "El DNI no puede superar 11 caracteres")),
+  apellido: z.string({ required_error: "El apellido es obligatorio", invalid_type_error: "El apellido es obligatorio" }).trim().min(1, "El apellido es obligatorio"),
+  nombre: z.string({ required_error: "El nombre es obligatorio", invalid_type_error: "El nombre es obligatorio" }).trim().min(1, "El nombre es obligatorio"),
+  sexo: z.enum(["MASCULINO", "FEMENINO", "OTRO"], { errorMap: () => ({ message: "Seleccioná el sexo" }) }),
   fechaNac: fechaNacSchema,
   cuil: z.string().optional().nullable().refine(
     (val) => !val || !val.trim() || validarCuil(val).valido,
@@ -23,23 +26,29 @@ const admitirSchema = z.object({
   provincia: z.string().optional().nullable(),
   telefono: z.string().optional().nullable(),
   estadoCivil: z.enum(["SOLTERO", "CASADO", "DIVORCIADO", "VIUDO", "UNION_CONVIVENCIAL"]).optional().nullable(),
-  obraSocialId: z.string().uuid().optional().nullable(),
+  obraSocialId: z.string().uuid("Obra social inválida").optional().nullable(),
   nroAfiliado: z.string().optional().nullable(),
   tipoBeneficiario: z.enum(["TITULAR", "FAMILIAR"]).optional().nullable(),
-  camaId: z.string().uuid().optional().nullable(),
+  camaId: z.string().uuid("Cama inválida").optional().nullable(),
   medicoTratanteIds: z.array(z.string().uuid()).optional().nullable(),
-  tipoIngreso: z.enum(["PROGRAMADO", "URGENCIA", "GUARDIA", "DERIVACION"]),
+  tipoIngreso: z.enum(["PROGRAMADO", "URGENCIA", "GUARDIA", "DERIVACION"], { errorMap: () => ({ message: "Seleccioná el tipo de ingreso" }) }),
+  tipoAtencion: z.enum(["CIRUGIA_AMBULATORIA", "INTERNACION_QUIRURGICA", "INTERNACION_CLINICA"]).optional().nullable(),
   motivoIngreso: z.string().optional().nullable(),
-  peso: z.number().positive().optional().nullable(),
+  peso: z.number().positive("El peso debe ser mayor a 0").optional().nullable(),
   diagnosticoCirugia: z.string().optional().nullable(),
+  diagnosticoCIE: z.string().optional().nullable(),
+  medicoSolicitante: z.string().optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
   const { session, error } = await requireRole("ADMIN", "ADMISION");
   if (error) return error;
 
-  const body = await req.json();
-  const parsed = admitirSchema.safeParse(body);
+  const body = await req.json().catch(() => null);
+  if (!body) {
+    return NextResponse.json({ error: "Cuerpo de la solicitud inválido" }, { status: 400 });
+  }
+  const parsed = admitirSchema.safeParse(blankToNull(body));
   if (!parsed.success) {
     return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
   }
@@ -53,7 +62,10 @@ export async function POST(req: NextRequest) {
 
   const existe = await prisma.paciente.findUnique({ where: { dni: data.dni } });
   if (existe) {
-    return NextResponse.json({ error: "Ya existe un paciente con ese DNI" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Ya existe un paciente con ese DNI. Buscalo en el padrón y creá la internación desde su ficha." },
+      { status: 409 }
+    );
   }
 
   try {
@@ -65,7 +77,7 @@ export async function POST(req: NextRequest) {
           nombre: data.nombre,
           sexo: data.sexo,
           fechaNac: data.fechaNac,
-          cuil: data.cuil,
+          cuil: data.cuil ? formatCuil(data.cuil) : null,
           domicilio: data.domicilio,
           localidad: data.localidad,
           provincia: data.provincia,
@@ -91,6 +103,9 @@ export async function POST(req: NextRequest) {
           motivoIngreso: data.motivoIngreso,
           peso: data.peso,
           diagnosticoCirugia: data.diagnosticoCirugia,
+          diagnosticoCIE: data.diagnosticoCIE,
+          medicoSolicitante: data.medicoSolicitante,
+          tipoAtencion: data.tipoAtencion,
           medicosTratantesInternacion: data.medicoTratanteIds?.length
             ? { create: data.medicoTratanteIds.map((id) => ({ medicoId: id })) }
             : undefined,
@@ -137,10 +152,12 @@ export async function POST(req: NextRequest) {
       }
 
       if (data.camaId) {
-        await tx.cama.update({
-          where: { id: data.camaId },
+        // Ocupación atómica: solo si la cama sigue LIBRE (evita doble asignación concurrente)
+        const ocupada = await tx.cama.updateMany({
+          where: { id: data.camaId, estado: "LIBRE" },
           data: { estado: "OCUPADA" },
         });
+        if (ocupada.count === 0) throw new Error("CAMA_NOT_AVAILABLE:OCUPADA");
       }
 
       return { paciente, internacion };
@@ -165,7 +182,13 @@ export async function POST(req: NextRequest) {
       const estado = msg.split(":")[1] as string;
       return NextResponse.json({ error: `La cama no está disponible (estado: ${estado})` }, { status: 409 });
     }
+    if (prismaErrorCode(e) === "P2002") {
+      return NextResponse.json({ error: "Ya existe un paciente con ese DNI" }, { status: 409 });
+    }
+    if (prismaErrorCode(e) === "P2003") {
+      return NextResponse.json({ error: "Algún médico tratante u obra social seleccionado no existe" }, { status: 400 });
+    }
     console.error("Error interno en POST /api/admision/admitir:", e);
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+    return NextResponse.json({ error: "Error interno al admitir el paciente. Reintentá." }, { status: 500 });
   }
 }

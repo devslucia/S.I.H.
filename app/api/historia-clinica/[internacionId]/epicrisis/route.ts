@@ -1,7 +1,12 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
+import { ensureHcEpisodio } from "@/lib/hc-context";
+import { internacionAccessError } from "@/lib/internaciones-visibility";
 import { NextRequest, NextResponse } from "next/server";
+import { CondicionEgreso, DestinoEgreso } from "@prisma/client";
+
+const CONDICIONES: string[] = Object.values(CondicionEgreso);
+const DESTINOS: string[] = Object.values(DestinoEgreso);
 
 const EPICRISIS_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "INSTRUMENTADOR"];
 
@@ -9,25 +14,16 @@ export async function GET(req: NextRequest, { params }: { params: { internacionI
   const { session, error } = await requireRole(...EPICRISIS_READ_ROLES);
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+  const accesoError = await internacionAccessError(params.internacionId, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
+
+  const ctx = await ensureHcEpisodio(params.internacionId);
+  if (!ctx) {
     return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
+  const { episodio } = ctx;
 
-  const hc = await prisma.historiaClinica.findUnique({
-    where: { internacionId: params.internacionId },
-  });
-
-  if (!hc) {
-    return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
-  }
-
-  const episodio = await prisma.episodio.findFirst({
-    where: { internacionId: params.internacionId },
-  });
-
-  const epicrisis = episodio
-    ? await prisma.epicrisis.findUnique({ where: { episodioId: episodio.id } })
-    : null;
+  const epicrisis = await prisma.epicrisis.findUnique({ where: { episodioId: episodio.id } });
 
   return NextResponse.json(epicrisis ?? {});
 }
@@ -36,28 +32,14 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
   const { session, error } = await requireRole("ADMIN", "MEDICO");
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
+  const accesoError = await internacionAccessError(params.internacionId, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
+
+  const ctx = await ensureHcEpisodio(params.internacionId);
+  if (!ctx) {
     return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
-
-  const hc = await prisma.historiaClinica.findUnique({
-    where: { internacionId: params.internacionId },
-  });
-
-  if (!hc) {
-    return NextResponse.json({ error: "Historia clínica no encontrada" }, { status: 404 });
-  }
-
-  const episodio = await prisma.episodio.findFirst({
-    where: { internacionId: params.internacionId },
-  });
-
-  if (!episodio) {
-    return NextResponse.json(
-      { error: "No se encontró el episodio clínico para esta internación" },
-      { status: 404 }
-    );
-  }
+  const { hc, episodio } = ctx;
 
   if (episodio.tipo !== "INTERNACION") {
     return NextResponse.json(
@@ -66,7 +48,18 @@ export async function PUT(req: NextRequest, { params }: { params: { internacionI
     );
   }
 
-  const body = await req.json();
+  const raw = await req.json().catch(() => null);
+  if (!raw || typeof raw !== "object") {
+    return NextResponse.json({ error: "Cuerpo de la solicitud inválido" }, { status: 400 });
+  }
+  // Los selects del form envían "" cuando no se eligió opción: Prisma rechaza "" en enums.
+  const body = {
+    ...raw,
+    condicionEgreso: CONDICIONES.includes(raw.condicionEgreso) ? raw.condicionEgreso : null,
+    destino: DESTINOS.includes(raw.destino) ? raw.destino : null,
+    codigosCIE: Array.isArray(raw.codigosCIE) ? raw.codigosCIE : undefined,
+    medicacionAlta: Array.isArray(raw.medicacionAlta) ? raw.medicacionAlta : undefined,
+  };
 
   const existente = await prisma.epicrisis.findUnique({
     where: { episodioId: episodio.id },

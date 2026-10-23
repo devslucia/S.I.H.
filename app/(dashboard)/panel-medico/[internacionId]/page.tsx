@@ -1,5 +1,8 @@
 "use client";
 
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/api-errors";
+
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {ArrowLeft, Plus, Send, CheckCircle, Clock, Pill, Activity, Syringe, AlertTriangle, AlertCircle, FileText, UserPlus} from "lucide-react";
@@ -76,6 +79,7 @@ const estadoPrescColors: Record<string, "success" | "warning" | "error" | "defau
 };
 
 export default function PanelMedicoPage() {
+  const { toast } = useToast();
   const params = useParams();
   const router = useRouter();
   const session = useSession();
@@ -156,8 +160,13 @@ export default function PanelMedicoPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(prescripcionForm),
       });
-      const data = await res.json();
-      if (data.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok && !Array.isArray((data as PrescripcionBatchResp).items)) {
+        const msg = (data as { error?: string }).error || "No se pudo guardar la prescripción";
+        setPrescripcionError(msg);
+        toast("error", msg);
+      } else if (data.ok) {
+        toast("success", "Prescripción guardada correctamente");
         setPrescripcionError(null);
         setShowPrescripcionModal(false);
         setPrescripcionForm({ tipo: "MEDICACION", droga: "", dosis: "", unidad: "", frecuencia: "", via: "", descripcion: "", destino: "PISO" });
@@ -166,8 +175,10 @@ export default function PanelMedicoPage() {
         const fallidos = (data as PrescripcionBatchResp).items?.filter((i) => !i.ok) || [];
         const mensajes = fallidos.map((i) => `${i.nombre}: ${i.error}`).join("\n");
         setPrescripcionError(`Algunos ítems no se guardaron: ${mensajes}`);
+        toast("error", `Prescripción no guardada: ${mensajes}`);
+        fetchData();
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); toast("error", "Error de conexión al guardar la prescripción"); }
     finally { setSavingPrescripcion(false); }
   };
 
@@ -189,9 +200,12 @@ export default function PanelMedicoPage() {
     if (res.ok) {
       const data = await res.json();
       fetchData();
+      if (data.ok) toast("success", `${items.length} prescripción(es) guardada(s)`);
+      else toast("warning", "Algunas prescripciones no se guardaron: revisá el detalle");
       return data;
     }
-    const e = await res.json();
+    const e = await res.json().catch(() => ({}));
+    toast("error", e.error || "No se pudieron guardar las prescripciones");
     return { ok: false, items: items.map((sel, i) => ({ index: i, nombre: sel.stockItem.nombre, ok: false, error: e.error || "Error al prescribir" })) };
   };
 
@@ -205,11 +219,14 @@ export default function PanelMedicoPage() {
         body: JSON.stringify({ contenido: nuevaEvolucion }),
       });
       if (res.ok) {
+        toast("success", "Evolución guardada correctamente");
         setShowEvolucionEditor(false);
         setNuevaEvolucion("");
         fetchData();
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo guardar la evolución"));
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); toast("error", "Error de conexión al guardar la evolución"); }
     finally { setSavingEvolucion(false); }
   };
 
@@ -218,10 +235,14 @@ export default function PanelMedicoPage() {
     try {
       const res = await fetch(`/api/internaciones/${internacionId}/alta`, { method: "POST" });
       if (res.ok) {
+        const d = await res.json().catch(() => ({}));
+        toast("success", d.message || "Alta médica registrada");
         setShowAltaModal(false);
         fetchData();
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo registrar el alta médica"));
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); toast("error", "Error de conexión al registrar el alta"); }
     finally { setDandoAlta(false); }
   };
 

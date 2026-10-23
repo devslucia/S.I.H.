@@ -16,14 +16,14 @@ export async function requireRole(
 ): Promise<{ session: AuthSession; error?: never } | { session?: never; error: NextResponse }> {
   const rawSession = await auth();
   if (!rawSession) {
-    return { error: NextResponse.json({ error: "No autorizado" }, { status: 401 }) };
+    return { error: NextResponse.json({ error: "Sesión expirada. Volvé a iniciar sesión." }, { status: 401 }) };
   }
 
   const session = rawSession as AuthSession;
   const rol = session.user.rol;
 
   if (!allowedRoles.includes(rol)) {
-    return { error: NextResponse.json({ error: "No autorizado" }, { status: 403 }) };
+    return { error: NextResponse.json({ error: "Tu rol no tiene permiso para esta acción" }, { status: 403 }) };
   }
 
   return { session };

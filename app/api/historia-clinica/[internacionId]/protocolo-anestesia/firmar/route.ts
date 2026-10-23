@@ -1,21 +1,29 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
+import { internacionAccessError } from "@/lib/internaciones-visibility";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest, { params }: { params: { internacionId: string } }) {
   const { session, error } = await requireRole("ADMIN", "ANESTESIOLOGO");
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.internacionId, session.user.id, session.user.rol))) {
-    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+  const accesoError = await internacionAccessError(params.internacionId, session.user.id, session.user.rol);
+  if (accesoError) return accesoError;
+
+  const body = await req.json().catch(() => ({}));
+  let protocoloId: string | undefined = typeof body?.protocoloId === "string" ? body.protocoloId : undefined;
+
+  // Sin id explícito: el protocolo del episodio de la internación
+  if (!protocoloId) {
+    const episodio = await prisma.episodio.findUnique({
+      where: { internacionId: params.internacionId },
+      select: { protocoloAnestesia: { select: { id: true } } },
+    });
+    protocoloId = episodio?.protocoloAnestesia?.id;
   }
 
-  const body = await req.json();
-  const { protocoloId } = body;
-
   if (!protocoloId) {
-    return NextResponse.json({ error: "protocoloId requerido" }, { status: 400 });
+    return NextResponse.json({ error: "Guardá el protocolo antes de firmarlo" }, { status: 409 });
   }
 
   const protocolo = await prisma.protocoloAnestesia.findUnique({
@@ -37,7 +45,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
 
   await prisma.$transaction(async (tx) => {
     await tx.protocoloAnestesia.update({
-      where: { id: protocoloId },
+      where: { id: protocolo.id },
       data: {
         firmado: true,
         firmadoEn: new Date(),
@@ -50,7 +58,7 @@ export async function POST(req: NextRequest, { params }: { params: { internacion
     await tx.firmaDocumento.create({
       data: {
         tipoDoc: "PROTOCOLO_ANESTESIA",
-        docId: protocoloId,
+        docId: protocolo.id,
         usuarioId: session.user.id,
         hash: `firma-${Date.now()}`,
       },

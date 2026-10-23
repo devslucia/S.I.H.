@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma, type EstadoCirugia } from "@prisma/client";
 
-const Q_READ_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR", "CIRCULANTE"];
+const Q_READ_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR", "ENFERMERO"];
 
 export async function GET(req: NextRequest) {
   const { session, error } = await requireRole(...Q_READ_ROLES);
@@ -23,6 +23,9 @@ export async function GET(req: NextRequest) {
       { anestesiologoId: session.user.id },
       { instrumentadorId: session.user.id },
       { circulanteId: session.user.id },
+      // Puestos vacantes visibles para el rol que puede tomarlos
+      ...(session.user.rol === "INSTRUMENTADOR" ? [{ instrumentadorId: null }] : []),
+      ...(session.user.rol === "ANESTESIOLOGO" ? [{ anestesiologoId: null }] : []),
     ];
   }
 

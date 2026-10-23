@@ -1,8 +1,12 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import type { EstadoInternacion } from "@prisma/client";
 
 const CAMAS_READ_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "FACTURACION", "ADMISION"];
+
+// El paciente ocupa la cama hasta el alta administrativa (ALTA_MEDICA/ENFERMERIA siguen en cama)
+const ESTADOS_OCUPAN_CAMA: EstadoInternacion[] = ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO", "ALTA_MEDICA", "ALTA_ENFERMERIA"];
 
 function handlePrismaError(e: unknown, context: string): NextResponse {
   if (e instanceof Error && "code" in e && (e as { code?: string }).code === "P2002") {
@@ -24,7 +28,9 @@ export async function GET(_req: NextRequest) {
   const camas = await prisma.cama.findMany({
     include: {
       sector: true,
+      // Solo la internación que ocupa la cama (hasta el alta administrativa)
       internaciones: {
+        where: { estado: { in: ESTADOS_OCUPAN_CAMA } },
         include: {
           paciente: {
             select: { id: true, dni: true, apellido: true, nombre: true, sexo: true, fechaNac: true },
@@ -86,12 +92,12 @@ export async function PUT(req: NextRequest) {
 
   try {
     const internacionActiva = await prisma.internacion.findFirst({
-      where: { camaId: id, estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] } },
+      where: { camaId: id, estado: { in: ESTADOS_OCUPAN_CAMA } },
     });
 
     if (internacionActiva) {
       return NextResponse.json(
-        { error: "Esta cama tiene una internación activa, no se puede cambiar el estado directamente" },
+        { error: "La cama tiene un paciente internado (la cama se libera con el alta administrativa)" },
         { status: 409 }
       );
     }
@@ -131,7 +137,7 @@ export async function DELETE(req: NextRequest) {
 
   try {
     const internacionActiva = await prisma.internacion.findFirst({
-      where: { camaId: id, estado: { in: ["ACTIVA", "EN_QUIROFANO", "POSTQUIRURGICO"] } },
+      where: { camaId: id, estado: { in: ESTADOS_OCUPAN_CAMA } },
     });
 
     if (internacionActiva) {

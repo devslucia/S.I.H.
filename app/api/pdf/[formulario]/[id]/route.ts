@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/rbac";
-import { isInternacionVisibleForUser } from "@/lib/internaciones-visibility";
+import { internacionAccessError } from "@/lib/internaciones-visibility";
 import { NextRequest, NextResponse } from "next/server";
 
 const PDF_DEFAULT_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"];
@@ -19,9 +19,8 @@ export async function GET(req: NextRequest, { params }: { params: { formulario: 
   const { session, error } = await requireRole(...allowedRoles);
   if (error) return error;
 
-  if (!(await isInternacionVisibleForUser(params.id, session!.user.id, session!.user.rol))) {
-    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
-  }
+  const accesoError = await internacionAccessError(params.id, session!.user.id, session!.user.rol);
+  if (accesoError) return accesoError;
 
   return NextResponse.json({
     message: "PDF generation endpoint",

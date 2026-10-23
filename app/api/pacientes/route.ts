@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { createPacienteSchema } from "@/lib/validations/paciente.schema";
 import { NextRequest, NextResponse } from "next/server";
 import { formatZodError } from "@/lib/validations/format-zod-error";
+import { blankToNull } from "@/lib/validations/sanitize";
 import { Prisma } from "@prisma/client";
 import { getPacienteScopeWhere } from "@/lib/pacientes-access";
 
@@ -48,8 +49,8 @@ export async function POST(req: NextRequest) {
   const { error } = await requireRole("ADMIN", "ADMISION", "SECRETARIA");
   if (error) return error;
 
-  const body = await req.json();
-  const parsed = createPacienteSchema.safeParse(body);
+  const body = await req.json().catch(() => null);
+  const parsed = createPacienteSchema.safeParse(blankToNull(body));
   if (!parsed.success) {
     return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
   }

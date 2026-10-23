@@ -1,9 +1,9 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { getVisibleInternacionesWhere } from "@/lib/internaciones-visibility";
+import { getVisibleInternacionesWhere, internacionAccessError } from "@/lib/internaciones-visibility";
 import { NextRequest, NextResponse } from "next/server";
 
-const CARPETA_ROLES = ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR", "CIRCULANTE"];
+const CARPETA_ROLES = ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR", "CIRCULANTE"];
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const { session, error } = await requireRole(...CARPETA_ROLES);
@@ -47,7 +47,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   });
 
   if (!internacion) {
-    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+    // Distingue "no existe" (404) de "existe pero sin vínculo" (403)
+    const accesoError = await internacionAccessError(params.id, userId, rol);
+    return accesoError ?? NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
 
   const episodio = await prisma.episodio.findFirst({

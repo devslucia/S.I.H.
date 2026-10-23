@@ -1,7 +1,7 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { assertObraSocialUsable } from "@/lib/obra-social";
-import { getVisibleInternacionesWhere } from "@/lib/internaciones-visibility";
+import { getVisibleInternacionesWhere, internacionAccessError } from "@/lib/internaciones-visibility";
 import { updateInternacionSchema } from "@/lib/validations/internacion.schema";
 import { NextRequest, NextResponse } from "next/server";
 import { formatZodError } from "@/lib/validations/format-zod-error";
@@ -32,7 +32,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   });
 
   if (!internacion) {
-    return NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
+    // Distingue "no existe" (404) de "existe pero sin vínculo" (403)
+    const accesoError = await internacionAccessError(params.id, userId, rol);
+    return accesoError ?? NextResponse.json({ error: "Internación no encontrada" }, { status: 404 });
   }
 
   return NextResponse.json(internacion);

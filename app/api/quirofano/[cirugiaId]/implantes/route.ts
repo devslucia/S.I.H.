@@ -19,7 +19,7 @@ async function checkAssignment(userId: string, cirugiaId: string) {
 }
 
 export async function POST(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const { session, error } = await requireRole("ADMIN", "ENFERMERO", "INSTRUMENTADOR");
+  const { session, error } = await requireRole("ADMIN", "MEDICO", "ENFERMERO", "INSTRUMENTADOR");
   if (error) return error;
 
   if (session.user.rol !== "ADMIN") {
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest, { params }: { params: { cirugiaId: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { cirugiaId: string } }) {
-  const { session, error } = await requireRole("ADMIN", "ENFERMERO", "INSTRUMENTADOR");
+  const { session, error } = await requireRole("ADMIN", "MEDICO", "ENFERMERO", "INSTRUMENTADOR");
   if (error) return error;
 
   if (session.user.rol !== "ADMIN") {

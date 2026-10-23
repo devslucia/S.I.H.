@@ -16,6 +16,7 @@ import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/Me
 import { formatUserName, formatDate, formatDateTime } from "@/lib/utils";
 import IndicacionesNuevas from "@/components/notificaciones/IndicacionesNuevas";
 import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/api-errors";
 
 interface Prescripcion {
   id: string;
@@ -202,7 +203,7 @@ function ControlForm({ internacionId, onSaved }: { internacionId: string; onSave
         toast("success", `Control de signos vitales guardado (${saved.hora})`);
         onSaved(saved);
       } else {
-        toast("error", "No se pudo guardar el control");
+        toast("error", await apiErrorMessage(res, "No se pudo guardar el control"));
       }
     } catch (err) {
       console.error(err);
@@ -292,6 +293,7 @@ function AplicarPrescripcion({
   prescripcion: Prescripcion;
   onApplied: () => void;
 }) {
+  const { toast } = useToast();
   const [expanded, setExpanded] = useState(false);
   const [applying, setApplying] = useState(false);
   const [hora, setHora] = useState(
@@ -353,11 +355,22 @@ function AplicarPrescripcion({
         body: JSON.stringify({ prescripcionId: prescripcion.id, hora, stockItemId: selectedStockId || null, cantidad }),
       });
       if (res.ok) {
-        setExpanded(false);
-        onApplied();
+        // 207 = respuesta "ok" HTTP pero con ítems fallidos (ej. stock insuficiente)
+        const data = (await res.json().catch(() => null)) as { ok?: boolean; items?: { ok: boolean; error?: string }[] } | null;
+        if (data?.ok === false) {
+          const motivo = data.items?.find((i) => !i.ok)?.error ?? "error desconocido";
+          toast("error", `No se registró la aplicación: ${motivo}`);
+        } else {
+          toast("success", `Aplicación de ${prescripcion.droga || "medicación"} registrada (${hora})`);
+          setExpanded(false);
+          onApplied();
+        }
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo registrar la aplicación"));
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de conexión al registrar la aplicación");
     } finally {
       setApplying(false);
     }
@@ -528,6 +541,7 @@ const HOJA_SECCIONES = [
 ] as const;
 
 function HojaEnfermeriaForm({ internacionId, onSaved }: { internacionId: string; onSaved: () => void }) {
+  const { toast } = useToast();
   const [seccion, setSeccion] = useState<string>(HOJA_SECCIONES[0].value);
   const [item, setItem] = useState("");
   const [dosis, setDosis] = useState("");
@@ -557,12 +571,16 @@ function HojaEnfermeriaForm({ internacionId, onSaved }: { internacionId: string;
         }),
       });
       if (res.ok) {
+        toast("success", "Registro de hoja de enfermería guardado");
         setItem(""); setDosis(""); setVia("");
         setExpanded(false);
         onSaved();
+      } else {
+        toast("error", await apiErrorMessage(res, "No se pudo guardar la hoja de enfermería"));
       }
     } catch (err) {
       console.error(err);
+      toast("error", "Error de conexión al guardar la hoja de enfermería");
     } finally {
       setSaving(false);
     }
@@ -644,10 +662,14 @@ function MedicacionAdicional({
         setShowModal(false);
         toast("success", "Medicación adicional registrada");
         onAdd();
+      } else {
+        toast("warning", "Algunos ítems no se registraron: revisá el detalle");
+        onAdd();
       }
       return data;
     }
-    const e = await res.json();
+    const e = await res.json().catch(() => ({}));
+    toast("error", e.error || "No se pudo registrar la medicación adicional");
     return { ok: false, items: items.map((sel, i) => ({ index: i, nombre: sel.stockItem.nombre, ok: false, error: e.error || "Error al registrar" })) };
   };
 
@@ -813,7 +835,9 @@ export default function EnfermeriaPage() {
 
         const map: Record<string, Prescripcion[]> = {};
         const protMap: Record<string, ProtocoloResumen> = {};
-        for (const i of data) {
+        // En lotes de 4 en paralelo: la carga 100% secuencial era lenta con muchos internados,
+        // y todo junto satura el pool de conexiones de la base (connection_limit bajo).
+        const cargarDetalle = async (i: Internacion) => {
           try {
             const r = await fetch(`/api/historia-clinica/${i.id}/prescripciones`);
             if (r.ok) map[i.id] = await r.json();
@@ -827,6 +851,10 @@ export default function EnfermeriaPage() {
               }
             } catch {}
           }
+        };
+        const lista = data as Internacion[];
+        for (let k = 0; k < lista.length; k += 4) {
+          await Promise.all(lista.slice(k, k + 4).map(cargarDetalle));
         }
         setPrescripcionesMap(map);
         setProtocolosMap(protMap);
