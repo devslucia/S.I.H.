@@ -24,7 +24,7 @@ export function VoiceTextarea({
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label className="text-xs text-text-secondary font-medium uppercase tracking-wider">
+        <label className="field-label">
           {label}
         </label>
       )}

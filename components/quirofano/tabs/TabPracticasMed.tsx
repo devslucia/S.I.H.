@@ -15,7 +15,7 @@ import type { CirugiaFormData, CirugiaFull, UpdateField } from "./types";
 type _StockItemData = { id: string; nombre: string; presentacion?: string; stockActual: number; principioActivo?: string };
 
 const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:border-brand";
-const labelClass = "text-[11px] font-mono uppercase tracking-widest text-muted mb-1 block";
+const labelClass = "field-label mb-1.5 block";
 const btnClass = "px-4 py-2 text-sm rounded font-medium transition-colors";
 const btnTeal = "btn-primary text-[13px]";
 const btnOutline = `${btnClass} border border-border text-muted hover:text-text hover:border-muted`;
@@ -110,7 +110,7 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
           )}
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="data-table">
             <thead><tr className="text-left text-muted text-xs uppercase tracking-wide">
               <th className="px-3 py-2">Fecha</th><th className="px-3 py-2">Hora</th><th className="px-3 py-2">Práctica</th>
               <th className="px-3 py-2">Laboratorio</th><th className="px-3 py-2">Cargó</th><th className="px-3 py-2">Acto Quir.</th>
@@ -126,7 +126,7 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
                   <td className="px-3 py-2">{p.laboratorio || "—"}</td>
                   <td className="px-3 py-2">{p.cargoPor || "—"}</td>
                   <td className="px-3 py-2">{p.actoQuirurgico || "—"}</td>
-                  {canAddPracticas && <td className="px-3 py-2"><button onClick={() => setPendingDelete({ kind: "practica", id: p.id })} className="text-error hover:text-error/80"><Trash2 size={14} /></button></td>}
+                  {canAddPracticas && <td className="px-3 py-2"><button aria-label="Eliminar" onClick={() => setPendingDelete({ kind: "practica", id: p.id })} className="text-error hover:text-error/80"><Trash2 size={14} /></button></td>}
                 </tr>
               ))}
             </tbody>
@@ -144,7 +144,7 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
           )}
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="data-table">
             <thead><tr className="text-left text-muted text-xs uppercase tracking-wide">
               <th className="px-3 py-2">Nombre</th><th className="px-3 py-2">Presentación</th><th className="px-3 py-2">Cantidad</th>
               <th className="px-3 py-2">Vía</th><th className="px-3 py-2">Hora</th><th className="px-3 py-2">Obs.</th>
@@ -160,7 +160,7 @@ export function TabPracticasMed({ data, isReadOnly, effectiveRole, cirugiaId, on
                   <td className="px-3 py-2">{m.via || "—"}</td>
                   <td className="px-3 py-2">{m.horaAplicacion || "—"}</td>
                   <td className="px-3 py-2">{m.observacion || "—"}</td>
-                  {canAddMedicamentos && <td className="px-3 py-2"><button onClick={() => setPendingDelete({ kind: "medicamento", id: m.id })} className="text-error hover:text-error/80"><Trash2 size={14} /></button></td>}
+                  {canAddMedicamentos && <td className="px-3 py-2"><button aria-label="Eliminar" onClick={() => setPendingDelete({ kind: "medicamento", id: m.id })} className="text-error hover:text-error/80"><Trash2 size={14} /></button></td>}
                 </tr>
               ))}
             </tbody>

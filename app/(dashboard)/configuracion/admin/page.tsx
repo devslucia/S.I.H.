@@ -124,8 +124,8 @@ export default function ConfigPage() {
             className={cn(
               "flex items-center gap-2 px-3 py-1.5 rounded-md text-[12px] font-mono uppercase tracking-wide border transition-colors",
               tab === t.id
-                ? "bg-accent-button text-white border-accent-button"
-                : "bg-surface text-muted border-border hover:border-border-hover hover:text-text"
+                ? "chip-active"
+                : "chip-inactive"
             )}
           >
             <t.icon size={14} /> {t.label}
@@ -193,14 +193,14 @@ function SectoresTab({ sectores, onRefresh }: { sectores: Sector[]; onRefresh: (
         <input placeholder="Código" value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} className="input-field text-[13px]" />
         <div className="flex gap-2">
           <button onClick={handleSave} disabled={saving || !form.nombre || !form.codigo} className="btn-primary text-[13px]">{editing ? "Actualizar" : "Crear"}</button>
-          {editing && <button onClick={() => { setEditing(null); setForm({ nombre: "", codigo: "" }); }} className="btn-secondary text-[13px]"><X size={14} /></button>}
+          {editing && <button aria-label="Cerrar" onClick={() => { setEditing(null); setForm({ nombre: "", codigo: "" }); }} className="btn-secondary text-[13px]"><X size={14} /></button>}
         </div>
       </div>
       {sectores.length === 0 ? (
         <Empty text="Sin sectores." />
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
+          <table className="data-table">
             <thead><tr className="border-b border-border"><th className={th}>Nombre</th><th className={th}>Código</th><th className={th}>Camas</th><th className={th}>Acciones</th></tr></thead>
             <tbody>
               {sectores.map((s) => (
@@ -211,7 +211,7 @@ function SectoresTab({ sectores, onRefresh }: { sectores: Sector[]; onRefresh: (
                   <td className={td}>
                     <div className="flex gap-2">
                       <button onClick={() => { setEditing(s.id); setForm({ nombre: s.nombre, codigo: s.codigo }); }} className="text-[12px] text-brand hover:underline">Editar</button>
-                      <button onClick={() => setPendingDelete(s)} className="text-[12px] text-muted hover:text-error transition-colors"><Trash2 size={13} /></button>
+                      <button aria-label="Eliminar" onClick={() => setPendingDelete(s)} className="text-[12px] text-muted hover:text-error transition-colors"><Trash2 size={13} /></button>
                     </div>
                   </td>
                 </tr>
@@ -301,7 +301,7 @@ function CamasTab({ camas, sectores, onRefresh }: { camas: Cama[]; sectores: Sec
         <Empty text="Sin camas registradas." />
       ) : (
         <div className="max-h-[400px] overflow-y-auto border border-border rounded-lg">
-          <table className="w-full text-[13px]">
+          <table className="data-table">
             <thead><tr className="border-b border-border text-muted"><th className={th}>N°</th><th className={th}>Sector</th><th className={th}>Tipo</th><th className={th}>Estado</th><th className={th}>Acciones</th></tr></thead>
             <tbody>
               {camas.map((c) => (
@@ -315,7 +315,7 @@ function CamasTab({ camas, sectores, onRefresh }: { camas: Cama[]; sectores: Sec
                     </select>
                   </td>
                   <td className={td}>
-                    <button onClick={() => setPendingDelete(c)} className="text-muted hover:text-error transition-colors"><Trash2 size={13} /></button>
+                    <button aria-label="Eliminar" onClick={() => setPendingDelete(c)} className="text-muted hover:text-error transition-colors"><Trash2 size={13} /></button>
                   </td>
                 </tr>
               ))}
@@ -445,14 +445,14 @@ function ObrasTab({ obras, onRefresh }: { obras: ObraSocial[]; onRefresh: () => 
         </label>
         <div className="flex gap-2 items-center">
           <button onClick={handleSave} disabled={saving} className="btn-primary text-[13px]">{editing ? "Actualizar" : "Crear"}</button>
-          {editing && <button onClick={cancelEdit} className="btn-secondary text-[13px]"><X size={14} /></button>}
+          {editing && <button aria-label="Cerrar" onClick={cancelEdit} className="btn-secondary text-[13px]"><X size={14} /></button>}
         </div>
       </div>
       {obras.length === 0 ? (
         <Empty text="Sin obras sociales." />
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
+          <table className="data-table">
             <thead><tr className="border-b border-border text-muted"><th className={th}>Nombre</th><th className={th}>CUIT</th><th className={th}>Contribución</th><th className={th}>IVA</th><th className={th}>Desc. med.</th><th className={th}>Ambulatorio</th><th className={th}>Internación</th><th className={th}>Estado</th><th className={th}>Acciones</th></tr></thead>
             <tbody>
               {obras.map((o) => (
@@ -547,14 +547,14 @@ function QuirofanosTab({ quirofanos, onRefresh }: { quirofanos: Quirofano[]; onR
         <input placeholder="Piso (opcional)" value={form.piso} onChange={(e) => setForm({ ...form, piso: e.target.value })} className="input-field text-[13px]" />
         <div className="flex gap-2">
           <button onClick={handleSave} disabled={saving || !form.numero || !form.nombre} className="btn-primary text-[13px]">{editing ? "Actualizar" : "Crear"}</button>
-          {editing && <button onClick={() => { setEditing(null); setForm({ numero: 0, nombre: "", piso: "" }); }} className="btn-secondary text-[13px]"><X size={14} /></button>}
+          {editing && <button aria-label="Cerrar" onClick={() => { setEditing(null); setForm({ numero: 0, nombre: "", piso: "" }); }} className="btn-secondary text-[13px]"><X size={14} /></button>}
         </div>
       </div>
       {quirofanos.length === 0 ? (
         <Empty text="Sin quirófanos." />
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
+          <table className="data-table">
             <thead><tr className="border-b border-border text-muted"><th className={th}>N°</th><th className={th}>Nombre</th><th className={th}>Piso</th><th className={th}>Disponible</th><th className={th}>Acciones</th></tr></thead>
             <tbody>
               {quirofanos.map((q) => (
@@ -569,7 +569,7 @@ function QuirofanosTab({ quirofanos, onRefresh }: { quirofanos: Quirofano[]; onR
                     <div className="flex gap-2 items-center">
                       <button onClick={() => { setEditing(q.id); setForm({ numero: q.numero, nombre: q.nombre, piso: q.piso || "" }); }} className="text-[12px] text-brand hover:underline">Editar</button>
                       <button onClick={() => handleToggle(q.id, q.disponible)} className="text-[12px] text-warning hover:underline">{q.disponible ? "Deshabilitar" : "Habilitar"}</button>
-                      <button onClick={() => setPendingDelete(q)} className="text-muted hover:text-error transition-colors"><Trash2 size={13} /></button>
+                      <button aria-label="Eliminar" onClick={() => setPendingDelete(q)} className="text-muted hover:text-error transition-colors"><Trash2 size={13} /></button>
                     </div>
                   </td>
                 </tr>
@@ -643,14 +643,14 @@ function RangosTab({ rangos, onRefresh }: { rangos: RangoVital[]; onRefresh: () 
         <input placeholder="Unidad" value={form.unidad} onChange={(e) => setForm({ ...form, unidad: e.target.value })} className="input-field text-[13px]" />
         <div className="flex gap-2">
           <button onClick={handleSave} disabled={saving || !form.parametro || !form.unidad} className="btn-primary text-[13px]">{editing ? "Actualizar" : "Crear"}</button>
-          {editing && <button onClick={() => { setEditing(null); setForm({ parametro: "", minimo: 0, maximo: 0, unidad: "" }); }} className="btn-secondary text-[13px]"><X size={14} /></button>}
+          {editing && <button aria-label="Cerrar" onClick={() => { setEditing(null); setForm({ parametro: "", minimo: 0, maximo: 0, unidad: "" }); }} className="btn-secondary text-[13px]"><X size={14} /></button>}
         </div>
       </div>
       {rangos.length === 0 ? (
         <Empty text="Sin rangos vitales." />
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
+          <table className="data-table">
             <thead><tr className="border-b border-border text-muted"><th className={th}>Parámetro</th><th className={th}>Mínimo</th><th className={th}>Máximo</th><th className={th}>Unidad</th><th className={th}>Acciones</th></tr></thead>
             <tbody>
               {rangos.map((r) => (
@@ -662,7 +662,7 @@ function RangosTab({ rangos, onRefresh }: { rangos: RangoVital[]; onRefresh: () 
                   <td className={td}>
                     <div className="flex gap-2 items-center">
                       <button onClick={() => { setEditing(r.id); setForm({ parametro: r.parametro, minimo: r.minimo, maximo: r.maximo, unidad: r.unidad }); }} className="text-[12px] text-brand hover:underline">Editar</button>
-                      <button onClick={() => setPendingDelete(r)} className="text-muted hover:text-error transition-colors"><Trash2 size={13} /></button>
+                      <button aria-label="Eliminar" onClick={() => setPendingDelete(r)} className="text-muted hover:text-error transition-colors"><Trash2 size={13} /></button>
                     </div>
                   </td>
                 </tr>

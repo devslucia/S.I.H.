@@ -1,25 +1,9 @@
 import React from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { EstadoBadge } from "@/components/ui/EstadoBadge";
 
 export type CirugiaEstado = "PROGRAMADA" | "EN_CURSO" | "COMPLETADA" | "REPROGRAMADA" | "CANCELADA";
-
-const tonePorEstado: Record<CirugiaEstado, "info" | "warning" | "success" | "warning" | "danger"> = {
-  PROGRAMADA: "info",
-  EN_CURSO: "warning",
-  COMPLETADA: "success",
-  REPROGRAMADA: "warning",
-  CANCELADA: "danger",
-};
-
-const labelPorEstado: Record<CirugiaEstado, string> = {
-  PROGRAMADA: "Programada",
-  EN_CURSO: "En curso",
-  COMPLETADA: "Completada",
-  REPROGRAMADA: "Reprogramada",
-  CANCELADA: "Cancelada",
-};
 
 export interface CirugiaCardData {
   id: string;
@@ -42,8 +26,7 @@ interface CirugiaCardProps {
  * hora → estado → paciente (serif) → procedimiento → equipo.
  */
 export function CirugiaCard({ cirugia, onClick, className }: CirugiaCardProps) {
-  const tone = cirugia.estado in tonePorEstado ? tonePorEstado[cirugia.estado] : "info";
-  const pulse = cirugia.estado === "EN_CURSO";
+
   return (
     <button
       type="button"
@@ -57,7 +40,7 @@ export function CirugiaCard({ cirugia, onClick, className }: CirugiaCardProps) {
     >
       <div className="flex items-start justify-between gap-3">
         <span className="font-mono text-[15px] font-medium text-text leading-none">{cirugia.horaProgramada}</span>
-        <StatusBadge tone={tone} dot pulse={pulse} label={labelPorEstado[cirugia.estado] ?? cirugia.estado} />
+        <EstadoBadge dominio="cirugia" estado={cirugia.estado} dot />
       </div>
 
       <div className="mt-2.5">

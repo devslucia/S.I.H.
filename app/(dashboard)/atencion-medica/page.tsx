@@ -7,6 +7,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { OpsStat } from "@/components/ui/OpsStat";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDateTime, formatUserName } from "@/lib/utils";
+import { ESTADO_INTERNACION } from "@/lib/estados";
+import { EmptyState } from "@/components/ui/States";
 
 interface Internacion {
   id: string;
@@ -21,11 +23,7 @@ interface Internacion {
   medicosTratantesInternacion?: { medico: { id: string; nombre: string } }[];
 }
 
-const estadoConfig: Record<string, { tone: "success" | "warning" | "info" | "neutral"; label: string; dot?: boolean; pulse?: boolean }> = {
-  ACTIVA: { tone: "success", label: "Activa", dot: true },
-  EN_QUIROFANO: { tone: "warning", label: "En quirófano", dot: true, pulse: true },
-  POSTQUIRURGICO: { tone: "info", label: "Postquirúrgico", dot: true },
-};
+const estadoConfig = ESTADO_INTERNACION;
 
 export default function AtencionMedicaPage() {
   const router = useRouter();
@@ -54,7 +52,7 @@ export default function AtencionMedicaPage() {
         description="Internaciones activas, en quirófano y postquirúrgicas. Ingresá al panel médico para la evolución y las indicaciones."
       />
 
-      <section className="grid grid-cols-2 md:grid-cols-3 gap-5">
+      <section className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <OpsStat label="Activos" value={internaciones.length} sub="Internaciones en curso" tone="info" />
         <OpsStat label="En quirófano" value={enQuirofano} sub="Cirugías en curso" tone={enQuirofano > 0 ? "warning" : "neutral"} />
         <OpsStat label="Postquirúrgico" value={postquirurgico} sub="Recuperación en sala" tone={postquirurgico > 0 ? "info" : "neutral"} />
@@ -67,11 +65,7 @@ export default function AtencionMedicaPage() {
           ))}
         </div>
       ) : internaciones.length === 0 ? (
-        <div className="border border-dashed border-border rounded-lg py-12 text-center">
-          <Activity size={28} className="mx-auto text-muted mb-2" />
-          <p className="text-[13px] text-text">No hay pacientes activos</p>
-          <p className="text-[12px] text-muted mt-1">No hay internaciones activas en este momento.</p>
-        </div>
+        <EmptyState bordered icon={Activity} title="No hay pacientes activos" description="No hay internaciones activas en este momento." />
       ) : (
         <div className="space-y-2">
           {internaciones.map((i) => {

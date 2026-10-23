@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Eye, Plus, RefreshCw, AlertTriangle } from "lucide-react";
+import { Eye, Plus, RefreshCw, AlertTriangle, CalendarX } from "lucide-react";
 import { formatDateTime, formatUserName } from "@/lib/utils";
 import { Modal } from "@/components/ui/Modal";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -12,6 +12,7 @@ import { DateNavigator } from "@/components/ui/DateNavigator";
 import { DateInput } from "@/components/ui/DateInput";
 import { CirugiaCard, type CirugiaEstado } from "@/components/ui/CirugiaCard";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/States";
 
 interface Cirugia {
   id: string;
@@ -266,6 +267,8 @@ export default function QuirofanoPage() {
               </button>
             )}
             <button
+              aria-label="Actualizar"
+              title="Actualizar"
               type="button"
               onClick={() => fetchCirugias(fechaSeleccionada)}
               disabled={loading}
@@ -277,7 +280,7 @@ export default function QuirofanoPage() {
         }
       />
 
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-5">
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <OpsStat label="Programadas" value={resumen.programadas} sub="Pendientes del día" tone="info" />
         <OpsStat label="En curso" value={resumen.enCurso} sub="Quirófanos ocupados" tone={resumen.enCurso > 0 ? "warning" : "neutral"} />
         <OpsStat label="Completadas" value={resumen.completadas} sub="Con parte quirúrgico" tone="success" />
@@ -299,9 +302,12 @@ export default function QuirofanoPage() {
           <div className="skeleton h-40" />
         </div>
       ) : Object.keys(grouped).length === 0 ? (
-        <div className="text-[13px] text-muted py-10 text-center border border-dashed border-border rounded-lg">
-          No hay cirugías programadas para esta fecha.
-        </div>
+        <EmptyState
+          bordered
+          icon={CalendarX}
+          title="No hay cirugías programadas para esta fecha"
+          description="Cambiá la fecha arriba o programá una cirugía nueva."
+        />
       ) : (
         <div className="space-y-7">
           {Object.entries(grouped)
@@ -371,7 +377,7 @@ export default function QuirofanoPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <button
+                      <button aria-label="Ver detalle del paciente"
                         type="button"
                         onClick={() => {
                           setSelectedPaciente(internacion);
@@ -443,7 +449,7 @@ export default function QuirofanoPage() {
                       )}
                     </button>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <button
+                      <button aria-label="Ver detalle"
                         type="button"
                         onClick={() => {
                           setSelectedPaciente(internacion);
@@ -487,7 +493,7 @@ export default function QuirofanoPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] text-muted">Fecha</label>
+                <label className="field-label">Fecha</label>
                 <DateInput
                   native
                   value={cirugiaForm.fechaProgramada}
@@ -496,7 +502,7 @@ export default function QuirofanoPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] text-muted">Hora</label>
+                <label className="field-label">Hora</label>
                 <input
                   type="time"
                   value={cirugiaForm.horaProgramada}
@@ -505,7 +511,7 @@ export default function QuirofanoPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] text-muted">Quirófano</label>
+                <label className="field-label">Quirófano</label>
                 <select
                   value={cirugiaForm.quirofanoId}
                   onChange={(e) => setCirugiaForm({ ...cirugiaForm, quirofanoId: e.target.value })}
@@ -518,7 +524,7 @@ export default function QuirofanoPage() {
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] text-muted">Tipo</label>
+                <label className="field-label">Tipo</label>
                 <select
                   value={cirugiaForm.tipo}
                   onChange={(e) => setCirugiaForm({ ...cirugiaForm, tipo: e.target.value as "PROGRAMADA" | "URGENCIA" | "EMERGENCIA" })}
@@ -530,7 +536,7 @@ export default function QuirofanoPage() {
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] text-muted">Cirujano</label>
+                <label className="field-label">Cirujano</label>
                 <select
                   value={cirugiaForm.cirujanoId}
                   onChange={(e) => setCirugiaForm({ ...cirugiaForm, cirujanoId: e.target.value })}
@@ -543,7 +549,7 @@ export default function QuirofanoPage() {
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] text-muted">Anestesiólogo</label>
+                <label className="field-label">Anestesiólogo</label>
                 <select
                   value={cirugiaForm.anestesiologoId}
                   onChange={(e) => setCirugiaForm({ ...cirugiaForm, anestesiologoId: e.target.value })}
@@ -556,7 +562,7 @@ export default function QuirofanoPage() {
                 </select>
               </div>
               <div className="col-span-2 flex flex-col gap-1.5">
-                <label className="text-[12px] text-muted">Procedimiento</label>
+                <label className="field-label">Procedimiento</label>
                 <input
                   type="text"
                   value={cirugiaForm.procedimiento}
@@ -566,7 +572,7 @@ export default function QuirofanoPage() {
                 />
               </div>
               <div className="col-span-2 flex flex-col gap-1.5">
-                <label className="text-[12px] text-muted">Diagnóstico preoperatorio</label>
+                <label className="field-label">Diagnóstico preoperatorio</label>
                 <input
                   type="text"
                   value={cirugiaForm.diagnosticoPreop}

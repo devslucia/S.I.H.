@@ -75,7 +75,7 @@ export function SearchableMultiSelect({
   return (
     <div className={cn("flex flex-col gap-1.5", className)} ref={containerRef}>
       {label && (
-        <label className="text-[13px] font-medium text-text-secondary">{label}</label>
+        <label className="field-label">{label}</label>
       )}
 
       {selectedItems.length > 0 && (
@@ -87,7 +87,7 @@ export function SearchableMultiSelect({
             >
               {item.label}
               {item.sublabel && <span className="text-brand/60">({item.sublabel})</span>}
-              <button
+              <button aria-label="Cerrar"
                 type="button"
                 onClick={() => remove(item.id)}
                 className="ml-0.5 hover:text-brand/80 transition-colors"

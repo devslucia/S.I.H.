@@ -23,6 +23,7 @@ import { EscalaAldrete } from "./anestesia/EscalaAldrete";
 import { PanelDrogas } from "./anestesia/PanelDrogas";
 import { GraficoSignosVitales } from "./anestesia/GraficoSignosVitales";
 import { useToast } from "@/components/ui/Toast";
+import { LoadingState } from "@/components/ui/States";
 
 interface ProtocoloAnestesiaProps {
   internacionId: string;
@@ -577,7 +578,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
   };
 
   if (loading) {
-    return <p className="text-muted text-sm">Cargando protocolo de anestesia...</p>;
+    return <LoadingState label="Cargando protocolo de anestesia…" />;
   }
 
   if (loadError) {
@@ -712,7 +713,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                     <Input label="Peso (kg)" type="number" step="0.1" {...form.register("peso", { valueAsNumber: true })} disabled={firmado} />
                     <Input label="Talla (cm)" type="number" step="0.1" {...form.register("talla", { valueAsNumber: true })} disabled={firmado} />
                     <div className="space-y-1">
-                      <label className="block text-sm text-muted">IMC (calculado)</label>
+                      <label className="field-label block">IMC (calculado)</label>
                       <div className={`flex items-center rounded-md border px-3 py-2 text-sm ${form.watch("imc") ? "border-border bg-surface-active text-text" : "border-border/60 bg-background text-muted"}`}>
                         {form.watch("imc") ? `${form.watch("imc")} kg/m²` : "—"}
                       </div>
@@ -788,7 +789,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Antecedentes de importancia */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-muted">Antecedentes de importancia</label>
+                    <label className="field-label block">Antecedentes de importancia</label>
                     <textarea
                       {...form.register("antecedentesImportancia")}
                       placeholder="Cardiopatías, HTA, diabetes, antecedentes anestésicos, etc."
@@ -800,7 +801,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* ASA */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-muted">Clasificación ASA</label>
+                    <label className="field-label block">Clasificación ASA</label>
                     <div className="flex flex-wrap gap-2">
                       {["I", "II", "III", "IV", "V", "VI"].map((asa) => (
                         <button
@@ -831,7 +832,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Estado psíquico */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-muted">Estado psíquico preoperatorio</label>
+                    <label className="field-label block">Estado psíquico preoperatorio</label>
                     <div className="flex flex-wrap gap-2">
                       {ESTADO_PSICOS.map((ep) => (
                         <button
@@ -853,7 +854,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Vía aérea */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-muted uppercase tracking-wide">Evaluación de vía aérea</label>
+                    <label className="field-label block">Evaluación de vía aérea</label>
                     <div className="flex flex-wrap gap-2">
                       <span className="text-xs text-muted self-center">Mallampati:</span>
                       {MALLAMPATI.map((m) => (
@@ -875,7 +876,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Input label="Dist. tiromentoniana (cm)" type="number" step="0.1" {...form.register("distTiromentoniana", { valueAsNumber: true })} disabled={firmado} />
                       <div className="space-y-1">
-                        <label className="block text-sm text-muted">Apertura bucal</label>
+                        <label className="field-label block">Apertura bucal</label>
                         <div className="flex gap-2">
                           {(["+3", "-3"] as const).map((ab) => (
                             <button
@@ -900,7 +901,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Checklist */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-muted">Checklist de seguridad</label>
+                    <label className="field-label block">Checklist de seguridad</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {[
                         { name: "checklistEquipoAnes" as const, label: "Equipo de anestesia y gases verificado" },
@@ -918,7 +919,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                    {/* Preoxigenación */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-muted">Preoxigenación</label>
+                    <label className="field-label block">Preoxigenación</label>
                     <div className="flex items-center gap-4">
                       <label className="flex items-center gap-2 text-sm text-text-secondary">
                         <input type="radio" checked={form.watch("preoxigenacion") === true}
@@ -943,7 +944,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Signos vitales preoperatorios */}
                   <div className="space-y-3">
-                    <label className="block text-sm text-muted uppercase tracking-wide">Signos Vitales Preoperatorios (baseline)</label>
+                    <label className="field-label block">Signos Vitales Preoperatorios (baseline)</label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                       <Input label="PAS (mmHg)" type="number" min={0} {...form.register("signosVitaPreop.pas", { valueAsNumber: true })} disabled={firmado} />
                       <Input label="PAD (mmHg)" type="number" min={0} {...form.register("signosVitaPreop.pad", { valueAsNumber: true })} disabled={firmado} />
@@ -960,7 +961,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="block text-sm text-muted">Tipo de anestesia</label>
+                      <label className="field-label block">Tipo de anestesia</label>
                       <select
                         value={form.watch("tipoAnestesia") ?? ""}
                         onChange={(e) => form.setValue("tipoAnestesia", e.target.value, { shouldDirty: true })}
@@ -994,7 +995,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Input label={esRaquidea ? "Nivel de bloqueo" : "Espacio / nivel"} {...form.register("nivelBloqueo")} disabled={firmado} />
                         <div className="space-y-1">
-                          <label className="block text-xs text-muted">Lateralidad</label>
+                          <label className="field-label block">Lateralidad</label>
                           <select
                             value={form.watch("lateralidad") ?? ""}
                             onChange={(e) => form.setValue("lateralidad", e.target.value, { shouldDirty: true })}
@@ -1031,7 +1032,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Input label="Nervio / plexo" placeholder="Ej.: plexo braquial, femoral…" {...form.register("nervioPlexo")} disabled={firmado} />
                         <div className="space-y-1">
-                          <label className="block text-xs text-muted">Lateralidad</label>
+                          <label className="field-label block">Lateralidad</label>
                           <select
                             value={form.watch("lateralidad") ?? ""}
                             onChange={(e) => form.setValue("lateralidad", e.target.value, { shouldDirty: true })}
@@ -1050,7 +1051,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                         <Input label="Tipo y calibre de aguja" {...form.register("agujaDetalle")} disabled={firmado} />
                       </div>
                       <div className="space-y-2">
-                        <label className="block text-xs text-muted">Técnica de bloqueo</label>
+                        <label className="field-label block">Técnica de bloqueo</label>
                         <div className="flex flex-wrap gap-2">
                           {TECNICAS_BLOQUEO.map((tb) => (
                             <button key={tb} type="button" disabled={firmado}
@@ -1082,7 +1083,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                     <div className="space-y-3 p-3 rounded-lg bg-background border border-border/50">
                       <h4 className="text-sm font-medium text-text-secondary">Sedación</h4>
                       <div className="space-y-2">
-                        <label className="block text-xs text-muted">Nivel de sedación</label>
+                        <label className="field-label block">Nivel de sedación</label>
                         <div className="flex flex-wrap gap-2">
                           {NIVELES_SEDACION.map((ns) => (
                             <button key={ns} type="button" disabled={firmado}
@@ -1100,7 +1101,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                         <Input label="Oxígeno flujo (L/min)" type="number" min={0} step={0.5} {...form.register("oxigenoFlujo", { valueAsNumber: true })} disabled={firmado} />
                       </div>
                       <div className="space-y-2">
-                        <label className="block text-xs text-muted">Manejo de vía aérea (si hiciera falta)</label>
+                        <label className="field-label block">Manejo de vía aérea (si hiciera falta)</label>
                         <div className="flex flex-wrap gap-2">
                           {VIA_AEREA.map((va) => (
                             <button key={va} type="button" disabled={firmado}
@@ -1128,7 +1129,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                     <div className="space-y-3 p-3 rounded-lg bg-background border border-border/50">
                       <h4 className="text-sm font-medium text-text-secondary">Anestesia General</h4>
                       <div className="space-y-2">
-                        <label className="block text-xs text-muted">Vía de inducción</label>
+                        <label className="field-label block">Vía de inducción</label>
                         <div className="flex gap-3">
                           {["Inhalatoria", "Endovenosa"].map((v) => (
                             <button key={v} type="button" disabled={firmado}
@@ -1142,7 +1143,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <label className="block text-xs text-muted">Manejo de vía aérea</label>
+                        <label className="field-label block">Manejo de vía aérea</label>
                         <div className="flex flex-wrap gap-2">
                           {VIA_AEREA.map((va) => (
                             <button key={va} type="button" disabled={firmado}
@@ -1156,7 +1157,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <label className="block text-xs text-muted">Intubación traqueal</label>
+                        <label className="field-label block">Intubación traqueal</label>
                         <div className="flex items-center gap-4">
                           <label className="flex items-center gap-2 text-sm text-text-secondary">
                             <input type="radio" checked={form.watch("intubacion") === true}
@@ -1172,7 +1173,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                       </div>
                       {(form.watch("intubacion") || manejoViaAerea === "Intubación traqueal") && (
                         <div className="space-y-2">
-                          <label className="block text-xs text-muted">Subtipo de intubación</label>
+                          <label className="field-label block">Subtipo de intubación</label>
                           <div className="flex flex-wrap gap-2">
                             {INTUBACION_SUBTIPO.map((ist) => (
                               <button key={ist} type="button" disabled={firmado}
@@ -1192,7 +1193,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                       </label>
                       {(manejoViaAerea === "Máscara laríngea" || manejoViaAerea === "Cánula faríngea") && (
                         <div className="space-y-2">
-                          <label className="block text-xs text-muted">Tipo de cánula</label>
+                          <label className="field-label block">Tipo de cánula</label>
                           <div className="flex flex-wrap gap-2">
                             {CANULA_FARINGEAL.map((cf) => (
                               <button key={cf} type="button" disabled={firmado}
@@ -1224,7 +1225,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                       )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <label className="block text-xs text-muted">Modalidad ventilatoria</label>
+                          <label className="field-label block">Modalidad ventilatoria</label>
                           <div className="flex flex-wrap gap-2">
                             {MODALIDAD_VENT.map((mv) => (
                               <button key={mv} type="button" disabled={firmado}
@@ -1265,10 +1266,10 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Egresos */}
                   <div className="space-y-3">
-                    <label className="block text-sm text-muted uppercase tracking-wide">Egresos</label>
+                    <label className="field-label block">Egresos</label>
                     <Input label="Diuresis intraoperatoria (ml)" type="number" min={0} {...form.register("diuresis", { valueAsNumber: true })} disabled={firmado} />
                     <div className="space-y-2">
-                      <label className="block text-xs text-muted">Pérdida sanguínea estimada</label>
+                      <label className="field-label block">Pérdida sanguínea estimada</label>
                       <div className="flex flex-wrap gap-2">
                         {[
                           { val: "no_significativa", label: "No significativa" },
@@ -1295,7 +1296,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
                   {/* Posición y sondas */}
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <label className="block text-xs text-muted">Posición operatoria</label>
+                      <label className="field-label block">Posición operatoria</label>
                       <div className="flex flex-wrap gap-2">
                         {POSICIONES.map((p) => (
                           <button key={p} type="button" disabled={firmado}
@@ -1338,7 +1339,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Observaciones */}
                   <div className="space-y-1">
-                    <label className="block text-sm text-muted">Observaciones / Complicaciones</label>
+                    <label className="field-label block">Observaciones / Complicaciones</label>
                     <textarea
                       {...form.register("observaciones")}
                       rows={4}
@@ -1358,7 +1359,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Estado egreso */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-muted">Estado al egreso de quirófano</label>
+                    <label className="field-label block">Estado al egreso de quirófano</label>
                     <div className="flex flex-wrap gap-3">
                       {EGRESO_CHECKBOXES.map((eg) => (
                         <label key={eg} className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
@@ -1377,7 +1378,7 @@ function ProtocoloAnestesiaComponent({ internacionId, cirugiaId }: ProtocoloAnes
 
                   {/* Destino */}
                   <div className="space-y-2">
-                    <label className="block text-sm text-muted">Destino del paciente</label>
+                    <label className="field-label block">Destino del paciente</label>
                     <div className="flex flex-wrap gap-2">
                       {DESTINOS.map((d) => (
                         <button key={d} type="button" disabled={firmado}
@@ -1447,7 +1448,7 @@ function BalanceLiquidos({ disabled }: { disabled: boolean }) {
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm text-muted uppercase tracking-wide">Ingresos</label>
+      <label className="field-label block">Ingresos</label>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -1577,7 +1578,7 @@ function MedicacionAnestesista({ form, firmado }: MedicacionAnestesistaProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="block text-sm text-muted uppercase tracking-wide">Medicación</label>
+        <label className="field-label block">Medicación</label>
         {!firmado && hayCambios && (
           <span className="text-[10px] font-mono text-warning bg-warning/10 px-2 py-0.5 rounded">Sin guardar</span>
         )}

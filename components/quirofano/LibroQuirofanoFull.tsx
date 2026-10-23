@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Save, Printer, CheckCircle, ArrowLeft, AlertCircle, X, PlayCircle } from "lucide-react";
+import { Printer, CheckCircle, ArrowLeft, AlertCircle, X, PlayCircle } from "lucide-react";
 import { formatDateTime, formatUserName } from "@/lib/utils";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { EstadoBadge } from "@/components/ui/EstadoBadge";
+import { rolLabel } from "@/lib/estados";
 import { useToast } from "@/components/ui/Toast";
 import { ProtocoloAnestesiaComponent } from "@/components/historia-clinica/ProtocoloAnestesia";
 import { getEffectiveRole, canEditField, canCloseSurgery, getPendingItems, type EffectiveRole } from "@/lib/quirofano-rbac";
@@ -19,18 +20,12 @@ import { PendingChecklist } from "./tabs/PendingChecklist";
 import { CloseConfirmationModal } from "./tabs/CloseConfirmationModal";
 import type { CirugiaFormData, CirugiaFull } from "./tabs/types";
 import type { PendingItem } from "@/lib/quirofano-rbac";
+import { LoadingState } from "@/components/ui/States";
+import { SaveButton, useSavedFlag } from "@/components/ui/SaveButton";
 
 type UsuarioData = { id: string; nombre: string; email: string; rol: string; matricula?: string; especialidad?: string };
 
 const TABS = ["Cirugía", "Prácticas/Med", "Parto/Cesárea", "Parte Quirúrgico", "Ingresos/Egresos", "Reprogramaciones", "Protocolo Anestesia"];
-
-const estadoTone = {
-  COMPLETADA: "success",
-  EN_CURSO: "warning",
-  PROGRAMADA: "info",
-  REPROGRAMADA: "warning",
-  CANCELADA: "danger",
-} as const;
 
 export default function LibroQuirofanoFull() {
   const params = useParams();
@@ -40,6 +35,7 @@ export default function LibroQuirofanoFull() {
   const [data, setData] = useState<CirugiaFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [libroGuardado, marcarLibroGuardado] = useSavedFlag();
   const [usuarios, setUsuarios] = useState<UsuarioData[]>([]);
   const [formData, setFormData] = useState<CirugiaFormData>({} as CirugiaFormData);
   const [showCloseModal, setShowCloseModal] = useState(false);
@@ -125,6 +121,7 @@ export default function LibroQuirofanoFull() {
         setFormData({ ...updated });
         setPendingItems(getPendingItems(updated));
         toast("success", "Cambios guardados correctamente");
+        marcarLibroGuardado();
         avisarIgnorados(updated);
 
         // Auto-creación de plantilla (solo para roles médicos y si hay procedimiento)
@@ -254,7 +251,7 @@ export default function LibroQuirofanoFull() {
 
   const update = (field: string, value: unknown) => setFormData((prev: CirugiaFormData) => ({ ...prev, [field]: value }));
 
-  if (loading) return <div className="flex items-center justify-center h-64"><p className="text-muted">Cargando libro de quirófano...</p></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><LoadingState label="Cargando libro de quirófano…" /></div>;
   if (!data) return (
     <div className="flex items-center justify-center h-64">
       <div className="flex items-start gap-2 text-[13px] text-error border border-error/30 bg-error/10 rounded-lg px-4 py-3 max-w-md">
@@ -287,9 +284,9 @@ export default function LibroQuirofanoFull() {
           </div>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <StatusBadge tone={estadoTone[data?.estado as keyof typeof estadoTone] ?? "neutral"} dot label={(data?.estado ?? "").replace("_", " ")} />
-          <span className="text-[11px] font-mono uppercase tracking-wide text-muted px-2 py-1 bg-background border border-border rounded-md">
-            Rol: <span className="text-text font-medium">{effectiveRole}</span>
+          <EstadoBadge dominio="cirugia" estado={data?.estado} dot />
+          <span className="text-[12px] text-muted px-2 py-1 bg-background border border-border rounded-md">
+            Tu rol: <span className="text-text font-medium">{effectiveRole === "MEDICO" ? "Cirujano / ayudante" : rolLabel(effectiveRole)}</span>
           </span>
         </div>
       </div>
@@ -321,7 +318,7 @@ export default function LibroQuirofanoFull() {
           <div className="flex items-start gap-2 text-[13px] text-error border border-error/30 bg-error/10 rounded-lg px-3 py-2">
             <AlertCircle size={14} className="mt-0.5 shrink-0" />
             <span>{inlineError}</span>
-            <button onClick={() => setInlineError(null)} className="ml-auto text-error/70 hover:text-error"><X size={13} /></button>
+            <button aria-label="Cerrar" onClick={() => setInlineError(null)} className="ml-auto text-error/70 hover:text-error"><X size={13} /></button>
           </div>
         )}
         <PendingChecklist items={pendingItems} effectiveRole={effectiveRole} onNavigate={setActiveTab} cirugiaId={cirugiaId} />
@@ -367,10 +364,7 @@ export default function LibroQuirofanoFull() {
       {/* Footer */}
       <div className="flex items-center justify-between px-6 py-3 border-t border-border bg-surface shrink-0 gap-3">
         <div className="flex gap-2">
-          <button onClick={handleSave} disabled={saving || isReadOnly}
-            className={`btn-primary inline-flex items-center gap-2 ${(saving || isReadOnly) ? "opacity-50 cursor-not-allowed" : ""}`}>
-            <Save size={15} /> {saving ? "Guardando…" : "Guardar borrador"}
-          </button>
+          <SaveButton type="button" onClick={handleSave} saving={saving} saved={libroGuardado} disabled={isReadOnly} label="Guardar borrador" />
           <button onClick={handleImprimir} className="btn-secondary inline-flex items-center gap-2">
             <Printer size={15} /> Imprimir
           </button>

@@ -3,13 +3,15 @@
 import { apiErrorMessage } from "@/lib/api-errors";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, User, Clock } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { useParams } from "next/navigation";
+import { Plus, User, Clock, ClipboardList } from "lucide-react";
 import { VoiceInput } from "@/components/ui/VoiceInput";
 import { formatDate } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState, LoadingState } from "@/components/ui/States";
+import { HcSubpageHeader } from "@/components/historia-clinica/HcSubpageHeader";
+import { SaveButton } from "@/components/ui/SaveButton";
 
 interface ControlEnfermeria {
   id: string;
@@ -69,7 +71,6 @@ const vitalesConfig: { key: keyof VitalesForm; label: string; placeholder: strin
 
 export default function EnfermeriaPage() {
   const params = useParams();
-  const router = useRouter();
   const session = useSession();
   const { toast } = useToast();
   const userRol = session?.data?.user?.rol;
@@ -183,12 +184,7 @@ export default function EnfermeriaPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="text-muted hover:text-text transition-colors">
-          <ArrowLeft size={20} />
-        </button>
-        <h2 className="text-lg font-display font-semibold text-text">Enfermería</h2>
-      </div>
+      <HcSubpageHeader internacionId={params.internacionId as string} title="Controles de enfermería" />
 
       {canCreate && (
       <div className="card p-5">
@@ -196,17 +192,17 @@ export default function EnfermeriaPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-muted">Tipo</label>
+              <label className="field-label">Tipo</label>
               <select value={tipo} onChange={(e) => setTipo(e.target.value)} className="select-field">
                 {tiposControl.map((t) => <option key={t} value={t}>{tipoLabels[t]}</option>)}
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-muted">Hora</label>
+              <label className="field-label">Hora</label>
               <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className="input-field" required />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-muted">Observación</label>
+              <label className="field-label">Observación</label>
               <div className="relative">
                 <textarea
                   value={observacion}
@@ -228,7 +224,7 @@ export default function EnfermeriaPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
               {vitalesConfig.map((v) => (
                 <div key={v.key} className="flex flex-col gap-1.5">
-                  <label className="text-sm text-muted">{v.label}</label>
+                  <label className="field-label">{v.label}</label>
                   <input
                     type="number"
                     step="any"
@@ -263,18 +259,16 @@ export default function EnfermeriaPage() {
           )}
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={saving}>
-              <Plus size={16} /> {saving ? "Guardando..." : "Agregar Control"}
-            </Button>
+            <SaveButton saving={saving} icon={Plus} label="Registrar control" />
           </div>
         </form>
       </div>
       )}
 
       {loading ? (
-        <p className="text-muted text-sm">Cargando controles...</p>
+        <LoadingState label="Cargando controles…" />
       ) : controles.length === 0 ? (
-        <p className="text-muted text-sm">Sin controles registrados.</p>
+        <EmptyState bordered compact icon={ClipboardList} title="Sin controles registrados" description="Los controles que cargues aparecerán acá, del más reciente al más antiguo." />
       ) : (
         <div className="space-y-2">
           {controles.map((c) => (

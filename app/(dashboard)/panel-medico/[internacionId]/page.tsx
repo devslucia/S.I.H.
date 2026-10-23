@@ -21,6 +21,7 @@ import { SeccionInterconsultas } from "@/components/episodios/SeccionInterconsul
 import { SeccionAlergias } from "@/components/pacientes/SeccionAlergias";
 import { formatDateTime, formatUserName } from "@/lib/utils";
 import { useSession } from "next-auth/react";
+import { LoadingState } from "@/components/ui/States";
 
 interface Internacion {
   id: string; numero: number; estado: string; fechaIngreso: string;
@@ -246,7 +247,7 @@ export default function PanelMedicoPage() {
     finally { setDandoAlta(false); }
   };
 
-  if (loading) return <p className="text-muted text-sm">Cargando panel...</p>;
+  if (loading) return <LoadingState label="Cargando panel…" />;
   if (!internacion) return <p className="text-muted text-sm">Internación no encontrada.</p>;
 
   const isActive = internacion.estado === "ACTIVA" || internacion.estado === "POSTQUIRURGICO";
@@ -383,7 +384,7 @@ className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-c
                 value={nuevaEvolucion}
                 onChange={setNuevaEvolucion}
                 rows={8}
-                placeholder="Escriba la nota de evolución..."
+                placeholder="Escribí la nota de evolución..."
               />
               <div className="flex justify-end gap-2">
                 <Button variant="secondary" onClick={() => { setShowEvolucionEditor(false); setNuevaEvolucion(""); }}>
@@ -511,7 +512,7 @@ className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-c
             </div>
           )}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-text-secondary">Tipo</label>
+            <label className="field-label">Tipo</label>
             <select value={prescripcionForm.tipo} onChange={(e) => setPrescripcionForm((p) => ({ ...p, tipo: e.target.value }))} className="select-field">
               <option value="MEDICACION">Medicación</option>
               <option value="DIETA">Dieta</option>

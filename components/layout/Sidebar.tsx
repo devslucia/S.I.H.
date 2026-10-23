@@ -2,24 +2,49 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Bed, Stethoscope, Syringe, Package, Receipt, X, Settings, PanelLeftClose, PanelLeftOpen, ClipboardList, BookMarked, Activity, LayoutDashboard, Ambulance } from "lucide-react";
+import { User, Bed, Stethoscope, Syringe, Package, Receipt, X, Settings, PanelLeftClose, PanelLeftOpen, ClipboardList, BookMarked, Activity, LayoutDashboard, Ambulance, FileText, LogOut } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import { rolLabel } from "@/lib/estados";
+import { puedeVerModulo } from "@/lib/navegacion";
 
-const modules = [
-  { id: 1, name: "Dashboard", icon: LayoutDashboard, href: "/", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR","ADMISION","FACTURACION","FARMACIA","SECRETARIA"] },
-  { id: 2, name: "Admisión", icon: User, href: "/admision", roles: ["ADMIN","ADMISION"] },
-  { id: 3, name: "Camas", icon: Bed, href: "/camas", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR","ADMISION","FACTURACION"] },
-  { id: 4, name: "Historias Clínicas", icon: Stethoscope, href: "/historia-clinica", roles: ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO","INSTRUMENTADOR"] },
-  { id: 4.5, name: "Atención Médica", icon: Stethoscope, href: "/atencion-medica", roles: ["ADMIN","MEDICO","ANESTESIOLOGO"] },
-  { id: 4.6, name: "Guardia", icon: Ambulance, href: "/guardia", roles: ["ADMIN","ADMISION","MEDICO","ENFERMERO"] },
-  { id: 4.7, name: "Consultorio", icon: ClipboardList, href: "/consultorio", roles: ["ADMIN","SECRETARIA","MEDICO"] },
-  { id: 5, name: "Enfermería", icon: Syringe, href: "/enfermeria", roles: ["ADMIN","ENFERMERO"] },
-  { id: 6, name: "Quirófano", icon: Activity, href: "/quirofano", roles: ["ADMIN","MEDICO","ANESTESIOLOGO","INSTRUMENTADOR","ENFERMERO"] },
-  { id: 6.5, name: "Mis Plantillas", icon: BookMarked, href: "/plantillas", roles: ["ADMIN","MEDICO","ANESTESIOLOGO"] },
-  { id: 7, name: "Farmacia", icon: Package, href: "/farmacia", roles: ["ADMIN","FARMACIA"] },
-  { id: 8, name: "Facturación", icon: Receipt, href: "/facturacion", roles: ["ADMIN","FACTURACION"] },
-  { id: 9, name: "Configuración", icon: Settings, href: "/configuracion", roles: ["ADMIN"] },
+type Modulo = { name: string; icon: React.ElementType; href: string };
+
+// Agrupado por tipo de tarea: el usuario encuentra su módulo sin leer toda la lista.
+const grupos: { titulo: string | null; modulos: Modulo[] }[] = [
+  {
+    titulo: null,
+    modulos: [
+      { name: "Inicio", icon: LayoutDashboard, href: "/" },
+    ],
+  },
+  {
+    titulo: "Pacientes",
+    modulos: [
+      { name: "Admisión", icon: User, href: "/admision" },
+      { name: "Guardia", icon: Ambulance, href: "/guardia" },
+      { name: "Camas", icon: Bed, href: "/camas" },
+      { name: "Consultorio", icon: ClipboardList, href: "/consultorio" },
+    ],
+  },
+  {
+    titulo: "Atención clínica",
+    modulos: [
+      { name: "Atención médica", icon: Stethoscope, href: "/atencion-medica" },
+      { name: "Historias clínicas", icon: FileText, href: "/historia-clinica" },
+      { name: "Enfermería", icon: Syringe, href: "/enfermeria" },
+      { name: "Quirófano", icon: Activity, href: "/quirofano" },
+      { name: "Mis plantillas", icon: BookMarked, href: "/plantillas" },
+    ],
+  },
+  {
+    titulo: "Gestión",
+    modulos: [
+      { name: "Farmacia", icon: Package, href: "/farmacia" },
+      { name: "Facturación", icon: Receipt, href: "/facturacion" },
+      { name: "Configuración", icon: Settings, href: "/configuracion" },
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -34,7 +59,10 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
   const session = useSession();
   const userRol = session?.data?.user?.rol;
 
-  const visibleModules = modules.filter((m) => !userRol || m.roles.includes(userRol));
+  // Sin sesión todavía (cargando) no se muestran módulos ajenos al rol
+  const visibleGroups = grupos
+    .map((g) => ({ ...g, modulos: g.modulos.filter((m) => puedeVerModulo(userRol, m.href)) }))
+    .filter((g) => g.modulos.length > 0);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -84,38 +112,56 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
                 {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
               </button>
             )}
-            <button onClick={onClose} className="md:hidden p-1.5 text-muted hover:text-text rounded-lg">
+            <button aria-label="Cerrar" onClick={onClose} className="md:hidden p-1.5 text-muted hover:text-text rounded-lg">
               <X size={18} />
             </button>
           </div>
         </div>
 
-        <nav className="flex-1 p-2 overflow-auto space-y-0.5">
-          {visibleModules.map((mod) => {
-            const Icon = mod.icon;
-            const active = isActive(mod.href);
-
-            return (
-              <Link
-                key={mod.id}
-                href={mod.href}
-                onClick={onClose}
-                title={collapsed ? mod.name : undefined}
-                className={cn(
-                  "w-full flex items-center gap-3 rounded-md group relative",
-                  collapsed ? "px-2 py-2.5 justify-center" : "px-3 py-2",
-                  active
-                    ? "bg-brand-soft text-brand font-medium"
-                    : "text-muted hover:bg-surface-hover hover:text-text border border-transparent"
-                )}
-              >
-                <Icon className={cn("w-4 h-4 shrink-0", active && "text-brand")} strokeWidth={active ? 2 : 1.75} />
-                {!collapsed && (
-                  <span className="text-[13px] flex-1">{mod.name}</span>
-                )}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 p-2 overflow-auto" aria-label="Módulos">
+          {session.status === "loading" && (
+            <div className="space-y-1.5 p-1" aria-hidden>
+              {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton h-8" />)}
+            </div>
+          )}
+          {visibleGroups.map((grupo, gi) => (
+            <div key={grupo.titulo ?? gi} className={cn(gi > 0 && "mt-4")}>
+              {grupo.titulo && !collapsed && (
+                <div className="px-3 pb-1.5 text-[10px] font-mono uppercase tracking-widest text-muted/80">
+                  {grupo.titulo}
+                </div>
+              )}
+              {grupo.titulo && collapsed && <div className="mx-3 mb-2 border-t border-border" aria-hidden />}
+              <div className="space-y-0.5">
+                {grupo.modulos.map((mod) => {
+                  const Icon = mod.icon;
+                  const active = isActive(mod.href);
+                  return (
+                    <Link
+                      key={mod.href}
+                      href={mod.href}
+                      onClick={onClose}
+                      title={collapsed ? mod.name : undefined}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "w-full flex items-center gap-3 rounded-md group relative transition-colors duration-150",
+                        collapsed ? "px-2 py-2.5 justify-center" : "px-3 py-2",
+                        active
+                          ? "bg-brand-soft text-brand font-medium"
+                          : "text-text-secondary hover:bg-surface-hover hover:text-text"
+                      )}
+                    >
+                      {active && (
+                        <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-brand" aria-hidden />
+                      )}
+                      <Icon className={cn("w-4 h-4 shrink-0", active ? "text-brand" : "text-muted group-hover:text-text")} strokeWidth={active ? 2 : 1.75} />
+                      {!collapsed && <span className="text-[13px] flex-1">{mod.name}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className={cn(
@@ -127,12 +173,12 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
             collapsed ? "justify-center" : "gap-3"
           )}>
             <div className="w-8 h-8 rounded-md bg-brand-soft flex items-center justify-center text-brand font-medium text-xs shrink-0">
-              {session?.data?.user?.name?.[0] || "U"}
+              {(session?.data?.user?.name?.[0] || "U").toUpperCase()}
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <div className="text-text text-[13px] font-medium truncate">{session?.data?.user?.name || "Usuario"}</div>
-                <div className="text-muted text-[11px] font-mono truncate uppercase tracking-wider">{session?.data?.user?.rol || "—"}</div>
+                <div className="text-muted text-[11px] truncate">{rolLabel(session?.data?.user?.rol)}</div>
               </div>
             )}
             {!collapsed && (
@@ -140,12 +186,9 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
                 onClick={() => signOut({ callbackUrl: "/login" })}
                 className="text-muted hover:text-error transition-colors p-1.5 rounded-lg hover:bg-error/10"
                 title="Cerrar sesión"
+                aria-label="Cerrar sesión"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
+                <LogOut size={15} />
               </button>
             )}
           </div>

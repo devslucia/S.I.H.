@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Loader, Plus, Pencil, Trash2, X } from "lucide-react";
+import { AlertTriangle, Plus, Pencil, Trash2, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
+import { LoadingState } from "@/components/ui/States";
 
 const ACCESO_ESCRITURA = ["MEDICO", "ANESTESIOLOGO", "ADMIN"];
 
@@ -182,9 +183,7 @@ export function SeccionAlergias({ pacienteId }: SeccionAlergiasProps) {
       </div>
 
       {loading ? (
-        <p className="text-xs text-muted flex items-center gap-2">
-          <Loader size={14} className="animate-spin" /> Cargando...
-        </p>
+        <LoadingState compact />
       ) : alergias.length === 0 ? (
         <p className="text-xs text-muted">
           {puedeEditar
@@ -212,14 +211,14 @@ export function SeccionAlergias({ pacienteId }: SeccionAlergiasProps) {
               </div>
               {puedeEditar && (
                 <div className="flex items-center gap-1 shrink-0">
-                  <button
+                  <button aria-label="Editar alergia"
                     onClick={() => abrirEdicion(a)}
                     className="rounded-md p-1.5 text-muted hover:text-text hover:bg-surface-hover transition-colors"
                     title="Editar alergia"
                   >
                     <Pencil size={14} />
                   </button>
-                  <button
+                  <button aria-label="Eliminar alergia"
                     onClick={() => setEliminando(a)}
                     className="rounded-md p-1.5 text-muted hover:text-error hover:bg-error/10 transition-colors"
                     title="Eliminar alergia"
@@ -243,7 +242,7 @@ export function SeccionAlergias({ pacienteId }: SeccionAlergiasProps) {
           />
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-text-secondary">Tipo *</label>
+            <label className="field-label">Tipo<span className="text-error ml-0.5" aria-hidden>*</span></label>
             <select
               value={form.tipo}
               onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}
@@ -256,7 +255,7 @@ export function SeccionAlergias({ pacienteId }: SeccionAlergiasProps) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-text-secondary">Severidad *</label>
+            <label className="field-label">Severidad<span className="text-error ml-0.5" aria-hidden>*</span></label>
             <select
               value={form.severidad}
               onChange={(e) => setForm((f) => ({ ...f, severidad: e.target.value }))}

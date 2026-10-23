@@ -534,8 +534,8 @@ export default function NomencladoresPage() {
             className={cn(
               "border rounded-md px-3 py-1.5 text-[13px] inline-flex items-center gap-1.5 transition-colors",
               tab === t.id
-                ? "bg-accent-button text-white border-accent-button"
-                : "bg-surface text-muted border-border hover:border-border-hover hover:text-text"
+                ? "chip-active"
+                : "chip-inactive"
             )}
           >
             <t.icon size={14} /> {t.label}
@@ -568,8 +568,8 @@ export default function NomencladoresPage() {
                   className={cn(
                     "border rounded-md px-3 py-1.5 text-[13px] transition-colors",
                     alcanceFiltro === v
-                      ? "bg-accent-button text-white border-accent-button"
-                      : "bg-surface text-muted border-border hover:border-border-hover hover:text-text"
+                      ? "chip-active"
+                      : "chip-inactive"
                   )}
                 >
                   {label}
@@ -588,7 +588,7 @@ export default function NomencladoresPage() {
               <h3 className="text-[13px] font-semibold">{editando ? `Editar ${editando.codigo}` : "Nueva práctica"}</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Tipo de práctica *</label>
+                  <label className="field-label">Tipo de práctica<span className="text-error ml-0.5" aria-hidden>*</span></label>
                   <select
                     value={form.alcance ?? "NACIONAL"}
                     onChange={(e) => setForm({ ...form, alcance: e.target.value })}
@@ -600,7 +600,7 @@ export default function NomencladoresPage() {
                 </div>
                 {form.alcance === "ESPECIFICA" && (
                   <div className="flex flex-col gap-1 md:col-span-3">
-                    <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Obra social *</label>
+                    <label className="field-label">Obra social<span className="text-error ml-0.5" aria-hidden>*</span></label>
                     <select
                       value={form.obraSocialId ?? ""}
                       onChange={(e) => setForm({ ...form, obraSocialId: e.target.value })}
@@ -655,7 +655,7 @@ export default function NomencladoresPage() {
           <div className="text-[12px] text-muted font-mono">{totalNac} prácticas · edición ADMIN</div>
 
           <div className="border border-border rounded-lg overflow-auto max-h-[70vh] bg-surface">
-            <table className="w-full text-[13px]">
+            <table className="data-table">
               <thead className="sticky top-0 z-10 bg-surface">
                 <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
                   <th className="px-4 py-2.5 text-left">Código</th>
@@ -693,7 +693,7 @@ export default function NomencladoresPage() {
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex items-center justify-end gap-1.5">
-                        <button
+                        <button aria-label="Editar"
                           onClick={() => abrirEdicion(it)}
                           className="p-1.5 rounded-md text-muted hover:text-brand hover:bg-brand-soft transition-colors"
                           title="Editar"
@@ -758,7 +758,7 @@ export default function NomencladoresPage() {
         <div className="space-y-4">
           <div className="flex gap-2 items-end flex-wrap">
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Obra social</label>
+              <label className="field-label">Obra social</label>
               <select
                 value={osSel}
                 onChange={(e) => setOsSel(e.target.value)}
@@ -854,7 +854,7 @@ export default function NomencladoresPage() {
               )}
 
               <div className="border border-border rounded-lg overflow-auto max-h-[70vh] bg-surface">
-                <table className="w-full text-[13px] min-w-[1100px]">
+                <table className="data-table min-w-[1100px]">
                   <thead className="sticky top-0 z-10 bg-surface">
                     <tr className="border-b border-border text-muted text-[11px] font-mono uppercase tracking-widest">
                       <th className="px-4 py-2.5 text-left">Código</th>
@@ -943,7 +943,7 @@ export default function NomencladoresPage() {
                               <button
                                 onClick={() => guardarItemCopia(it)}
                                 disabled={!dirty || guardandoItem === it.id}
-                                className="btn-primary text-[12px] px-2.5 py-1 disabled:opacity-40"
+                                className="btn-primary btn-sm text-[12px] px-2.5 py-1 disabled:opacity-40"
                               >
                                 {guardandoItem === it.id ? "…" : "Guardar"}
                               </button>
@@ -1045,7 +1045,7 @@ function CampoForm(props: { label: string; valor: string; set: (v: string) => vo
   const { label, valor, set, mono, wide } = props;
   return (
     <div className={cn("flex flex-col gap-1", wide && "md:col-span-2")}>
-      <label className="text-[11px] font-mono uppercase tracking-widest text-muted">{label}</label>
+      <label className="field-label">{label}</label>
       <input
         value={valor}
         onChange={(e) => set(e.target.value)}

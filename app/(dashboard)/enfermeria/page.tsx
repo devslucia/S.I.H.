@@ -17,6 +17,7 @@ import { formatUserName, formatDate, formatDateTime } from "@/lib/utils";
 import IndicacionesNuevas from "@/components/notificaciones/IndicacionesNuevas";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/api-errors";
+import { EmptyState, LoadingState } from "@/components/ui/States";
 
 interface Prescripcion {
   id: string;
@@ -216,31 +217,31 @@ function ControlForm({ internacionId, onSaved }: { internacionId: string; onSave
   return (
     <form onSubmit={handleSubmit} className="border border-border rounded-lg bg-background/40 p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
       <div className="flex flex-col gap-1.5">
-        <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Hora</label>
+        <label className="field-label">Hora</label>
         <input type="time" value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })} className="input-field text-[13px]" required />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="text-[11px] font-mono uppercase tracking-widest text-muted">PA mmHg</label>
+        <label className="field-label">PA mmHg</label>
         <input type="text" placeholder="120/80" value={form.PA} onChange={(e) => setForm({ ...form, PA: e.target.value })} className="input-field text-[13px]" />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="text-[11px] font-mono uppercase tracking-widest text-muted">FC lpm</label>
+        <label className="field-label">FC lpm</label>
         <input type="text" placeholder="80" value={form.FC} onChange={(e) => setForm({ ...form, FC: e.target.value })} className="input-field text-[13px]" />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="text-[11px] font-mono uppercase tracking-widest text-muted">FR rpm</label>
+        <label className="field-label">FR rpm</label>
         <input type="text" placeholder="16" value={form.FR} onChange={(e) => setForm({ ...form, FR: e.target.value })} className="input-field text-[13px]" />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="text-[11px] font-mono uppercase tracking-widest text-muted">T°</label>
+        <label className="field-label">T°</label>
         <input type="text" placeholder="37.0" value={form.temperatura} onChange={(e) => setForm({ ...form, temperatura: e.target.value })} className="input-field text-[13px]" />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Satu O2 %</label>
+        <label className="field-label">Satu O2 %</label>
         <input type="text" placeholder="98" value={form.SatO2} onChange={(e) => setForm({ ...form, SatO2: e.target.value })} className="input-field text-[13px]" />
       </div>
       <div className="col-span-2 md:col-span-2">
-        <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Observación</label>
+        <label className="field-label">Observación</label>
         <div className="relative">
           <textarea
             placeholder="—"
@@ -417,7 +418,7 @@ function AplicarPrescripcion({
 
   return (
     <>
-      <button onClick={() => setExpanded(!expanded)} className="btn-primary text-[12px] inline-flex items-center gap-1.5 min-h-[36px]">
+      <button onClick={() => setExpanded(!expanded)} className="btn-primary btn-sm text-[12px] inline-flex items-center gap-1.5 min-h-[36px]">
         {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Aplicar
       </button>
 
@@ -425,11 +426,11 @@ function AplicarPrescripcion({
         <div className="mt-2 p-3 border border-border rounded-md bg-background/40 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Hora</label>
+              <label className="field-label">Hora</label>
               <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className="input-field text-[13px]" required />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Stock</label>
+              <label className="field-label">Stock</label>
               <select value={selectedStockId} onChange={(e) => setSelectedStockId(e.target.value)} className="select-field text-[13px]">
                 <option value="">Sin stock</option>
                 {stockItems.map((s) => (
@@ -440,7 +441,7 @@ function AplicarPrescripcion({
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Cantidad</label>
+              <label className="field-label">Cantidad</label>
               <input type="number" min="1" value={cantidad} onChange={(e) => setCantidad(Number(e.target.value))} className="input-field text-[13px]" />
             </div>
             <div className="flex items-end">
@@ -451,7 +452,7 @@ function AplicarPrescripcion({
           </div>
 
           <div>
-            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Observación</label>
+            <label className="field-label">Observación</label>
             <div className="relative">
               <textarea
                 placeholder="Nota opcional sobre la aplicación…"
@@ -477,8 +478,8 @@ function AplicarPrescripcion({
                 {parsedMed.observacion && <div className="col-span-2">Obs: <strong>{parsedMed.observacion}</strong></div>}
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={applyParsedMed} className="btn-primary text-[12px]">Aplicar</button>
-                <button type="button" onClick={() => { setShowConfirmMed(false); setParsedMed(null); setVoiceStatus("idle"); }} className="btn-secondary text-[12px]">Editar</button>
+                <button type="button" onClick={applyParsedMed} className="btn-primary btn-sm text-[12px]">Aplicar</button>
+                <button type="button" onClick={() => { setShowConfirmMed(false); setParsedMed(null); setVoiceStatus("idle"); }} className="btn-secondary btn-sm text-[12px]">Editar</button>
               </div>
             </div>
           )}
@@ -595,7 +596,7 @@ function HojaEnfermeriaForm({ internacionId, onSaved }: { internacionId: string;
         <form onSubmit={handleSubmit} className="mt-2 p-3 border border-border rounded-md bg-background/40 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Sección</label>
+              <label className="field-label">Sección</label>
               <select value={seccion} onChange={(e) => setSeccion(e.target.value)} className="select-field text-[13px]">
                 {HOJA_SECCIONES.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -603,15 +604,15 @@ function HojaEnfermeriaForm({ internacionId, onSaved }: { internacionId: string;
               </select>
             </div>
             <div className="sm:col-span-2 flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Item / descripción</label>
+              <label className="field-label">Item / descripción</label>
               <input type="text" placeholder="Ej: Jeringa 5cc, Paracetamol 500 mg…" value={item} onChange={(e) => setItem(e.target.value)} className="input-field text-[13px]" required />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Dosis</label>
+              <label className="field-label">Dosis</label>
               <input type="text" placeholder="Ej: 1g, 10ml" value={dosis} onChange={(e) => setDosis(e.target.value)} className="input-field text-[13px]" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Vía</label>
+              <label className="field-label">Vía</label>
               <input type="text" placeholder="Ej: IV, VO, IM" value={via} onChange={(e) => setVia(e.target.value)} className="input-field text-[13px]" />
             </div>
           </div>
@@ -681,14 +682,14 @@ function MedicacionAdicional({
         </h4>
         <button
           onClick={() => setShowModal(true)}
-          className="py-1.5 px-3 inline-flex items-center gap-1.5 bg-brand-soft text-brand border border-brand hover:bg-brand-soft/80 font-medium rounded-lg transition-colors text-[12px]"
+          className="btn-secondary btn-sm"
         >
           <Plus size={14} /> Agregar medicación adicional
         </button>
       </div>
 
       {loading ? (
-        <div className="p-4 text-center text-muted text-[13px]">Cargando...</div>
+        <LoadingState label="Cargando…" />
       ) : aplicaciones.length === 0 ? (
         <div className="p-4 text-center border border-dashed border-border rounded-lg">
           <Pill size={32} className="mx-auto text-muted/30 mb-2" />
@@ -966,7 +967,7 @@ export default function EnfermeriaPage() {
 
       <IndicacionesNuevas />
 
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-5">
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <OpsStat label="Pacientes" value={internaciones.length} sub="Internados activos" tone="info" />
         <OpsStat label="Indicaciones" value={pendingTotal} sub="Pendientes de aplicar" tone={pendingTotal > 0 ? "warning" : "success"} />
         <OpsStat label="Controles" value={alertasTotal} sub="Con alerta rango vital" tone={alertasTotal > 0 ? "danger" : "neutral"} />
@@ -977,14 +978,14 @@ export default function EnfermeriaPage() {
         <button
           type="button"
           onClick={() => setView("lista")}
-          className={cn("px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors", view === "lista" ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:border-border-hover")}
+          className={cn("px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors", view === "lista" ? "chip-active" : "chip-inactive")}
         >
           Lista de pacientes
         </button>
         <button
           type="button"
           onClick={() => setView("mapa")}
-          className={cn("px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors", view === "mapa" ? "bg-accent-button text-white border-accent-button" : "bg-surface text-muted border-border hover:border-border-hover")}
+          className={cn("px-3 py-1.5 rounded-md text-[11px] font-mono uppercase tracking-wide border transition-colors", view === "mapa" ? "chip-active" : "chip-inactive")}
         >
           Mapa de camas
         </button>
@@ -1005,9 +1006,7 @@ export default function EnfermeriaPage() {
           />
         </div>
       ) : internaciones.length === 0 ? (
-        <p className="text-[13px] text-muted py-10 text-center border border-dashed border-border rounded-lg">
-          No hay pacientes internados activos.
-        </p>
+        <EmptyState bordered title="No hay pacientes internados activos" description="Cuando admisión interne a un paciente, aparecerá acá con sus prescripciones." />
       ) : (
         <div className="space-y-5">
           {internaciones.map((i) => {
@@ -1020,7 +1019,7 @@ export default function EnfermeriaPage() {
                 <div className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-background/40 border-b border-border">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center text-brand font-medium text-sm shrink-0">
-                      {p.nombre[0]}{p.apellido[0]}
+                      {`${p.nombre?.[0] ?? ""}${p.apellido?.[0] ?? ""}`.toUpperCase()}
                     </div>
                     <div className="min-w-0">
                       <p className="font-serif text-[15px] text-text truncate">{p.apellido}, {p.nombre}</p>
@@ -1033,7 +1032,7 @@ export default function EnfermeriaPage() {
                     {i.estado === "EN_QUIROFANO" && <StatusBadge tone="warning" dot pulse label="En quirófano" />}
                     {i.estado === "POSTQUIRURGICO" && <StatusBadge tone="info" dot label="Post-Qx" />}
                     <StatusBadge tone={prescs.length > 0 ? "warning" : "success"} label={`${prescs.length} indicación(es)`} />
-                    <button onClick={() => toggleControles(i.id)} className="btn-secondary text-[12px]">
+                    <button onClick={() => toggleControles(i.id)} className="btn-secondary btn-sm text-[12px]">
                       {selectedInternacion === i.id ? "Ocultar" : "Controles"}
                     </button>
                   </div>
@@ -1106,10 +1105,7 @@ export default function EnfermeriaPage() {
                                   <td colSpan={7} className="px-4 py-3">
                                     <div className="ml-10 border-l-2 border-brand-soft pl-3">
                                       {loadingHist ? (
-                                        <div className="flex items-center gap-2 text-sm text-muted py-2">
-                                          <div className="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin" />
-                                          Cargando historial...
-                                        </div>
+                                        <LoadingState label="Cargando historial…" compact />
                                       ) : apps.length === 0 ? (
                                         <div className="text-sm text-muted italic py-2">Sin aplicaciones registradas</div>
                                       ) : (
@@ -1186,7 +1182,7 @@ export default function EnfermeriaPage() {
                         </div>
                       </div>
                     )}
-                    {loadingControles && <p className="text-[12px] text-muted">Cargando controles…</p>}
+                    {loadingControles && <LoadingState label="Cargando controles…" compact />}
 
                     <div>
                       <h4 className="text-[13px] font-medium text-text mb-3 flex items-center gap-2">

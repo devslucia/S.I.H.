@@ -6,7 +6,7 @@ import type { EffectiveRole } from "@/lib/quirofano-rbac";
 import type { CirugiaFormData, UpdateField } from "./types";
 
 const inputClass = "input-field text-[13px]";
-const labelClass = "text-[11px] font-mono uppercase tracking-widest text-muted mb-1 block";
+const labelClass = "field-label mb-1.5 block";
 const btnTeal = "btn-primary text-[13px]";
 
 const POSICIONES = ["Decúbito dorsal", "Decúbito ventral", "Decúbito lateral", "Trendelenburg", "Anti-Trendelenburg", "Litotomía"];
@@ -49,7 +49,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                 update("balanceIngresos", [...arr, { tipo: "SF", volumen: "", hora: "" }]);
               }} className="text-brand text-xs flex items-center gap-1"><Plus size={12} /> Agregar</button>}
             </div>
-            <table className="w-full text-sm">
+            <table className="data-table">
               <thead><tr className="text-left text-muted text-xs uppercase tracking-wide">
                 <th className="px-2 py-1">Tipo</th><th className="px-2 py-1">Vol (ml)</th><th className="px-2 py-1">Hora</th>
                 {!disabledBalance && <th className="px-2 py-1"></th>}
@@ -66,7 +66,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                     <td className="px-2 py-1"><input type="time" value={i.hora} disabled={disabledBalance}
                       onChange={e => { const arr = [...formData.balanceIngresos]; arr[idx].hora = e.target.value; update("balanceIngresos", arr); }}
                       className="bg-transparent border-none text-sm text-text w-20" /></td>
-                    {!disabledBalance && <td className="px-2 py-1"><button onClick={() => {
+                    {!disabledBalance && <td className="px-2 py-1"><button aria-label="Eliminar" onClick={() => {
                       const arr = formData.balanceIngresos.filter((_, j) => j !== idx); update("balanceIngresos", arr);
                     }} className="text-error"><Trash2 size={12} /></button></td>}
                   </tr>
@@ -83,7 +83,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                 update("balanceEgresos", [...arr, { tipo: "Diuresis", volumen: "", hora: "" }]);
               }} className="text-brand text-xs flex items-center gap-1"><Plus size={12} /> Agregar</button>}
             </div>
-            <table className="w-full text-sm">
+            <table className="data-table">
               <thead><tr className="text-left text-muted text-xs uppercase tracking-wide">
                 <th className="px-2 py-1">Tipo</th><th className="px-2 py-1">Vol (ml)</th><th className="px-2 py-1">Hora</th>
                 {!disabledBalance && <th className="px-2 py-1"></th>}
@@ -100,7 +100,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                     <td className="px-2 py-1"><input type="time" value={e.hora} disabled={disabledBalance}
                       onChange={ev => { const arr = [...formData.balanceEgresos]; arr[idx].hora = ev.target.value; update("balanceEgresos", arr); }}
                       className="bg-transparent border-none text-sm text-text w-20" /></td>
-                    {!disabledBalance && <td className="px-2 py-1"><button onClick={() => {
+                    {!disabledBalance && <td className="px-2 py-1"><button aria-label="Eliminar" onClick={() => {
                       const arr = formData.balanceEgresos.filter((_, j) => j !== idx); update("balanceEgresos", arr);
                     }} className="text-error"><Trash2 size={12} /></button></td>}
                   </tr>
@@ -119,7 +119,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
       <div className="card p-5">
         <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted mb-4">Signos Vitales Intraoperatorios</h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="data-table">
             <thead><tr className="text-left text-muted text-xs uppercase tracking-wide">
               <th className="px-3 py-2">Hora</th><th className="px-3 py-2">TA Sist.</th><th className="px-3 py-2">TA Diast.</th>
               <th className="px-3 py-2">FC</th><th className="px-3 py-2">SatO2</th><th className="px-3 py-2">Temp</th>
@@ -150,7 +150,7 @@ export function TabIngresosEgresos({ formData, update, isReadOnly, effectiveRole
                   <td className="px-3 py-1"><input type="text" value={sv.observacion || ""} disabled={disabledVitals}
                     onChange={e => { const arr = [...formData.signosVitalesIntraop]; arr[idx].observacion = e.target.value; update("signosVitalesIntraop", arr); }}
                     className="bg-transparent border-none text-sm text-text w-28" /></td>
-                  {!disabledVitals && <td className="px-3 py-1"><button onClick={() => {
+                  {!disabledVitals && <td className="px-3 py-1"><button aria-label="Eliminar" onClick={() => {
                     const arr = formData.signosVitalesIntraop.filter((_, j) => j !== idx); update("signosVitalesIntraop", arr);
                   }} className="text-error"><Trash2 size={12} /></button></td>}
                 </tr>

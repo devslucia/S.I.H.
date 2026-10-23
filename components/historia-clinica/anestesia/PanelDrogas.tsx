@@ -157,7 +157,7 @@ function PanelDrogas({ control, readOnly }: PanelDrogasProps) {
                   </div>
 
                   <div className="w-20">
-                    <label className="block text-sm text-muted mb-1">Unidad</label>
+                    <label className="field-label block mb-1">Unidad</label>
                     <select
                       value={field.unidad || ""}
                       disabled={readOnly}
@@ -170,7 +170,7 @@ function PanelDrogas({ control, readOnly }: PanelDrogasProps) {
                   </div>
 
                   <div className="w-20">
-                    <label className="block text-sm text-muted mb-1">Vía</label>
+                    <label className="field-label block mb-1">Vía</label>
                     <select
                       value={field.via || ""}
                       disabled={readOnly}
@@ -195,7 +195,7 @@ function PanelDrogas({ control, readOnly }: PanelDrogasProps) {
                   </div>
 
                   {!readOnly && (
-                    <button
+                    <button aria-label="Eliminar"
                       onClick={() => remove(idx)}
                       className="p-2 text-muted hover:text-error transition-colors mb-0.5"
                     >

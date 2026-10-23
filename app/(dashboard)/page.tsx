@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiErrorMessage } from "@/lib/api-errors";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
   BedDouble, Activity, UserPlus, ChevronRight,
-  Receipt, Users, Package, CalendarClock, Syringe,
+  Receipt, Users, Package, CalendarClock, Syringe, CheckCircle2, Ambulance,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { OpsStat } from "@/components/ui/OpsStat";
 import { AlertList, type AlertTone } from "@/components/ui/AlertList";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { EstadoBadge } from "@/components/ui/EstadoBadge";
+import { ErrorState } from "@/components/ui/States";
+import { puedeVerModulo } from "@/lib/navegacion";
 import IndicacionesNuevas from "@/components/notificaciones/IndicacionesNuevas";
 
 interface StatsData {
@@ -57,26 +60,6 @@ interface StatsData {
   };
 }
 
-const estadoLabel: Record<string, string> = {
-  ACTIVA: "Activa",
-  EN_QUIROFANO: "En quirófano",
-  POSTQUIRURGICO: "Post quirúrgico",
-  ALTA_MEDICA: "Alta médica",
-  ALTA_ENFERMERIA: "Alta enfermería",
-  ALTA_ADMINISTRATIVA: "Alta administrativa",
-  FACTURADA: "Facturada",
-  FALLECIDO: "Fallecido",
-};
-
-const turnoLabel: Record<string, string> = {
-  PENDIENTE: "Pendiente",
-  CONFIRMADO: "Confirmado",
-  EN_CONSULTA: "En consulta",
-  ATENDIDO: "Atendido",
-  NO_ASISTIO: "No asistió",
-  CANCELADO: "Cancelado",
-};
-
 function TurnoList({ agenda }: { agenda: NonNullable<StatsData["rolData"]["agenda"]> }) {
   return (
     <ul className="divide-y divide-border">
@@ -88,13 +71,7 @@ function TurnoList({ agenda }: { agenda: NonNullable<StatsData["rolData"]["agend
             </div>
             <div className="text-[12px] text-muted truncate">{t.hora}</div>
           </div>
-          <StatusBadge
-            tone={
-              t.estado === "EN_CONSULTA" ? "success" :
-                t.estado === "CONFIRMADO" ? "warning" : "info"
-            }
-            label={turnoLabel[t.estado] ?? t.estado}
-          />
+          <EstadoBadge dominio="turno" estado={t.estado} />
         </li>
       ))}
     </ul>
@@ -106,16 +83,19 @@ export default function DashboardPage() {
   const [data, setData] = useState<StatsData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [intento, setIntento] = useState(0);
+
   useEffect(() => {
     if (session.status !== "authenticated") return;
+    setError(null);
     fetch("/api/dashboard/stats")
-      .then((res) => {
-        if (!res.ok) throw new Error(`Error ${res.status}`);
+      .then(async (res) => {
+        if (!res.ok) throw new Error(await apiErrorMessage(res, "No se pudo cargar el tablero"));
         return res.json();
       })
       .then(setData)
-      .catch((e) => setError(String(e)));
-  }, [session.status]);
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+  }, [session.status, intento]);
 
   const hoy = new Date().toLocaleDateString("es-AR", {
     weekday: "long",
@@ -123,12 +103,16 @@ export default function DashboardPage() {
     month: "long",
   });
 
-  const bienvenida = session?.data?.user?.name?.split(" ")[0] || "—";
+  const bienvenida = session?.data?.user?.name?.split(" ")[0] || "";
 
-  if (error) {
+  if (error && !data) {
     return (
-      <div className="border border-error/30 bg-error/10 rounded-lg p-5 text-[13px] text-error">
-        No se pudo cargar el tablero: {error}
+      <div className="card">
+        <ErrorState
+          title="No se pudo cargar el tablero"
+          message={error}
+          onRetry={() => setIntento((n) => n + 1)}
+        />
       </div>
     );
   }
@@ -138,12 +122,15 @@ export default function DashboardPage() {
       <div className="space-y-8">
         <PageHeader
           eyebrow="Tablero operativo"
-          title={`Buen día, ${bienvenida}`}
-          description={`${hoy.charAt(0).toUpperCase()}${hoy.slice(1)} · Cargando resumen operativo…`}
+          title={`${saludo()}, ${bienvenida}`}
+          description={`${hoy.charAt(0).toUpperCase()}${hoy.slice(1)} · Cargando resumen…`}
         />
-        <div className="space-y-3">
-          <div className="skeleton h-24" />
-          <div className="skeleton h-24" />
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3" role="status" aria-label="Cargando tablero">
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton h-[88px]" />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="skeleton h-40" />
+          <div className="skeleton h-40" />
         </div>
       </div>
     );
@@ -153,7 +140,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Tablero operativo"
-        title={`Buen día, ${bienvenida}`}
+        title={`${saludo()}, ${bienvenida}`}
         description={`${hoy.charAt(0).toUpperCase()}${hoy.slice(1)} · ${descripcionRol(data.rol)}`}
       />
 
@@ -162,6 +149,16 @@ export default function DashboardPage() {
       <AccesosRapidos rol={data.rol} />
     </div>
   );
+}
+
+/** KPI del tablero: solo es navegable si el rol puede abrir el módulo destino. */
+function Kpi({ rol, href, ...props }: React.ComponentProps<typeof OpsStat> & { rol: string }) {
+  return <OpsStat {...props} href={href && puedeVerModulo(rol, href) ? href : undefined} />;
+}
+
+function saludo(): string {
+  const h = new Date().getHours();
+  return h < 13 ? "Buen día" : h < 20 ? "Buenas tardes" : "Buenas noches";
 }
 
 function descripcionRol(rol: string): string {
@@ -185,38 +182,38 @@ function KPISection({ data }: { data: StatsData }) {
 
   if (data.rol === "MEDICO") {
     return (
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <OpsStat
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
+        <Kpi rol={data.rol}
           label="Turnos de hoy"
           value={rd.agenda?.length ?? 0}
           sub={`${data.consultorio.enConsulta} en consulta`}
           tone={data.consultorio.enConsulta > 0 ? "success" : "neutral"}
           href="/consultorio"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Pacientes a cargo"
           value={rd.pacientesMios ?? 0}
           sub="internaciones activas"
           tone={(rd.pacientesMios ?? 0) > 0 ? "info" : "neutral"}
           href="/historia-clinica"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Guardia en espera"
           value={data.guardia.enEspera}
           sub={`${data.guardia.enAtencion} en atención`}
           tone={data.guardia.enEspera > 0 ? "warning" : "neutral"}
           href="/guardia"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Cirugías de hoy"
           value={rd.cirugiasAsignadas ?? 0}
           sub={`${data.cirugias.enCurso} en curso`}
           tone={data.cirugias.enCurso > 0 ? "warning" : "neutral"}
           href="/quirofano"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Quirófano"
-          value={data.cirugias.enCurso > 0 ? "en curso" : "s/in actividad"}
+          value={data.cirugias.enCurso > 0 ? "en curso" : "Sin actividad"}
           sub={`${data.cirugias.programadas} programadas hoy`}
           tone={data.cirugias.enCurso > 0 ? "warning" : "info"}
           href="/quirofano"
@@ -227,29 +224,29 @@ function KPISection({ data }: { data: StatsData }) {
 
   if (data.rol === "SECRETARIA") {
     return (
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <OpsStat
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
+        <Kpi rol={data.rol}
           label="Turnos de hoy"
           value={rd.agenda?.length ?? 0}
           sub="médicos asignados"
           tone={data.consultorio.enConsulta > 0 ? "success" : "neutral"}
           href="/consultorio"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="En consulta"
           value={data.consultorio.enConsulta}
           sub="turnos atendiéndose"
           tone={data.consultorio.enConsulta > 0 ? "success" : "neutral"}
           href="/consultorio"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Programados"
           value={data.cirugias.programadas}
           sub="cirugías para hoy"
           tone="neutral"
           href="/quirofano"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Pacientes en espera"
           value={data.pacientesEnEspera}
           sub="sin cama asignada"
@@ -263,36 +260,36 @@ function KPISection({ data }: { data: StatsData }) {
   if (data.rol === "ENFERMERO") {
     return (
       <div className="space-y-6">
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <OpsStat
+        <section className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
+          <Kpi rol={data.rol}
             label="Camas"
             value={`${c.ocupadas} / ${c.total}`}
             sub={`${c.libres} libres · ${c.enLimpieza} limpieza`}
             tone={c.libres === 0 ? "danger" : c.libres <= 2 ? "warning" : "success"}
             href="/camas"
           />
-          <OpsStat
+          <Kpi rol={data.rol}
             label="Prescripciones"
             value={data.prescripcionesPendientes}
             sub="requieren administración"
             tone={data.prescripcionesPendientes > 0 ? "warning" : "success"}
             href="/enfermeria"
           />
-          <OpsStat
+          <Kpi rol={data.rol}
             label="Admisiones de hoy"
             value={data.admisionesHoy}
             sub="ingresos registrados"
             tone={data.admisionesHoy > 0 ? "info" : "neutral"}
             href="/admision"
           />
-          <OpsStat
+          <Kpi rol={data.rol}
             label="Pacientes en espera"
             value={data.pacientesEnEspera}
             sub="sin cama asignada"
             tone={data.pacientesEnEspera > 0 ? "warning" : "neutral"}
             href="/admision"
           />
-          <OpsStat
+          <Kpi rol={data.rol}
             label="Guardia en espera"
             value={data.guardia.enEspera}
             sub={`${data.guardia.enAtencion} en atención`}
@@ -308,29 +305,29 @@ function KPISection({ data }: { data: StatsData }) {
 
   if (data.rol === "ANESTESIOLOGO" || data.rol === "INSTRUMENTADOR") {
     return (
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <OpsStat
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
+        <Kpi rol={data.rol}
           label="Mis quirófanos"
           value={rd.cirugiasAsignadas ?? 0}
           sub="cirugías asignadas hoy"
           tone={(rd.cirugiasAsignadas ?? 0) > 0 ? "info" : "neutral"}
           href="/quirofano"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Quirófano"
-          value={data.cirugias.enCurso > 0 ? "en curso" : "s/in actividad"}
+          value={data.cirugias.enCurso > 0 ? "en curso" : "Sin actividad"}
           sub={`${data.cirugias.programadas} programadas hoy`}
           tone={data.cirugias.enCurso > 0 ? "warning" : "info"}
           href="/quirofano"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Cirugías hoy"
           value={data.cirugias.hoy}
           sub="total del sanatorio"
           tone="neutral"
           href="/quirofano"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Camas"
           value={`${c.ocupadas} / ${c.total}`}
           sub={`${c.libres} libres`}
@@ -343,29 +340,29 @@ function KPISection({ data }: { data: StatsData }) {
 
   if (data.rol === "FARMACIA") {
     return (
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <OpsStat
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
+        <Kpi rol={data.rol}
           label="Stock bajo"
           value={rd.stockBajo ?? 0}
           sub="medicamentos por reponer"
           tone={(rd.stockBajo ?? 0) > 0 ? "warning" : "success"}
           href="/farmacia"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Prescripciones"
           value={data.prescripcionesPendientes}
           sub="pendientes de administrar"
           tone={data.prescripcionesPendientes > 0 ? "warning" : "neutral"}
           href="/enfermeria"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Cirugías hoy"
           value={data.cirugias.hoy}
           sub="pautadas en el sanatorio"
           tone="neutral"
           href="/quirofano"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Admisiones"
           value={data.admisionesHoy}
           sub="de hoy"
@@ -378,29 +375,29 @@ function KPISection({ data }: { data: StatsData }) {
 
   if (data.rol === "FACTURACION") {
     return (
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <OpsStat
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
+        <Kpi rol={data.rol}
           label="Cargos pendientes"
           value={rd.cargosPendientes ?? 0}
           sub="sin facturar"
           tone={(rd.cargosPendientes ?? 0) > 0 ? "warning" : "success"}
           href="/facturacion"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Total pendiente"
           value={`$${Number(rd.totalPendiente ?? 0).toLocaleString("es-AR")}`}
           sub="cargos por facturar"
           tone="neutral"
           href="/facturacion"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Internaciones"
           value={data.internaciones}
           sub="activas"
           tone={data.internaciones > 0 ? "info" : "neutral"}
           href="/camas"
         />
-        <OpsStat
+        <Kpi rol={data.rol}
           label="Camas"
           value={`${c.ocupadas} / ${c.total}`}
           sub={`${c.libres} libres`}
@@ -413,36 +410,36 @@ function KPISection({ data }: { data: StatsData }) {
 
   // ADMIN y ADMISION: visión completa / camas + ingresos
   return (
-    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-      <OpsStat
+    <section className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
+      <Kpi rol={data.rol}
         label="Camas"
         value={`${c.ocupadas} / ${c.total}`}
         sub={`${c.libres} libres · ${c.enLimpieza} limpieza`}
         tone={c.libres === 0 ? "danger" : c.libres <= 2 ? "warning" : "success"}
         href="/camas"
       />
-      <OpsStat
+      <Kpi rol={data.rol}
         label="Quirófano"
-        value={data.cirugias.enCurso > 0 ? `${data.cirugias.enCurso} en curso` : "s/in actividad"}
+        value={data.cirugias.enCurso > 0 ? `${data.cirugias.enCurso} en curso` : "Sin actividad"}
         sub={`${data.cirugias.programadas} programadas hoy · ${data.cirugias.hoy} total`}
         tone={data.cirugias.enCurso > 0 ? "warning" : "info"}
         href="/quirofano"
       />
-      <OpsStat
+      <Kpi rol={data.rol}
         label="Admisión"
         value={data.admisionesHoy}
         sub={`${data.pacientesEnEspera} en espera de cama`}
         tone={data.pacientesEnEspera > 0 ? "warning" : "neutral"}
         href="/admision"
       />
-      <OpsStat
+      <Kpi rol={data.rol}
         label="Consultorio"
         value={data.consultorio.turnosHoy}
         sub={`${data.consultorio.enConsulta} en consulta`}
         tone={data.consultorio.enConsulta > 0 ? "success" : "neutral"}
         href="/consultorio"
       />
-      <OpsStat
+      <Kpi rol={data.rol}
         label="Guardia en espera"
         value={data.guardia.enEspera}
         sub={`${data.guardia.enAtencion} en atención`}
@@ -491,29 +488,30 @@ function AlertasYActividad({ data }: { data: StatsData }) {
     }
   }
 
+  const alertasVisibles = alertas.filter((a) => puedeVerModulo(data.rol, a.href));
   const tieneAgenda = agenda && agenda.length > 0;
 
   return (
     <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="border border-border rounded-lg bg-surface p-4">
-        <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted mb-3">
-          Alertas / Pendientes
-        </h2>
-        {alertas.length === 0 ? (
-          <div className="text-[13px] text-muted py-1">Sin pendientes críticos. Todo en orden.</div>
+      <div className="card p-4">
+        <h2 className="text-[13px] font-semibold text-text mb-3">Pendientes</h2>
+        {alertasVisibles.length === 0 ? (
+          <div className="flex items-center gap-2 text-[13px] text-muted py-1">
+            <CheckCircle2 size={15} className="text-success" aria-hidden /> Sin pendientes críticos. Todo en orden.
+          </div>
         ) : (
-          <AlertList items={alertas} />
+          <AlertList items={alertasVisibles} />
         )}
       </div>
 
-      <div className="border border-border rounded-lg bg-surface p-4">
-        <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted mb-3">
-          {tieneAgenda ? "Agenda de turnos" : "Actividad reciente"}
+      <div className="card p-4">
+        <h2 className="text-[13px] font-semibold text-text mb-3">
+          {tieneAgenda ? "Agenda de turnos de hoy" : "Últimas admisiones"}
         </h2>
         {tieneAgenda && agenda ? (
           <TurnoList agenda={agenda} />
         ) : data.actividadReciente.length === 0 ? (
-          <div className="text-[13px] text-muted py-1">Sin admisiones registradas.</div>
+          <div className="text-[13px] text-muted py-1">Todavía no hay admisiones registradas.</div>
         ) : (
           <ul className="divide-y divide-border">
             {data.actividadReciente.map((i) => (
@@ -526,10 +524,7 @@ function AlertasYActividad({ data }: { data: StatsData }) {
                     #{i.numero} · {i.cama || "sin cama"}
                   </div>
                 </div>
-                <StatusBadge
-                  tone={i.estado === "ACTIVA" ? "success" : i.estado === "EN_QUIROFANO" ? "warning" : "info"}
-                  label={estadoLabel[i.estado] ?? i.estado}
-                />
+                <EstadoBadge dominio="internacion" estado={i.estado} />
               </li>
             ))}
           </ul>
@@ -540,26 +535,30 @@ function AlertasYActividad({ data }: { data: StatsData }) {
 }
 
 function AccesosRapidos({ rol }: { rol: string }) {
-  const links: { href: string; icon: LucideIcon; label: string; roles: string[] }[] = [
-    { href: "/camas", icon: BedDouble, label: "Gestionar camas", roles: ["ADMIN", "MEDICO", "ENFERMERO", "INSTRUMENTADOR", "ANESTESIOLOGO", "ADMISION", "FACTURACION"] },
-    { href: "/quirofano", icon: Activity, label: "Agenda quirúrgica", roles: ["ADMIN", "MEDICO", "ANESTESIOLOGO", "INSTRUMENTADOR"] },
-    { href: "/admision", icon: UserPlus, label: "Nueva admisión", roles: ["ADMIN", "ADMISION"] },
-    { href: "/consultorio", icon: CalendarClock, label: "Consultorio", roles: ["ADMIN", "SECRETARIA", "MEDICO"] },
-    { href: "/enfermeria", icon: Syringe, label: "Enfermería", roles: ["ADMIN", "ENFERMERO"] },
-    { href: "/historia-clinica", icon: Users, label: "Historias clínicas", roles: ["ADMIN", "MEDICO", "ENFERMERO", "ANESTESIOLOGO", "INSTRUMENTADOR"] },
-    { href: "/farmacia", icon: Package, label: "Depósito de farmacia", roles: ["ADMIN", "FARMACIA"] },
-    { href: "/facturacion", icon: Receipt, label: "Facturación", roles: ["ADMIN", "FACTURACION"] },
+  const links: { href: string; icon: LucideIcon; label: string }[] = [
+    { href: "/admision", icon: UserPlus, label: "Nueva admisión" },
+    { href: "/guardia", icon: Ambulance, label: "Guardia" },
+    { href: "/camas", icon: BedDouble, label: "Mapa de camas" },
+    { href: "/historia-clinica", icon: Users, label: "Historias clínicas" },
+    { href: "/enfermeria", icon: Syringe, label: "Enfermería" },
+    { href: "/quirofano", icon: Activity, label: "Agenda quirúrgica" },
+    { href: "/consultorio", icon: CalendarClock, label: "Consultorio" },
+    { href: "/farmacia", icon: Package, label: "Depósito de farmacia" },
+    { href: "/facturacion", icon: Receipt, label: "Facturación" },
   ];
 
-  const visibles = links.filter((l) => l.roles.includes(rol));
+  const visibles = links.filter((l) => puedeVerModulo(rol, l.href));
 
   if (visibles.length === 0) return null;
 
   return (
-    <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
+    <section>
+      <h2 className="text-[11px] font-mono uppercase tracking-wider text-muted mb-2">Accesos rápidos</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
       {visibles.map((l) => (
         <QuickLink key={l.href} href={l.href} icon={l.icon} label={l.label} />
       ))}
+      </div>
     </section>
   );
 }

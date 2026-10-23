@@ -3,6 +3,7 @@
 import { Check, X, Play, ChevronRight, CalendarX } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { cn } from "@/lib/utils";
+import { ESTADO_TURNO } from "@/lib/estados";
 
 interface Turno {
   id: string;
@@ -16,15 +17,7 @@ interface Turno {
   episodio?: { id: string; numero: number } | null;
 }
 
-const estadoConfig: Record<string, { tone: "success" | "warning" | "danger" | "info" | "neutral"; label: string; dot?: boolean; pulse?: boolean }> = {
-  PENDIENTE: { tone: "warning", label: "Pendiente", dot: true },
-  CONFIRMADO: { tone: "info", label: "Confirmado", dot: true },
-  PRESENTE: { tone: "success", label: "Presente", dot: true },
-  EN_CONSULTA: { tone: "success", label: "En consulta", dot: true, pulse: true },
-  COMPLETADO: { tone: "neutral", label: "Atendido" },
-  CANCELADO: { tone: "danger", label: "Cancelado" },
-  NO_ASISTIO: { tone: "danger", label: "No asistió" },
-};
+const estadoConfig = ESTADO_TURNO;
 
 const CERRADOS = ["CANCELADO", "NO_ASISTIO"];
 
@@ -83,7 +76,7 @@ export function TurnoCard({ turno, viewMode, onConfirm, onPresente, onCancel, on
 
       <div className="flex items-center gap-1.5 shrink-0">
         {viewMode === "secretaria" && turno.estado === "PENDIENTE" && onConfirm && (
-          <button onClick={() => onConfirm(turno)} className="btn-primary text-[12px] inline-flex items-center gap-1.5">
+          <button onClick={() => onConfirm(turno)} className="btn-primary btn-sm text-[12px] inline-flex items-center gap-1.5">
             <Check size={13} /> Confirmar
           </button>
         )}
@@ -93,17 +86,17 @@ export function TurnoCard({ turno, viewMode, onConfirm, onPresente, onCancel, on
           </button>
         )}
         {viewMode === "secretaria" && (turno.estado === "PENDIENTE" || turno.estado === "CONFIRMADO" || turno.estado === "PRESENTE") && onCancel && (
-          <button onClick={() => onCancel(turno)} className="btn-danger text-[12px] inline-flex items-center gap-1.5">
+          <button onClick={() => onCancel(turno)} className="btn-danger btn-sm text-[12px] inline-flex items-center gap-1.5">
             <X size={13} /> Cancelar
           </button>
         )}
         {viewMode === "medico" && turno.estado === "PRESENTE" && onStart && (
-          <button onClick={() => onStart(turno)} className="btn-primary text-[12px] inline-flex items-center gap-1.5">
+          <button onClick={() => onStart(turno)} className="btn-primary btn-sm text-[12px] inline-flex items-center gap-1.5">
             <Play size={13} /> Iniciar
           </button>
         )}
         {viewMode === "medico" && turno.estado === "EN_CONSULTA" && onClick && (
-          <button onClick={() => onClick(turno)} className="btn-secondary text-[12px] inline-flex items-center gap-1.5">
+          <button onClick={() => onClick(turno)} className="btn-secondary btn-sm text-[12px] inline-flex items-center gap-1.5">
             <ChevronRight size={14} /> Continuar
           </button>
         )}

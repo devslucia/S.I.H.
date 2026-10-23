@@ -8,7 +8,8 @@ import { OpsStat } from "@/components/ui/OpsStat";
 import { Modal } from "@/components/ui/Modal";
 import { BedMap, type BedMapCama } from "@/components/ui/BedMap";
 import { CamaDetailPanel, type CamaDetailData, type CamaEstado } from "@/components/ui/CamaDetailPanel";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Bed } from "lucide-react";
+import { EmptyState } from "@/components/ui/States";
 
 interface Paciente {
   id: string;
@@ -146,9 +147,11 @@ export default function CamasPage() {
       <PageHeader
         eyebrow="Internación · Camas"
         title="Mapa de camas"
-        description="Disponibilidad por sector. Seleccione una cama para ver el detalle y gestionar su estado."
+        description="Disponibilidad por sector. Seleccioná una cama para ver el detalle y gestionar su estado."
         actions={
           <button
+              aria-label="Actualizar"
+              title="Actualizar"
             type="button"
             onClick={fetchCamas}
             disabled={loading}
@@ -160,7 +163,7 @@ export default function CamasPage() {
         }
       />
 
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-5">
+      <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <OpsStat label="Camas" value={total} sub={`${tasa}% ocupación`} tone="neutral" />
         <OpsStat label="Libres" value={libres} sub="Asignable ahora" tone={libres === 0 ? "danger" : libres <= 2 ? "warning" : "success"} />
         <OpsStat label="Ocupadas" value={ocupadas} sub="Con internación activa" tone="info" />
@@ -174,9 +177,12 @@ export default function CamasPage() {
           <div className="skeleton h-64" />
         </div>
       ) : total === 0 ? (
-        <div className="text-[13px] text-muted py-10 text-center border border-dashed border-border rounded-lg">
-          No hay camas registradas todavía.
-        </div>
+        <EmptyState
+          bordered
+          icon={Bed}
+          title="No hay camas registradas"
+          description="Las camas y sectores se configuran en Configuración → Administrar sistema."
+        />
       ) : (
         <BedMap
           camas={camasMap}

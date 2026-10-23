@@ -4,11 +4,12 @@ import { apiErrorMessage } from "@/lib/api-errors";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Printer, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
+import { Printer, ArrowLeft, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Membrete } from "@/components/print/Membrete";
 import { formatDate, formatDateTime, toMoney } from "@/lib/utils";
 import type { DrogaAnestesiaData } from "@/types";
+import { LoadingState } from "@/components/ui/States";
 
 interface SignosVitalesIntraop {
   registros: {
@@ -259,8 +260,7 @@ export default function ImprimirCarpetaPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[50vh]">
-      <Loader2 className="w-6 h-6 text-brand animate-spin" />
-      <span className="ml-2 text-text-secondary">Cargando carpeta completa...</span>
+      <LoadingState label="Cargando carpeta completa…" />
     </div>
   );
 

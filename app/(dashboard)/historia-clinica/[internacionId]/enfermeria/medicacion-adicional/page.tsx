@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Search, Pill, AlertCircle, CheckCircle } from "lucide-react";
+import { useParams } from "next/navigation";
+import { Plus, Search, Pill, AlertCircle, CheckCircle } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { MedicacionMultiSelect, type SelectedItem } from "@/components/shared/MedicacionMultiSelect";
 import { formatDateTime } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { LoadingState } from "@/components/ui/States";
+import { HcSubpageHeader } from "@/components/historia-clinica/HcSubpageHeader";
 
 interface AdHocAplicacion {
   id: string;
@@ -20,7 +22,6 @@ interface AdHocAplicacion {
 
 export default function MedicacionAdicionalPage() {
   const params = useParams();
-  const router = useRouter();
   const { toast } = useToast();
 
   const [aplicaciones, setAplicaciones] = useState<AdHocAplicacion[]>([]);
@@ -81,25 +82,20 @@ export default function MedicacionAdicionalPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="text-muted hover:text-text transition-colors">
-          <ArrowLeft size={20} />
-        </button>
-        <div className="flex-1">
-          <h2 className="text-lg font-display font-semibold text-text">Medicación adicional</h2>
-          <p className="text-sm text-muted">Medicación cargada sin prescripción médica (ad-hoc)</p>
-        </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="py-2 px-4 inline-flex items-center gap-2 bg-brand-soft text-brand border border-brand hover:bg-brand-soft/80 font-medium rounded-lg transition-colors"
-        >
-          <Plus size={16} /> Agregar medicación
-        </button>
-      </div>
+      <HcSubpageHeader
+        internacionId={params.internacionId as string}
+        title="Medicación adicional"
+        description="Medicación cargada sin prescripción médica (ad-hoc)."
+        actions={
+          <button onClick={() => setShowModal(true)} className="btn-primary text-[13px]">
+            <Plus size={16} /> Agregar medicación
+          </button>
+        }
+      />
 
       <div className="card">
         {loading ? (
-          <div className="p-8 text-center text-muted">Cargando...</div>
+          <LoadingState label="Cargando…" />
         ) : aplicaciones.length === 0 ? (
           <div className="p-8 text-center">
             <Pill size={48} className="mx-auto text-muted/30 mb-3" />

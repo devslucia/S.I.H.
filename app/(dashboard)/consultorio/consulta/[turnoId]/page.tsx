@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
 import { ConsultaShell } from "@/components/consultorio/ConsultaShell";
+import { ESTADO_TURNO } from "@/lib/estados";
 
 interface Turno {
   id: string;
@@ -23,14 +24,7 @@ interface Turno {
   episodio?: { id: string; numero: number } | null;
 }
 
-const estadoBadges: Record<string, { tone: "success" | "warning" | "danger" | "info" | "neutral"; label: string; dot?: boolean; pulse?: boolean }> = {
-  PENDIENTE: { tone: "warning", label: "Pendiente", dot: true },
-  CONFIRMADO: { tone: "info", label: "Confirmado", dot: true },
-  EN_CONSULTA: { tone: "success", label: "En consulta", dot: true, pulse: true },
-  COMPLETADO: { tone: "neutral", label: "Atendido" },
-  CANCELADO: { tone: "danger", label: "Cancelado" },
-  NO_ASISTIO: { tone: "danger", label: "No asistió" },
-};
+const estadoBadges = ESTADO_TURNO;
 
 export default function ConsultaPage() {
   const { toast } = useToast();

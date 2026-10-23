@@ -121,7 +121,7 @@ export default function AsignarSecretariaConsultorioPage() {
         description="Las secretarias solo pueden ver y agendar turnos de los médicos que les fueron asignados."
       />
 
-      <section className="grid grid-cols-2 gap-5">
+      <section className="grid grid-cols-2 gap-3">
         <OpsStat label="Secretarias" value={secretarias.length} sub="Con asignaciones" tone="info" />
         <OpsStat label="Relaciones" value={asignaciones.length} sub="Secretaria ↔ médico" tone="neutral" />
       </section>
@@ -141,7 +141,7 @@ export default function AsignarSecretariaConsultorioPage() {
         <p className="text-[11px] font-mono uppercase tracking-widest text-muted">Nueva asignación</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Secretaria *</label>
+            <label className="field-label">Secretaria<span className="text-error ml-0.5" aria-hidden>*</span></label>
             <select className="select-field text-[13px]" value={selectedSecretaria} onChange={(e) => setSelectedSecretaria(e.target.value)}>
               <option value="">Seleccionar…</option>
               {secretarias.map((s) => (
@@ -150,7 +150,7 @@ export default function AsignarSecretariaConsultorioPage() {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Médico *</label>
+            <label className="field-label">Médico<span className="text-error ml-0.5" aria-hidden>*</span></label>
             <select className="select-field text-[13px]" value={selectedMedico} onChange={(e) => setSelectedMedico(e.target.value)}>
               <option value="">Seleccionar…</option>
               {medicos.map((m) => (
@@ -200,7 +200,7 @@ export default function AsignarSecretariaConsultorioPage() {
                       <span className="text-[13px] text-text">
                         Dr. {formatUserName(m)} {m.especialidad ? `(${m.especialidad})` : ""}
                       </span>
-                      <button onClick={() => setPendingRemove({ secretariaId: secretaria.id, medicoId: m.id, label: `Dr. ${formatUserName(m)}` })} className="text-muted hover:text-error transition-colors">
+                      <button aria-label="Cerrar" onClick={() => setPendingRemove({ secretariaId: secretaria.id, medicoId: m.id, label: `Dr. ${formatUserName(m)}` })} className="text-muted hover:text-error transition-colors">
                         <X size={13} />
                       </button>
                     </div>

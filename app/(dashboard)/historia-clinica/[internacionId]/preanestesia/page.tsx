@@ -4,8 +4,8 @@ import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/api-errors";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Save, CheckCircle, AlertCircle, Printer } from "lucide-react";
+import { useParams } from "next/navigation";
+import { CheckCircle, AlertCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
@@ -16,10 +16,12 @@ import { AntecClinicosForm } from "@/components/historia-clinica/preanestesia/An
 import { ExamenFisicoForm } from "@/components/historia-clinica/preanestesia/ExamenFisicoForm";
 import type { PreanestesiaData } from "@/types";
 import { defaultAntecClinicos, defaultExamenFisico } from "@/types";
+import { LoadingState } from "@/components/ui/States";
+import { SaveButton } from "@/components/ui/SaveButton";
+import { HcSubpageHeader } from "@/components/historia-clinica/HcSubpageHeader";
 
 export default function PreanestesiaPage() {
   const params = useParams();
-  const router = useRouter();
   const [data, setData] = useState<PreanestesiaData>({});
   const [patientSex, setPatientSex] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -94,18 +96,15 @@ export default function PreanestesiaPage() {
     }
   };
 
-  if (loading) return <p className="text-muted text-sm">Cargando valoración preanestésica...</p>;
+  if (loading) return <LoadingState label="Cargando valoración preanestésica…" />;
   if (loadError) return <p className="text-error text-sm">{loadError}</p>;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-muted hover:text-text transition-colors">
-            <ArrowLeft size={20} />
-          </button>
-          <h2 className="text-lg font-display font-semibold text-text">Valoración Preanestésica</h2>
-        </div>
+      <HcSubpageHeader
+        internacionId={params.internacionId as string}
+        title="Valoración preanestésica"
+        actions={
         <div className="flex items-center gap-3">
           {data.firmadaAt ? (
             <Badge variant="success" className="flex items-center gap-1">
@@ -116,9 +115,7 @@ export default function PreanestesiaPage() {
               <AlertCircle size={12} /> Sin firmar
             </Badge>
           )}
-          <Button onClick={handleSave} disabled={saving}>
-            <Save size={16} /> {saving ? "Guardando..." : saved ? "Guardado" : "Guardar"}
-          </Button>
+          <SaveButton type="button" onClick={handleSave} saving={saving} saved={saved} />
           {data.id && (
             <Button
               variant="secondary"
@@ -128,7 +125,8 @@ export default function PreanestesiaPage() {
             </Button>
           )}
         </div>
-      </div>
+        }
+      />
 
       {/* Datos generales */}
       <div className="card p-5 space-y-4">

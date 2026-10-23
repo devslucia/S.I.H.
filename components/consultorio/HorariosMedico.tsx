@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Clock, Plus, Trash2, AlertTriangle, Check } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { LoadingState } from "@/components/ui/States";
 
 interface Horario {
   id: string;
@@ -102,13 +103,13 @@ export function HorariosMedico({ medicoId }: HorariosMedicoProps) {
     }
   };
 
-  if (loading) return <p className="text-[13px] text-muted py-4">Cargando horarios…</p>;
+  if (loading) return <LoadingState label="Cargando horarios…" />;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-mono uppercase tracking-widest text-muted">Horarios configurados</p>
-        <button onClick={() => setShowForm(true)} className="btn-secondary text-[12px] inline-flex items-center gap-1.5">
+        <button onClick={() => setShowForm(true)} className="btn-secondary btn-sm text-[12px] inline-flex items-center gap-1.5">
           <Plus size={13} /> Nuevo horario
         </button>
       </div>
@@ -128,7 +129,7 @@ export function HorariosMedico({ medicoId }: HorariosMedicoProps) {
         <div className="border border-border rounded-lg bg-surface p-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Día</label>
+              <label className="field-label">Día</label>
               <select className="select-field text-[13px]" value={form.dia} onChange={(e) => setForm({ ...form, dia: e.target.value })}>
                 {DIAS.map((d) => (
                   <option key={d} value={d}>{DIAS_LABELS[d]}</option>
@@ -136,15 +137,15 @@ export function HorariosMedico({ medicoId }: HorariosMedicoProps) {
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Inicio</label>
+              <label className="field-label">Inicio</label>
               <input className="input-field text-[13px]" type="time" value={form.horaInicio} onChange={(e) => setForm({ ...form, horaInicio: e.target.value })} />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Fin</label>
+              <label className="field-label">Fin</label>
               <input className="input-field text-[13px]" type="time" value={form.horaFin} onChange={(e) => setForm({ ...form, horaFin: e.target.value })} />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-mono uppercase tracking-widest text-muted">Intervalo (min)</label>
+              <label className="field-label">Intervalo (min)</label>
               <input className="input-field text-[13px]" type="number" value={form.intervaloMin} onChange={(e) => setForm({ ...form, intervaloMin: parseInt(e.target.value) || 30 })} min={5} max={120} />
             </div>
           </div>
@@ -177,7 +178,7 @@ export function HorariosMedico({ medicoId }: HorariosMedicoProps) {
                         {h.horaInicio} — {h.horaFin}
                       </span>
                       <span className="text-[11px] font-mono text-muted">c/{h.intervaloMin} min</span>
-                      <button onClick={() => setPendingDelete(h)} className="text-muted hover:text-error transition-colors">
+                      <button aria-label="Eliminar" onClick={() => setPendingDelete(h)} className="text-muted hover:text-error transition-colors">
                         <Trash2 size={13} />
                       </button>
                     </div>

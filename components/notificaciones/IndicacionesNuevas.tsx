@@ -21,6 +21,8 @@ export default function IndicacionesNuevas() {
   const { status } = useSession();
   const router = useRouter();
   const [items, setItems] = useState<Notificacion[]>([]);
+  // Compacto por defecto: no empujar la lista de pacientes fuera de pantalla
+  const [expandido, setExpandido] = useState(false);
 
   const fetchIndicaciones = async () => {
     try {
@@ -61,12 +63,12 @@ export default function IndicacionesNuevas() {
         <p className="text-[13px] text-muted px-4 py-5">Sin indicaciones nuevas. Todo al día.</p>
       ) : (
         <div className="divide-y divide-border">
-          {items.slice(0, 8).map((n) => (
+          {items.slice(0, expandido ? 20 : 3).map((n) => (
             <button
               key={n.id}
               type="button"
               onClick={() => marcarLeida(n)}
-              className="w-full text-left px-4 py-3 hover:bg-surface-hover transition-colors"
+              className="w-full text-left px-4 py-2.5 hover:bg-surface-hover transition-colors"
             >
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand shrink-0" />
@@ -78,6 +80,15 @@ export default function IndicacionesNuevas() {
               <p className="text-[12px] text-muted mt-0.5 leading-snug">{n.mensaje}</p>
             </button>
           ))}
+          {items.length > 3 && (
+            <button
+              type="button"
+              onClick={() => setExpandido((v) => !v)}
+              className="w-full px-4 py-2 text-[12px] font-medium text-brand hover:bg-surface-hover transition-colors"
+            >
+              {expandido ? "Mostrar menos" : `Ver todas (${items.length})`}
+            </button>
+          )}
         </div>
       )}
     </div>

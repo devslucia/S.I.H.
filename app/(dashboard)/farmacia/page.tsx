@@ -4,7 +4,7 @@ import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/api-errors";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { AlertTriangle, Plus, ArrowUpDown, Trash2, Search, Pencil, Upload, Power } from "lucide-react";
+import { AlertTriangle, Plus, ArrowUpDown, Trash2, Search, Pencil, Upload, Power, SearchX, Package } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { OpsStat } from "@/components/ui/OpsStat";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -13,6 +13,7 @@ import { DateInput } from "@/components/ui/DateInput";
 import { formatDate } from "@/lib/utils";
 import { calcularPreciosUnitarios, formatearPrecio } from "@/lib/precios";
 import { useDebounce } from "@/hooks/useDebounce";
+import { EmptyState } from "@/components/ui/States";
 
 interface StockItem {
   id: string;
@@ -64,7 +65,7 @@ const FORM_INICIAL: FormState = {
 };
 
 const field = "flex flex-col gap-1";
-const label = "text-[11px] font-mono uppercase tracking-widest text-muted";
+const label = "field-label";
 const th = "px-4 py-2.5 text-left text-[11px] font-mono uppercase tracking-widest text-muted whitespace-nowrap bg-surface";
 const td = "px-4 py-2.5";
 
@@ -112,7 +113,7 @@ function ItemFormFields({ form, onChange }: { form: FormState; onChange: (p: Par
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div className={`${field} sm:col-span-2`}>
-        <label className={label}>Nombre *</label>
+        <label className={label}>Nombre<span className="text-error ml-0.5" aria-hidden>*</span></label>
         <input className="input-field text-[13px]" name="nombre" value={form.nombre}
           onChange={(e) => onChange({ nombre: e.target.value })} required />
       </div>
@@ -122,22 +123,22 @@ function ItemFormFields({ form, onChange }: { form: FormState; onChange: (p: Par
           onChange={(e) => onChange({ principioActivo: e.target.value })} />
       </div>
       <div className={field}>
-        <label className={label}>Presentación *</label>
+        <label className={label}>Presentación<span className="text-error ml-0.5" aria-hidden>*</span></label>
         <input className="input-field text-[13px]" name="presentacion" value={form.presentacion}
           onChange={(e) => onChange({ presentacion: e.target.value })} required />
       </div>
       <div className={field}>
-        <label className={label}>N° / troquel *</label>
+        <label className={label}>N° / troquel<span className="text-error ml-0.5" aria-hidden>*</span></label>
         <input className="input-field text-[13px] font-mono" name="nTroquel" value={form.nTroquel} placeholder="Ej: 854291"
           onChange={(e) => onChange({ nTroquel: e.target.value })} required />
       </div>
       <div className={field}>
-        <label className={label}>Laboratorio *</label>
+        <label className={label}>Laboratorio<span className="text-error ml-0.5" aria-hidden>*</span></label>
         <input className="input-field text-[13px]" name="laboratorio" value={form.laboratorio} placeholder="Ej: Roemmers"
           onChange={(e) => onChange({ laboratorio: e.target.value })} required />
       </div>
       <div className={field}>
-        <label className={label}>Unidad *</label>
+        <label className={label}>Unidad<span className="text-error ml-0.5" aria-hidden>*</span></label>
         <select value={form.unidad} onChange={(e) => onChange({ unidad: e.target.value })} className="select-field text-[13px]" required>
           <option value="unidades">Unidades</option>
           <option value="mg">mg</option>
@@ -168,17 +169,17 @@ function ItemFormFields({ form, onChange }: { form: FormState; onChange: (p: Par
           onChange={(e) => onChange({ nomencladorCodigo: e.target.value })} />
       </div>
       <div className={field}>
-        <label className={label}>Precio compra ($) *</label>
+        <label className={label}>Precio compra ($)<span className="text-error ml-0.5" aria-hidden>*</span></label>
         <input className="input-field text-[13px] tabular-nums" name="precioCompra" type="number" step="0.01" min="0.01" value={form.precioCompra}
           onChange={(e) => onChange({ precioCompra: e.target.value })} required />
       </div>
       <div className={field}>
-        <label className={label}>Precio venta ($) *</label>
+        <label className={label}>Precio venta ($)<span className="text-error ml-0.5" aria-hidden>*</span></label>
         <input className="input-field text-[13px] tabular-nums" name="precioVenta" type="number" step="0.01" min="0.01" value={form.precioVenta}
           onChange={(e) => onChange({ precioVenta: e.target.value })} required />
       </div>
       <div className={field}>
-        <label className={label}>Fracción (unidades por envase) *</label>
+        <label className={label}>Fracción (unidades por envase)<span className="text-error ml-0.5" aria-hidden>*</span></label>
         <input className="input-field text-[13px] tabular-nums" name="fraccion" type="number" step="1" min="1" value={form.fraccion}
           onChange={(e) => onChange({ fraccion: e.target.value })} required />
         {fraccionInvalida && <span className="text-[11px] text-error">Debe ser un número entero mayor a 0</span>}
@@ -512,7 +513,7 @@ export default function FarmaciaPage() {
       <PageHeader
         eyebrow="Farmacia"
         title="Stock de farmacia"
-        description="Medicamentos, presentaciones y movimientos de stock. El rol FARMACIA opera el inventario; ADMIN administra el alta de ítems."
+        description="Medicamentos, presentaciones y movimientos de stock. Farmacia registra ingresos y egresos; el alta de ítems la hace Administración."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
             {(userRole === "ADMIN" || userRole === "FARMACIA") && (
@@ -538,7 +539,7 @@ export default function FarmaciaPage() {
         }
       />
 
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-5">
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <OpsStat label="Ítems" value={stats.totalActivos} sub="Medicamentos y presentaciones" tone="info" />
         <OpsStat label="Stock bajo" value={stats.stockBajo} sub="En o por debajo del mínimo" tone={stats.stockBajo > 0 ? "warning" : "neutral"} />
         <OpsStat label="Por vencer" value={stats.porVencer} sub="Vencimiento en 30 días" tone={stats.porVencer > 0 ? "danger" : "neutral"} />
@@ -576,7 +577,7 @@ export default function FarmaciaPage() {
             <button
               onClick={() => confirmarBulkAction(true)}
               disabled={saving}
-              className="btn-secondary bg-white text-[13px]"
+              className="btn-secondary text-[13px]"
             >
               {saving ? "Procesando..." : "Activar seleccionados"}
             </button>
@@ -598,16 +599,17 @@ export default function FarmaciaPage() {
           <div className="skeleton h-48" />
         </div>
       ) : stock.length === 0 ? (
-        <div className="border border-dashed border-border rounded-lg py-12 text-center">
-          <p className="text-[13px] text-muted">
-            {search ? "Ningún ítem coincide con la búsqueda." : "Sin medicamentos registrados."}
-          </p>
-        </div>
+        <EmptyState
+          bordered
+          icon={search ? SearchX : Package}
+          title={search ? "Ningún ítem coincide con la búsqueda" : "Sin medicamentos registrados"}
+          description={search ? "Revisá la ortografía o buscá por código." : undefined}
+        />
       ) : (
         <div className="border border-border rounded-lg overflow-hidden bg-surface">
           {/* overflow-auto habilita scroll en ambos ejes; max-h fija la altura usable */}
           <div className="overflow-auto max-h-[calc(100vh-18rem)]">
-            <table className="w-full text-[13px]">
+            <table className="data-table">
               {/* sticky top-0 z-10: encabezados fijos al hacer scroll vertical dentro del contenedor */}
               <thead className="sticky top-0 z-10">
                 <tr className="border-b border-border text-muted bg-surface">
@@ -706,7 +708,7 @@ export default function FarmaciaPage() {
                       </td>
                       <td className={td + " text-right"}>
                         <div className="flex items-center justify-end gap-1.5">
-                          <button onClick={() => openMovement(item)} className="btn-secondary text-[12px] inline-flex items-center gap-1.5">
+                          <button onClick={() => openMovement(item)} className="btn-secondary btn-sm text-[12px] inline-flex items-center gap-1.5">
                             <ArrowUpDown size={12} /> Movimiento
                           </button>
                           {(userRole === "ADMIN" || userRole === "FARMACIA") && (
@@ -723,7 +725,7 @@ export default function FarmaciaPage() {
                           )}
                           {userRole === "ADMIN" && (
                             <>
-                              <button
+                              <button aria-label="Editar ítem"
                                 onClick={() => openEdit(item)}
                                 className="p-1.5 rounded-md text-muted hover:text-text hover:bg-surface-hover transition-colors"
                                 title="Editar ítem"
@@ -749,10 +751,10 @@ export default function FarmaciaPage() {
             Página {page} de {totalPaginas} · {totalItems} ítems
           </span>
           <div className="flex items-center gap-2">
-            <button onClick={() => cambiarPagina(page - 1)} disabled={page <= 1 || loading} className="btn-secondary text-[12px] px-3 py-1 disabled:opacity-40">
+            <button onClick={() => cambiarPagina(page - 1)} disabled={page <= 1 || loading} className="btn-secondary btn-sm text-[12px] px-3 py-1 disabled:opacity-40">
               ‹ Anterior
             </button>
-            <button onClick={() => cambiarPagina(page + 1)} disabled={page >= totalPaginas || loading} className="btn-secondary text-[12px] px-3 py-1 disabled:opacity-40">
+            <button onClick={() => cambiarPagina(page + 1)} disabled={page >= totalPaginas || loading} className="btn-secondary btn-sm text-[12px] px-3 py-1 disabled:opacity-40">
               Siguiente ›
             </button>
           </div>
@@ -782,7 +784,7 @@ export default function FarmaciaPage() {
           ) : (
             <>
               <p className="text-[13px] text-muted">
-                Cargue el archivo .xls/.xlsx del listado (Alfabeta). El sistema actualiza precios y datos
+                Cargá el archivo .xls/.xlsx del listado (Alfabeta). El sistema actualiza precios y datos
                 por <strong className="text-text">troquel</strong>, agrega los medicamentos nuevos y
                 no elimina los ítems que no figuren en el archivo.
               </p>
@@ -810,7 +812,7 @@ export default function FarmaciaPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className={field}>
-              <label className={label}>Cantidad *</label>
+              <label className={label}>Cantidad<span className="text-error ml-0.5" aria-hidden>*</span></label>
               <input className="input-field text-[13px]" name="cantidad" type="number" step="0.01" min="0" value={movForm.cantidad}
                 onChange={(e) => setMovForm((p) => ({ ...p, cantidad: e.target.value }))} required />
             </div>

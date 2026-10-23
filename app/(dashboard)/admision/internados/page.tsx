@@ -7,6 +7,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { OpsStat } from "@/components/ui/OpsStat";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDateTime } from "@/lib/utils";
+import { ESTADO_INTERNACION } from "@/lib/estados";
+import { EmptyState } from "@/components/ui/States";
 
 interface Internacion {
   id: string;
@@ -20,13 +22,9 @@ interface Internacion {
   obraSocial?: { nombre: string; sigla: string } | null;
 }
 
-const estadoConfig: Record<string, { tone: "success" | "warning" | "info" | "neutral"; label: string; dot?: boolean; pulse?: boolean }> = {
-  ACTIVA: { tone: "success", label: "Activa", dot: true },
-  EN_QUIROFANO: { tone: "warning", label: "En quirófano", dot: true, pulse: true },
-  POSTQUIRURGICO: { tone: "info", label: "Postquirúrgico", dot: true },
-};
+const estadoConfig = ESTADO_INTERNACION;
 
-const label = "text-[11px] font-mono uppercase tracking-widest text-muted";
+const label = "field-label";
 
 export default function InternadosPage() {
   const router = useRouter();
@@ -76,7 +74,7 @@ export default function InternadosPage() {
         description="Internaciones activas con cama asignada. Filtrá por sector, obra social o médico tratante."
       />
 
-      <section className="grid grid-cols-2 md:grid-cols-3 gap-5">
+      <section className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <OpsStat label="Internados" value={internaciones.length} sub="Activos en el sanatorio" tone="info" />
         <OpsStat label="En quirófano" value={enQuirofano} sub="Cirugías en curso" tone={enQuirofano > 0 ? "warning" : "neutral"} />
         <OpsStat label="Postquirúrgico" value={postquirurgico} sub="En recuperación" tone={postquirurgico > 0 ? "info" : "neutral"} />
@@ -119,12 +117,12 @@ export default function InternadosPage() {
           ))}
         </div>
       ) : filtradas.length === 0 ? (
-        <div className="border border-dashed border-border rounded-lg py-12 text-center">
-          <Bed size={28} className="mx-auto text-muted mb-2" />
-          <p className="text-[13px] text-text">
-            {hayFiltros ? "Ningún paciente coincide con los filtros." : "No hay pacientes internados."}
-          </p>
-        </div>
+        <EmptyState
+          bordered
+          icon={Bed}
+          title={hayFiltros ? "Ningún paciente coincide con los filtros" : "No hay pacientes internados"}
+          description={hayFiltros ? "Probá quitando alguno de los filtros." : undefined}
+        />
       ) : (
         <div className="space-y-2">
           {filtradas.map((i) => {

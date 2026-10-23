@@ -7,14 +7,15 @@ import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
 import { formatUserName, formatDateTime } from "@/lib/utils";
+import { LoadingState } from "@/components/ui/States";
 
 const ACCESO_ROLES = ["MEDICO", "ADMIN"];
 
 const inputClass = "w-full bg-background border border-border rounded px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:border-brand";
-const labelClass = "text-xs text-muted font-medium mb-1 block";
-const btnClass = "px-3 py-1.5 text-xs rounded font-medium transition-colors inline-flex items-center gap-1";
-const btnTeal = `${btnClass} bg-accent-button text-white hover:bg-accent-dark`;
-const btnOutline = `${btnClass} border border-border text-muted hover:text-text hover:border-muted`;
+const labelClass = "field-label mb-1.5 block";
+const btnClass = "btn-sm";
+const btnTeal = `btn-primary ${btnClass}`;
+const btnOutline = `btn-secondary ${btnClass}`;
 
 interface UsuarioBasico {
   id: string;
@@ -172,7 +173,7 @@ export function SeccionInterconsultas({ episodioId }: { episodioId: string }) {
         </div>
 
         {loading ? (
-          <p className="text-xs text-muted flex items-center gap-2"><Loader size={14} className="animate-spin" /> Cargando...</p>
+          <LoadingState compact />
         ) : interconsultas.length === 0 ? (
           <p className="text-xs text-muted">Sin interconsultas solicitadas en este episodio.</p>
         ) : (
@@ -234,7 +235,7 @@ export function SeccionInterconsultas({ episodioId }: { episodioId: string }) {
           </div>
 
           <div>
-            <label className={labelClass}>Motivo de la interconsulta *</label>
+            <label className={labelClass}>Motivo de la interconsulta<span className="text-error ml-0.5" aria-hidden>*</span></label>
             <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} className={`${inputClass} resize-y min-h-[120px]`} placeholder="Describí el motivo de la solicitud..." maxLength={4000} />
           </div>
 

@@ -1,16 +1,20 @@
 "use client";
 
+import { rolLabel } from "@/lib/estados";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/api-errors";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, CheckCircle, Clock, User, Send } from "lucide-react";
+import { useParams } from "next/navigation";
+import { Plus, CheckCircle, Clock, User, Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { VoiceTextarea } from "@/components/ui/VoiceTextarea";
 import { formatDateTime } from "@/lib/utils";
 import { useSession } from "next-auth/react";
+import { LoadingState } from "@/components/ui/States";
+import { HcSubpageHeader } from "@/components/historia-clinica/HcSubpageHeader";
+import { SaveButton } from "@/components/ui/SaveButton";
 
 interface Evolucion {
   id: string;
@@ -23,7 +27,6 @@ interface Evolucion {
 
 export default function EvolucionPage() {
   const params = useParams();
-  const router = useRouter();
   const session = useSession();
   const userRol = session?.data?.user?.rol;
   const canCreate = ["ADMIN","MEDICO","ENFERMERO","ANESTESIOLOGO"].includes(userRol || "");
@@ -82,19 +85,18 @@ export default function EvolucionPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-muted hover:text-text transition-colors">
-            <ArrowLeft size={20} />
-          </button>
-          <h2 className="text-lg font-display font-semibold text-text">Evolución</h2>
-        </div>
-        {canCreate && (
-          <Button onClick={() => setShowEditor(true)}>
-            <Plus size={16} /> Nueva Nota
-          </Button>
-        )}
-      </div>
+      <HcSubpageHeader
+        internacionId={params.internacionId as string}
+        title="Evolución"
+        description="Notas de evolución en orden cronológico, de la más reciente a la más antigua."
+        actions={
+          canCreate && !showEditor ? (
+            <Button onClick={() => setShowEditor(true)}>
+              <Plus size={16} /> Nueva nota
+            </Button>
+          ) : undefined
+        }
+      />
 
       {showEditor && (
         <div className="card p-4 space-y-3">
@@ -102,21 +104,19 @@ export default function EvolucionPage() {
             value={nuevoContenido}
             onChange={(v) => setNuevoContenido(v)}
             rows={10}
-            placeholder="Escriba la nota de evolución..."
+            placeholder="Escribí la nota de evolución..."
           />
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => { setShowEditor(false); setNuevoContenido(""); }}>
               Cancelar
             </Button>
-            <Button onClick={handleCrearNota} disabled={saving || !nuevoContenido.trim()}>
-              <Send size={16} /> {saving ? "Guardando..." : "Guardar Nota"}
-            </Button>
+            <SaveButton type="button" onClick={handleCrearNota} saving={saving} disabled={!nuevoContenido.trim()} icon={Send} label="Guardar nota" />
           </div>
         </div>
       )}
 
       {loading ? (
-        <p className="text-muted text-sm">Cargando evoluciones...</p>
+        <LoadingState label="Cargando evoluciones…" />
       ) : loadError ? (
         <p className="text-error text-sm">{loadError}</p>
       ) : evoluciones.length === 0 ? (
@@ -140,7 +140,7 @@ export default function EvolucionPage() {
               </div>
               <p className="text-text text-sm whitespace-pre-wrap">{evo.contenido}</p>
               <div className="flex items-center gap-1 mt-2 text-xs text-muted">
-                <User size={12} /> {evo.usuario.nombre} ({evo.usuario.rol})
+                <User size={12} /> {evo.usuario.nombre} · {rolLabel(evo.usuario.rol)}
               </div>
             </div>
           ))}

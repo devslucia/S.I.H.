@@ -302,7 +302,7 @@ export function AntecClinicosForm({ value, onChange, disabled }: AntecClinicosFo
                     <VoiceTextarea
                       value={(catData as string) || ""}
                       onChange={(val) => onChange({ ...value, [cat.id]: val })}
-                      placeholder={`Ingrese ${cat.label.toLowerCase()}...`}
+                      placeholder={`Ingresá ${cat.label.toLowerCase()}...`}
                       rows={3}
                       disabled={disabled}
                     />

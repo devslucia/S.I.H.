@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Activity } from "lucide-react";
+import { Activity, AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,59 +45,87 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <Activity className="w-10 h-10 text-brand" />
-            <span className="text-3xl font-bold text-brand font-mono">S.I.H.</span>
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-7">
+          <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-accent-button flex items-center justify-center shadow-card">
+            <Activity className="w-6 h-6 text-white" aria-hidden />
           </div>
-          <p className="text-muted text-sm">Sistema Informático Hospitalario</p>
-          <p className="text-muted text-xs mt-3">Desarrollado por Cristaldo</p>
+          <h1 className="text-xl font-semibold text-text tracking-tight">S.I.H.</h1>
+          <p className="text-muted text-[13px] mt-0.5">Sistema Informático Hospitalario</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="card p-6 space-y-4">
-          <h2 className="text-lg font-display font-semibold text-text">Iniciar Sesión</h2>
+        <form onSubmit={handleSubmit} className="card shadow-elevated p-6 space-y-4">
+          <div>
+            <h2 className="text-base font-semibold text-text">Iniciar sesión</h2>
+            <p className="text-[12px] text-muted mt-0.5">Ingresá con tu email institucional.</p>
+          </div>
 
           {error && (
-            <div className="bg-error/10 border border-error/30 rounded-lg p-3 text-error text-sm">
-              {error}
+            <div className="alert-error" role="alert">
+              <AlertCircle size={15} className="mt-px shrink-0" aria-hidden />
+              <span>{error}</span>
             </div>
           )}
 
-          <div>
-            <label className="block text-muted text-xs mb-1.5 uppercase tracking-wide">Email</label>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="login-email" className="field-label">Email</label>
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="usuario@simes.com.ar"
               className="input-field"
+              autoComplete="username"
+              autoFocus
               required
+              aria-invalid={error ? true : undefined}
             />
           </div>
 
-          <div>
-            <label className="block text-muted text-xs mb-1.5 uppercase tracking-wide">Contraseña</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="input-field"
-              required
-            />
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="login-password" className="field-label">Contraseña</label>
+            <div className="relative">
+              <input
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="input-field pr-10"
+                autoComplete="current-password"
+                required
+                aria-invalid={error ? true : undefined}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute inset-y-0 right-0 px-3 flex items-center text-muted hover:text-text rounded-r-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary w-full justify-center disabled:opacity-50"
+            className="btn-primary w-full"
+            aria-busy={loading}
           >
-            {loading ? "Ingresando..." : "Ingresar"}
+            {loading ? (
+              <>
+                <Loader2 size={15} className="animate-spin" aria-hidden /> Ingresando…
+              </>
+            ) : (
+              "Ingresar"
+            )}
           </button>
-
-
         </form>
+
+        <p className="text-center text-muted text-[11px] mt-6">Desarrollado por Cristaldo</p>
       </div>
     </div>
   );
