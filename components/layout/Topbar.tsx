@@ -46,6 +46,7 @@ const SEGMENTOS: Record<string, string> = {
   plantillas: "Mis plantillas",
   quirofano: "Quirófano",
   libro: "Libro quirúrgico",
+  mejoras: "Mejoras sugeridas",
 };
 
 // Segmentos que no son página propia (no se linkean en el breadcrumb)

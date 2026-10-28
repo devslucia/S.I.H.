@@ -72,6 +72,14 @@ export const ESTADO_CARPETA: Mapa = {
   LIQUIDADA: { label: "Liquidada", tone: "neutral" },
 };
 
+export const ESTADO_MEJORA: Mapa = {
+  NUEVA: { label: "Nueva", tone: "info", dot: true },
+  EN_REVISION: { label: "En revisión", tone: "warning", dot: true },
+  PLANIFICADA: { label: "Planificada", tone: "info" },
+  IMPLEMENTADA: { label: "Implementada", tone: "success" },
+  DESCARTADA: { label: "Descartada", tone: "neutral" },
+};
+
 export const ESTADOS = {
   internacion: ESTADO_INTERNACION,
   cirugia: ESTADO_CIRUGIA,
@@ -80,6 +88,7 @@ export const ESTADOS = {
   cama: ESTADO_CAMA,
   guardia: ESTADO_GUARDIA,
   carpeta: ESTADO_CARPETA,
+  mejora: ESTADO_MEJORA,
 } as const;
 
 export type DominioEstado = keyof typeof ESTADOS;
