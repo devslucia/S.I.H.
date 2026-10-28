@@ -81,8 +81,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={contextValue}>
       {children}
+      {/* bottom-20: deja libre el botón flotante del asistente (bottom-4 right-4) */}
       <div
-        className="fixed bottom-4 left-4 right-4 sm:left-auto sm:w-[380px] z-[100] flex flex-col gap-2 pointer-events-none no-print"
+        className="fixed bottom-20 left-4 right-4 sm:left-auto sm:w-[380px] z-[100] flex flex-col gap-2 pointer-events-none no-print"
         aria-live="polite"
         aria-relevant="additions"
       >

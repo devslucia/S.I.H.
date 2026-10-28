@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings, UserCheck, Users, Wrench, ClipboardList, ArrowRight, FileSpreadsheet } from "lucide-react";
+import { Settings, UserCheck, Users, Wrench, ClipboardList, ArrowRight, FileSpreadsheet, Lightbulb } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -46,6 +46,13 @@ const adminModules = [
     description: "Valor de la unidad del nomenclador por OS y vigencia para facturación automática",
     icon: FileSpreadsheet,
     href: "/configuracion/galenos",
+  },
+  {
+    id: 6,
+    name: "Mejoras sugeridas",
+    description: "Sugerencias de los usuarios capturadas por el asistente: revisar, priorizar y planificar",
+    icon: Lightbulb,
+    href: "/configuracion/mejoras",
   },
 ];
 

@@ -251,6 +251,7 @@ model Usuario {
   guardiasAtendidas        EpisodioGuardiaMeta[]          @relation("MedicoGuardia")
   guardiasRegistradas      EpisodioGuardiaMeta[]          @relation("RegistroIngresoGuardia")
   carpetaLogs              CarpetaLog[]
+  mejorasSugeridas         MejoraSugerida[]
 }
 
 model Paciente {
@@ -1274,4 +1275,26 @@ model CarpetaLog {
   at             DateTime      @default(now())
 
   @@index([internacionId])
+}
+
+// Sugerencias de mejora del sistema capturadas por el asistente de uso (u otros orígenes).
+// Base para el backlog de producto; las revisa ADMIN en /configuracion/mejoras.
+model MejoraSugerida {
+  id          String   @id @default(uuid())
+  titulo      String
+  descripcion String
+  modulo      String? // admision, historia-clinica, quirofano, etc.
+  ruta        String? // pathname donde estaba el usuario
+  rolUsuario  String?
+  usuarioId   String?
+  usuario     Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  prioridad   String   @default("MEDIA") // BAJA, MEDIA, ALTA
+  estado      String   @default("NUEVA") // NUEVA, EN_REVISION, PLANIFICADA, IMPLEMENTADA, DESCARTADA
+  origen      String   @default("ASISTENTE_IA")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([estado])
+  @@index([modulo])
+  @@index([createdAt])
 }

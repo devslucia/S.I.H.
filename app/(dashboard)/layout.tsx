@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
 import { ToastProvider } from "@/components/ui/Toast";
+import { AsistenteIA } from "@/components/asistente/AsistenteIA";
 
 export default function DashboardLayout({
   children,
@@ -48,6 +49,7 @@ export default function DashboardLayout({
           </main>
         </div>
       </div>
+      <AsistenteIA />
     </ToastProvider>
   );
 }
